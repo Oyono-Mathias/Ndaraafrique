@@ -2,9 +2,9 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Formateur Ndara Afrique V2.
- * Palette : Fond Bleu Sombre (#0f172a), Accents Vert (#10b981) et Blanc.
- * Design : Android-first tactile.
+ * @fileOverview Dashboard Formateur Ndara Afrique V2 (Design Qwen Immersif).
+ * Palette : Fond Bleu Sombre (#0f172a), Accents Vert (#10b981).
+ * Design : Android-first tactile avec graphiques dynamiques.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -26,7 +26,13 @@ import {
   ClipboardCheck, 
   PieChart,
   History,
-  Loader2
+  Loader2,
+  Wallet,
+  ChartLine,
+  Percent,
+  Video,
+  Bullhorn,
+  ChevronRight
 } from 'lucide-react';
 import type { AssignmentSubmission, Payment, Course } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +42,7 @@ import { cn } from '@/lib/utils';
 import { format, subMonths, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { StatCard } from '@/components/dashboard/StatCard';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function InstructorDashboard() {
     const { currentUser: instructor, isUserLoading } = useRole();
@@ -114,114 +120,203 @@ export default function InstructorDashboard() {
         return (
             <div className="flex flex-col gap-8 p-4 bg-[#0f172a] min-h-screen">
                 <Skeleton className="h-12 w-1/2 bg-slate-900 rounded-xl" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem] bg-slate-900" />)}
+                <div className="grid grid-cols-1 gap-4">
+                    <Skeleton className="h-48 rounded-[2rem] bg-slate-900" />
                 </div>
-                <Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" />
+                <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-28 rounded-[2rem] bg-slate-900" />
+                    <Skeleton className="h-28 rounded-[2rem] bg-slate-900" />
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col gap-10 pb-24 bg-[#0f172a] min-h-screen relative overflow-hidden bg-grainy animate-in fade-in duration-700">
-            <div className="grain-overlay opacity-[0.03]" />
+        <div className="flex flex-col gap-0 pb-32 bg-[#0f172a] min-h-screen relative overflow-hidden font-sans">
+            <div className="grain-overlay" />
             
-            <header className="px-6 pt-8">
-                <div className="flex items-center gap-2 text-[#10b981] mb-2">
-                    <PieChart className="h-5 w-5" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Tableau de Pilotage</span>
+            {/* --- HEADER --- */}
+            <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md safe-area-pt border-b border-white/5">
+                <div className="px-6 py-6 flex items-center justify-between">
+                    <div>
+                        <h1 className="font-black text-xl text-white tracking-wide uppercase">Espace Formateur</h1>
+                        <p className="text-gray-300 text-sm font-medium mt-1 italic">Bara ala, Expert 👋</p>
+                    </div>
+                    <Link href="/account" className="active:scale-95 transition-transform">
+                        <div className="w-12 h-12 rounded-full border-2 border-[#10b981]/30 overflow-hidden shadow-xl">
+                            <Avatar className="h-full w-full">
+                                <AvatarImage src={instructor?.profilePictureURL} className="object-cover" />
+                                <AvatarFallback className="bg-slate-800 text-slate-500 font-black">
+                                    {instructor?.fullName?.charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
+                    </Link>
                 </div>
-                <h1 className="text-3xl font-black text-white leading-tight uppercase tracking-tight">
-                    Espace <br/><span className="text-[#10b981]">Formateur</span>
-                </h1>
-                <p className="text-slate-400 text-xs mt-2 font-medium italic">Bara ala, Expert Ndara.</p>
             </header>
 
-            {/* Section dynamique alimentée par le code de Qwen */}
-            <div id="qwen-instructor-dashboard">
-                <section className="px-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard 
-                        title="Chiffre d'Affaires" 
-                        value={`${analytics.totalRevenue.toLocaleString('fr-FR')} XOF`} 
-                        icon={Landmark} 
-                        isLoading={false}
-                        accentColor="border-[#10b981]/20"
-                    />
-                    <StatCard 
-                        title="Inscriptions" 
-                        value={analytics.totalStudentsCount.toString()} 
-                        icon={Users} 
-                        isLoading={false}
-                        accentColor="border-[#10b981]/20"
-                    />
-                    <StatCard 
-                        title="Réussite" 
-                        value="94%" 
-                        icon={TrendingUp} 
-                        isLoading={false}
-                        accentColor="border-[#10b981]/20"
-                    />
-                </section>
+            <main className="flex-1 overflow-y-auto pt-32 px-6 space-y-8 animate-in fade-in duration-700">
 
-                <section className="px-6 mt-8">
-                    <Card className="bg-slate-900/50 backdrop-blur-sm border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                        <CardHeader className="p-8 pb-4">
-                            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Croissance Mensuelle</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={analytics.chartData}>
-                                    <defs>
-                                        <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-5" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
-                                    <YAxis hide />
-                                    <Tooltip contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px'}} itemStyle={{color: '#10b981', fontWeight: 'bold'}} />
-                                    <Area type="monotone" dataKey="total" stroke="#10b981" fillOpacity={1} fill="url(#colorTotal)" strokeWidth={4} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                </section>
+                {/* --- FINANCIAL KPIs --- */}
+                <div className="grid grid-cols-1 gap-4">
+                    {/* Main Balance Card */}
+                    <Link href="/instructor/revenus" className="block group active:scale-[0.98] transition-all">
+                        <Card className="bg-gradient-to-br from-[#10b981] to-[#047857] rounded-[2.5rem] p-6 border-none shadow-2xl shadow-[#10b981]/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-700" />
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                        <ChartLine className="text-white h-4 w-4" />
+                                    </div>
+                                    <span className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.2em]">Solde Disponible</span>
+                                </div>
+                                <h2 className="text-white font-black text-4xl mb-1 tracking-tight">
+                                    {analytics.totalRevenue.toLocaleString('fr-FR')} <span className="text-lg opacity-60">FCFA</span>
+                                </h2>
+                                <p className="text-emerald-200 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                                    <TrendingUp size={14} /> +12% ce mois
+                                </p>
+                                
+                                <Button className="mt-6 w-full h-12 rounded-2xl bg-white text-[#047857] hover:bg-slate-50 font-black uppercase text-[10px] tracking-widest shadow-xl border-none">
+                                    <Wallet className="mr-2 h-4 w-4" /> Demander un virement
+                                </Button>
+                            </div>
+                        </Card>
+                    </Link>
 
-                <section className="px-6 mt-10 space-y-4">
-                    <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-                        <ClipboardCheck className="h-4 w-4" />
-                        Urgences Pédagogiques
-                    </h2>
-                    
+                    {/* Secondary Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <Card className="bg-[#1e293b] rounded-[2rem] p-5 border border-[#10b981]/20 shadow-xl active:scale-[0.98] transition-all">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                    <Users size={16} />
+                                </div>
+                                <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Mes Ndara</span>
+                            </div>
+                            <p className="text-white font-black text-2xl leading-none">{analytics.totalStudentsCount}</p>
+                            <p className="text-slate-600 text-[8px] font-bold uppercase tracking-tighter mt-1.5">Étudiants actifs</p>
+                        </Card>
+                        
+                        <Card className="bg-[#1e293b] rounded-[2rem] p-5 border border-[#10b981]/20 shadow-xl active:scale-[0.98] transition-all">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-xl bg-[#10b981]/20 flex items-center justify-center text-[#10b981]">
+                                    <Percent size={16} />
+                                </div>
+                                <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Réussite</span>
+                            </div>
+                            <p className="text-white font-black text-2xl leading-none">94%</p>
+                            <p className="text-slate-600 text-[8px] font-bold uppercase tracking-tighter mt-1.5">Taux moyen</p>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* --- CASHFLOW CHART --- */}
+                <Card className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-2xl overflow-hidden">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-black text-white text-xs uppercase tracking-[0.2em]">Trésorerie</h3>
+                        <div className="bg-[#0f172a] px-3 py-1.5 rounded-full border border-white/10 text-[9px] font-black text-primary uppercase tracking-widest">
+                            6 MOIS
+                        </div>
+                    </div>
+                    <div className="h-48 w-full -ml-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={analytics.chartData}>
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.4}/>
+                                        <stop offset="100%" stopColor="#10b981" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="white" opacity={0.05} />
+                                <XAxis 
+                                    dataKey="name" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{fill: '#64748b', fontSize: 10, fontWeight: '900'}} 
+                                    dy={10}
+                                />
+                                <YAxis hide />
+                                <Tooltip 
+                                    contentStyle={{backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px'}} 
+                                    itemStyle={{color: '#10b981', fontWeight: 'bold'}}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="total" 
+                                    stroke="#10b981" 
+                                    strokeWidth={4} 
+                                    fill="url(#chartGradient)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+
+                {/* --- URGENCIES: TO GRADE --- */}
+                <section className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
+                            À Corriger
+                        </h2>
+                        <Link href="/instructor/devoirs" className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-white transition">
+                            VOIR TOUT
+                        </Link>
+                    </div>
+
                     <div className="grid gap-3">
                         {pendingSubmissions.length > 0 ? (
                             pendingSubmissions.map(sub => (
-                                <Card key={sub.id} className="bg-slate-900 border-white/5 rounded-2xl overflow-hidden active:scale-95 transition-all border-l-4 border-l-[#10b981] shadow-xl">
-                                    <CardContent className="p-4 flex items-center justify-between">
-                                        <div className="flex-1 min-w-0 mr-4">
-                                            <p className="font-bold text-white text-sm truncate uppercase tracking-tight">{sub.studentName}</p>
-                                            <p className="text-[10px] text-slate-500 truncate italic">"{sub.assignmentTitle}"</p>
-                                        </div>
-                                        <Button size="sm" asChild className="h-10 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest bg-[#10b981] hover:bg-emerald-600 text-slate-950 border-none shadow-lg">
-                                            <Link href="/instructor/devoirs">Noter</Link>
-                                        </Button>
-                                    </CardContent>
+                                <Card key={sub.id} className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 flex items-center gap-4 shadow-xl active:scale-[0.98] transition-all group">
+                                    <Avatar className="h-12 w-12 border-2 border-white/10 shadow-lg group-hover:border-primary/30 transition-colors">
+                                        <AvatarImage src={sub.studentAvatarUrl} className="object-cover" />
+                                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold uppercase">
+                                            {sub.studentName?.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-black text-white text-sm truncate uppercase tracking-tight">{sub.studentName}</h4>
+                                        <p className="text-slate-500 text-[10px] font-medium truncate italic">"{sub.assignmentTitle}"</p>
+                                        <p className="text-slate-600 text-[8px] font-black uppercase tracking-tighter mt-1 flex items-center gap-1">
+                                            <History size={10} /> Remis il y a peu
+                                        </p>
+                                    </div>
+                                    <Button asChild className="h-10 px-5 rounded-2xl bg-[#10b981] hover:bg-emerald-600 text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-lg border-none">
+                                        <Link href="/instructor/devoirs">Noter</Link>
+                                    </Button>
                                 </Card>
                             ))
                         ) : (
-                            <div className="py-12 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-white/5 opacity-30">
-                                <History className="h-8 w-8 mx-auto text-slate-700 mb-3" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Aucun devoir en attente</p>
+                            <div className="py-12 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-white/5 opacity-20">
+                                <ClipboardCheck className="h-10 w-10 mx-auto text-slate-700 mb-3" />
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Tout est corrigé !</p>
                             </div>
                         )}
                     </div>
                 </section>
-            </div>
 
-            <div className="px-6 pt-4 text-center">
-                <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique Expert Hub • Edition Forest</p>
-            </div>
+                {/* --- QUICK ACTIONS --- */}
+                <div className="grid grid-cols-2 gap-4 pb-12">
+                    <Link href="/instructor/courses/create" className="block group active:scale-95 transition-all">
+                        <Card className="bg-[#1e293b] rounded-[2rem] p-6 border border-white/5 flex flex-col items-center justify-center gap-4 shadow-xl group-hover:border-primary/30">
+                            <div className="w-14 h-14 rounded-3xl bg-[#10b981]/10 flex items-center justify-center text-[#10b981] group-hover:bg-[#10b981] group-hover:text-slate-950 transition-all shadow-inner">
+                                <Video size={24} />
+                            </div>
+                            <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">Nouveau Cours</span>
+                        </Card>
+                    </Link>
+                    
+                    <Link href="/instructor/annonces" className="block group active:scale-95 transition-all">
+                        <Card className="bg-[#1e293b] rounded-[2rem] p-6 border border-white/5 flex flex-col items-center justify-center gap-4 shadow-xl group-hover:border-blue-500/30">
+                            <div className="w-14 h-14 rounded-3xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner">
+                                <Bullhorn size={24} />
+                            </div>
+                            <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">Annonce</span>
+                        </Card>
+                    </Link>
+                </div>
+
+            </main>
         </div>
     );
 }
