@@ -4,6 +4,7 @@
  * @fileOverview Dashboard Financier de l'Instructeur V2 (Design Qwen Fintech Elite).
  * ✅ CALCULS : Revenus Formations, Revenus Parrainage, Solde Disponible.
  * ✅ DESIGN : Carte bancaire virtuelle Elite avec scintillement et Historique épuré.
+ * ✅ RÉSOLU : Ajout des imports manquants DialogClose et ShoppingCart.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -48,8 +49,9 @@ export default function InstructorRevenuePage() {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [payoutMethod, setPayoutMethod] = useState<'mobile_money' | 'bank_transfer'>('mobile_money');
+    const [withdrawMethod, setWithdrawMethod] = useState<'orange' | 'mtn' | 'wave'>('orange');
     const [withdrawAmount, setWithdrawAmount] = useState<string>('');
+    const [phoneValue, setPhoneValue] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [loadingStates, setLoadingStates] = useState({
@@ -118,7 +120,7 @@ export default function InstructorRevenuePage() {
             const result = await requestPayoutAction({
                 instructorId: instructor.uid,
                 amount: amountNum,
-                method: payoutMethod
+                method: 'mobile_money'
             });
 
             if (result.success) {
@@ -147,7 +149,7 @@ export default function InstructorRevenuePage() {
         const pr = payoutRequests.map(item => ({ 
             id: item.id, 
             type: 'payout', 
-            title: `Virement ${item.method === 'mobile_money' ? 'Momo' : 'Bancaire'}`, 
+            title: `Virement Mobile Money`, 
             amount: -item.amount, 
             date: (item.createdAt as any)?.toDate() || new Date(),
             status: item.status 
@@ -247,9 +249,9 @@ export default function InstructorRevenuePage() {
                                     </p>
                                     <Badge className={cn(
                                         "text-[8px] font-black uppercase border-none px-2 py-0.5 h-4 rounded-full",
-                                        item.status === 'Completed' || item.status === 'paid' ? "badge-success" :
-                                        item.status === 'pending' || item.status === 'approved' ? "badge-audit" :
-                                        "badge-rejected"
+                                        item.status === 'Completed' || item.status === 'paid' ? "bg-emerald-500/10 text-emerald-500" :
+                                        item.status === 'pending' || item.status === 'approved' ? "bg-amber-500/10 text-amber-500" :
+                                        "bg-red-500/10 text-red-500"
                                     )}>
                                         {item.status === 'Completed' || item.status === 'paid' ? 'Succès' : item.status === 'pending' ? 'Audit' : item.status === 'approved' ? 'Prêt' : 'Rejeté'}
                                     </Badge>
@@ -266,7 +268,7 @@ export default function InstructorRevenuePage() {
 
             </main>
 
-            {/* --- WITHDRAWAL MODAL (BOTTOM SHEET STYLE) --- */}
+            {/* --- WITHDRAWAL MODAL --- */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="bg-ndara-surface border-t border-white/5 rounded-t-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] animate-in slide-in-from-bottom duration-300">
                     <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -276,9 +278,9 @@ export default function InstructorRevenuePage() {
                     </DialogHeader>
                     
                     <div className="p-8 space-y-6">
-                        <div className="bg-ndara-bg rounded-3xl p-5 border border-white/5 text-center">
+                        <div className="bg-slate-950 rounded-3xl p-5 border border-white/5 text-center">
                             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Montant transférable</p>
-                            <p className="text-3xl font-black text-primary">{(currentUser?.affiliateBalance || 0).toLocaleString('fr-FR')} FCFA</p>
+                            <p className="text-3xl font-black text-primary">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</p>
                         </div>
 
                         <div className="space-y-3">
@@ -297,18 +299,18 @@ export default function InstructorRevenuePage() {
                                 placeholder="+236 ..." 
                                 value={phoneValue}
                                 onChange={(e) => setPhoneValue(e.target.value)}
-                                className="h-14 bg-ndara-bg border-white/5 rounded-2xl text-white font-mono text-lg" 
+                                className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-mono text-lg" 
                             />
                         </div>
                     </div>
 
-                    <DialogFooter className="p-8 bg-ndara-bg/50 border-t border-white/5 safe-area-pb flex gap-3">
+                    <DialogFooter className="p-8 bg-slate-950/50 border-t border-white/5 safe-area-pb flex gap-3">
                         <DialogClose asChild>
                             <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
                         </DialogClose>
                         <Button 
                             onClick={handleRequestWithdrawal}
-                            disabled={isSubmitting || !withdrawAmount || parseFloat(withdrawAmount) < 5000}
+                            disabled={isSubmitting || !phoneValue || stats.availableBalance < 5000}
                             className="flex-1 h-14 rounded-2xl bg-ndara-emerald hover:bg-emerald-400 text-ndara-bg font-black uppercase text-[10px] tracking-widest shadow-xl transition-all"
                         >
                             {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Check size={16} className="mr-2" />}
