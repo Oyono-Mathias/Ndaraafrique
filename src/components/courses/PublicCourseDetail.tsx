@@ -4,6 +4,7 @@
  * @fileOverview Vitrine publique d'une formation Ndara Afrique V2.
  * ✅ DESIGN QWEN : Immersion Android-First, Header dégradé, Barre de confiance.
  * ✅ ACTIONS : Inscription redirigeant vers checkout ou lecteur avec préfixe locale.
+ * ✅ DYNAMIQUE : Suppression des valeurs simulées (avis, participants).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -73,7 +74,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [reviews, setReviews] = useState<EnrichedReview[]>([]);
-  const [stats, setStats] = useState({ rating: 4.8, reviewCount: 0, studentCount: 0 });
+  const [stats, setStats] = useState({ rating: 0, reviewCount: 0, studentCount: 0 });
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
@@ -112,6 +113,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             }
             setLecturesMap(lMap);
 
+            // ✅ RÉCUPÉRATION RÉELLE DES AVIS
             const reviewsQuery = query(collection(db, 'course_reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(10));
             const reviewsSnap = await getDocs(reviewsQuery);
             const rawReviews = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
@@ -129,11 +131,12 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
                 })));
             }
 
+            // ✅ COMPTAGE RÉEL DES INSCRITS
             const qEnrolled = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
             const snapEnrolled = await getCountFromServer(qEnrolled);
             
             setStats({
-                rating: course?.rating || 4.8,
+                rating: course?.rating || 0,
                 reviewCount: rawReviews.length,
                 studentCount: snapEnrolled.data().count
             });
@@ -245,17 +248,17 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             <div className="flex items-center gap-6 text-xs font-bold text-slate-400">
                 <div className="flex items-center gap-1.5 text-yellow-500">
                     <Star className="h-4 w-4 fill-current" />
-                    <span className="text-white text-base font-black">{stats.rating.toFixed(1)}</span>
+                    <span className="text-white text-base font-black">{stats.rating > 0 ? stats.rating.toFixed(1) : '---'}</span>
                     <span className="opacity-50 font-medium">({stats.reviewCount} avis)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <Users className="h-4 w-4 text-primary" />
-                    <span className="text-white">{stats.studentCount || 100} Ndara</span>
+                    <span className="text-white">{stats.studentCount} Ndara</span>
                 </div>
             </div>
         </div>
 
-        {/* --- TRUST BAR (SÉCURITÉ & GARANTIE) --- */}
+        {/* --- TRUST BAR --- */}
         <section className="grid grid-cols-3 gap-3">
             <TrustItem icon={Lock} label="Paiement" sub="100% Sécurisé" />
             <TrustItem icon={Shield} label="Garantie" sub="Satisfaction" />
@@ -279,7 +282,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
                     <h3 className="text-lg font-black text-white group-hover:text-primary transition-colors truncate">{instructor.fullName}</h3>
                     <p className="text-[10px] text-slate-500 font-medium italic">{instructor.careerGoals?.currentRole || 'Pionnier Ndara'}</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-700 group-hover:text-primary transition-colors" />
+                <ChevronRight className="h-5 w-5 text-slate-700 group-hover:text-primary transition-colors mr-2" />
             </Link>
         )}
 
@@ -368,7 +371,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
         </section>
       </main>
 
-      {/* --- FLOATING ACTION BAR (PRIX & INSCRIPTION) --- */}
+      {/* --- FLOATING ACTION BAR --- */}
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-6">
             <div className="flex flex-col">

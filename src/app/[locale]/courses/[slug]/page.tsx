@@ -1,10 +1,10 @@
-
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique V2 (Design Qwen Immersif).
  * ✅ DESIGN : Immersion totale, fond #050505, Drawer latéral Android.
  * ✅ FONCTIONNEL : Progression temps réel, IA Mathias intégrée.
+ * ✅ DYNAMIQUE : Suppression des valeurs simulées (durées, index).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -89,7 +89,6 @@ function CoursePlayerPageContent() {
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
 
-  // Écouteur temps réel pour la progression
   useEffect(() => {
     if (!progressRef) return;
     const unsub = onSnapshot(progressRef, (snap) => {
@@ -175,16 +174,19 @@ function CoursePlayerPageContent() {
     }
   };
 
-  const currentLessonIndex = useMemo(() => {
-      if (!activeLecture) return 0;
-      let count = 0;
-      for (const section of sections) {
-          const sectionLectures = lecturesMap.get(section.id) || [];
+  // ✅ CALCUL RÉEL DE L'INDEX DE LA LEÇON
+  const currentIndices = useMemo(() => {
+      if (!activeLecture) return { section: 0, lesson: 0 };
+      let lectureCount = 0;
+      for (let i = 0; i < sections.length; i++) {
+          const sectionLectures = lecturesMap.get(sections[i].id) || [];
           const idx = sectionLectures.findIndex(l => l.id === activeLecture.id);
-          if (idx !== -1) return count + idx + 1;
-          count += sectionLectures.length;
+          if (idx !== -1) {
+              return { section: i + 1, lesson: lectureCount + idx + 1 };
+          }
+          lectureCount += sectionLectures.length;
       }
-      return 0;
+      return { section: 0, lesson: 0 };
   }, [sections, lecturesMap, activeLecture]);
 
   const isLoading = isLoadingContent || courseLoading;
@@ -269,15 +271,17 @@ function CoursePlayerPageContent() {
                                 <ShieldCheck size={12} className="mr-1.5" />
                                 Certifiant
                             </Badge>
-                            <span className="text-slate-500 text-[10px] font-black font-mono">
-                                {activeLecture?.duration || 15}:00 MIN
-                            </span>
+                            {activeLecture?.duration && (
+                                <span className="text-slate-500 text-[10px] font-black font-mono">
+                                    {activeLecture.duration}:00 MIN
+                                </span>
+                            )}
                         </div>
                         <h1 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
                             {activeLecture?.title}
                         </h1>
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">
-                            Section {sections.findIndex(s => lecturesMap.get(s.id)?.some(l => l.id === activeLecture?.id)) + 1} • Leçon {currentLessonIndex}
+                            Section {currentIndices.section} • Leçon {currentIndices.lesson}
                         </p>
                     </div>
 
@@ -313,6 +317,8 @@ function CoursePlayerPageContent() {
                         <div className="text-slate-400 text-sm leading-relaxed font-medium">
                             {activeLecture?.textContent ? (
                                 <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
+                            ) : activeLecture?.description ? (
+                                <p>{activeLecture.description}</p>
                             ) : (
                                 <p>Maîtrisez les concepts fondamentaux abordés dans ce module à travers cette session d'apprentissage Ndara.</p>
                             )}
@@ -382,7 +388,7 @@ function CoursePlayerPageContent() {
                                                 )}
                                                 <div className="flex-1 min-w-0">
                                                     <p className={cn("text-sm font-bold truncate", isActive ? "text-white" : "text-slate-400")}>{lecture.title}</p>
-                                                    <p className="text-[9px] font-black uppercase text-slate-600 tracking-tighter mt-0.5">{lecture.duration || 10}:00</p>
+                                                    {lecture.duration && <p className="text-[9px] font-black uppercase text-slate-600 tracking-tighter mt-0.5">{lecture.duration}:00</p>}
                                                 </div>
                                                 {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                                             </button>

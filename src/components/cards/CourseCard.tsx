@@ -1,11 +1,10 @@
-
 'use client';
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
  * ✅ VARIANTS : Grid, List, Search-Result.
  * ✅ DESIGN : Android-first avec coins arrondis 2rem.
- * ✅ UPDATE : Progress bar style Qwen avec effet glow.
+ * ✅ DYNAMIQUE : Suppression des fallback statiques (4.8, 450).
  */
 
 import Link from 'next/link';
@@ -85,9 +84,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             <div className="bg-ndara-surface rounded-[2rem] p-3 border border-white/5 flex gap-4 shadow-xl">
                 <div className="w-32 h-20 rounded-[1.5rem] overflow-hidden flex-shrink-0 relative shadow-inner bg-slate-800">
                     <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
-                    <div className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter">
-                        15h
-                    </div>
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                     <div>
@@ -102,11 +98,11 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                         <div className="flex items-center gap-2">
                             <div className="flex items-center text-yellow-500 gap-1">
                                 <Star className="h-2.5 w-2.5 fill-current" />
-                                <span className="text-white text-[10px] font-black">{course.rating?.toFixed(1) || '4.8'}</span>
+                                <span className="text-white text-[10px] font-black">{course.rating ? course.rating.toFixed(1) : '---'}</span>
                             </div>
                             <div className="flex items-center text-slate-600 gap-1">
                                 <Users className="h-2.5 w-2.5" />
-                                <span className="text-[9px] font-bold">{(course.participantsCount || 450).toLocaleString()}</span>
+                                <span className="text-[9px] font-bold">{(course.participantsCount || 0).toLocaleString()}</span>
                             </div>
                         </div>
                         <span className="text-primary text-[13px] font-black uppercase">
@@ -119,7 +115,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
-  // --- VARIANT: LIST (DRAWER / STUDENT DASHBOARD) ---
+  // --- VARIANT: LIST (STUDENT DASHBOARD) ---
   if (variant === 'list') {
     const isCompleted = course.progress === 100;
     
@@ -127,7 +123,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
       <div className="group relative">
         <Link href={href} className="block w-full active:scale-[0.98] transition-transform">
           <div className="bg-ndara-surface border border-white/5 rounded-[2rem] overflow-hidden flex items-center p-4 shadow-xl relative group">
-            {/* Thumbnail 1:1 Qwen Style */}
             <div className="relative h-20 w-20 shrink-0 rounded-3xl overflow-hidden bg-slate-800 shadow-inner">
               <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
               <div className="absolute inset-0 bg-black/20" />
@@ -197,7 +192,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-1.5">
                     <Star className="h-2.5 w-2.5 text-yellow-500 fill-yellow-500" />
-                    <span className="text-[10px] font-black text-slate-300">{course.rating?.toFixed(1) || '4.8'}</span>
+                    <span className="text-[10px] font-black text-slate-300">{course.rating ? course.rating.toFixed(1) : '---'}</span>
                 </div>
                 <p className="text-sm font-black text-primary uppercase">
                     {course.price === 0 ? "Offert" : `${(course.price / 1000).toFixed(0)}K XOF`}
