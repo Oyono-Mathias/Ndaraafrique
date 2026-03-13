@@ -2,7 +2,7 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Instructeur Ndara Afrique - Version Analytique.
+ * @fileOverview Dashboard Formateur Ndara Afrique - Version Analytique.
  * ✅ ANALYTICS : Revenus mensuels, totaux et graphique de croissance.
  * ✅ PÉDAGOGIE : File d'attente des corrections prioritaires.
  * ✅ PERFORMANCE : Audit détaillé par formation.
@@ -17,8 +17,7 @@ import {
   onSnapshot, 
   orderBy,
   limit,
-  getDocs,
-  documentId
+  startOfMonth
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,22 +27,20 @@ import {
   ClipboardCheck, 
   TrendingUp, 
   Landmark,
-  Calendar,
   Star,
-  ArrowRight,
   Loader2,
   PieChart,
   History,
   BookOpen
 } from 'lucide-react';
-import type { AssignmentSubmission, Payment, Course, Enrollment } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import type { AssignmentSubmission, Payment, Course } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { format, subMonths, isSameMonth, startOfMonth } from 'date-fns';
+import { format, subMonths, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -168,7 +165,7 @@ export default function InstructorDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-[0.3em]">Centre de pilotage</span>
                 </div>
                 <h1 className="text-3xl font-black text-white leading-tight uppercase tracking-tight">
-                    Analyse <br/><span className="text-primary">de l'Académie</span>
+                    Espace <br/><span className="text-primary">Formateur</span>
                 </h1>
             </header>
 
@@ -179,14 +176,14 @@ export default function InstructorDashboard() {
                     value={`${analytics.totalRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={Landmark} 
                     isLoading={false}
-                    description="Gains cumulés historiques"
+                    description="Gains cumulés"
                 />
                 <StatCard 
                     title="Ce Mois-ci" 
                     value={`${analytics.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={TrendingUp} 
                     isLoading={false}
-                    description={`Progression sur ${format(new Date(), 'MMMM', { locale: fr })}`}
+                    description={`Progression ${format(new Date(), 'MMMM', { locale: fr })}`}
                 />
                 <StatCard 
                     title="Mes Ndara" 
@@ -199,7 +196,7 @@ export default function InstructorDashboard() {
 
             {/* --- GRAPHIQUE DE CROISSANCE --- */}
             <section className="px-4">
-                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                <Card className="bg-slate-900 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-4">
                         <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Volume des encaissements</CardTitle>
                     </CardHeader>
@@ -243,7 +240,7 @@ export default function InstructorDashboard() {
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
                         <ClipboardCheck className="h-4 w-4" />
-                        Urgences pédagogiques
+                        À Corriger
                     </h2>
                     {pendingSubmissions.length > 0 && (
                         <Badge className="bg-red-500 text-white border-none rounded-full h-5 min-w-[20px] px-1 shadow-lg shadow-red-500/20">
@@ -255,7 +252,7 @@ export default function InstructorDashboard() {
                 {pendingSubmissions.length > 0 ? (
                     <div className="grid gap-3">
                         {pendingSubmissions.map(sub => (
-                            <Card key={sub.id} className="bg-slate-900 border-slate-800 rounded-2xl overflow-hidden active:scale-[0.98] transition-all border-l-4 border-l-primary shadow-xl">
+                            <Card key={sub.id} className="bg-slate-900 border-white/5 rounded-2xl overflow-hidden active:scale-[0.98] transition-all border-l-4 border-l-primary shadow-xl">
                                 <CardContent className="p-4 flex items-center justify-between">
                                     <div className="flex-1 min-w-0 mr-4">
                                         <p className="font-bold text-white text-sm truncate">{sub.studentName}</p>
@@ -269,7 +266,7 @@ export default function InstructorDashboard() {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-12 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50">
+                    <div className="py-12 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-white/5">
                         <History className="h-8 w-8 mx-auto text-slate-800 mb-3" />
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Aucun travail en attente</p>
                     </div>
@@ -283,10 +280,10 @@ export default function InstructorDashboard() {
                     Performance par formation
                 </h2>
                 
-                <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
+                <div className="border rounded-[2rem] bg-slate-900/50 border-white/5 overflow-hidden shadow-2xl">
                     <Table>
                         <TableHeader>
-                            <TableRow className="border-slate-800 bg-slate-800/30">
+                            <TableRow className="border-white/5 bg-slate-800/30">
                                 <TableHead className="text-[9px] font-black uppercase tracking-widest py-4">Cours</TableHead>
                                 <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Élèves</TableHead>
                                 <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Revenu</TableHead>
@@ -296,7 +293,7 @@ export default function InstructorDashboard() {
                         <TableBody>
                             {analytics.courseStats.length > 0 ? (
                                 analytics.courseStats.map(course => (
-                                    <TableRow key={course.id} className="border-slate-800 hover:bg-slate-800/20">
+                                    <TableRow key={course.id} className="border-white/5 hover:bg-slate-800/20">
                                         <TableCell className="font-bold text-xs text-white truncate max-w-[120px]">{course.title}</TableCell>
                                         <TableCell className="text-center text-xs font-bold text-slate-400">{course.students}</TableCell>
                                         <TableCell className="text-right text-xs font-black text-emerald-400">{course.revenue.toLocaleString('fr-FR')} <span className="text-[8px] opacity-50">XOF</span></TableCell>
