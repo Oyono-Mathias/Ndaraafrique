@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -24,21 +23,19 @@ import {
   Landmark,
   TrendingUp, 
   ClipboardCheck, 
-  PieChart,
   History,
   Loader2,
   Wallet,
   ChartLine,
   Percent,
   Video,
-  Bullhorn,
+  Megaphone,
   ChevronRight
 } from 'lucide-react';
 import type { AssignmentSubmission, Payment, Course } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import { format, subMonths, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -121,7 +118,7 @@ export default function InstructorDashboard() {
             <div className="flex flex-col gap-8 p-4 bg-[#0f172a] min-h-screen">
                 <Skeleton className="h-12 w-1/2 bg-slate-900 rounded-xl" />
                 <div className="grid grid-cols-1 gap-4">
-                    <Skeleton className="h-48 rounded-[2rem] bg-slate-900" />
+                    <Skeleton className="h-48 rounded-[2.5rem] bg-slate-900" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <Skeleton className="h-28 rounded-[2rem] bg-slate-900" />
@@ -309,7 +306,7 @@ export default function InstructorDashboard() {
                     <Link href="/instructor/annonces" className="block group active:scale-95 transition-all">
                         <Card className="bg-[#1e293b] rounded-[2rem] p-6 border border-white/5 flex flex-col items-center justify-center gap-4 shadow-xl group-hover:border-blue-500/30">
                             <div className="w-14 h-14 rounded-3xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner">
-                                <Bullhorn size={24} />
+                                <Megaphone size={24} />
                             </div>
                             <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">Annonce</span>
                         </Card>
