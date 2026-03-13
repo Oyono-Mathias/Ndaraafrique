@@ -47,6 +47,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLocale } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+interface AdminSidebarProps {
+  siteName?: string;
+  logoUrl?: string;
+  onLinkClick: () => void;
+}
+
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
   href: string, 
   icon: React.ElementType, 
@@ -97,7 +103,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
 };
 
 
-export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
+export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarProps) {
   const db = getFirestore();
   const locale = useLocale();
   const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
@@ -168,7 +174,7 @@ export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
                     N
                 </div>
                 <div>
-                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">ADMIN</h2>
+                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">{siteName || 'ADMIN'}</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Ndara Afrique</p>
                 </div>
             </div>

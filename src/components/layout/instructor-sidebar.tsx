@@ -30,14 +30,14 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useRole } from "@/context/RoleContext";
-import { UserNav } from "@/components/layout/user-nav";
 import { useLocale } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SidebarProps {
-  onLinkClick?: () => void;
+  siteName?: string;
+  logoUrl?: string;
+  onLinkClick: () => void;
 }
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
@@ -78,7 +78,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   );
 };
 
-export function InstructorSidebar({ onLinkClick }: SidebarProps) {
+export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarProps) {
   const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
   const isAdmin = availableRoles.includes('admin');
   const locale = useLocale();
@@ -124,7 +124,7 @@ export function InstructorSidebar({ onLinkClick }: SidebarProps) {
                     N
                 </div>
                 <div>
-                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">NDARA</h2>
+                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">{siteName || 'NDARA'}</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Afrique</p>
                 </div>
             </div>

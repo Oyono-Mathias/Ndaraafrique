@@ -103,7 +103,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, badge, isActive, onClick,
   );
 };
 
-export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
+export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: () => void, siteName?: string, logoUrl?: string }) {
   const { switchRole, availableRoles, user, currentUser, secureSignOut } = useRole();
   const isAdmin = availableRoles.includes('admin');
   const isInstructor = availableRoles.includes('instructor');
@@ -181,7 +181,7 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
                         N
                     </div>
                     <div>
-                        <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">NDARA</h2>
+                        <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">{siteName || 'NDARA'}</h2>
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Afrique</p>
                     </div>
                 </div>
