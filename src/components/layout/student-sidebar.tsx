@@ -1,3 +1,4 @@
+
 "use client";
 
 /**
@@ -40,7 +41,6 @@ import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
 import React, { useEffect, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLocale } from 'next-intl';
 import { useToast } from "@/hooks/use-toast";
@@ -109,7 +109,6 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
   const locale = useLocale();
   const pathname = usePathname() || '';
   const db = getFirestore();
-  const { toast } = useToast();
   
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
