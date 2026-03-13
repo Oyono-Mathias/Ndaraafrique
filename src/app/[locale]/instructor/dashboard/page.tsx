@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Dashboard Formateur Ndara Afrique V2 (Design Qwen Immersif).
- * Palette : Fond Bleu Sombre (#0f172a), Accents Vert (#10b981).
- * Design : Android-first tactile avec graphiques dynamiques.
+ * ✅ CONNECTIVITÉ : Calcul réel du taux de réussite et du nombre d'élèves.
+ * ✅ PERFORMANCE : Utilisation de onSnapshot pour une réactivité totale.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -32,7 +32,7 @@ import {
   Megaphone,
   ChevronRight
 } from 'lucide-react';
-import type { AssignmentSubmission, Payment, Course } from '@/lib/types';
+import type { AssignmentSubmission, Payment, Course, Enrollment } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -47,6 +47,7 @@ export default function InstructorDashboard() {
 
     const [payments, setPayments] = useState<Payment[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [pendingSubmissions, setPendingSubmissions] = useState<AssignmentSubmission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,6 +70,13 @@ export default function InstructorDashboard() {
             }
         );
 
+        const unsubEnrollments = onSnapshot(
+            query(collection(db, 'enrollments'), where('instructorId', '==', instructor.uid)),
+            (snap) => {
+                setEnrollments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Enrollment)));
+            }
+        );
+
         const unsubDevoirs = onSnapshot(
             query(
                 collection(db, 'devoirs'), 
@@ -87,12 +95,21 @@ export default function InstructorDashboard() {
             }
         );
 
-        return () => { unsubPayments(); unsubCourses(); unsubDevoirs(); };
+        return () => { 
+            unsubPayments(); 
+            unsubCourses(); 
+            unsubEnrollments();
+            unsubDevoirs(); 
+        };
     }, [instructor?.uid, db]);
 
     const analytics = useMemo(() => {
         const totalRevenue = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
-        const totalStudentsCount = Array.from(new Set(payments.map(p => p.userId))).length;
+        const totalStudentsCount = Array.from(new Set(enrollments.map(e => e.studentId))).length;
+        
+        // Calcul réel du taux de réussite (élèves à 100%)
+        const completedCount = enrollments.filter(e => e.progress === 100).length;
+        const successRate = enrollments.length > 0 ? Math.round((completedCount / enrollments.length) * 100) : 100;
 
         const now = new Date();
         const chartData = [];
@@ -109,9 +126,10 @@ export default function InstructorDashboard() {
         return {
             totalRevenue,
             chartData,
-            totalStudentsCount
+            totalStudentsCount,
+            successRate
         };
-    }, [payments]);
+    }, [payments, enrollments]);
 
     if (isUserLoading || isLoading) {
         return (
@@ -138,7 +156,7 @@ export default function InstructorDashboard() {
                         <h1 className="font-black text-xl text-white tracking-wide uppercase">Espace Formateur</h1>
                         <p className="text-gray-300 text-sm font-medium mt-1 italic">Bara ala, Expert 👋</p>
                     </div>
-                    <Link href="/account" className="active:scale-95 transition-transform">
+                    <Link href="/student/profile" className="active:scale-95 transition-transform">
                         <div className="w-12 h-12 rounded-full border-2 border-[#10b981]/30 overflow-hidden shadow-xl">
                             <Avatar className="h-full w-full">
                                 <AvatarImage src={instructor?.profilePictureURL} className="object-cover" />
@@ -168,7 +186,7 @@ export default function InstructorDashboard() {
                                     {analytics.totalRevenue.toLocaleString('fr-FR')} <span className="text-lg opacity-60">FCFA</span>
                                 </h2>
                                 <p className="text-emerald-200 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                    <TrendingUp size={14} /> +12% ce mois
+                                    <TrendingUp size={14} /> Croissance live
                                 </p>
                                 
                                 <Button className="mt-6 w-full h-12 rounded-2xl bg-white text-[#047857] hover:bg-slate-50 font-black uppercase text-[10px] tracking-widest shadow-xl border-none">
@@ -197,8 +215,8 @@ export default function InstructorDashboard() {
                                 </div>
                                 <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Réussite</span>
                             </div>
-                            <p className="text-white font-black text-2xl leading-none">94%</p>
-                            <p className="text-slate-600 text-[8px] font-bold uppercase tracking-tighter mt-1.5">Taux moyen</p>
+                            <p className="text-white font-black text-2xl leading-none">{analytics.successRate}%</p>
+                            <p className="text-slate-600 text-[8px] font-bold uppercase tracking-tighter mt-1.5">Taux de complétion</p>
                         </Card>
                     </div>
                 </div>
