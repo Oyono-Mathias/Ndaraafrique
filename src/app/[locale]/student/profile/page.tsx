@@ -11,6 +11,7 @@ import { useRole } from '@/context/RoleContext';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
+import Link from 'next/link';
 import { 
     Settings, 
     ShieldCheck, 
@@ -286,7 +287,7 @@ function MenuLink({ icon: Icon, label, desc, color, href }: { icon: any, label: 
     return (
         <Link href={href} className="flex items-center justify-between p-5 hover:bg-white/5 active:scale-[0.98] transition-all group">
             <div className="flex items-center gap-4">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", color)}>
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110" , color)}>
                     <Icon className="h-6 w-6" />
                 </div>
                 <div>

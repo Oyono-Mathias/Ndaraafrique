@@ -4,6 +4,7 @@
  * @fileOverview Espace Ambassadeur Ndara Afrique V2 - Version Audit Final.
  * ✅ DESIGN : Esthétique Fintech Neo-Banque (Fond noir, coins 2rem, grain).
  * ✅ CROISSANCE : Outils de partage viral optimisés.
+ * ✅ FIX : Correction syntaxe onSnapshot.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -55,24 +56,35 @@ export default function AmbassadorPage() {
     useEffect(() => {
         if (!currentUser?.uid) return;
 
-        const unsubTrans = onSnapshot(query(
-            collection(db, 'affiliate_transactions'),
-            where('affiliateId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc'),
-            limit(10)
-        ), (snap) => setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AffiliateTransaction))));
+        const unsubTrans = onSnapshot(
+            query(
+                collection(db, 'affiliate_transactions'),
+                where('affiliateId', '==', currentUser.uid),
+                orderBy('createdAt', 'desc'),
+                limit(10)
+            ), 
+            (snap) => {
+                setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AffiliateTransaction)));
+            }
+        );
 
-        const unsubLeader = onSnapshot(query(
-            collection(db, 'users'),
-            where('affiliateStats.sales', '>', 0),
-            orderBy('affiliateStats.sales', 'desc'),
-            limit(5)
-        ), (snap) => {
-            setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
-            setLoadingData(false);
-        });
+        const unsubLeader = onSnapshot(
+            query(
+                collection(db, 'users'),
+                where('affiliateStats.sales', '>', 0),
+                orderBy('affiliateStats.sales', 'desc'),
+                limit(5)
+            ), 
+            (snap) => {
+                setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+                setLoadingData(false);
+            }
+        );
 
-        return () => { unsubTrans(); unsubLeader(); };
+        return () => { 
+            unsubTrans(); 
+            unsubLeader(); 
+        };
     }, [currentUser?.uid, db]);
 
     const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/${locale}/search?aff=${currentUser?.uid}` : '';

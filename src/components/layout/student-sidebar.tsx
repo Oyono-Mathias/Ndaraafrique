@@ -1,4 +1,3 @@
-
 "use client";
 
 /**
@@ -34,7 +33,8 @@ import {
   ArrowLeftRight,
   LogOut,
   X,
-  Check
+  Check,
+  Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
