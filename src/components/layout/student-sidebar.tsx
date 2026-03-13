@@ -2,13 +2,13 @@
 "use client";
 
 /**
- * @fileOverview Barre latérale Étudiant Ndara Afrique - Design Qwen Android-First.
+ * @fileOverview Barre latérale Étudiant Ndara Afrique - Design Qwen Elite.
  * ✅ STYLE : Android System Settings épuré.
  * ✅ NAVIGATION : Groupements logiques et indicateurs de progression intégrés.
  */
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import {
@@ -22,7 +22,6 @@ import {
   Calendar,
   Wallet,
   FileText,
-  Download,
   UserCircle,
   Bell,
   LifeBuoy,
@@ -34,16 +33,18 @@ import {
   ArrowLeftRight,
   LogOut,
   X,
-  Check,
-  Search
+  Search,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Instagram
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getFirestore } from "firebase/firestore";
 import React, { useEffect, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLocale } from 'next-intl';
-import { useToast } from "@/hooks/use-toast";
 import type { CourseProgress } from "@/lib/types";
 
 interface SidebarItemProps {
@@ -289,8 +290,16 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
                 <LogOut size={16} />
                 <span>Se Déconnecter</span>
             </button>
-            <div className="flex items-center justify-center gap-4 mt-6 opacity-30 grayscale hover:grayscale-0 transition-all">
-                <span className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em]">Ndara Afrique v2.4</span>
+            
+            <div className="flex items-center justify-center gap-4 mt-6 opacity-30">
+                <a href="#" className="text-slate-400 hover:text-primary transition-colors"><Facebook size={14} /></a>
+                <a href="#" className="text-slate-400 hover:text-primary transition-colors"><Twitter size={14} /></a>
+                <a href="#" className="text-slate-400 hover:text-primary transition-colors"><Linkedin size={14} /></a>
+                <a href="#" className="text-slate-400 hover:text-primary transition-colors"><Instagram size={14} /></a>
+            </div>
+            
+            <div className="text-center mt-4">
+                <span className="text-[8px] font-black text-slate-700 uppercase tracking-[0.2em]">Ndara Afrique v2.4</span>
             </div>
         </div>
     </aside>

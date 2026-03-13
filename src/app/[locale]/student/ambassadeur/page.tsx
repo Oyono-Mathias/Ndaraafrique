@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -15,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-    BadgeEuro, 
     Share2, 
     MousePointer2, 
     Users, 
@@ -36,7 +36,8 @@ import {
     Crown,
     Lightbulb,
     Smartphone,
-    ArrowUpRight
+    ArrowUpRight,
+    Wallet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from 'next-intl';
@@ -127,12 +128,11 @@ export default function AmbassadorPage() {
         <div className="flex flex-col gap-8 pb-32 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
             <div className="grain-overlay opacity-[0.04]" />
 
-            {/* --- HEADER --- */}
             <header className="fixed top-0 w-full z-50 bg-slate-950/95 backdrop-blur-md safe-area-pt border-b border-white/5">
                 <div className="px-6 py-4">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="font-black text-xl text-white uppercase tracking-tight">Espace Ambassadeur</h1>
+                            <h1 className="font-black text-xl text-white uppercase tracking-tight">Ambassadeur</h1>
                             <p className="text-primary text-[10px] font-black uppercase tracking-widest">Gagnez de l'argent 💰</p>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
@@ -187,7 +187,6 @@ export default function AmbassadorPage() {
                     </div>
                 </div>
 
-                {/* --- VIRAL LINK SECTION --- */}
                 <div className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-xl space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="font-black text-white text-xs uppercase tracking-widest">Mon Lien Viral</h3>
@@ -210,14 +209,12 @@ export default function AmbassadorPage() {
                     </div>
                 </div>
 
-                {/* --- STATS PILLS --- */}
                 <section className="grid grid-cols-3 gap-3">
                     <StatPill icon={MousePointer2} label="Clics" value={stats.clicks} color="text-blue-400" bgColor="bg-blue-500/10" />
                     <StatPill icon={Users} label="Inscrits" value={stats.registrations} color="text-primary" bgColor="bg-primary/10" />
                     <StatPill icon={ShoppingCart} label="Ventes" value={stats.sales} color="text-orange-400" bgColor="bg-orange-500/10" />
                 </section>
 
-                {/* --- PALIERS DE BONUS --- */}
                 <div className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-xl space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="font-black text-white text-xs uppercase tracking-widest flex items-center gap-2">
@@ -234,7 +231,6 @@ export default function AmbassadorPage() {
                     </div>
                 </div>
 
-                {/* --- BOURSE DES AMBASSADEURS --- */}
                 <div className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-xl space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="font-black text-white text-xs uppercase tracking-widest flex items-center gap-2">
@@ -273,7 +269,6 @@ export default function AmbassadorPage() {
                     </div>
                 </div>
 
-                {/* --- ASTUCE --- */}
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2.5rem] p-6 flex items-start gap-4">
                     <div className="p-2 bg-orange-500/20 rounded-xl">
                         <Lightbulb className="h-5 w-5 text-orange-500" />
@@ -286,7 +281,6 @@ export default function AmbassadorPage() {
 
             </main>
 
-            {/* --- WITHDRAW MODAL --- */}
             <Dialog open={isWithdrawModalOpen} onOpenChange={setIsWithdrawModalOpen}>
                 <DialogContent className="bg-[#1e293b] border-white/5 rounded-[2.5rem] p-0 overflow-hidden sm:max-w-md">
                     <DialogHeader className="p-8 pb-0">
@@ -342,7 +336,7 @@ function StatPill({ icon: Icon, label, value, color, bgColor }: any) {
         <div className={cn("p-4 rounded-3xl text-center space-y-2 border border-white/5 shadow-xl", bgColor)}>
             <Icon className={cn("h-5 w-5 mx-auto", color)} />
             <p className="text-2xl font-black text-white leading-none">{value}</p>
-            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
+            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{label}</p>
         </div>
     );
 }
@@ -400,24 +394,4 @@ function AmbassadorSkeleton() {
             <Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" />
         </div>
     );
-}
-
-function Wallet(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
-      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
-    </svg>
-  )
 }

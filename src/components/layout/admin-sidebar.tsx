@@ -1,8 +1,9 @@
+
 "use client";
 
 /**
- * @fileOverview Barre latérale Administrateur Ndara Afrique v2.0.
- * Architecture restructurée pour inclure Marketing, Gamification et Monitoring.
+ * @fileOverview Barre latérale Administrateur Ndara Afrique.
+ * Harmonisée avec le design Elite Qwen.
  */
 
 import Link from 'next/link';
@@ -33,16 +34,18 @@ import {
   Mail,
   Trophy,
   Globe,
-  Share2
+  Share2,
+  X,
+  LogOut,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
-import { useMemo } from 'react';
-import { collection, query, where, getFirestore } from "firebase/firestore";
+import { useMemo, useState, useEffect } from 'react';
+import { collection, query, where, getFirestore, onSnapshot } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
-import { UserNav } from "@/components/layout/user-nav";
-import { Button } from "@/components/ui/button";
 import { useLocale } from 'next-intl';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
   href: string, 
@@ -61,134 +64,164 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between px-4 py-2.5 my-0.5 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
+        "flex items-center justify-between px-4 py-3.5 my-0.5 cursor-pointer transition-all duration-200 rounded-2xl mx-2 group relative",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-          : 'text-slate-300 hover:bg-slate-800'
+          ? 'bg-primary/10 border-l-0'
+          : 'text-slate-400 hover:bg-white/5 hover:text-white'
       )}
     >
         <div className="flex items-center">
-            <Icon className={cn(
-                "w-4.5 h-4.5 mr-3.5",
-                isActive ? 'text-primary-foreground' : 'text-slate-500 group-hover:text-primary'
-            )} />
-            <span className="font-medium text-sm leading-tight">{label}</span>
+            <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                isActive ? "bg-primary text-slate-950" : "bg-white/5 text-slate-500 group-hover:text-primary"
+            )}>
+                <Icon size={18} />
+            </div>
+            <span className={cn(
+                "ml-4 text-[13px] font-bold uppercase tracking-tight",
+                isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+            )}>
+                {label}
+            </span>
         </div>
         {count !== undefined && count > 0 && (
-            <Badge className="bg-red-500 text-white h-5 px-1.5 text-[10px] font-black border-none">{count}</Badge>
+            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/20 animate-pulse">
+                <span className="text-white text-[9px] font-black">{count}</span>
+            </div>
         )}
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
+        {!count && !isActive && (
+            <ChevronRight size={14} className="text-slate-700 group-hover:text-slate-500 transition-all" />
+        )}
     </Link>
   );
 };
 
 
-export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
+export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
   const db = getFirestore();
   const locale = useLocale();
-  const { currentUser, switchRole, availableRoles } = useRole();
+  const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
   const isInstructor = availableRoles.includes('instructor');
+
+  const [counts, setCounts] = useState({
+      pendingInstructors: 0,
+      pendingCourses: 0,
+      pendingPayouts: 0,
+      openTickets: 0,
+  });
+
+  useEffect(() => {
+    if (currentUser?.role !== 'admin') return;
+
+    const unsubInstructors = onSnapshot(query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)), (snap) => setCounts(prev => ({ ...prev, pendingInstructors: snap.size })));
+    const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Pending Review')), (snap) => setCounts(prev => ({ ...prev, pendingCourses: snap.size })));
+    const unsubPayouts = onSnapshot(query(collection(db, 'payout_requests'), where('status', '==', 'pending')), (snap) => setCounts(prev => ({ ...prev, pendingPayouts: snap.size })));
+    const unsubTickets = onSnapshot(query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')), (snap) => setCounts(prev => ({ ...prev, openTickets: snap.size })));
+
+    return () => { unsubInstructors(); unsubCourses(); unsubPayouts(); unsubTickets(); };
+  }, [db, currentUser]);
 
   const groups = [
     {
-      label: "Pilotage",
+      label: "COCKPIT",
       items: [
         { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Dashboard" },
         { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Statistiques" },
         { href: `/${locale}/admin/monitoring`, icon: Activity, label: "Monitoring" },
-        { href: `/${locale}/admin/test-recommendations`, icon: Zap, label: "Moteur Ndara IA" },
-        { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Assistant IA" },
+        { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Mathias Admin", badge: 'IA' },
       ]
     },
     {
-      label: "Membres",
+      label: "OPÉRATIONS",
       items: [
         { href: `/${locale}/admin/users`, icon: Users, label: "Utilisateurs" },
-        { href: `/${locale}/admin/roles`, icon: Shield, label: "Rôles & Permissions" },
-        { href: `/${locale}/admin/messages`, icon: MessageSquare, label: "Messagerie Centrale" },
-        { href: `/${locale}/admin/affiliates`, icon: Share2, label: "Ambassadeurs" },
-      ]
-    },
-    {
-      label: "PÉDAGOGIE",
-      items: [
-        { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Catalogue Cours" },
         { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
         { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
-        { href: `/${locale}/admin/templates`, icon: BookOpen, label: "Modèles d'images" },
-        { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ / Savoir" },
+        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Support", countId: 'openTickets' },
       ]
     },
     {
-      label: "Marketing & Growth",
-      items: [
-        { href: `/${locale}/admin/marketing`, icon: Target, label: "Campagnes" },
-        { href: `/${locale}/admin/emails`, icon: Mail, label: "Emails" },
-        { href: `/${locale}/admin/gamification`, icon: Trophy, label: "Gamification" },
-      ]
-    },
-    {
-      label: "Finances",
+      label: "FINANCES",
       items: [
         { href: `/${locale}/admin/payments`, icon: CreditCard, label: "Transactions" },
         { href: `/${locale}/admin/payouts`, icon: Landmark, label: "Retraits", countId: 'pendingPayouts' },
       ]
     },
     {
-      label: "Système",
+      label: "CONFIGURATION",
       items: [
-        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Support", countId: 'openTickets' },
-        { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel Accueil" },
-        { href: `/${locale}/admin/seo`, icon: Globe, label: "Gestion SEO" },
-        { href: `/${locale}/admin/settings`, icon: Settings, label: "Configuration" },
-        { href: `/${locale}/admin/logs`, icon: History, label: "Logs d'Audit" },
+        { href: `/${locale}/admin/settings`, icon: Settings, label: "Paramètres" },
+        { href: `/${locale}/admin/roles`, icon: Shield, label: "Rôles" },
+        { href: `/${locale}/admin/logs`, icon: History, label: "Audit Logs" },
       ]
     }
   ];
 
-  const { data: pendingInstructors } = useCollection<any>(
-    useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null, [db, currentUser])
-  );
-
-  const { data: pendingCourses } = useCollection<any>(
-    useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null, [db, currentUser])
-  );
-
-  const { data: pendingPayouts } = useCollection<any>(
-    useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null, [db, currentUser])
-  );
-  
-  const { data: openTickets } = useCollection<any>(
-    useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null, [db, currentUser])
-  );
-
-  const counts = {
-      pendingInstructors: pendingInstructors?.length || 0,
-      pendingCourses: pendingCourses?.length || 0,
-      pendingPayouts: pendingPayouts?.length || 0,
-      openTickets: openTickets?.length || 0,
-  };
-
-  const handleSwitch = (newRole: 'student' | 'instructor') => {
-    switchRole(newRole);
-    onLinkClick();
-  };
-
   return (
-    <div className="flex flex-col h-full bg-[#111827] border-r border-slate-700">
-      <header className="p-4 border-b border-slate-700 flex items-center gap-2 shrink-0">
-        <Image src="/logo.png" width={32} height={32} alt="Logo" className="rounded-full shadow-lg" />
-        <span className="font-black text-lg text-white tracking-tighter uppercase">
-          {siteName.split(' ')[0]} <span className="text-primary">{siteName.split(' ')[1]}</span>
-        </span>
+    <aside className="w-full h-full bg-[#0f172a] border-r border-white/5 flex flex-col shadow-2xl relative overflow-hidden font-sans">
+      <div className="grain-overlay opacity-[0.03]" />
+
+      <header className="px-6 py-8 border-b border-white/5">
+        <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-500/20">
+                    N
+                </div>
+                <div>
+                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">ADMIN</h2>
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Ndara Afrique</p>
+                </div>
+            </div>
+            <button onClick={() => onLinkClick()} className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
+                <X size={20} />
+            </button>
+        </div>
+
+        <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 shadow-xl">
+            <div className="flex items-center gap-4">
+                <Avatar className="h-14 w-14 border-2 border-amber-500/30 shadow-2xl">
+                    <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
+                    <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                        {currentUser?.fullName?.charAt(0)}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-white text-sm truncate uppercase tracking-tight">{currentUser?.fullName}</h3>
+                    <div className="flex items-center gap-1.5 mt-1">
+                        <Shield className="h-3 w-3 text-amber-500" />
+                        <span className="text-amber-500 text-[9px] font-black uppercase tracking-widest">Super Admin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
       </header>
-      
-      <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
-        {groups.map((group, idx) => (
-          <div key={group.label} className={cn("mb-6", idx === groups.length - 1 && "mb-2")}>
-            <p className="px-7 text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-3">
-                {group.label}
-            </p>
+
+      <div className="px-6 py-4 border-b border-white/5 space-y-3">
+          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Navigation Rôles</p>
+          <div className="grid grid-cols-2 gap-2">
+              <button 
+                  onClick={() => { switchRole('student'); onLinkClick(); }}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+              >
+                  <ArrowLeftRight size={12} />
+                  <span>Étudiant</span>
+              </button>
+              {isInstructor && (
+                  <button 
+                      onClick={() => { switchRole('instructor'); onLinkClick(); }}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+                  >
+                      <ArrowLeftRight size={12} />
+                      <span>Formateur</span>
+                  </button>
+              )}
+          </div>
+      </div>
+
+      <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">
+        {groups.map((group) => (
+          <div key={group.label} className="mb-6">
+            <p className="px-8 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-3">{group.label}</p>
             <div className="space-y-0.5">
                 {group.items.map((item) => (
                 <SidebarItem 
@@ -196,7 +229,7 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
                     href={item.href} 
                     icon={item.icon} 
                     label={item.label}
-                    count={(counts as any)[(item as any).countId]}
+                    count={(counts as any)[item.countId || '']}
                     onClick={onLinkClick}
                 />
                 ))}
@@ -205,31 +238,15 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
         ))}
       </nav>
 
-       <footer className="p-4 mt-auto border-t border-slate-700 space-y-3 bg-slate-900/50">
-            <UserNav />
-            <div className="grid grid-cols-2 gap-2">
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-[10px] font-black uppercase tracking-widest gap-1.5 h-9"
-                    onClick={() => handleSwitch('student')}
-                >
-                    <ArrowLeftRight className="h-3 w-3 text-primary" />
-                    Étudiant
-                </Button>
-                {isInstructor && (
-                  <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-[10px] font-black uppercase tracking-widest gap-1.5 h-9"
-                      onClick={() => handleSwitch('instructor')}
-                  >
-                      <ArrowLeftRight className="h-3 w-3 text-primary" />
-                      Formateur
-                  </Button>
-                )}
-            </div>
-       </footer>
-    </div>
+      <footer className="px-6 py-6 border-t border-white/5 bg-black/20">
+          <button 
+              onClick={() => secureSignOut()}
+              className="w-full h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
+          >
+              <LogOut size={16} />
+              <span>Se Déconnecter</span>
+          </button>
+      </footer>
+    </aside>
   );
 }

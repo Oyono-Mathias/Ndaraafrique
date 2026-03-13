@@ -1,9 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Barre latérale Instructeur Ndara Afrique.
- * ✅ RÉSOLU : Liens avec préfixe de locale.
- * ✅ RÉSOLU : type="button" et switchRole sécurisé.
+ * Harmonisée avec le design Elite Qwen.
  */
 
 import React from 'react';
@@ -24,17 +24,19 @@ import {
   ArrowLeftRight,
   Shield,
   FileQuestion,
-  Ticket
+  Ticket,
+  ChevronRight,
+  LogOut,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRole } from "@/context/RoleContext";
 import { UserNav } from "@/components/layout/user-nav";
 import { useLocale } from 'next-intl';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SidebarProps {
-  siteName?: string;
-  logoUrl?: string;
   onLinkClick?: () => void;
 }
 
@@ -49,38 +51,44 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
+        "flex items-center justify-between px-4 py-3.5 my-0.5 cursor-pointer transition-all duration-200 rounded-2xl mx-2 group relative",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-          : 'text-slate-300 hover:bg-slate-800'
+          ? 'bg-primary/10 border-l-0'
+          : 'text-slate-400 hover:bg-white/5 hover:text-white'
       )}
     >
       <div className="flex items-center">
-        <Icon className={cn(
-          "w-5 h-5 mr-4 transition-colors duration-300",
-          isActive ? 'text-primary-foreground' : 'text-slate-500 group-hover:text-primary'
-        )} />
-        <span className="font-medium text-sm leading-tight">{label}</span>
+        <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+            isActive ? "bg-primary text-slate-950" : "bg-white/5 text-slate-500 group-hover:text-primary"
+        )}>
+            <Icon size={18} />
+        </div>
+        <span className={cn(
+            "ml-4 text-[13px] font-bold uppercase tracking-tight",
+            isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+        )}>
+            {label}
+        </span>
       </div>
-      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
+      {!isActive && (
+          <ChevronRight size={14} className="text-slate-700 group-hover:text-slate-500 transition-all" />
+      )}
     </Link>
   );
 };
 
-export function InstructorSidebar({ 
-  siteName = "Ndara Afrique", 
-  logoUrl = "/logo.png", 
-  onLinkClick 
-}: SidebarProps) {
-  const { currentUser, switchRole, availableRoles } = useRole();
+export function InstructorSidebar({ onLinkClick }: SidebarProps) {
+  const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
   const isAdmin = availableRoles.includes('admin');
   const locale = useLocale();
 
   const groups = [
     {
+      label: "GESTION",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: `/${locale}/instructor/dashboard` },
-        { label: "Mes cours", icon: BookOpen, href: `/${locale}/instructor/courses` },
+        { label: "Mes formations", icon: BookOpen, href: `/${locale}/instructor/courses` },
         { label: "Ressources", icon: Folder, href: `/${locale}/instructor/ressources` },
       ]
     },
@@ -95,78 +103,106 @@ export function InstructorSidebar({
       ]
     },
     {
-      label: "PERFORMANCE",
+      label: "RÉSULTATS",
       items: [
         { label: "Étudiants", icon: Users, href: `/${locale}/instructor/students` },
-        { label: "Revenus", icon: BadgeEuro, href: `/${locale}/instructor/revenus` },
+        { label: "Finances", icon: BadgeEuro, href: `/${locale}/instructor/revenus` },
         { label: "Coupons", icon: Ticket, href: `/${locale}/instructor/coupons` },
-        { label: "Certificats", icon: Award, href: `/${locale}/instructor/certificats` },
+        { label: "Diplômes", icon: Award, href: `/${locale}/instructor/certificats` },
       ]
     }
   ];
 
-  const handleSwitchToStudent = () => {
-    switchRole('student');
-    onLinkClick?.();
-  };
-
-  const handleSwitchToAdmin = () => {
-    switchRole('admin');
-    onLinkClick?.();
-  };
-
   return (
-    <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
-      <header className="p-4 border-b border-white/10 flex items-center gap-2">
-        <Image src="/logo.png" width={28} height={28} alt="Ndara Afrique Logo" className="rounded-full" />
-        <span className="font-bold text-lg text-white truncate">
-          {siteName}
-        </span>
+    <aside className="w-full h-full bg-[#0f172a] border-r border-white/5 flex flex-col shadow-2xl relative overflow-hidden font-sans">
+      <div className="grain-overlay opacity-[0.03]" />
+
+      <header className="px-6 py-8 border-b border-white/5">
+        <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">
+                    N
+                </div>
+                <div>
+                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">NDARA</h2>
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Afrique</p>
+                </div>
+            </div>
+            <button onClick={() => onLinkClick?.()} className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
+                <X size={20} />
+            </button>
+        </div>
+
+        <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 shadow-xl">
+            <div className="flex items-center gap-4">
+                <Avatar className="h-14 w-14 border-2 border-primary/30 shadow-2xl">
+                    <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
+                    <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                        {currentUser?.fullName?.charAt(0)}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-white text-sm truncate uppercase tracking-tight">{currentUser?.fullName}</h3>
+                    <p className="text-slate-500 text-[10px] font-bold">@{currentUser?.username}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-xs">🇨🇫</span>
+                        <span className="text-primary text-[9px] font-black uppercase tracking-widest">Expert Formateur</span>
+                    </div>
+                </div>
+            </div>
+        </div>
       </header>
 
-      <nav className="flex-1 py-2 overflow-y-auto custom-scrollbar">
-        {groups.map((group, gIdx) => (
-          <div key={gIdx} className="py-2">
-            {group.label && (
-                <p className="px-4 text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">
-                    {group.label}
-                </p>
-            )}
-            {group.items.map((item) => (
-              <SidebarItem
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                onClick={() => onLinkClick?.()}
-              />
-            ))}
+      <div className="px-6 py-4 border-b border-white/5 space-y-3">
+          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Changer de mode</p>
+          <div className="grid grid-cols-2 gap-2">
+              <button 
+                  onClick={() => { switchRole('student'); onLinkClick?.(); }}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+              >
+                  <ArrowLeftRight size={12} />
+                  <span>Étudiant</span>
+              </button>
+              {isAdmin && (
+                  <button 
+                      onClick={() => { switchRole('admin'); onLinkClick?.(); }}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+                  >
+                      <Shield size={12} />
+                      <span>Cockpit</span>
+                  </button>
+              )}
+          </div>
+      </div>
+
+      <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">
+        {groups.map((group) => (
+          <div key={group.label} className="mb-6">
+            <p className="px-8 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-3">{group.label}</p>
+            <div className="space-y-0.5">
+                {group.items.map((item) => (
+                <SidebarItem 
+                    key={item.href} 
+                    href={item.href} 
+                    icon={item.icon} 
+                    label={item.label}
+                    onClick={() => onLinkClick?.()}
+                />
+                ))}
+            </div>
           </div>
         ))}
       </nav>
 
-      <footer className="p-4 border-t border-white/10 space-y-2">
-          <UserNav />
-          
-          <div className="space-y-2">
-            {isAdmin && (
-                <Button variant="secondary" type="button" className="w-full justify-center gap-2 font-bold" onClick={handleSwitchToAdmin}>
-                    <Shield className="h-4 w-4 text-amber-500" />
-                    Mode Administrateur
-                </Button>
-            )}
-
-            <Button 
-                variant="outline" 
-                type="button"
-                className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold"
-                onClick={handleSwitchToStudent}
-            >
-                <ArrowLeftRight className="h-4 w-4 text-primary" />
-                Mode Étudiant
-            </Button>
-          </div>
+      <footer className="px-6 py-6 border-t border-white/5 bg-black/20">
+          <button 
+              onClick={() => secureSignOut()}
+              className="w-full h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
+          >
+              <LogOut size={16} />
+              <span>Se Déconnecter</span>
+          </button>
       </footer>
-    </div>
+    </aside>
   );
 }
