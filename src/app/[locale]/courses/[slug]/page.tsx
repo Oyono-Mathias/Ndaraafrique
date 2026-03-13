@@ -1,10 +1,11 @@
+
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique V2 (Design Qwen Immersif).
  * ✅ DESIGN : Immersion totale, fond #050505, Drawer latéral Android.
  * ✅ FONCTIONNEL : Progression temps réel, IA Mathias intégrée.
- * ✅ DYNAMIQUE : Suppression des valeurs simulées (durées, index).
+ * ✅ RÉSOLU : Bug d'affichage de la durée (le "0" parasite).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -40,8 +41,6 @@ import {
     Share2, 
     StickyNote,
     PlayCircle,
-    Lock,
-    ChevronRight,
     X,
     ShieldCheck,
     Bookmark,
@@ -174,7 +173,6 @@ function CoursePlayerPageContent() {
     }
   };
 
-  // ✅ CALCUL RÉEL DE L'INDEX DE LA LEÇON
   const currentIndices = useMemo(() => {
       if (!activeLecture) return { section: 0, lesson: 0 };
       let lectureCount = 0;
@@ -222,7 +220,6 @@ function CoursePlayerPageContent() {
       <div className="flex flex-col h-screen bg-[#050505] overflow-hidden font-sans relative">
         <div className="grain-overlay" />
         
-        {/* --- TOP BAR --- */}
         <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-4 safe-area-pt">
             <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition active:scale-90">
                 <ArrowLeft className="h-5 w-5" />
@@ -233,7 +230,6 @@ function CoursePlayerPageContent() {
         </header>
 
         <main className="flex-1 flex flex-col min-h-0 relative z-10">
-            {/* --- VIDEO PLAYER --- */}
             <div className="bg-black relative aspect-video shadow-2xl overflow-hidden flex-shrink-0">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-30">
                     <div 
@@ -244,7 +240,14 @@ function CoursePlayerPageContent() {
 
                 {activeLecture ? (
                     activeLecture.type === 'video' ? (
-                        <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
+                        activeLecture.contentUrl ? (
+                            <BunnyPlayer videoId={activeLecture.contentUrl} />
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center bg-slate-900 p-8 text-center">
+                                <FileVideo className="h-12 w-12 text-slate-700 mb-4" />
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Vidéo en cours de traitement...</p>
+                            </div>
+                        )
                     ) : activeLecture.type === 'youtube' ? (
                         <YoutubePlayer url={activeLecture.contentUrl || ''} />
                     ) : activeLecture.type === 'pdf' ? (
@@ -261,7 +264,6 @@ function CoursePlayerPageContent() {
                 )}
             </div>
 
-            {/* --- CONTENT --- */}
             <ScrollArea className="flex-1">
                 <div className="px-4 py-6 space-y-8 pb-32">
                     
@@ -271,9 +273,9 @@ function CoursePlayerPageContent() {
                                 <ShieldCheck size={12} className="mr-1.5" />
                                 Certifiant
                             </Badge>
-                            {activeLecture?.duration && (
+                            {(activeLecture?.duration ?? 0) > 0 && (
                                 <span className="text-slate-500 text-[10px] font-black font-mono">
-                                    {activeLecture.duration}:00 MIN
+                                    {activeLecture?.duration}:00 MIN
                                 </span>
                             )}
                         </div>
@@ -335,7 +337,6 @@ function CoursePlayerPageContent() {
             </ScrollArea>
         </main>
 
-        {/* --- DRAWER --- */}
         <div className={cn(
             "fixed inset-0 z-[100] transition-all duration-500",
             isCurriculumOpen ? "bg-black/80 backdrop-blur-sm opacity-100" : "opacity-0 pointer-events-none"
@@ -388,7 +389,7 @@ function CoursePlayerPageContent() {
                                                 )}
                                                 <div className="flex-1 min-w-0">
                                                     <p className={cn("text-sm font-bold truncate", isActive ? "text-white" : "text-slate-400")}>{lecture.title}</p>
-                                                    {lecture.duration && <p className="text-[9px] font-black uppercase text-slate-600 tracking-tighter mt-0.5">{lecture.duration}:00</p>}
+                                                    {(lecture.duration ?? 0) > 0 && <p className="text-[9px] font-black uppercase text-slate-600 tracking-tighter mt-0.5">{lecture.duration}:00</p>}
                                                 </div>
                                                 {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                                             </button>

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertCircle, FileVideo } from 'lucide-react';
 import { getVideoToken } from '@/actions/bunnyActions';
 
 interface BunnyPlayerProps {
@@ -11,9 +11,7 @@ interface BunnyPlayerProps {
 
 /**
  * @fileOverview Lecteur Vidéo Ultra-Sécurisé Ndara Afrique.
- * ✅ URLs Signées (Signed URLs) : Accès protégé par jeton éphémère.
- * ✅ Anti-téléchargement : Flags DRM activés.
- * ✅ Style Qwen : Intégration dans le nouveau lecteur hybride.
+ * ✅ RÉSOLU : Gestion robuste des IDs vides ou invalides (Évite le 404 Bunny).
  */
 export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
   const [loading, setLoading] = useState(true);
@@ -22,7 +20,12 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   useEffect(() => {
     const initializeSecurePlayer = async () => {
-      if (!videoId) return;
+      // ✅ Sécurité : Si pas d'ID, on affiche l'état vide au lieu de l'iframe 404
+      if (!videoId || videoId === "0" || videoId === "none") {
+        setLoading(false);
+        setError("VIDE");
+        return;
+      }
       
       setLoading(true);
       setError(null);
@@ -31,6 +34,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
         const result = await getVideoToken(videoId);
         
         if (!result.success || !result.token) {
+            // Fallback si pas de token (version publique ou erreur de signature)
             const fallbackLib = "607753";
             setEmbedUrl(`https://iframe.mediadelivery.net/embed/${fallbackLib}/${videoId}?autoplay=false&disableDownload=true`);
         } else {
@@ -60,11 +64,23 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     );
   }
 
+  if (error === "VIDE") {
+    return (
+      <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-8 text-center">
+        <FileVideo className="h-12 w-12 text-slate-700 mb-4 opacity-50" />
+        <h3 className="text-white font-bold uppercase tracking-tight text-sm">Vidéo absente</h3>
+        <p className="text-slate-500 text-[10px] mt-2 uppercase font-black tracking-widest leading-relaxed">
+            Ce chapitre n'a pas encore de contenu vidéo lié.
+        </p>
+      </div>
+    );
+  }
+
   if (error || !embedUrl) {
     return (
       <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-8 text-center">
         <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-        <h3 className="text-white font-bold uppercase tracking-tight">Accès restreint</h3>
+        <h3 className="text-white font-bold uppercase tracking-tight text-sm">Accès restreint</h3>
         <p className="text-slate-500 text-[10px] mt-2 uppercase font-black tracking-widest leading-relaxed">
             Impossible de valider votre jeton d'accès.
         </p>
