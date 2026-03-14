@@ -82,12 +82,13 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
   const isPublicPage = useMemo(() => {
-    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales', '/leaderboard'];
+    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
     if (publicPaths.includes(cleanPath)) return true;
     if (cleanPath.startsWith('/verify/')) return true;
     if (cleanPath.startsWith('/invite/')) return true;
     if (cleanPath.startsWith('/ref/')) return true;
     if (cleanPath.startsWith('/course/')) return true;
+    if (cleanPath.startsWith('/bourse/checkout/')) return true; // ✅ Autoriser l'accès au détail de l'actif
     return false;
   }, [cleanPath]);
 

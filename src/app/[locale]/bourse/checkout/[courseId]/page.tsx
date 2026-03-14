@@ -4,10 +4,11 @@
  * @fileOverview Tunnel d'acquisition de licence de revente (Marché Secondaire).
  * ✅ DESIGN : Prestige Gold & Emerald.
  * ✅ LOGIQUE : Transfert de propriété définitif après paiement.
+ * ✅ ACCÈS : Public pour la vue des détails, login requis pour l'action.
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import { doc, getFirestore } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
@@ -22,18 +23,22 @@ import {
   Landmark,
   BadgeEuro,
   TrendingUp,
-  Check
+  Check,
+  UserPlus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { purchaseResaleRightsAction } from '@/actions/courseActions';
 import { cn } from '@/lib/utils';
+import { useLocale } from 'next-intl';
 
 export default function BourseCheckoutPage() {
   const params = useParams();
   const courseId = params.courseId as string;
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = useLocale();
   const { user } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
@@ -46,7 +51,14 @@ export default function BourseCheckoutPage() {
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
   const handlePurchase = async () => {
-    if (!user || !course) return;
+    // ✅ Redirection vers login si non connecté
+    if (!user) {
+        toast({ title: "Connexion requise", description: "Veuillez vous identifier pour acquérir cet actif." });
+        router.push(`/${locale}/login?tab=register&redirect=${encodeURIComponent(pathname)}`);
+        return;
+    }
+
+    if (!course) return;
     if (!phoneNumber || phoneNumber.length < 8) {
         toast({ variant: 'destructive', title: "Numéro requis", description: "Veuillez saisir votre numéro Mobile Money." });
         return;
@@ -92,7 +104,7 @@ export default function BourseCheckoutPage() {
                 <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
-                <h1 className="font-black text-xl text-white uppercase tracking-tight">Acquisition d'Actif</h1>
+                <h1 className="font-black text-xl text-white uppercase tracking-tight">Détails de l'Actif</h1>
             </div>
             <div className="w-10" />
         </div>
@@ -101,7 +113,7 @@ export default function BourseCheckoutPage() {
       <main className="pt-24 px-6 max-w-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-1000">
         
         {/* --- LICENSE SUMMARY --- */}
-        <Card className="bg-gradient-to-br from-amber-500/10 to-orange-600/5 border border-amber-500/20 rounded-[2.5rem] p-8 space-y-6 shadow-2xl relative overflow-hidden">
+        <div className="bg-gradient-to-br from-amber-500/10 to-orange-600/5 border border-amber-500/20 rounded-[2.5rem] p-8 space-y-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
                 <BadgeEuro size={80} className="text-amber-500" />
             </div>
@@ -125,7 +137,7 @@ export default function BourseCheckoutPage() {
                     </p>
                 </div>
             </div>
-        </Card>
+        </div>
 
         {/* --- TRANSFER INFO --- */}
         <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4 shadow-xl">
@@ -150,29 +162,51 @@ export default function BourseCheckoutPage() {
         </div>
 
         {/* --- PAYMENT --- */}
-        <section className="space-y-4">
-            <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money pour débit</label>
-            <Input 
-                type="tel" 
-                placeholder="+236 ..." 
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="h-16 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest px-6" 
-            />
-        </section>
+        {user ? (
+            <section className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money pour débit</label>
+                <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
+                        <Smartphone className="h-5 w-5 text-primary" />
+                    </div>
+                    <Input 
+                        type="tel" 
+                        placeholder="+236 ..." 
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="h-16 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest pl-16 px-6 focus-visible:ring-primary/30" 
+                    />
+                </div>
+            </section>
+        ) : (
+            <div className="bg-primary/5 border border-primary/20 rounded-[2rem] p-6 text-center space-y-4">
+                <Lock className="h-8 w-8 text-primary mx-auto opacity-50" />
+                <p className="text-xs text-slate-400 font-medium leading-relaxed italic">
+                    "Connectez-vous à votre compte Ndara pour finaliser l'acquisition de cet actif numérique."
+                </p>
+            </div>
+        )}
 
       </main>
 
       {/* --- FIXED ACTION BAR --- */}
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb">
+      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto space-y-4">
             <Button 
                 onClick={handlePurchase} 
                 disabled={isProcessing || isSuccess}
-                className="w-full h-16 rounded-[2rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl shadow-amber-500/20 active:scale-95 transition-all"
+                className={cn(
+                    "w-full h-16 rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3",
+                    user ? "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20" : "bg-primary hover:bg-primary/90 text-slate-950 shadow-primary/20"
+                )}
             >
-                {isProcessing ? <Loader2 className="h-5 w-5 animate-spin mr-2"/> : <Lock className="h-4 w-4 mr-2" />}
-                SIGNER L'ACQUISITION
+                {isProcessing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                ) : user ? (
+                    <><Lock className="h-4 w-4" /> SIGNER L'ACQUISITION</>
+                ) : (
+                    <><UserPlus className="h-4 w-4" /> SE CONNECTER POUR ACHETER</>
+                )}
             </Button>
         </div>
       </footer>
@@ -195,7 +229,7 @@ export default function BourseCheckoutPage() {
                       </p>
                   </div>
                   <Button 
-                    onClick={() => router.push('/instructor/dashboard')}
+                    onClick={() => router.push(`/${locale}/instructor/dashboard`)}
                     className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
                   >
                       Aller au Dashboard Expert
@@ -205,12 +239,4 @@ export default function BourseCheckoutPage() {
       )}
     </div>
   );
-}
-
-function Card({ children, className }: { children: React.ReactNode, className?: string }) {
-    return (
-        <div className={cn("bg-slate-900 rounded-[2rem] border border-white/5", className)}>
-            {children}
-        </div>
-    );
 }
