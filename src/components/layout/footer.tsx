@@ -2,14 +2,29 @@
 
 /**
  * @fileOverview Footer Ndara Afrique V3 - Design épuré et sécurisant.
+ * ✅ RÉSOLU : Raccordement dynamique aux réseaux sociaux Admin.
  */
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Facebook, Twitter, Linkedin, Instagram, Smartphone, CreditCard, Heart } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Instagram, Smartphone, CreditCard, Heart, Youtube, Send } from 'lucide-react';
 import { useLocale } from 'next-intl';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import type { Settings } from '@/lib/types';
 
 export function Footer() {
   const locale = useLocale();
+  const db = getFirestore();
+  const [socialLinks, setSocialLinks] = useState<Settings['social']>({});
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        if (snap.exists()) {
+            setSocialLinks(snap.data().social || {});
+        }
+    });
+    return () => unsub();
+  }, [db]);
 
   return (
     <footer className="bg-slate-950 pt-20 pb-12 px-6 border-t border-white/5 relative overflow-hidden">
@@ -22,10 +37,12 @@ export function Footer() {
                 </div>
                 
                 <div className="flex justify-center gap-6">
-                    <SocialIcon icon={Facebook} href="#" />
-                    <SocialIcon icon={Twitter} href="#" />
-                    <SocialIcon icon={Linkedin} href="#" />
-                    <SocialIcon icon={Instagram} href="#" />
+                    {socialLinks?.facebookUrl && <SocialIcon icon={Facebook} href={socialLinks.facebookUrl} />}
+                    {socialLinks?.twitterUrl && <SocialIcon icon={Twitter} href={socialLinks.twitterUrl} />}
+                    {socialLinks?.linkedinUrl && <SocialIcon icon={Linkedin} href={socialLinks.linkedinUrl} />}
+                    {socialLinks?.instagramUrl && <SocialIcon icon={Instagram} href={socialLinks.instagramUrl} />}
+                    {socialLinks?.youtubeUrl && <SocialIcon icon={Youtube} href={socialLinks.youtubeUrl} />}
+                    {socialLinks?.telegramUrl && <SocialIcon icon={Send} href={socialLinks.telegramUrl} />}
                 </div>
             </div>
 
@@ -85,7 +102,7 @@ function FooterGroup({ title, links }: { title: string, links: any[] }) {
 
 function SocialIcon({ icon: Icon, href }: { icon: any, href: string }) {
     return (
-        <Link href={href} className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 transition-all active:scale-90 shadow-xl">
+        <Link href={href} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 transition-all active:scale-90 shadow-xl">
             <Icon size={20} />
         </Link>
     );

@@ -2,13 +2,13 @@
 
 /**
  * @fileOverview Centre d'Aide Étudiant Ndara Afrique.
- * Supporte la création de tickets et le contact direct (WhatsApp/Email).
+ * ✅ RÉSOLU : Raccordement dynamique du numéro WhatsApp Admin.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, doc, onSnapshot } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
   LifeBuoy, 
@@ -30,13 +30,30 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { NewTicketForm } from '@/components/support/NewTicketForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import type { SupportTicket } from '@/lib/types';
+import type { SupportTicket, Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export default function StudentSupportPage() {
   const { currentUser } = useRole();
   const db = getFirestore();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [supportSettings, setSupportSettings] = useState({
+      whatsapp: '23675000000',
+      email: 'support@ndara-afrique.com'
+  });
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        if (snap.exists()) {
+            const data = snap.data() as Settings;
+            setSupportSettings({
+                whatsapp: data.general?.supportPhone || '23675000000',
+                email: data.general?.contactEmail || 'support@ndara-afrique.com'
+            });
+        }
+    });
+    return () => unsub();
+  }, [db]);
 
   // 1. Récupération des tickets de l'étudiant
   const ticketsQuery = useMemo(() => 
@@ -70,7 +87,7 @@ export default function StudentSupportPage() {
         {/* --- CONTACT DIRECT --- */}
         <section className="grid gap-3">
             <a 
-              href="https://wa.me/23675000000" 
+              href={`https://wa.me/${supportSettings.whatsapp}?text=Bonjour Mathias, j'ai besoin d'aide sur Ndara Afrique.`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-5 bg-slate-900/50 border border-slate-800 rounded-3xl active:scale-[0.98] transition-all group"
@@ -86,7 +103,7 @@ export default function StudentSupportPage() {
             </a>
 
             <a 
-              href="mailto:support@ndara-afrique.com" 
+              href={`mailto:${supportSettings.email}`} 
               className="flex items-center gap-4 p-5 bg-slate-900/50 border border-slate-800 rounded-3xl active:scale-[0.98] transition-all group"
             >
                 <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center shrink-0">

@@ -4,7 +4,7 @@
  * @fileOverview Centre de Contrôle Global Ndara Afrique.
  * 15 Sections de pilotage en temps réel avec raccordement Firestore complet.
  * ✅ DESIGN : Architecture modulaire par onglets optimisée pour mobile.
- * ✅ RÉSOLU : Toutes les 15 sections sont maintenant implémentées et raccordées.
+ * ✅ RÉSOLU : Ajout de la section Social et renommage WhatsApp.
  */
 
 import { useState, useEffect } from 'react';
@@ -48,13 +48,20 @@ import {
   TrendingUp,
   ShieldAlert,
   Server,
-  Key
+  Key,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Youtube,
+  MessageCircle,
+  Share2
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-// Schéma de validation complet pour les 15 sections
+// Schéma de validation complet
 const settingsSchema = z.object({
   // 1. General
   siteName: z.string().min(2),
@@ -64,6 +71,14 @@ const settingsSchema = z.object({
   defaultLanguage: z.string(),
   defaultCountry: z.string(),
   maintenanceMode: z.boolean(),
+  // Social
+  facebookUrl: z.string().url().optional().or(z.literal('')),
+  instagramUrl: z.string().url().optional().or(z.literal('')),
+  twitterUrl: z.string().url().optional().or(z.literal('')),
+  linkedinUrl: z.string().url().optional().or(z.literal('')),
+  youtubeUrl: z.string().url().optional().or(z.literal('')),
+  telegramUrl: z.string().url().optional().or(z.literal('')),
+  tiktokUrl: z.string().url().optional().or(z.literal('')),
   // 2. Financial
   platformCommission: z.coerce.number().min(0).max(100),
   instructorShare: z.coerce.number().min(0).max(100),
@@ -161,6 +176,15 @@ export default function AdminSettingsPage() {
           defaultLanguage: d.general?.defaultLanguage || 'fr',
           defaultCountry: d.general?.defaultCountry || 'CF',
           maintenanceMode: d.platform?.maintenanceMode || d.general?.maintenanceMode || false,
+          // Social
+          facebookUrl: d.social?.facebookUrl || '',
+          instagramUrl: d.social?.instagramUrl || '',
+          twitterUrl: d.social?.twitterUrl || '',
+          linkedinUrl: d.social?.linkedinUrl || '',
+          youtubeUrl: d.social?.youtubeUrl || '',
+          telegramUrl: d.social?.telegramUrl || '',
+          tiktokUrl: d.social?.tiktokUrl || '',
+          // Financial
           platformCommission: d.commercial?.platformCommission || 20,
           instructorShare: d.commercial?.instructorShare || 70,
           minPayoutThreshold: d.commercial?.minPayoutThreshold || 5000,
@@ -222,6 +246,15 @@ export default function AdminSettingsPage() {
             defaultLanguage: values.defaultLanguage, 
             defaultCountry: values.defaultCountry, 
             maintenanceMode: values.maintenanceMode 
+        },
+        social: {
+            facebookUrl: values.facebookUrl,
+            instagramUrl: values.instagramUrl,
+            twitterUrl: values.twitterUrl,
+            linkedinUrl: values.linkedinUrl,
+            youtubeUrl: values.youtubeUrl,
+            telegramUrl: values.telegramUrl,
+            tiktokUrl: values.tiktokUrl,
         },
         platform: {
             maintenanceMode: values.maintenanceMode,
@@ -386,7 +419,9 @@ export default function AdminSettingsPage() {
                 {/* 1. GENERAL */}
                 <TabsContent value="general" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Identité du site</CardTitle></CardHeader>
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-bold uppercase">Identité & Contact</CardTitle>
+                        </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div className="grid md:grid-cols-2 gap-6">
                                 <FormField control={form.control} name="siteName" render={({ field }) => (
@@ -396,40 +431,57 @@ export default function AdminSettingsPage() {
                                     <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Email Support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                                 )}/>
                             </div>
+                            
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <FormField control={form.control} name="supportPhone" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Numéro WhatsApp Support</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><Smartphone size={16}/></div>
+                                                <Input {...field} placeholder="23675000000" className="h-12 pl-10 bg-slate-950 border-slate-800" />
+                                            </div>
+                                        </FormControl>
+                                        <FormDescription className="text-[10px]">Utilisé pour le lien direct https://wa.me/...</FormDescription>
+                                    </FormItem>
+                                )}/>
+                                <div className="space-y-4 pt-4">
+                                    <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                                            <div><FormLabel className="text-sm font-bold text-white uppercase">Mode Maintenance</FormLabel></div>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                                    )}/>
+                                </div>
+                            </div>
+
                             <FormField control={form.control} name="siteDescription" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description Meta (SEO)</FormLabel><FormControl><Textarea {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
                             )}/>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between p-5 bg-red-500/5 border border-red-500/10 rounded-2xl">
-                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Mode Maintenance</FormLabel><FormDescription className="text-[10px]">Bloque l'accès à tous sauf aux admins.</FormDescription></div>
-                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    </FormItem>
-                                )}/>
-                                <FormField control={form.control} name="allowResaleRights" render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
-                                        <div><FormLabel className="text-sm font-bold text-white uppercase flex items-center gap-2">Bourse du Savoir <TrendingUp size={14}/></FormLabel><FormDescription className="text-[10px]">Active le Marché Secondaire public.</FormDescription></div>
-                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    </FormItem>
-                                )}/>
-                            </div>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <FormField control={form.control} name="allowTeacherToTeacherResale" render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between p-5 bg-slate-800/50 border border-white/5 rounded-2xl">
-                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Marché Libre (Inter-Experts)</FormLabel><FormDescription className="text-[10px]">Autorise la revente directe entre formateurs.</FormDescription></div>
-                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    </FormItem>
-                                )}/>
-                                <FormField control={form.control} name="allowCourseBuyout" render={({ field }) => (
-                                    <FormItem className="flex items-center justify-between p-5 bg-slate-800/50 border border-white/5 rounded-2xl">
-                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Programme de Rachat</FormLabel><FormDescription className="text-[10px]">Permet aux formateurs de vendre à Ndara.</FormDescription></div>
-                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    </FormItem>
-                                )}/>
-                            </div>
+
                             <FormField control={form.control} name="announcementMessage" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Message d'annonce global (Bandeau)</FormLabel><FormControl><Input {...field} placeholder="Ex: Flash Sale : -50% sur tous les cours d'IA ! Sango: ..." className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Bandeau d'alerte global</FormLabel><FormControl><Input {...field} placeholder="Ex: Flash Sale : -50% !" className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                             )}/>
+                        </CardContent>
+                    </Card>
+
+                    {/* --- RÉSEAUX SOCIAUX --- */}
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-bold uppercase flex items-center gap-3">
+                                <Share2 className="text-primary" />
+                                Présence Sociale
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <SocialField control={form.control} name="facebookUrl" label="Facebook" icon={Facebook} />
+                                <SocialField control={form.control} name="instagramUrl" label="Instagram" icon={Instagram} />
+                                <SocialField control={form.control} name="twitterUrl" label="X (Twitter)" icon={Twitter} />
+                                <SocialField control={form.control} name="linkedinUrl" label="LinkedIn" icon={Linkedin} />
+                                <SocialField control={form.control} name="youtubeUrl" label="YouTube" icon={Youtube} />
+                                <SocialField control={form.control} name="telegramUrl" label="Telegram" icon={MessageCircle} />
+                                <SocialField control={form.control} name="tiktokUrl" label="TikTok" icon={Smartphone} />
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -503,8 +555,7 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="courseAutoApproval" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div className="space-y-0.5"><FormLabel className="font-bold uppercase text-xs">Approbation Automatique</FormLabel><FormDescription className="text-[10px]">Publie les cours sans relecture admin.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <div className="grid grid-cols-2 gap-6">
                                 <FormField control={form.control} name="minCoursePrice" render={({ field }) => (
@@ -526,14 +577,12 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="instructorVerificationRequired" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">Vérification Obligatoire</FormLabel><FormDescription className="text-[10px]">Exiger un profil complet et validé.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="instructorAutoApproval" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">Approbation Auto Experts</FormLabel><FormDescription className="text-[10px]">Valider les candidatures sans audit manuel.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="maxCoursesPerUser" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Limite de cours par expert</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
@@ -550,14 +599,12 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="allowRegistration" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">Inscriptions Ouvertes</FormLabel><FormDescription className="text-[10px]">Autoriser les nouveaux comptes.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="emailVerificationRequired" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">Vérification Email</FormLabel><FormDescription className="text-[10px]">Exiger la validation du lien email.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                         </CardContent>
                     </Card>
@@ -571,8 +618,7 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="affiliateEnabled" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">Activer l'Affiliation</FormLabel><FormDescription className="text-[10px]">Activer les liens de parrainage.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <div className="grid grid-cols-2 gap-6">
                                 <FormField control={form.control} name="affiliateCommissionRate" render={({ field }) => (
@@ -594,20 +640,17 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="notifyInApp" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Alertes In-App</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="notifyEmail" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Notifications Email</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="notifySales" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Alertes de Ventes</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                         </CardContent>
                     </Card>
@@ -621,8 +664,7 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="enable2fa" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">2FA (Optionnel)</FormLabel><FormDescription className="text-[10px]">Activer la double authentification.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="maxLoginAttempts" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Tentatives de connexion max</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
@@ -674,8 +716,7 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="conversionTracking" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Tracking de conversion</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                         </CardContent>
                     </Card>
@@ -689,8 +730,7 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="useBunnyCdn" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <div><FormLabel className="font-bold uppercase text-xs">Activer Bunny CDN</FormLabel><FormDescription className="text-[10px]">Utiliser Bunny.net pour les vidéos et assets.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                             )}/>
                             <FormField control={form.control} name="maxFileSizeMb" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Poids max fichier (MB)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
@@ -773,4 +813,20 @@ export default function AdminSettingsPage() {
       </Form>
     </div>
   );
+}
+
+function SocialField({ control, name, label, icon: Icon }: { control: any, name: string, label: string, icon: any }) {
+    return (
+        <FormField control={control} name={name} render={({ field }) => (
+            <FormItem>
+                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">{label}</FormLabel>
+                <FormControl>
+                    <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icon size={16}/></div>
+                        <Input {...field} placeholder="https://..." className="h-12 pl-10 bg-slate-950 border-slate-800" />
+                    </div>
+                </FormControl>
+            </FormItem>
+        )}/>
+    );
 }

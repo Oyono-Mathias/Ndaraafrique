@@ -421,6 +421,15 @@ export interface Settings {
     defaultCountry?: string;
     maintenanceMode: boolean;
   };
+  social?: {
+    facebookUrl?: string;
+    instagramUrl?: string;
+    twitterUrl?: string;
+    linkedinUrl?: string;
+    youtubeUrl?: string;
+    telegramUrl?: string;
+    tiktokUrl?: string;
+  };
   platform?: {
     allowTeacherToTeacherResale?: boolean;
     allowCourseBuyout?: boolean;
