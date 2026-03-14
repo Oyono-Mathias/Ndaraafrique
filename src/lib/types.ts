@@ -1,6 +1,7 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
+export type PaymentProvider = 'moneroo' | 'mesomb' | 'virtual';
 
 export interface NotificationPreferences {
   newPayouts?: boolean;
@@ -585,6 +586,7 @@ export interface Payment {
   courseTitle?: string;
   amount: number;
   currency: string;
+  provider: PaymentProvider;
   date: Timestamp | FieldValue;
   status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
   refundedAt?: Timestamp | FieldValue;
