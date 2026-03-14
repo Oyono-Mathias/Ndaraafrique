@@ -3,13 +3,14 @@
 /**
  * @fileOverview RoleProvider Ndara Afrique.
  * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
- * ✅ RÉSOLU : Navigation switchRole optimisée pour le routage i18n.
+ * ✅ PRIORITÉ DES RÔLES : Admin > Instructor > Student.
+ * ✅ RÉSOLU : Redirection automatique vers le dashboard prioritaire.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { signOut, getAuth, onIdTokenChanged } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -56,7 +57,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     router.push(`/${locale}`);
   }, [db, router, locale]);
 
-  // 🌍 DÉTECTION GÉOGRAPHIQUE AUTO
   const detectGeoLocation = useCallback(async (userId: string) => {
     try {
         const res = await fetch('https://ipapi.co/json/');
@@ -69,7 +69,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             });
         }
     } catch (e) {
-        console.warn("Geolocation auto-detect failed, using defaults.");
+        console.warn("Geolocation auto-detect failed.");
     }
   }, [db]);
 
@@ -124,19 +124,24 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          // ✅ AUTO-DETECT SI PAYS MANQUANT
           if (!userData.countryCode || !userData.countryName) {
               detectGeoLocation(user.uid);
           }
           
           const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || userData.role === 'admin';
           
+          // 1. Définir tous les rôles disponibles pour cet utilisateur
           const roles: UserRole[] = ['student'];
           if (isMasterAdmin) {
               roles.push('instructor', 'admin');
           } else if (userData.role === 'instructor' || userData.isInstructorApproved) {
               roles.push('instructor');
           }
+
+          // 2. Définir le rôle prioritaire (Admin > Instructor > Student)
+          let priorityRole: UserRole = 'student';
+          if (roles.includes('admin')) priorityRole = 'admin';
+          else if (roles.includes('instructor')) priorityRole = 'instructor';
 
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain);
 
@@ -154,11 +159,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
+          // 3. Déterminer le rôle actif : priorité au choix sauvegardé, sinon au rôle prioritaire
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
-              setRole(resolvedUser.role);
+              setRole(priorityRole);
+              localStorage.setItem('ndaraafrique-role', priorityRole);
           }
 
         } else {

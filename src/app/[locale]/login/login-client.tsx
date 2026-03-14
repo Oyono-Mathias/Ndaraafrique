@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ GESTION REDIRECTION : Supporte le paramètre 'redirect'.
+ * ✅ GESTION REDIRECTION : Utilise la priorité de rôle du contexte (Admin > Instructor > Student).
  * ✅ GESTION PARRAINAGE : Attribution persistante via localStorage ou URL.
  */
 
@@ -84,7 +83,7 @@ export default function LoginClient() {
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
-  const { user, isUserLoading, role } = useRole();
+  const { user, isUserLoading, role, loading } = useRole();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -96,18 +95,26 @@ export default function LoginClient() {
     defaultValues: { fullName: '', email: '', password: '', terms: false },
   });
 
+  // ✅ LOGIQUE DE REDIRECTION PRIORITAIRE
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!isUserLoading && !loading && user && role) {
       if (redirectUrl) {
           router.push(decodeURIComponent(redirectUrl));
           return;
       }
-      const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+      
+      // On redirige vers le dashboard correspondant au rôle actif résolu par le contexte
+      // Le contexte a déjà calculé la priorité (Admin > Instructor > Student)
+      const target = role === 'admin' 
+        ? '/admin' 
+        : role === 'instructor' 
+            ? '/instructor/dashboard' 
+            : '/student/dashboard';
+            
       router.push(`/${locale}${target}`);
     }
-  }, [user, isUserLoading, role, router, locale, redirectUrl]);
+  }, [user, isUserLoading, loading, role, router, locale, redirectUrl]);
 
-  // ✅ RÉCUPÉRATION DU PARRAIN (REFERRED BY)
   const getStoredReferrer = () => {
       if (referralId) return referralId;
       if (typeof window === 'undefined') return null;
