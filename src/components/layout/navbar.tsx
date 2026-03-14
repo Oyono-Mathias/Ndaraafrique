@@ -36,8 +36,10 @@ export function Navbar() {
                 </Link>
 
                 <div className="flex items-center gap-4">
-                    <Link href={`/${locale}/bourse`} className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:text-white transition-colors mr-4">
-                        <TrendingUp size={14} /> Bourse
+                    <Link href={`/${locale}/bourse`} className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:text-white transition-colors mr-4 relative group">
+                        <TrendingUp size={14} className="group-hover:scale-110 transition-transform" /> 
+                        Bourse
+                        <span className="absolute -top-3 -right-2 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-sm animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">HOT</span>
                     </Link>
                     <Link href={`/${locale}/login`} className="hidden md:block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white transition-colors">Se connecter</Link>
                     
@@ -59,16 +61,18 @@ export function Navbar() {
                                     </SheetClose>
                                 </header>
                                 
-                                <nav className="flex-1 p-8 space-y-8">
+                                <nav className="flex-1 p-8 space-y-8 overflow-y-auto">
                                     <MobileNavLink href={`/${locale}/search`}>Formations</MobileNavLink>
-                                    <MobileNavLink href={`/${locale}/bourse`}>Bourse du Savoir</MobileNavLink>
+                                    <Link href={`/${locale}/bourse`} className="flex items-center gap-3 text-3xl font-black text-primary hover:text-white transition-colors uppercase tracking-tighter">
+                                        Bourse <Badge className="bg-red-500 text-white border-none text-[10px] py-0 px-2 h-5">HOT</Badge>
+                                    </Link>
                                     <MobileNavLink href={`/${locale}/about`}>Notre Vision</MobileNavLink>
                                     <MobileNavLink href={`/${locale}/abonnements`}>Abonnements</MobileNavLink>
                                     <MobileNavLink href={`/${locale}/devenir-instructeur`}>Devenir Formateur</MobileNavLink>
                                 </nav>
 
                                 <footer className="p-8 space-y-4 pb-12">
-                                    <Button asChild className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl">
+                                    <Button asChild className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 active:scale-95 transition-all">
                                         <Link href={`/${locale}/login?tab=register`}>Commencer Gratuitement</Link>
                                     </Button>
                                     <Link href={`/${locale}/login`} className="block text-center text-slate-500 font-bold uppercase text-[10px] tracking-widest py-2">Déjà membre ? Connexion</Link>

@@ -4,6 +4,7 @@ import { Stats } from '@/components/landing/Stats';
 import { Categories } from '@/components/landing/Categories';
 import { PopularCourses } from '@/components/landing/PopularCourses';
 import { FintechSection } from '@/components/landing/FintechSection';
+import { BourseIntroSection } from '@/components/landing/BourseIntroSection';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { InstructorCTASection } from '@/components/landing/InstructorCTASection';
 import { Navbar } from '@/components/layout/navbar';
@@ -33,6 +34,7 @@ export default function LandingPage({ params: { locale } }: Props) {
         <Stats />
         <Categories />
         <PopularCourses />
+        <BourseIntroSection />
         <FintechSection />
         <TestimonialsSection />
         <InstructorCTASection />
