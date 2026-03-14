@@ -7,34 +7,32 @@ import type { Settings } from '@/lib/types';
 interface UpdateSettingsParams {
   settings: Partial<Settings>;
   adminId: string;
-  targetDoc?: string; // Permet de cibler settings/general, settings/platform, etc.
 }
 
+/**
+ * @fileOverview Met à jour les réglages globaux de la plateforme.
+ * Les réglages sont organisés en sections (general, commercial, platform, etc.)
+ */
 export async function updateGlobalSettings({
   settings,
-  adminId,
-  targetDoc = 'global'
+  adminId
 }: UpdateSettingsParams): Promise<{ success: boolean; error?: string }> {
   try {
     const db = getAdminDb();
     const batch = db.batch();
     
-    // Mise à jour du document cible (ex: settings/general)
-    const settingsRef = db.collection('settings').doc(targetDoc);
+    const settingsRef = db.collection('settings').doc('global');
+    
+    // On fusionne les réglages existants avec les nouveaux
     batch.set(settingsRef, settings, { merge: true });
 
-    // Conserver aussi une copie dans 'global' pour la compatibilité descendante du reste de l'app
-    if (targetDoc !== 'global') {
-        const globalRef = db.collection('settings').doc('global');
-        batch.set(globalRef, settings, { merge: true });
-    }
-
+    // Journalisation de l'audit stratégique
     const auditLogRef = db.collection('admin_audit_logs').doc();
     batch.set(auditLogRef, {
       adminId,
       eventType: 'settings.update',
-      target: { id: targetDoc, type: 'settings' },
-      details: `Settings for '${targetDoc}' were updated by admin ${adminId}.`,
+      target: { id: 'global', type: 'settings' },
+      details: `La configuration globale du système a été modifiée par l'administrateur.`,
       timestamp: FieldValue.serverTimestamp(),
     });
 
@@ -43,6 +41,6 @@ export async function updateGlobalSettings({
 
   } catch (error: any) {
     console.error("Error updating settings:", error);
-    return { success: false, error: "Une erreur est survenue lors de la sauvegarde : " + (error.message || "Base de données non connectée") };
+    return { success: false, error: "Une erreur est survenue lors de la sauvegarde : " + (error.message || "Erreur base de données") };
   }
 }

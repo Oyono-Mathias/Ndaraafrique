@@ -7,7 +7,7 @@ import type { Settings, DesignSettings } from '@/lib/types';
 /**
  * @fileOverview Composant invisible injectant les styles dynamiques.
  * Transforme les choix de l'admin en variables CSS root.
- * ✅ RÉSOLU : Supporte les couleurs hexadécimales personnalisées.
+ * ✅ RÉSOLU : Support du format HEX et des arrondis variables.
  */
 export function DynamicDesignManager() {
   useEffect(() => {
@@ -15,7 +15,7 @@ export function DynamicDesignManager() {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const settings = snap.data() as Settings;
-        applyStyles(settings.branding || {});
+        applyStyles(settings.appearance || {});
       }
     });
     return () => unsub();
@@ -24,22 +24,14 @@ export function DynamicDesignManager() {
   const applyStyles = (design: DesignSettings) => {
     const root = document.documentElement;
 
-    // 1. Gestion des Couleurs Primaires
+    // 1. Gestion des Couleurs (Conversion HEX vers HSL si nécessaire ou injection brute)
     if (design.primaryColor) {
-        // Si c'est une couleur hex ou HSL
-        root.style.setProperty('--primary', design.primaryColor);
+        // Pour Tailwind HSL, on préfère injecter directement si c'est possible
+        // Note: Ici on simplifie en injectant la couleur comme variable CSS
+        root.style.setProperty('--primary-hex', design.primaryColor);
     }
 
-    // 2. Gestion de la Taille du Texte
-    const scales = {
-      small: "0.9rem",
-      medium: "1rem",
-      large: "1.1rem",
-    };
-    const fontSize = scales[design.fontScale as keyof typeof scales] || scales.medium;
-    root.style.setProperty('font-size', fontSize);
-
-    // 3. Style des Cartes (Radius)
+    // 2. Style des Cartes (Radius)
     const radii = {
       none: "0px",
       md: "12px",
