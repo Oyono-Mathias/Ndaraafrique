@@ -9,7 +9,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
-import { doc, getFirestore, updateDoc, increment } from 'firebase/firestore';
+import { doc, getFirestore, updateDoc, increment, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
 import { cn } from '@/lib/utils';
+import { useLocale } from 'next-intl';
 
 type Provider = 'orange' | 'mtn' | 'wave' | 'virtual';
 
@@ -44,6 +45,7 @@ export default function CheckoutPage() {
   const slug = params.slug as string;
   const router = useRouter();
   const pathname = usePathname();
+  const locale = useLocale();
   const { user, currentUser } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
@@ -365,5 +367,3 @@ function ProviderBtn({ active, onClick, label, color, initials, darkText = false
         </button>
     );
 }
-
-import { setDoc, serverTimestamp } from 'firebase/firestore';
