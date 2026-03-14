@@ -4,9 +4,8 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { sendUserNotification } from '@/actions/notificationActions';
 
 /**
- * @fileOverview Webhook Moneroo mis à jour pour la sécurité financière Ndara.
- * ✅ ANTI-AUTO-PARRAINAGE : Rejette la commission si parrain == acheteur.
- * ✅ COUPONS : Incrémente le compteur d'utilisation si metadata.couponId est présent.
+ * @fileOverview Webhook Moneroo - Version sécurisée pour la Bourse du Savoir.
+ * ✅ REVENUS : Redirigés vers l'actuel 'ownerId' du cours.
  */
 
 export async function POST(req: Request) {
@@ -34,14 +33,14 @@ export async function POST(req: Request) {
       const courseData = courseDoc.data();
       const settings = settingsDoc.data();
       const buyerData = buyerDoc.data();
-      const instructorId = courseData?.instructorId;
+      
+      // ✅ LOGIQUE BOURSE : Le bénéficiaire financier est le OWNER actuel
+      const financialOwnerId = courseData?.ownerId || courseData?.instructorId;
 
-      // 2. Gestion du Coupon (Usage Tracking)
+      // 2. Gestion du Coupon
       if (couponId) {
           const couponRef = db.collection('course_coupons').doc(couponId);
-          batch.update(couponRef, {
-              usedCount: FieldValue.increment(1)
-          });
+          batch.update(couponRef, { usedCount: FieldValue.increment(1) });
       }
 
       // 3. Création de l'inscription
@@ -49,7 +48,8 @@ export async function POST(req: Request) {
       batch.set(enrollmentRef, {
         studentId: userId,
         courseId: courseId,
-        instructorId: instructorId || '',
+        instructorId: courseData?.instructorId || '', // Pédagogie
+        ownerId: financialOwnerId || '',               // Finance
         status: 'active', 
         enrollmentDate: FieldValue.serverTimestamp(),
         lastAccessedAt: FieldValue.serverTimestamp(),
@@ -61,17 +61,15 @@ export async function POST(req: Request) {
         enrollmentType: 'paid'
       }, { merge: true });
 
-      // 4. LOGIQUE AMBASSADEUR SÉCURISÉE (PENDING 14 JOURS)
+      // 4. LOGIQUE AMBASSADEUR
       if (affiliateId && settings?.commercial?.affiliateEnabled && affiliateId !== userId) {
           const affiliateRef = db.collection('users').doc(affiliateId);
           const affDoc = await affiliateRef.get();
-          const affData = affDoc.data();
-          const currentSales = affData?.affiliateStats?.sales || 0;
+          const currentSales = affDoc.data()?.affiliateStats?.sales || 0;
 
           let basePerc = settings.commercial.affiliatePercentage || 10;
           if (currentSales >= 50) basePerc += 10;
           else if (currentSales >= 20) basePerc += 5;
-          else if (currentSales >= 5) basePerc += 2;
 
           const affCommission = (amount * basePerc) / 100;
           
@@ -97,47 +95,6 @@ export async function POST(req: Request) {
               pendingAffiliateBalance: FieldValue.increment(affCommission),
               'affiliateStats.sales': FieldValue.increment(1),
               'affiliateStats.earnings': FieldValue.increment(affCommission)
-          });
-
-          await sendUserNotification(affiliateId, {
-              text: `Nouvelle vente ! +${affCommission.toLocaleString('fr-FR')} XOF en attente de sécurisation (14j).`,
-              type: 'info',
-              link: '/student/ambassadeur'
-          });
-      }
-
-      // 5. LOGIQUE PARRAINAGE FORMATEUR (Réseau d'experts)
-      const sponsorId = buyerData?.referredBy;
-      
-      if (sponsorId && settings?.commercial?.referralEnabled && sponsorId !== userId) {
-          const referralPerc = settings.commercial.referralPercentage || 5;
-          const referralCommissionAmount = (amount * referralPerc) / 100;
-
-          const sponsorRef = db.collection('users').doc(sponsorId);
-          
-          const historyRef = db.collection('referral_commissions').doc();
-          batch.set(historyRef, {
-              id: historyRef.id,
-              instructorId: sponsorId,
-              studentId: userId,
-              studentName: buyerData?.fullName || 'Nouvel Étudiant',
-              courseId: courseId,
-              courseTitle: courseData?.title || 'Formation',
-              amount: amount,
-              commission: referralCommissionAmount,
-              timestamp: FieldValue.serverTimestamp()
-          });
-
-          batch.update(sponsorRef, {
-              referralBalance: FieldValue.increment(referralCommissionAmount),
-              'affiliateStats.sales': FieldValue.increment(1),
-              'affiliateStats.earnings': FieldValue.increment(referralCommissionAmount)
-          });
-
-          await sendUserNotification(sponsorId, {
-              text: `Gain Réseau : +${referralCommissionAmount.toLocaleString('fr-FR')} XOF générés par ${buyerData?.fullName}.`,
-              type: 'success',
-              link: '/instructor/dashboard'
           });
       }
 

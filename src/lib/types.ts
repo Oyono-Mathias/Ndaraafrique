@@ -115,6 +115,11 @@ export interface NdaraUser {
       sales: number;
       earnings: number;
   };
+  // ✅ SUBSCRIPTION INFRASTRUCTURE
+  marketAccess?: {
+      isActive: boolean;
+      expiresAt: Timestamp | FieldValue | null;
+  };
   socialLinks?: {
       website?: string;
       twitter?: string;
@@ -262,7 +267,11 @@ export interface Course {
     courseId?: string; 
     title: string;
     description: string;
-    instructorId: string;
+    // ✅ NEW SEPARATION OF ROLES
+    creatorId: string;      // Original author (immutable)
+    ownerId: string;        // Current financial beneficiary
+    instructorId: string;   // Current pedagogical manager
+    
     category: string;
     price: number;
     originalPrice?: number;
@@ -440,6 +449,12 @@ export interface Settings {
     allowYoutube?: boolean;
     allowBunny?: boolean;
     resaleRightsPercentage?: number;
+    // ✅ MARKET SETTINGS
+    market?: {
+        subscriptionRequired: boolean;
+        subscriptionPrice: number;
+        minimumLicensePrice: number;
+    };
   };
   commercial: {
     platformCommission: number;

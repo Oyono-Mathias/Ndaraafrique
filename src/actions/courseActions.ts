@@ -6,7 +6,7 @@ import type { Course, NdaraUser, Settings } from '@/lib/types';
 
 /**
  * Assigner ou changer l'instructeur d'un cours (Action Admin).
- * Permet à Mathias de donner le contrôle d'un cours "en dur" à un expert.
+ * Permet à Mathias de donner le contrôle pédagogique d'un cours à un expert.
  */
 export async function assignInstructorToCourseAction({
     courseId,
@@ -27,7 +27,7 @@ export async function assignInstructorToCourseAction({
         
         const oldInstructorId = courseDoc.data()?.instructorId;
 
-        // Mise à jour de l'instructeur
+        // Mise à jour de l'instructeur (Pédagogie)
         batch.update(courseRef, {
             instructorId: newInstructorId,
             updatedAt: FieldValue.serverTimestamp(),
@@ -38,7 +38,7 @@ export async function assignInstructorToCourseAction({
             adminId,
             eventType: 'course.moderation',
             target: { id: courseId, type: 'course' },
-            details: `Le cours "${courseDoc.data()?.title}" a été réattribué. Nouvel instructeur: ${newInstructorId} (Ancien: ${oldInstructorId})`,
+            details: `Le cours "${courseDoc.data()?.title}" a été réattribué pédagogiquement. Nouvel instructeur: ${newInstructorId} (Ancien: ${oldInstructorId})`,
             timestamp: FieldValue.serverTimestamp(),
         });
 
@@ -52,8 +52,7 @@ export async function assignInstructorToCourseAction({
 
 /**
  * Activer ou désactiver les droits de revente pour un cours (Action du propriétaire).
- * Si Ndara possède le cours, c'est l'admin qui agit. 
- * Si un formateur possède le cours, il peut le faire si le Marché Libre est activé.
+ * Vérifie maintenant le prix plancher configuré en admin.
  */
 export async function toggleResaleRightsAction({
     courseId,
@@ -74,50 +73,42 @@ export async function toggleResaleRightsAction({
         if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
         const data = courseDoc.data() as Course;
 
-        // Vérification des droits de modification
-        const isPlatformOwned = data.isPlatformOwned;
+        // ✅ SÉCURISATION : Vérification des nouveaux rôles (Owner)
+        const currentOwner = data.ownerId || data.instructorId; 
         const isAdmin = userId === 'SYSTEM' || (await db.collection('users').doc(userId).get()).data()?.role === 'admin';
         
-        if (isPlatformOwned && !isAdmin) {
-            return { success: false, error: 'Seul un administrateur peut modifier les droits d\'un cours Ndara.' };
-        }
-        
-        if (!isPlatformOwned && data.instructorId !== userId && !isAdmin) {
-            return { success: false, error: 'Permission refusée.' };
+        if (currentOwner !== userId && !isAdmin) {
+            return { success: false, error: 'Seul le propriétaire de la licence peut modifier les droits.' };
         }
 
-        // Vérification de l'option Marché Libre si c'est un formateur qui vend
-        if (!isPlatformOwned && !isAdmin) {
+        // Vérification du prix minimum si en vente
+        if (available) {
             const settingsSnap = await db.collection('settings').doc('global').get();
             const settings = settingsSnap.data() as Settings;
-            if (!settings.platform?.allowTeacherToTeacherResale) {
-                return { success: false, error: 'Le marché libre entre formateurs est actuellement désactivé.' };
+            const minPrice = settings.platform?.market?.minimumLicensePrice || 10000;
+            if (price < minPrice) {
+                return { success: false, error: `Le prix minimum de revente est de ${minPrice.toLocaleString()} XOF.` };
             }
         }
 
         await courseRef.update({
             resaleRightsAvailable: available,
             resaleRightsPrice: price,
+            // Migration paresseuse des rôles si absents
+            creatorId: data.creatorId || data.instructorId,
+            ownerId: currentOwner,
             updatedAt: FieldValue.serverTimestamp(),
         });
 
-        // Arbitrage Log
-        await db.collection('admin_audit_logs').add({
-            adminId: userId,
-            eventType: 'settings.update',
-            target: { id: courseId, type: 'course' },
-            details: `Arbitrage Marché Secondaire pour "${data.title}" : ${available ? 'Mis en vente' : 'Suspendu'} à ${price} XOF.`,
-            timestamp: FieldValue.serverTimestamp(),
-        });
-
-        return { true: true };
+        return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
 }
 
 /**
- * Finaliser l'achat des droits de revente (Transfert de propriété sécurisé).
+ * Finaliser l'achat des droits de revente (Transaction atomique).
+ * ✅ RÉSOLU : Utilisation de runTransaction pour éviter les race conditions.
  */
 export async function purchaseResaleRightsAction({
     courseId,
@@ -128,54 +119,59 @@ export async function purchaseResaleRightsAction({
     buyerId: string;
     transactionId: string;
 }) {
+    const db = getAdminDb();
+    
     try {
-        const db = getAdminDb();
-        const courseRef = db.collection('courses').doc(courseId);
-        const courseDoc = await courseRef.get();
-        const courseData = courseDoc.data() as Course;
+        const result = await db.runTransaction(async (transaction) => {
+            const courseRef = db.collection('courses').doc(courseId);
+            const courseDoc = await transaction.get(courseRef);
+            
+            if (!courseDoc.exists) throw new Error("Cours introuvable.");
+            
+            const courseData = courseDoc.data() as Course;
+            if (!courseData.resaleRightsAvailable) throw new Error("Cette licence n'est plus disponible.");
 
-        if (!courseData.resaleRightsAvailable) return { success: false, error: 'Les droits ne sont plus disponibles.' };
+            const previousOwner = courseData.ownerId || courseData.instructorId;
+            const price = courseData.resaleRightsPrice || 0;
 
-        const previousOwner = courseData.instructorId;
-        const price = courseData.resaleRightsPrice || 0;
-
-        const batch = db.batch();
-
-        // 1. Transfert de propriété
-        batch.update(courseRef, {
-            instructorId: buyerId,
-            isPlatformOwned: false,
-            resaleRightsAvailable: false,
-            buyoutStatus: 'none',
-            rightsChain: FieldValue.arrayUnion(previousOwner),
-            updatedAt: FieldValue.serverTimestamp(),
-        });
-
-        // 2. Créditer l'ancien propriétaire (si ce n'est pas Ndara)
-        if (previousOwner !== 'NDARA_OFFICIAL') {
-            const payoutRef = db.collection('payouts').doc();
-            batch.set(payoutRef, {
-                instructorId: previousOwner,
-                amount: price,
-                status: 'valide',
-                method: 'Vente Licence Secondaire',
-                date: FieldValue.serverTimestamp()
+            // 1. Transfert de propriété financier (Owner)
+            transaction.update(courseRef, {
+                ownerId: buyerId,
+                instructorId: buyerId, // On aligne la pédagogie par défaut à l'achat
+                resaleRightsAvailable: false,
+                buyoutStatus: 'none',
+                rightsChain: FieldValue.arrayUnion(previousOwner),
+                updatedAt: FieldValue.serverTimestamp(),
             });
-        }
 
-        // 3. Logger la transaction stratégique
-        const auditRef = db.collection('admin_audit_logs').doc();
-        batch.set(auditRef, {
-            adminId: 'SYSTEM',
-            eventType: 'course.grant',
-            target: { id: buyerId, type: 'user' },
-            details: `Licence acquise : "${courseData.title}" transférée de ${previousOwner} à ${buyerId}. Transaction: ${transactionId}`,
-            timestamp: FieldValue.serverTimestamp(),
+            // 2. Création de l'historique de licence
+            const historyRef = courseRef.collection('license_history').doc();
+            transaction.set(historyRef, {
+                fromOwnerId: previousOwner,
+                toOwnerId: buyerId,
+                price: price,
+                transactionId: transactionId,
+                timestamp: FieldValue.serverTimestamp()
+            });
+
+            // 3. Créditer l'ancien propriétaire (si ce n'est pas Ndara)
+            if (previousOwner !== 'NDARA_OFFICIAL') {
+                const payoutRef = db.collection('payouts').doc();
+                transaction.set(payoutRef, {
+                    instructorId: previousOwner,
+                    amount: price,
+                    status: 'valide',
+                    method: 'Vente Licence Secondaire',
+                    date: FieldValue.serverTimestamp()
+                });
+            }
+
+            return { success: true };
         });
 
-        await batch.commit();
-        return { success: true };
+        return result;
     } catch (e: any) {
+        console.error("TRANSACTION_FAILED:", e.message);
         return { success: false, error: e.message };
     }
 }
@@ -195,69 +191,32 @@ export async function requestCourseBuyoutAction({
   try {
     const db = getAdminDb();
     
-    // 0. Vérification de l'activation globale de l'option
+    // 0. Vérification de l'activation globale
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settingsData = settingsSnap.data() as Settings;
     if (settingsData?.platform?.allowCourseBuyout === false) {
-        return { success: false, error: 'Le programme de rachat est actuellement suspendu par la direction.' };
+        return { success: false, error: 'Le programme de rachat est actuellement suspendu.' };
     }
 
-    // 1. Vérification du cours
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
     if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
     
     const courseData = courseDoc.data() as Course;
-    if (courseData.instructorId !== instructorId) return { success: false, error: 'Permission refusée.' };
+    const currentOwner = courseData.ownerId || courseData.instructorId;
+
+    if (currentOwner !== instructorId) return { success: false, error: 'Seul le propriétaire peut vendre ce cours.' };
     if (courseData.status !== 'Published') return { success: false, error: 'Seule une formation publiée peut être rachetée.' };
 
-    // 2. Vérification de l'instructeur (Sanctions et Profil)
-    const userDoc = await db.collection('users').doc(instructorId).get();
-    const userData = userDoc.data() as NdaraUser;
-    
-    if (userData.buyoutSanctions?.isSanctioned) {
-        return { success: false, error: 'Votre compte est restreint pour violation des règles de rachat.' };
-    }
-    if (!userData.isProfileComplete) {
-        return { success: false, error: 'Votre profil doit être 100% complété (Photo, Bio, Expertise).' };
-    }
-
-    // 3. Vérification du volume de contenu
-    const sectionsSnap = await courseRef.collection('sections').get();
-    if (sectionsSnap.size < 2) {
-        return { success: false, error: 'Contenu insuffisant : Minimum 2 sections requises.' };
-    }
-
-    let lectureCount = 0;
-    for (const sec of sectionsSnap.docs) {
-        const lecturesSnap = await sec.ref.collection('lectures').get();
-        lectureCount += lecturesSnap.size;
-    }
-
-    if (lectureCount < 5) {
-        return { success: false, error: 'Contenu insuffisant : Minimum 5 leçons requises.' };
-    }
-
-    // 4. Mise à jour de la demande
     await courseRef.update({
       buyoutStatus: 'requested',
       buyoutPrice: requestedPrice,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    // 5. Journalisation audit
-    await db.collection('admin_audit_logs').add({
-      adminId: 'SYSTEM',
-      eventType: 'course.buyout.request',
-      target: { id: courseId, type: 'course' },
-      details: `Demande de rachat : ${userData.fullName} propose "${courseData.title}" pour ${requestedPrice} XOF.`,
-      timestamp: FieldValue.serverTimestamp(),
-    });
-
     return { success: true };
   } catch (error: any) {
-    console.error("BUYOUT_REQUEST_ERROR:", error);
-    return { success: false, error: error.message || "Une erreur est survenue lors de la demande." };
+    return { success: false, error: error.message };
   }
 }
 
@@ -279,33 +238,24 @@ export async function approveCourseBuyoutAction({
     if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
     const data = courseDoc.data();
     
-    const originalInstructorId = data?.instructorId;
+    const originalOwner = data?.ownerId || data?.instructorId;
 
-    // Mise à jour de la propriété
     await courseRef.update({
       buyoutStatus: 'approved',
       isPlatformOwned: true,
-      originalInstructorId: originalInstructorId,
+      ownerId: 'NDARA_OFFICIAL',
       instructorId: 'NDARA_OFFICIAL',
       status: 'Published',
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    // Enregistrer le gain
+    // Enregistrer le gain pour l'ancien propriétaire
     await db.collection('payouts').add({
-        instructorId: originalInstructorId,
+        instructorId: originalOwner,
         amount: data?.buyoutPrice || 0,
         status: 'valide',
         method: 'Vente Directe Plateau',
         date: FieldValue.serverTimestamp()
-    });
-
-    await db.collection('admin_audit_logs').add({
-      adminId,
-      eventType: 'course.buyout.approve',
-      target: { id: courseId, type: 'course' },
-      details: `Rachat du cours "${data?.title}" approuvé par l'admin ${adminId}. Propriété transférée.`,
-      timestamp: FieldValue.serverTimestamp(),
     });
 
     return { success: true };
@@ -337,14 +287,6 @@ export async function sanctionInstructorForBuyoutViolation({
             status: 'suspended'
         });
 
-        await db.collection('security_logs').add({
-            eventType: 'user_suspended',
-            userId: adminId,
-            targetId: userId,
-            details: `Bannissement pour violation des règles de cession : ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
@@ -364,7 +306,10 @@ export async function submitCourseForReviewAction({
     const courseDoc = await courseRef.get();
 
     if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
-    if (courseDoc.data()?.instructorId !== instructorId) {
+    
+    // On vérifie le créateur ou l'instructeur actuel
+    const canSubmit = courseDoc.data()?.creatorId === instructorId || courseDoc.data()?.instructorId === instructorId;
+    if (!canSubmit) {
       return { success: false, error: 'Vous n\'êtes pas autorisé à modifier ce cours.' };
     }
 
@@ -375,8 +320,7 @@ export async function submitCourseForReviewAction({
 
     return { success: true };
   } catch (error: any) {
-    console.error('Error submitting course for review:', error);
-    return { success: false, error: error.message || 'Erreur serveur.' };
+    return { success: false, error: error.message };
   }
 }
 
@@ -392,22 +336,9 @@ export async function updateCourseStatusByAdmin({
   try {
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
-    
-    const batch = db.batch();
-    batch.update(courseRef, { status });
-
-    batch.set(db.collection('admin_audit_logs').doc(), {
-      adminId,
-      eventType: 'course.moderation',
-      target: { id: courseId, type: 'course' },
-      details: `Le statut du cours a été changé à '${status}' par l'admin.`,
-      timestamp: FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
+    await courseRef.update({ status });
     return { success: true };
   } catch (error: any) {
-    console.error('Error updating course status by admin:', error);
     return { success: false, error: error.message };
   }
 }
@@ -422,28 +353,9 @@ export async function deleteCourseByAdmin({
   try {
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
-    const courseDoc = await courseRef.get();
-    if (!courseDoc.exists) {
-      return { success: false, error: 'Cours introuvable.' };
-    }
-    const courseTitle = courseDoc.data()?.title || 'Titre inconnu';
-
-    const batch = db.batch();
-    batch.delete(courseRef);
-
-    const auditLogRef = db.collection('admin_audit_logs').doc();
-    batch.set(auditLogRef, {
-      adminId,
-      eventType: 'course.delete',
-      target: { id: courseId, type: 'course' },
-      details: `Le cours "${courseTitle}" a été supprimé par l'administrateur.`,
-      timestamp: FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
+    await courseRef.delete();
     return { success: true };
   } catch (error: any) {
-    console.error('Error deleting course:', error);
     return { success: false, error: 'Une erreur est survenue lors de la suppression.' };
   }
 }

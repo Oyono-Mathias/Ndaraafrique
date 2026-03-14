@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 /**
  * @fileOverview Actions serveur pour les instructeurs.
- * Gère la création et la mise à jour des cours avec une gestion d'erreurs précise.
+ * ✅ RÉSOLU : Initialisation correcte des rôles (Creator/Owner/Instructor).
  */
 
 const CourseFormSchema = z.object({
@@ -42,7 +42,11 @@ export async function createCourseAction({ formData, instructorId }: { formData:
       imageUrl: data.imageUrl,
       id: newCourseRef.id,
       courseId: newCourseRef.id,
+      // ✅ SÉPARATION DES RÔLES À LA CRÉATION
+      creatorId: instructorId,
+      ownerId: instructorId,
       instructorId: instructorId,
+      
       status: 'Draft',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -55,16 +59,9 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
-    console.error("CREATE_COURSE_ERROR:", error);
-    
-    let userMessage = `Erreur lors de l'enregistrement : ${error.message}`;
-    if (error.message.includes('CONFIGURATION_MANQUANTE')) {
-        userMessage = "Configuration serveur incomplète (Clé API manquante).";
-    }
-
     return { 
       success: false, 
-      message: userMessage 
+      message: `Erreur lors de l'enregistrement : ${error.message}` 
     };
   }
 }
@@ -98,7 +95,6 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
         
         return { success: true };
     } catch (error: any) {
-        console.error("UPDATE_COURSE_ERROR:", error);
         return { success: false, message: `Erreur lors de la mise à jour : ${error.message}` };
     }
 }
