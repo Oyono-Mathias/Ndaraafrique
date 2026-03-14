@@ -3,6 +3,7 @@
 /**
  * @fileOverview Onglet de gestion des droits et cessions.
  * Permet de vendre à Ndara OU de mettre en vente sur le Marché Secondaire.
+ * ✅ TEMPS RÉEL : Synchronisé avec l'état de la Bourse du Savoir.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { ShoppingCart, CheckCircle2, Loader2, Coins, AlertCircle, ListChecks, Ban, Clock, BadgeEuro, ArrowLeftRight } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Loader2, Coins, AlertCircle, ListChecks, Ban, Clock, BadgeEuro, ArrowLeftRight, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/RoleContext';
 import { requestCourseBuyoutAction, toggleResaleRightsAction } from '@/actions/courseActions';
@@ -78,7 +79,7 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
         if (!currentUser || !agreed || !canAct) return;
         setIsSubmitting(true);
         const result = await requestCourseBuyoutAction({ courseId: course.id, instructorId: currentUser.uid, requestedPrice: buyoutPrice });
-        if (result.success) toast({ title: "Demande transmise !" });
+        if (result.success) toast({ title: "Demande de rachat transmise !" });
         else toast({ variant: 'destructive', title: "Erreur", description: result.error });
         setIsSubmitting(false);
     };
@@ -86,9 +87,20 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
     const handleTogglePublicResale = async (available: boolean) => {
         if (!currentUser || !canAct) return;
         setIsSubmitting(true);
-        const result = await toggleResaleRightsAction({ courseId: course.id, price: resalePrice, available, userId: currentUser.uid });
-        if (result.success) toast({ title: available ? "Licence mise en vente !" : "Vente de licence annulée" });
-        else toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        const result = await toggleResaleRightsAction({ 
+            courseId: course.id, 
+            price: resalePrice, 
+            available, 
+            userId: currentUser.uid 
+        });
+        if (result.success) {
+            toast({ 
+                title: available ? "Actif listé en Bourse !" : "Actif retiré", 
+                description: available ? "Votre formation est maintenant négociable sur le marché secondaire." : "La licence n'est plus disponible à l'achat public."
+            });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        }
         setIsSubmitting(false);
     };
 
@@ -97,7 +109,7 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
             <Card className="bg-primary/5 border-primary/20 rounded-[2.5rem] p-12 text-center space-y-4">
                 <Clock className="h-12 w-12 text-primary mx-auto animate-pulse" />
                 <h3 className="text-xl font-bold text-white uppercase">Audit en cours</h3>
-                <p className="text-slate-400">Ndara Afrique examine votre contenu pour finaliser le rachat.</p>
+                <p className="text-slate-400">Ndara Afrique examine votre contenu pour finaliser le rachat direct.</p>
             </Card>
         );
     }
@@ -106,66 +118,96 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
         <div className="max-w-3xl mx-auto space-y-8 pb-20">
             <Card className="bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden">
                 <CardHeader className="bg-slate-800/30 p-6 border-b border-white/5">
-                    <CardTitle className="text-sm font-black uppercase text-slate-400 flex items-center gap-2"><ListChecks className="h-4 w-4"/> Critères d'éligibilité</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-[0.2em]"><ListChecks className="h-4 w-4"/> Éligibilité Financière</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 grid sm:grid-cols-3 gap-4">
                     {checklist.map((item, i) => (
-                        <div key={i} className={cn("p-3 rounded-xl border text-center", item.valid ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400" : "bg-red-500/5 border-red-500/20 text-red-400")}>
-                            {item.valid ? <CheckCircle2 className="h-4 w-4 mx-auto mb-1"/> : <AlertCircle className="h-4 w-4 mx-auto mb-1"/>}
-                            <p className="text-[10px] font-bold uppercase">{item.label}</p>
+                        <div key={i} className={cn("p-4 rounded-2xl border text-center transition-all", item.valid ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/5" : "bg-red-500/5 border-red-500/20 text-red-400")}>
+                            {item.valid ? <CheckCircle2 className="h-5 w-5 mx-auto mb-2"/> : <AlertCircle className="h-5 w-5 mx-auto mb-2"/>}
+                            <p className="text-[9px] font-black uppercase tracking-widest">{item.label}</p>
                         </div>
                     ))}
                 </CardContent>
             </Card>
 
-            <Tabs defaultValue="buyout" className="w-full">
+            <Tabs defaultValue="public" className="w-full">
                 <TabsList className="bg-slate-900 border-slate-800 p-1 rounded-2xl h-14 w-full">
-                    <TabsTrigger value="buyout" className="flex-1 rounded-xl font-bold uppercase text-[10px] gap-2">
-                        <ShoppingCart className="h-4 w-4" /> Vendre à Ndara
+                    <TabsTrigger value="public" className="flex-1 rounded-xl font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-amber-500 data-[state=active]:text-black transition-all">
+                        <TrendingUp className="h-4 w-4" /> La Bourse (Marché Public)
                     </TabsTrigger>
-                    {platformSettings.allowTeacherToTeacher && (
-                        <TabsTrigger value="public" className="flex-1 rounded-xl font-bold uppercase text-[10px] gap-2">
-                            <BadgeEuro className="h-4 w-4" /> Marché Secondaire
-                        </TabsTrigger>
-                    )}
+                    <TabsTrigger value="buyout" className="flex-1 rounded-xl font-black uppercase text-[10px] tracking-widest gap-2">
+                        <ShoppingCart className="h-4 w-4" /> Vente Directe (Ndara)
+                    </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="buyout" className="mt-6">
-                    <Card className={cn("bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden", !canAct && "opacity-40 grayscale pointer-events-none")}>
-                        <CardHeader className="bg-primary/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-black text-white uppercase">Cession à la Plateforme</CardTitle></CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                <TabsContent value="public" className="mt-6 animate-in slide-in-from-bottom-4 duration-500">
+                    <Card className={cn("bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative", !canAct && "opacity-40 grayscale pointer-events-none")}>
+                        <div className="absolute top-0 right-0 p-6 opacity-5"><BadgeEuro size={120} /></div>
+                        <CardHeader className="bg-amber-500/10 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                                <BadgeEuro className="text-amber-500" /> 
+                                Mise en vente sur le Marché Secondaire
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-8">
+                            <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl space-y-2">
+                                <p className="text-xs font-bold text-amber-200/80 uppercase">Principe de la Licence</p>
+                                <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
+                                    "En activant cette option, vous permettez à un investisseur d'acquérir les droits de cette formation. Vous recevez le prix fixé, et l'acheteur devient le nouveau bénéficiaire des revenus futurs."
+                                </p>
+                            </div>
+
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Prix de rachat souhaité (XOF)</Label>
-                                <Input type="number" value={buyoutPrice} onChange={(e) => setBuyoutPrice(Number(e.target.value))} className="h-14 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black" />
+                                <div className="flex justify-between items-end">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Prix de la Licence (XOF)</Label>
+                                    <span className="text-[10px] font-black text-amber-500 uppercase">Recommandé : +150k</span>
+                                </div>
+                                <Input 
+                                    type="number" 
+                                    value={resalePrice} 
+                                    onChange={(e) => setResalePrice(Number(e.target.value))} 
+                                    className="h-16 bg-slate-950 border-slate-800 rounded-xl text-3xl font-black text-white px-6 focus-visible:ring-amber-500/30" 
+                                />
                             </div>
-                            <div className="flex items-start gap-3 p-4 bg-slate-950/50 rounded-2xl border border-white/5">
-                                <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} />
-                                <Label htmlFor="agree" className="text-xs text-slate-400 leading-relaxed cursor-pointer">Je cède mes droits à Ndara Afrique et m'engage à ne plus exploiter ce contenu ailleurs.</Label>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Button 
+                                    onClick={() => handleTogglePublicResale(true)} 
+                                    disabled={isSubmitting || course.resaleRightsAvailable} 
+                                    className="h-16 rounded-[1.5rem] bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs tracking-widest shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
+                                >
+                                    {isSubmitting ? <Loader2 className="animate-spin" /> : course.resaleRightsAvailable ? "ACTIF EN BOURSE" : "LISTER EN BOURSE"}
+                                </Button>
+                                {course.resaleRightsAvailable && (
+                                    <Button 
+                                        onClick={() => handleTogglePublicResale(false)} 
+                                        variant="outline" 
+                                        className="h-16 rounded-[1.5rem] border-slate-800 bg-slate-900 font-black uppercase text-[10px] tracking-widest text-red-400 active:scale-95"
+                                    >
+                                        RETIRER DU MARCHÉ
+                                    </Button>
+                                )}
                             </div>
-                            <Button onClick={handleBuyoutRequest} disabled={isSubmitting || !agreed || !canAct} className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30">
-                                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Envoyer l'offre à Ndara"}
-                            </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="public" className="mt-6">
-                    <Card className={cn("bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden", !canAct && "opacity-40 grayscale pointer-events-none")}>
-                        <CardHeader className="bg-amber-500/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-black text-white uppercase">Vente de Licence au Public</CardTitle></CardHeader>
+                <TabsContent value="buyout" className="mt-6 animate-in slide-in-from-bottom-4 duration-500">
+                    <Card className={cn("bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl", !canAct && "opacity-40 grayscale pointer-events-none")}>
+                        <CardHeader className="bg-primary/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-black text-white uppercase">Cession à Ndara Afrique</CardTitle></CardHeader>
                         <CardContent className="p-8 space-y-6">
-                            <p className="text-sm text-slate-400 leading-relaxed">Proposez votre licence de revente directement aux investisseurs et aux autres Ndara. Vous recevrez le paiement dès qu'un acheteur finalise la transaction.</p>
+                            <p className="text-sm text-slate-400 leading-relaxed font-medium">L'administration rachète votre cours pour enrichir son catalogue officiel. Paiement immédiat après audit.</p>
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Prix de la Licence (XOF)</Label>
-                                <Input type="number" value={resalePrice} onChange={(e) => setResalePrice(Number(e.target.value))} className="h-14 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black" />
+                                <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Prix de rachat souhaité (XOF)</Label>
+                                <Input type="number" value={buyoutPrice} onChange={(e) => setBuyoutPrice(Number(e.target.value))} className="h-14 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black text-white" />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Button onClick={() => handleTogglePublicResale(true)} disabled={isSubmitting || course.resaleRightsAvailable} className="h-14 rounded-2xl bg-amber-500 text-black font-black uppercase text-[10px] tracking-widest">
-                                    {course.resaleRightsAvailable ? "Déjà en vente" : "Mettre en vente"}
-                                </Button>
-                                {course.resaleRightsAvailable && (
-                                    <Button onClick={() => handleTogglePublicResale(false)} variant="outline" className="h-14 rounded-2xl border-slate-800 font-black uppercase text-[10px] tracking-widest text-red-400">Retirer du marché</Button>
-                                )}
+                            <div className="flex items-start gap-3 p-5 bg-slate-950/50 rounded-2xl border border-white/5">
+                                <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} className="mt-1" />
+                                <Label htmlFor="agree" className="text-xs text-slate-400 leading-relaxed cursor-pointer font-medium italic">Je certifie être l'unique auteur de ce contenu et accepte de céder l'intégralité de mes droits de propriété intellectuelle à Ndara Afrique.</Label>
                             </div>
+                            <Button onClick={handleBuyoutRequest} disabled={isSubmitting || !agreed || !canAct} className="w-full h-16 rounded-[1.5rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 active:scale-95">
+                                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "PROPOSER LE RACHAT"}
+                            </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>
