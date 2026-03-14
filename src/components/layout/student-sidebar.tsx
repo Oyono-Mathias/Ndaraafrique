@@ -1,10 +1,8 @@
-
 "use client";
 
 /**
  * @fileOverview Barre latérale Étudiant Ndara Afrique - Design Qwen Elite.
- * ✅ STYLE : Harmonisé avec Admin & Instructor (Elite Forest & Wealth).
- * ✅ NAVIGATION : Groupements logiques et sélecteur de rôle intégré.
+ * ✅ NAVIGATION : Inclusion de la Bourse du Savoir.
  */
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -30,7 +28,8 @@ import {
   Search,
   Bell,
   LifeBuoy,
-  UserCircle
+  UserCircle,
+  TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore } from "firebase/firestore";
@@ -131,6 +130,7 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
       items: [
         { href: `/${locale}/student/dashboard`, icon: LayoutDashboard, label: "Tableau de Bord" },
         { href: `/${locale}/search`, icon: Search, label: "Catalogue" },
+        { href: `/${locale}/bourse`, icon: TrendingUp, label: "Bourse du Savoir", badge: "HOT" },
         { href: `/${locale}/student/courses`, icon: BookOpen, label: 'Mes Cours' },
         { href: `/${locale}/student/tutor`, icon: Bot, label: 'Mathias IA', badge: 'IA' },
       ],

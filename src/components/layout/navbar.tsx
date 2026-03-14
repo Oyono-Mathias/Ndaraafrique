@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, TrendingUp } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useLocale } from 'next-intl';
 
@@ -36,6 +36,9 @@ export function Navbar() {
                 </Link>
 
                 <div className="flex items-center gap-4">
+                    <Link href={`/${locale}/bourse`} className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:text-white transition-colors mr-4">
+                        <TrendingUp size={14} /> Bourse
+                    </Link>
                     <Link href={`/${locale}/login`} className="hidden md:block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white transition-colors">Se connecter</Link>
                     
                     <Sheet>
@@ -58,6 +61,7 @@ export function Navbar() {
                                 
                                 <nav className="flex-1 p-8 space-y-8">
                                     <MobileNavLink href={`/${locale}/search`}>Formations</MobileNavLink>
+                                    <MobileNavLink href={`/${locale}/bourse`}>Bourse du Savoir</MobileNavLink>
                                     <MobileNavLink href={`/${locale}/about`}>Notre Vision</MobileNavLink>
                                     <MobileNavLink href={`/${locale}/abonnements`}>Abonnements</MobileNavLink>
                                     <MobileNavLink href={`/${locale}/devenir-instructeur`}>Devenir Formateur</MobileNavLink>
