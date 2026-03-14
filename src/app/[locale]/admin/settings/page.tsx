@@ -4,6 +4,7 @@
  * @fileOverview Réglages Globaux Ndara Afrique.
  * Pilotage complet de la plateforme via 10 onglets thématiques.
  * Android-first Design & Vintage Aesthetic.
+ * ✅ CEO FEATURE: Téléversement d'images (Logo, BG) et gestion des contacts.
  */
 
 import { useState, useEffect } from 'react';
@@ -23,6 +24,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { 
   Settings as SettingsIcon, 
   Loader2, 
@@ -36,18 +38,33 @@ import {
   Lock,
   Bot,
   Trophy,
-  Landmark
+  Landmark,
+  ImageIcon,
+  UploadCloud,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Instagram,
+  Smartphone,
+  MapPin
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const settingsSchema = z.object({
   siteName: z.string().min(2, "Nom requis"),
   slogan: z.string().optional(),
   contactEmail: z.string().email("Email invalide"),
   supportPhone: z.string().optional(),
+  address: z.string().optional(),
   logoUrl: z.string().url().or(z.literal('')).optional(),
   logoMobileUrl: z.string().url().or(z.literal('')).optional(),
+  loginBackgroundImage: z.string().url().or(z.literal('')).optional(),
+  facebookUrl: z.string().url().or(z.literal('')).optional(),
+  twitterUrl: z.string().url().or(z.literal('')).optional(),
+  linkedinUrl: z.string().url().or(z.literal('')).optional(),
+  instagramUrl: z.string().url().or(z.literal('')).optional(),
   maintenanceMode: z.boolean().default(false),
   allowUserSignup: z.boolean().default(true),
   allowInstructorSignup: z.boolean().default(true),
@@ -81,6 +98,7 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -114,8 +132,14 @@ export default function AdminSettingsPage() {
           slogan: d.general?.slogan || '',
           contactEmail: d.general?.contactEmail || '',
           supportPhone: d.general?.supportPhone || '',
+          address: d.general?.address || '',
           logoUrl: d.general?.logoUrl || '',
           logoMobileUrl: d.general?.logoMobileUrl || '',
+          loginBackgroundImage: d.general?.loginBackgroundImage || '',
+          facebookUrl: d.general?.facebookUrl || '',
+          twitterUrl: d.general?.twitterUrl || '',
+          linkedinUrl: d.general?.linkedinUrl || '',
+          instagramUrl: d.general?.instagramUrl || '',
           maintenanceMode: d.platform?.maintenanceMode || false,
           allowUserSignup: d.platform?.allowUserSignup ?? true,
           allowInstructorSignup: d.platform?.allowInstructorSignup ?? true,
@@ -145,6 +169,30 @@ export default function AdminSettingsPage() {
     return () => unsubscribe();
   }, [db, form]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof SettingsValues) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    setUploadingField(fieldName);
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', currentUser.uid);
+        formData.append('folder', 'branding');
+
+        const response = await fetch('/api/storage/upload', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        form.setValue(fieldName, data.url);
+        toast({ title: "Fichier mis en ligne !" });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Erreur", description: error.message });
+    } finally {
+        setUploadingField(null);
+    }
+  };
+
   const onSubmit = async (values: SettingsValues) => {
     if (!currentUser) return;
     setIsSaving(true);
@@ -159,8 +207,14 @@ export default function AdminSettingsPage() {
             slogan: values.slogan, 
             contactEmail: values.contactEmail, 
             supportPhone: values.supportPhone, 
+            address: values.address,
             logoUrl: values.logoUrl, 
-            logoMobileUrl: values.logoMobileUrl 
+            logoMobileUrl: values.logoMobileUrl,
+            loginBackgroundImage: values.loginBackgroundImage,
+            facebookUrl: values.facebookUrl,
+            twitterUrl: values.twitterUrl,
+            linkedinUrl: values.linkedinUrl,
+            instagramUrl: values.instagramUrl
           },
           platform: { 
             maintenanceMode: values.maintenanceMode, 
@@ -271,24 +325,77 @@ export default function AdminSettingsPage() {
 
             <main className="px-4 max-w-5xl mx-auto space-y-8">
                 
-                <TabsContent value="general" className="space-y-6">
+                <TabsContent value="general" className="space-y-10">
+                    {/* --- IDENTITÉ DE MARQUE --- */}
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Identité de Marque</CardTitle></CardHeader>
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Identité Nominale</CardTitle></CardHeader>
                         <CardContent className="p-8 space-y-8">
                             <div className="grid md:grid-cols-2 gap-8">
                                 <FormField control={form.control} name="siteName" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom du site</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom de la Plateforme</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="slogan" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Slogan</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Slogan de la Marque</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
                                 )}/>
                             </div>
-                            <div className="grid md:grid-cols-2 gap-8">
+                        </CardContent>
+                    </Card>
+
+                    {/* --- IDENTITÉ VISUELLE --- */}
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-primary/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Visuels & Branding</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-8">
+                            <div className="grid sm:grid-cols-3 gap-8">
+                                <ImageUploadField 
+                                    label="Logo Desktop" 
+                                    value={form.watch('logoUrl')} 
+                                    onUpload={(e) => handleFileUpload(e, 'logoUrl')} 
+                                    isUploading={uploadingField === 'logoUrl'} 
+                                />
+                                <ImageUploadField 
+                                    label="Logo Mobile" 
+                                    value={form.watch('logoMobileUrl')} 
+                                    onUpload={(e) => handleFileUpload(e, 'logoMobileUrl')} 
+                                    isUploading={uploadingField === 'logoMobileUrl'} 
+                                />
+                                <ImageUploadField 
+                                    label="Fond Connexion" 
+                                    value={form.watch('loginBackgroundImage')} 
+                                    onUpload={(e) => handleFileUpload(e, 'loginBackgroundImage')} 
+                                    isUploading={uploadingField === 'loginBackgroundImage'} 
+                                    aspect="video"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* --- CONTACTS & RÉSEAUX --- */}
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Contacts & Réseaux Sociaux</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-8">
+                            <div className="grid md:grid-cols-3 gap-6">
                                 <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Email Officiel</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><Mail size={12}/> Email Officiel</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="supportPhone" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Support WhatsApp</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><Smartphone size={12}/> Support WhatsApp</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="address" render={({ field }) => (
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><MapPin size={12}/> Siège Social</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                )}/>
+                            </div>
+                            <div className="grid md:grid-cols-4 gap-6 pt-4 border-t border-white/5">
+                                <FormField control={form.control} name="facebookUrl" render={({ field }) => (
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><Facebook size={12}/> Facebook</FormLabel><FormControl><Input {...field} placeholder="https://..." className="h-10 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="twitterUrl" render={({ field }) => (
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><Twitter size={12}/> Twitter / X</FormLabel><FormControl><Input {...field} placeholder="https://..." className="h-10 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><Linkedin size={12}/> LinkedIn</FormLabel><FormControl><Input {...field} placeholder="https://..." className="h-10 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="instagramUrl" render={({ field }) => (
+                                    <FormItem><FormLabel className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500"><Instagram size={12}/> Instagram</FormLabel><FormControl><Input {...field} placeholder="https://..." className="h-10 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
                                 )}/>
                             </div>
                         </CardContent>
@@ -323,6 +430,7 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
+                {/* --- Reste des onglets conservés à l'identique pour la stabilité --- */}
                 <TabsContent value="commercial" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-primary/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Économie Ndara</CardTitle></CardHeader>
@@ -477,4 +585,37 @@ export default function AdminSettingsPage() {
       </Form>
     </div>
   );
+}
+
+function ImageUploadField({ label, value, onUpload, isUploading, aspect = "square" }: { label: string, value?: string, onUpload: (e: any) => void, isUploading: boolean, aspect?: "square" | "video" }) {
+    return (
+        <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">{label}</label>
+            <div className={cn(
+                "relative bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden group flex items-center justify-center",
+                aspect === "square" ? "aspect-square" : "aspect-video"
+            )}>
+                {value ? (
+                    <Image src={value} alt={label} fill className="object-contain p-2" />
+                ) : (
+                    <ImageIcon className="h-8 w-8 text-slate-800" />
+                )}
+                
+                {isUploading ? (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                        <UploadCloud size={24} />
+                        <span className="text-[8px] font-black uppercase mt-2">Téléverser</span>
+                        <input type="file" className="hidden" accept="image/*" onChange={onUpload} />
+                    </label>
+                )}
+            </div>
+            {value && (
+                <p className="text-[8px] font-mono text-slate-600 truncate">{value}</p>
+            )}
+        </div>
+    );
 }

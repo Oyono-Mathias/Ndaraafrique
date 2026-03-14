@@ -410,6 +410,7 @@ export interface Settings {
     logoUrl?: string;
     logoMobileUrl?: string;
     faviconUrl?: string;
+    loginBackgroundImage?: string;
     socialShareImageUrl?: string;
     contactEmail: string;
     supportPhone?: string;
