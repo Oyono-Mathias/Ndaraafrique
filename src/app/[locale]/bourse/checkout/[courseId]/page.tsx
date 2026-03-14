@@ -7,7 +7,7 @@
  * ✅ ACCÈS : Public pour la vue des détails, login requis pour l'action.
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { doc, getFirestore } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -24,7 +24,8 @@ import {
   BadgeEuro,
   TrendingUp,
   Check,
-  UserPlus
+  UserPlus,
+  Smartphone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
