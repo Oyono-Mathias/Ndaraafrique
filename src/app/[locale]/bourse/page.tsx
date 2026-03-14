@@ -18,9 +18,12 @@ import { Button } from '@/components/ui/button';
 import { ResaleCard } from '@/components/cards/ResaleCard';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { useLocale } from 'next-intl';
 
 export default function BourseSavoirPage() {
     const db = getFirestore();
+    const locale = useLocale();
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -171,7 +174,7 @@ export default function BourseSavoirPage() {
                         </div>
                     </div>
                     <Button variant="outline" asChild className="h-14 rounded-xl border-slate-800 bg-slate-950 font-black uppercase text-[10px] tracking-widest px-10 active:scale-95 transition-all">
-                        <Link href="/fr/cgu">Consulter les clauses</Link>
+                        <Link href={`/${locale}/cgu`}>Consulter les clauses</Link>
                     </Button>
                 </section>
             </main>
