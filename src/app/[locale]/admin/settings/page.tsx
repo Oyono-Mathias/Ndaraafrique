@@ -4,7 +4,7 @@
  * @fileOverview Centre de Contrôle Global Ndara Afrique.
  * 15 Sections de pilotage en temps réel avec raccordement Firestore complet.
  * ✅ DESIGN : Architecture modulaire par onglets optimisée pour mobile.
- * ✅ RÉSOLU : Ajout du contrôle global allowResaleRights.
+ * ✅ RÉSOLU : Toutes les 15 sections sont maintenant implémentées et raccordées.
  */
 
 import { useState, useEffect } from 'react';
@@ -45,12 +45,16 @@ import {
   ShieldCheck,
   ChevronRight,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  ShieldAlert,
+  Server,
+  Key
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
-// Schéma de validation géant pour les 15 sections
+// Schéma de validation complet pour les 15 sections
 const settingsSchema = z.object({
   // 1. General
   siteName: z.string().min(2),
@@ -176,7 +180,7 @@ export default function AdminSettingsPage() {
           allowRegistration: d.students?.allowRegistration ?? true,
           emailVerificationRequired: d.students?.emailVerification ?? true,
           affiliateEnabled: d.affiliate?.enabled ?? true,
-          affiliateCommissionRate: d.affiliate?.commissionRate || 10,
+          affiliateCommissionRate: d.affiliate?.commissionRate || d.commercial?.affiliatePercentage || 10,
           cookieDurationDays: d.affiliate?.cookieDurationDays || 30,
           notifyEmail: d.notifications?.enableEmail ?? true,
           notifyInApp: d.notifications?.enableInApp ?? true,
@@ -514,6 +518,119 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
+                {/* 5. INSTRUCTORS */}
+                <TabsContent value="instructors" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Gestion des Experts</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="instructorVerificationRequired" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">Vérification Obligatoire</FormLabel><FormDescription className="text-[10px]">Exiger un profil complet et validé.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="instructorAutoApproval" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">Approbation Auto Experts</FormLabel><FormDescription className="text-[10px]">Valider les candidatures sans audit manuel.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="maxCoursesPerUser" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Limite de cours par expert</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 6. STUDENTS */}
+                <TabsContent value="students" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Espace Ndara (Étudiants)</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="allowRegistration" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">Inscriptions Ouvertes</FormLabel><FormDescription className="text-[10px]">Autoriser les nouveaux comptes.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="emailVerificationRequired" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">Vérification Email</FormLabel><FormDescription className="text-[10px]">Exiger la validation du lien email.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 7. AFFILIATE */}
+                <TabsContent value="affiliate" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Système Ambassadeur</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="affiliateEnabled" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">Activer l'Affiliation</FormLabel><FormDescription className="text-[10px]">Activer les liens de parrainage.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <div className="grid grid-cols-2 gap-6">
+                                <FormField control={form.control} name="affiliateCommissionRate" render={({ field }) => (
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Taux Commission (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="cookieDurationDays" render={({ field }) => (
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Durée Cookie (Jours)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                                )}/>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 8. NOTIFICATIONS */}
+                <TabsContent value="notifications" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Centre d'Alertes</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="notifyInApp" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <FormLabel className="font-bold uppercase text-xs">Alertes In-App</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="notifyEmail" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <FormLabel className="font-bold uppercase text-xs">Notifications Email</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="notifySales" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <FormLabel className="font-bold uppercase text-xs">Alertes de Ventes</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 9. SECURITY */}
+                <TabsContent value="security" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Sécurité Avancée</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="enable2fa" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">2FA (Optionnel)</FormLabel><FormDescription className="text-[10px]">Activer la double authentification.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="maxLoginAttempts" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Tentatives de connexion max</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 {/* 10. APPEARANCE */}
                 <TabsContent value="appearance" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
@@ -546,6 +663,42 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
+                {/* 11. ANALYTICS */}
+                <TabsContent value="analytics" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Data & Analytics</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="googleAnalyticsId" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Google Analytics ID</FormLabel><FormControl><Input placeholder="G-XXXXXXXXXX" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="conversionTracking" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <FormLabel className="font-bold uppercase text-xs">Tracking de conversion</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 12. STORAGE */}
+                <TabsContent value="storage" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Infrastructure Cloud/CDN</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="useBunnyCdn" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div><FormLabel className="font-bold uppercase text-xs">Activer Bunny CDN</FormLabel><FormDescription className="text-[10px]">Utiliser Bunny.net pour les vidéos et assets.</FormDescription></div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="maxFileSizeMb" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Poids max fichier (MB)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 {/* 13. LEGAL */}
                 <TabsContent value="legal" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
@@ -557,6 +710,47 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="privacyPolicy" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Politique de Confidentialité</FormLabel><FormControl><Textarea rows={10} {...field} className="bg-slate-950 border-slate-800 font-mono text-xs" /></FormControl></FormItem>
                             )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 14. EMAIL */}
+                <TabsContent value="email" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">E-mailing Système</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <FormField control={form.control} name="smtpHost" render={({ field }) => (
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Serveur SMTP</FormLabel><FormControl><Input placeholder="smtp.provider.com" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="senderName" render={({ field }) => (
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom Expéditeur</FormLabel><FormControl><Input placeholder="Ndara Afrique" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                                )}/>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 15. ROLES */}
+                <TabsContent value="roles" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-bold uppercase">Rôles & Permissions</CardTitle>
+                            <CardDescription>La gestion fine des accès se fait dans le module dédié.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-12 text-center space-y-6">
+                            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                                <ShieldCheck size={40} />
+                            </div>
+                            <div className="max-w-xs mx-auto">
+                                <p className="text-sm text-slate-400 font-medium italic">"Modifiez les privilèges des administrateurs, formateurs et ambassadeurs pour sécuriser l'infrastructure."</p>
+                            </div>
+                            <Button asChild className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
+                                <Link href="/admin/roles">
+                                    Gérer les Permissions
+                                    <ChevronRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>
