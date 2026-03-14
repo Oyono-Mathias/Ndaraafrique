@@ -421,6 +421,16 @@ export interface Settings {
     defaultCountry?: string;
     maintenanceMode: boolean;
   };
+  platform?: {
+    allowTeacherToTeacherResale?: boolean;
+    allowCourseBuyout?: boolean;
+    maintenanceMode?: boolean;
+    announcementMessage?: string;
+    allowInstructorSignup?: boolean;
+    allowYoutube?: boolean;
+    allowBunny?: boolean;
+    resaleRightsPercentage?: number;
+  };
   commercial: {
     platformCommission: number;
     instructorShare: number;
@@ -513,6 +523,32 @@ export interface Settings {
     adminPermissions: string[];
     instructorPermissions: string[];
     studentPermissions: string[];
+  };
+  content?: {
+    landingPage?: {
+      heroTitle?: string;
+      heroSubtitle?: string;
+      heroImageUrl?: string;
+      heroCtaText?: string;
+      showHeroCta?: boolean;
+      finalCtaTitle?: string;
+      finalCtaSubtitle?: string;
+      finalCtaButtonText?: string;
+      showFinalCta?: boolean;
+      securitySection_imageUrl?: string;
+    };
+    aboutPage?: {
+      mainTitle?: string;
+      mainSubtitle?: string;
+      historyTitle?: string;
+      historyFrench?: string;
+      historySango?: string;
+      visionTitle?: string;
+      visionFrench?: string;
+      visionSango?: string;
+      ctaTitle?: string;
+      teamMembers?: TeamMember[];
+    };
   };
 }
 

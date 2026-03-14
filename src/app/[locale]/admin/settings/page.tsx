@@ -107,6 +107,10 @@ const settingsSchema = z.object({
   // 14. Email
   smtpHost: z.string().optional(),
   senderName: z.string().optional(),
+  // 15. Special Platform Flags
+  allowTeacherToTeacherResale: z.boolean().default(false),
+  allowCourseBuyout: z.boolean().default(true),
+  announcementMessage: z.string().optional(),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -132,6 +136,8 @@ export default function AdminSettingsPage() {
         primaryColor: '#10b981',
         borderRadius: 'lg',
         maxFileSizeMb: 50,
+        allowTeacherToTeacherResale: false,
+        allowCourseBuyout: true,
     }
   });
 
@@ -146,7 +152,7 @@ export default function AdminSettingsPage() {
           supportPhone: d.general?.supportPhone || '',
           defaultLanguage: d.general?.defaultLanguage || 'fr',
           defaultCountry: d.general?.defaultCountry || 'CF',
-          maintenanceMode: d.general?.maintenanceMode || false,
+          maintenanceMode: d.platform?.maintenanceMode || d.general?.maintenanceMode || false,
           platformCommission: d.commercial?.platformCommission || 20,
           instructorShare: d.commercial?.instructorShare || 70,
           minPayoutThreshold: d.commercial?.minPayoutThreshold || 5000,
@@ -183,6 +189,9 @@ export default function AdminSettingsPage() {
           privacyPolicy: d.legal?.privacyPolicy || '',
           smtpHost: d.email?.smtpHost || '',
           senderName: d.email?.senderName || 'Ndara Afrique',
+          allowTeacherToTeacherResale: d.platform?.allowTeacherToTeacherResale ?? false,
+          allowCourseBuyout: d.platform?.allowCourseBuyout ?? true,
+          announcementMessage: d.platform?.announcementMessage || '',
         });
       }
       setIsLoading(false);
@@ -204,6 +213,15 @@ export default function AdminSettingsPage() {
             defaultLanguage: values.defaultLanguage, 
             defaultCountry: values.defaultCountry, 
             maintenanceMode: values.maintenanceMode 
+        },
+        platform: {
+            maintenanceMode: values.maintenanceMode,
+            announcementMessage: values.announcementMessage || '',
+            allowTeacherToTeacherResale: values.allowTeacherToTeacherResale,
+            allowCourseBuyout: values.allowCourseBuyout,
+            allowInstructorSignup: values.allowRegistration,
+            allowYoutube: true,
+            allowBunny: values.useBunnyCdn
         },
         commercial: {
             platformCommission: values.platformCommission,
@@ -371,11 +389,22 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="siteDescription" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description Meta (SEO)</FormLabel><FormControl><Textarea {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
                             )}/>
-                            <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                                <FormItem className="flex items-center justify-between p-5 bg-red-500/5 border border-red-500/10 rounded-2xl">
-                                    <div><FormLabel className="text-sm font-bold text-white uppercase">Mode Maintenance</FormLabel><FormDescription className="text-[10px]">Bloque l'accès à tous sauf aux admins.</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between p-5 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Mode Maintenance</FormLabel><FormDescription className="text-[10px]">Bloque l'accès à tous sauf aux admins.</FormDescription></div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="allowTeacherToTeacherResale" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
+                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Marché Libre (Bourse)</FormLabel><FormDescription className="text-[10px]">Autorise la revente de licences entre experts.</FormDescription></div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )}/>
+                            </div>
+                            <FormField control={form.control} name="announcementMessage" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Message d'annonce global (Bandeau)</FormLabel><FormControl><Input {...field} placeholder="Ex: Flash Sale : -50% sur tous les cours d'IA ! Sango: ..." className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                             )}/>
                         </CardContent>
                     </Card>
