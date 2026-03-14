@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
  * @fileOverview Splash Screen Cinématique Fintech Ndara Afrique.
  * ✅ DESIGN : Transformation du logo en "Token" circulaire pour supprimer le cadre carré.
  * ✅ EFFETS : Light Streaks, Particules et lueur émeraude.
+ * ✅ SLOGAN : Corrigé pour refléter l'éducation (L'Excellence par le Savoir).
  */
 export function SplashScreen() {
   const [isVisible, setIsVisible] = useState(false);
@@ -93,7 +94,7 @@ export function SplashScreen() {
                 Ndara Afrique
             </h1>
             <p className="text-[10px] md:text-xs text-primary font-black tracking-[0.6em] uppercase mt-4 opacity-80">
-                The Future of Finance
+                L'Excellence par le Savoir
             </p>
         </div>
       </div>
