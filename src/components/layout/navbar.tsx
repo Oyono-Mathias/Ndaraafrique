@@ -3,11 +3,13 @@
 /**
  * @fileOverview Navbar Ndara Afrique V3 - Design Glassmorphism.
  * ✅ INTERFACE : Tactile, épurée, respecte les safe-areas.
+ * ✅ FIX : Import manquant du composant Badge.
  */
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Menu, X, ArrowRight, TrendingUp } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
