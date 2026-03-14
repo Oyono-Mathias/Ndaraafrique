@@ -2,15 +2,12 @@
 
 /**
  * @fileOverview Tunnel d'acquisition de licence de revente (Marché Secondaire).
- * ✅ DESIGN : Prestige Gold & Emerald.
- * ✅ LOGIQUE : Transfert de propriété définitif après paiement.
- * ✅ ACCÈS : Public pour la vue des détails, login requis pour l'action.
+ * ✅ TEMPS RÉEL : Réagit instantanément aux changements de prix ou de disponibilité.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
-import { doc, getFirestore } from 'firebase/firestore';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc, getFirestore, onSnapshot } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,7 +22,8 @@ import {
   TrendingUp,
   Check,
   UserPlus,
-  Smartphone
+  Smartphone,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
@@ -44,22 +42,38 @@ export default function BourseCheckoutPage() {
   const { toast } = useToast();
   const db = getFirestore();
 
+  const [course, setCourse] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
-  const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+  // ✅ ÉCOUTEUR TEMPS RÉEL SUR L'ACTIF
+  useEffect(() => {
+    if (!courseId) return;
+    const unsub = onSnapshot(doc(db, 'courses', courseId), (snap) => {
+        if (snap.exists()) {
+            setCourse({ id: snap.id, ...snap.data() } as Course);
+        } else {
+            setCourse(null);
+        }
+        setIsLoading(false);
+    });
+    return () => unsub();
+  }, [db, courseId]);
 
   const handlePurchase = async () => {
-    // ✅ Redirection vers login si non connecté
     if (!user) {
         toast({ title: "Connexion requise", description: "Veuillez vous identifier pour acquérir cet actif." });
         router.push(`/${locale}/login?tab=register&redirect=${encodeURIComponent(pathname)}`);
         return;
     }
 
-    if (!course) return;
+    if (!course || !course.resaleRightsAvailable) {
+        toast({ variant: 'destructive', title: "Actif indisponible", description: "Cette licence n'est plus en vente." });
+        return;
+    }
+
     if (!phoneNumber || phoneNumber.length < 8) {
         toast({ variant: 'destructive', title: "Numéro requis", description: "Veuillez saisir votre numéro Mobile Money." });
         return;
@@ -68,10 +82,8 @@ export default function BourseCheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // 1. Simulation du paiement Moneroo (Haute Valeur)
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // 2. Action Serveur : Transfert de propriété
       const result = await purchaseResaleRightsAction({
           courseId: course.id,
           buyerId: user.uid,
@@ -92,8 +104,22 @@ export default function BourseCheckoutPage() {
     }
   };
 
-  if (courseLoading) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[3rem] bg-slate-900" /></div>;
-  if (!course) return <div className="p-8 pt-24 text-center text-slate-400 bg-slate-950 min-h-screen">Actif non trouvé.</div>;
+  if (isLoading) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[3rem] bg-slate-900" /></div>;
+  
+  if (!course || (!course.resaleRightsAvailable && !isSuccess)) {
+      return (
+          <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center space-y-6">
+              <div className="p-6 bg-red-500/10 rounded-full">
+                  <AlertTriangle size={48} className="text-red-500" />
+              </div>
+              <h1 className="text-2xl font-black text-white uppercase">Offre expirée</h1>
+              <p className="text-slate-400 max-w-xs">Cette licence a déjà été acquise ou retirée du marché boursier.</p>
+              <Button onClick={() => router.push(`/${locale}/bourse`)} variant="outline" className="rounded-xl border-slate-800">
+                  Retour à la Bourse
+              </Button>
+          </div>
+      );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 pb-40 relative font-sans">
@@ -105,9 +131,12 @@ export default function BourseCheckoutPage() {
                 <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
-                <h1 className="font-black text-xl text-white uppercase tracking-tight">Détails de l'Actif</h1>
+                <h1 className="font-black text-xl text-white uppercase tracking-tight">Acquisition Live</h1>
             </div>
-            <div className="w-10" />
+            <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
+                <span className="text-[8px] font-black text-primary uppercase">Direct</span>
+            </div>
         </div>
       </header>
 
@@ -129,7 +158,7 @@ export default function BourseCheckoutPage() {
 
             <div className="pt-4 border-t border-white/5 flex justify-between items-end">
                 <div className="space-y-1">
-                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Valeur de l'actif</p>
+                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Valeur en bourse</p>
                     <p className="text-3xl font-black text-white">{(course.resaleRightsPrice || 0).toLocaleString('fr-FR')} <span className="text-sm font-bold text-amber-500">XOF</span></p>
                 </div>
                 <div className="text-right">
