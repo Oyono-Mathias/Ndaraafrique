@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import type { Settings, DesignSettings } from '@/lib/types';
 
 /**
  * @fileOverview Composant invisible injectant les styles dynamiques.
  * Transforme les choix de l'admin en variables CSS root.
+ * ✅ RÉSOLU : Supporte les couleurs hexadécimales personnalisées.
  */
 export function DynamicDesignManager() {
   useEffect(() => {
@@ -14,7 +15,7 @@ export function DynamicDesignManager() {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const settings = snap.data() as Settings;
-        applyStyles(settings.design || {});
+        applyStyles(settings.branding || {});
       }
     });
     return () => unsub();
@@ -24,14 +25,10 @@ export function DynamicDesignManager() {
     const root = document.documentElement;
 
     // 1. Gestion des Couleurs Primaires
-    const colors = {
-      emerald: "161 72% 40%", // Vert Ndara
-      ocre: "32 70% 45%",    // Ocre Sahélien
-      blue: "217 91% 60%",   // Tech Blue
-      gold: "45 90% 50%",    // African Gold
-    };
-    const primary = colors[design.primaryColor as keyof typeof colors] || colors.emerald;
-    root.style.setProperty('--primary', primary);
+    if (design.primaryColor) {
+        // Si c'est une couleur hex ou HSL
+        root.style.setProperty('--primary', design.primaryColor);
+    }
 
     // 2. Gestion de la Taille du Texte
     const scales = {
