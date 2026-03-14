@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique (Design Qwen Redesign).
- * ✅ Grain Texture Overlay, Android-First Layout, Responsive Structure.
+ * ✅ GESTION DES ACCÈS : Ouverture des routes publiques professionnelles.
+ * ✅ RÉSOLU : Redirection intelligente et protection des zones privées.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -82,27 +83,61 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
   const isPublicPage = useMemo(() => {
-    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
+    // 1. Liste des routes statiques publiques
+    const publicPaths = [
+        '/', 
+        '/about', 
+        '/abonnements', 
+        '/search', 
+        '/investir', 
+        '/cgu', 
+        '/mentions-legales', 
+        '/leaderboard', 
+        '/bourse',
+        '/login',
+        '/register',
+        '/forgot-password'
+    ];
+    
     if (publicPaths.includes(cleanPath)) return true;
+
+    // 2. Routes dynamiques publiques
     if (cleanPath.startsWith('/verify/')) return true;
     if (cleanPath.startsWith('/invite/')) return true;
     if (cleanPath.startsWith('/ref/')) return true;
     if (cleanPath.startsWith('/course/')) return true;
-    if (cleanPath.startsWith('/bourse/checkout/')) return true; // ✅ Autoriser l'accès au détail de l'actif
+    if (cleanPath.startsWith('/bourse/checkout/')) return true;
+
+    // 3. Profils Instructeurs Publics (Exclure les zones de gestion)
+    if (cleanPath.startsWith('/instructor/')) {
+        const instructorPrivateSubRoutes = [
+            '/dashboard', '/courses', '/students', '/revenus', 
+            '/annonces', '/avis', '/devoirs', '/questions-reponses', 
+            '/quiz', '/ressources', '/certificats', '/settings'
+        ];
+        // Si aucune sous-route privée n'est détectée, c'est le profil public
+        return !instructorPrivateSubRoutes.some(sub => cleanPath.includes(sub));
+    }
+
     return false;
   }, [cleanPath]);
 
   useEffect(() => {
     if (loading) return;
+
+    // Si non connecté et tente d'accéder à une page privée
     if (!user) {
-      if (!isPublicPage && !isAuthPage) router.push(`/${locale}`);
+      if (!isPublicPage && !isAuthPage) router.push(`/${locale}/login`);
       return;
     }
-    if (cleanPath === '/' || cleanPath === '/search' || isPublicPage || cleanPath === '/account') return;
+
+    // Si connecté, on gère les redirections de rôle pour les zones protégées
+    if (cleanPath === '/' || isPublicPage || cleanPath === '/account') return;
 
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
+    // Un Admin peut tout voir, un Instructeur peut voir l'espace instructeur et étudiant, un Étudiant ne voit que son espace.
     if (role === 'student' && (isAdminArea || isInstructorArea)) {
         router.push(`/${locale}/student/dashboard`);
     } else if (role === 'instructor' && isAdminArea) {
@@ -120,6 +155,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       );
   }
 
+  // Le lecteur de cours est en plein écran
   const isFullScreen = cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
   const showNav = user && !isAuthPage && !isPublicPage && cleanPath !== '/';
   
