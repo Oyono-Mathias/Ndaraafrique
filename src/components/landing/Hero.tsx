@@ -1,26 +1,37 @@
 'use client';
 
 /**
- * @fileOverview Hero Section Ndara Afrique V3 - Piloté par les réglages Admin.
+ * @fileOverview Hero Section Ndara Afrique V4 - Intégration de la barre de recherche.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, Mic } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { getFirestore, doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase';
 import type { Settings } from '@/lib/types';
+import { Input } from '@/components/ui/input';
 
 export function Hero() {
   const locale = useLocale();
+  const router = useRouter();
   const db = getFirestore();
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
 
   const content = settings?.content?.landingPage;
+
+  const handleSearch = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!searchQuery.trim()) return;
+      router.push(`/${locale}/search?query=${encodeURIComponent(searchQuery)}`);
+  };
 
   return (
     <section className="relative pt-32 pb-16 px-6 overflow-hidden bg-[#0f172a]">
@@ -41,20 +52,36 @@ export function Hero() {
                 dangerouslySetInnerHTML={{ __html: content?.heroTitle || "APPRENEZ.<br />RÉUSSISSEZ.<br />INSPIREZ." }}
             />
             
-            <p className="text-gray-400 text-sm md:text-lg mb-10 max-w-xs md:max-w-md mx-auto leading-relaxed font-medium italic animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+            <p className="text-gray-400 text-sm md:text-lg mb-10 max-w-xs md:max-w-xl mx-auto leading-relaxed font-medium italic animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
                 "{content?.heroSubtitle || "De l'Agritech à la Fintech, accédez aux compétences de demain avec les meilleurs experts du continent."}"
             </p>
 
-            {content?.showHeroCta !== false && (
-                <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
-                    <Button asChild size="lg" className="w-full md:w-auto h-16 px-10 rounded-[2.5rem] bg-primary hover:bg-emerald-400 text-slate-950 font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/20 active:scale-95 transition-all animate-pulse-glow group">
-                        <Link href={`/${locale}/search`} className="flex items-center gap-3">
-                            {content?.heroCtaText || "Commencer l'Aventure"}
-                            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </Button>
-                </div>
-            )}
+            {/* Barre de Recherche Immersive */}
+            <div className="max-w-2xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+                <form onSubmit={handleSearch} className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Search className="h-5 w-5 text-primary" />
+                    </div>
+                    <Input 
+                        placeholder="Que voulez-vous apprendre aujourd'hui ?"
+                        className="h-16 pl-16 pr-16 rounded-[2rem] bg-white/5 border-white/10 text-white shadow-2xl focus-visible:ring-primary/20 text-lg placeholder:text-slate-600"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-slate-950 active:scale-90 transition-transform">
+                        <ArrowRight className="h-5 w-5" />
+                    </button>
+                </form>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-400">
+                <Button asChild size="lg" className="h-14 px-10 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all">
+                    <Link href={`/${locale}/search`}>Explorer le Catalogue</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="h-14 px-10 rounded-2xl border-white/10 bg-white/5 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
+                    <Link href={`/${locale}/devenir-instructeur`}>Devenir Formateur</Link>
+                </Button>
+            </div>
         </div>
 
         {/* Hero Image Immersive */}

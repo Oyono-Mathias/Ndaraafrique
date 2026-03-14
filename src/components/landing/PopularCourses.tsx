@@ -2,11 +2,9 @@
 
 /**
  * @fileOverview Catalogue de Prestige - Formations d'Élite en Temps Réel.
- * ✅ DYNAMIQUE : Affiche les cours réels publiés depuis Firestore.
- * ✅ FALLBACK : Affiche des cours de prestige si le catalogue est vide.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, getDocs } from 'firebase/firestore';
 import { Star, Users, ArrowRight, Loader2, BookOpen } from 'lucide-react';
 import Image from 'next/image';
@@ -25,12 +23,11 @@ export function PopularCourses() {
 
     useEffect(() => {
         setIsLoading(true);
-        // On récupère les 3 cours les plus populaires (basé sur le nombre de participants)
         const q = query(
             collection(db, "courses"), 
             where("status", "==", "Published"),
             orderBy("participantsCount", "desc"),
-            limit(3)
+            limit(6)
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -55,29 +52,28 @@ export function PopularCourses() {
     }, [db]);
 
     return (
-        <section className="px-6 mb-20 max-w-4xl mx-auto space-y-8">
+        <section className="px-6 mb-20 max-w-6xl mx-auto space-y-8">
             <div className="flex items-center justify-between px-1">
                 <div className="space-y-1">
-                    <h2 className="font-black text-2xl text-white uppercase tracking-tight">Le Savoir d'Élite</h2>
+                    <h2 className="font-black text-2xl md:text-3xl text-white uppercase tracking-tight">Formations d'Élite</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        Mises à jour en direct
+                        Les plus suivies par la communauté
                     </p>
                 </div>
-                <Link href={`/${locale}/search`}>
-                    <button className="text-primary text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition">
-                        VOIR TOUT
-                    </button>
-                </Link>
             </div>
 
             {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-slate-900/20 rounded-[2.5rem] border border-white/5">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-4">Calcul des tendances Ndara...</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="space-y-4">
+                            <div className="aspect-video w-full rounded-[2rem] bg-slate-900 animate-pulse" />
+                            <div className="h-4 w-3/4 bg-slate-900 rounded animate-pulse" />
+                        </div>
+                    ))}
                 </div>
             ) : courses.length > 0 ? (
-                <div className="grid grid-cols-1 gap-8 animate-in fade-in duration-1000">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-1000">
                     {courses.map((course) => (
                         <div key={course.id} className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group active:scale-[0.98] transition-all duration-500">
                             <div className="relative h-48 overflow-hidden">
@@ -131,12 +127,7 @@ export function PopularCourses() {
                         </div>
                     ))}
                 </div>
-            ) : (
-                <div className="py-20 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[2.5rem] opacity-20">
-                    <BookOpen className="h-16 w-16 mx-auto mb-4" />
-                    <p className="font-black uppercase tracking-widest text-xs">Le catalogue est en cours de création</p>
-                </div>
-            )}
+            ) : null}
         </section>
     );
 }
