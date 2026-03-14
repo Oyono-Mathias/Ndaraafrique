@@ -105,6 +105,8 @@ export interface NdaraUser {
   affiliateBalance?: number; 
   pendingAffiliateBalance?: number; 
   referralBalance?: number;
+  virtualBalance?: number; // ✅ NOUVEAU: Solde pour démo/publicité
+  isDemoAccount?: boolean;  // ✅ NOUVEAU: Flag pour comptes de test
   referralCode?: string;
   referredBy?: string; 
   affiliateStats?: {

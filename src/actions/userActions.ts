@@ -2,12 +2,12 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de 'course_reviews' pour la synchronisation des notes.
+ * ✅ RÉSOLU : Ajout du système de solde virtuel pour publicité/démo.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { UserRole } from '@/lib/types';
+import type { UserRole, NdaraUser } from '@/lib/types';
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
     try {
@@ -16,6 +16,98 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
         return userDoc.exists && userDoc.data()?.role === 'admin';
     } catch {
         return false;
+    }
+}
+
+/**
+ * RECHARGER LE SOLDE VIRTUEL (Demo Mode)
+ */
+export async function rechargeVirtualBalanceAction({ 
+    userId, 
+    amount, 
+    adminId 
+}: { 
+    userId: string; 
+    amount: number; 
+    adminId: string; 
+}) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
+
+    try {
+        const db = getAdminDb();
+        await db.collection('users').doc(userId).update({
+            virtualBalance: FieldValue.increment(amount),
+            isDemoAccount: true,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        // Logger dans l'audit
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.status.update',
+            target: { id: userId, type: 'user' },
+            details: `Recharge virtuelle de ${amount} XOF effectuée (Mode Publicité).`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * CRÉER UN COMPTE DE DÉMONSTRATION ÉLITE
+ */
+export async function createEliteDemoAccountAction({ 
+    role, 
+    adminId 
+}: { 
+    role: UserRole; 
+    adminId: string; 
+}) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
+
+    try {
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+        
+        const timestamp = Date.now();
+        const email = `demo_${role}_${timestamp}@ndara-afrique.demo`;
+        const fullName = role === 'instructor' ? 'Expert Ndara (Demo)' : 'Étudiant Elite (Demo)';
+        
+        // 1. Création Auth
+        const userRecord = await auth.createUser({
+            email,
+            password: 'password123',
+            displayName: fullName,
+        });
+
+        // 2. Création Profil Firestore
+        const userData: Partial<NdaraUser> = {
+            uid: userRecord.uid,
+            email,
+            fullName,
+            username: `ndara_demo_${timestamp}`,
+            role,
+            status: 'active',
+            isInstructorApproved: role === 'instructor',
+            isDemoAccount: true,
+            virtualBalance: 500000, // Commence avec 500k pour la démo
+            createdAt: FieldValue.serverTimestamp(),
+            isProfileComplete: true,
+            affiliateStats: { clicks: 120, registrations: 45, sales: 12, earnings: 150000 },
+            affiliateBalance: 75000,
+            profilePictureURL: `https://api.dicebear.com/8.x/avataaars/svg?seed=${userRecord.uid}`
+        };
+
+        await db.collection('users').doc(userRecord.uid).set(userData);
+
+        return { success: true, email, password: 'password123' };
+    } catch (e: any) {
+        return { success: false, error: e.message };
     }
 }
 

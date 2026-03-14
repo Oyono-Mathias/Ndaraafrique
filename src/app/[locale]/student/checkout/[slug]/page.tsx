@@ -4,11 +4,12 @@
  * @fileOverview Tunnel de paiement Mobile Money Ndara Afrique V2.
  * ✅ DESIGN QWEN : Reçu vintage, sélecteur de fournisseur tactile et animations de succès.
  * ✅ FONCTIONNEL : Gestion des coupons, de l'affiliation et simulation de paiement Moneroo.
+ * ✅ HYBRIDE : Support du solde virtuel pour les comptes de démonstration publicitaires.
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { doc, getFirestore } from 'firebase/firestore';
+import { useParams, useRouter, usePathname } from 'next/navigation';
+import { doc, getFirestore, updateDoc, increment } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,9 @@ import {
   ShieldCheck,
   Info,
   GraduationCap,
-  Check
+  Check,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
@@ -34,13 +37,14 @@ import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
 import { cn } from '@/lib/utils';
 
-type Provider = 'orange' | 'mtn' | 'wave';
+type Provider = 'orange' | 'mtn' | 'wave' | 'virtual';
 
 export default function CheckoutPage() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
-  const { user } = useRole();
+  const pathname = usePathname();
+  const { user, currentUser } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
 
@@ -100,28 +104,50 @@ export default function CheckoutPage() {
 
   const handlePayment = async () => {
     if (!user || !course) return;
-    if (!phoneNumber || phoneNumber.length < 8) {
+    
+    if (provider !== 'virtual' && (!phoneNumber || phoneNumber.length < 8)) {
         toast({ variant: 'destructive', title: "Numéro invalide", description: "Veuillez saisir votre numéro Mobile Money." });
         return;
+    }
+
+    if (provider === 'virtual') {
+        const balance = currentUser?.virtualBalance || 0;
+        if (balance < discountedPrice) {
+            toast({ variant: 'destructive', title: "Solde virtuel insuffisant", description: "Veuillez recharger votre solde démo." });
+            return;
+        }
     }
 
     setIsProcessing(true);
 
     try {
-      // Simulation du délai Moneroo
+      // Simulation du délai Moneroo ou Traitement Virtuel
       await new Promise(resolve => setTimeout(resolve, 2500));
       
-      const paymentMetadata = {
-          userId: user.uid,
-          courseId: course.id,
-          amount: discountedPrice,
-          couponId: appliedCoupon?.id || null,
-          affiliateId: affiliateId || null,
-          provider
-      };
+      if (provider === 'virtual') {
+          // Déduction du solde virtuel
+          await updateDoc(doc(db, 'users', user.uid), {
+              virtualBalance: increment(-discountedPrice)
+          });
+          
+          // Simulation Webhook Moneroo (Action simplifiée pour la démo)
+          const enrollId = `${user.uid}_${course.id}`;
+          await setDoc(doc(db, 'enrollments', enrollId), {
+              studentId: user.uid,
+              courseId: course.id,
+              instructorId: course.instructorId,
+              status: 'active',
+              enrollmentDate: serverTimestamp(),
+              lastAccessedAt: serverTimestamp(),
+              progress: 0,
+              priceAtEnrollment: discountedPrice,
+              enrollmentType: 'paid',
+              transactionId: `DEMO-${Date.now()}`
+          });
+      }
 
-      console.log("🚀 Transaction Moneroo simulée:", paymentMetadata);
       setIsSuccess(true);
+      toast({ title: "Transaction confirmée !" });
       
     } catch (error) {
       toast({ variant: 'destructive', title: "Erreur technique", description: "Impossible d'initier le paiement." });
@@ -189,87 +215,87 @@ export default function CheckoutPage() {
         <section className="space-y-4">
             <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
                 <Wallet className="h-3.5 w-3.5 text-primary" />
-                MOBILE MONEY
+                MÉTHODE DE DÉBIT
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-2">
+                <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
+                <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MoMo" color="bg-[#FFCC00]" initials="MTN" darkText />
+                <ProviderBtn active={provider === 'wave'} onClick={() => setProvider('wave')} label="Wave" color="bg-[#1DC0F1]" initials="W" />
+                
+                {/* ✅ OPTION VIRTUELLE POUR PUB/DEMO */}
                 <button 
-                    onClick={() => setProvider('orange')}
+                    onClick={() => setProvider('virtual')}
                     className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-3 rounded-3xl border-2 transition-all active:scale-95",
-                        provider === 'orange' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 grayscale"
+                        "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
+                        provider === 'virtual' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 opacity-40 grayscale"
                     )}
                 >
-                    <div className="w-12 h-12 rounded-full bg-[#FF7900] flex items-center justify-center text-white font-black text-xs shadow-lg">OM</div>
-                    <span className="text-white text-[9px] font-black uppercase">Orange</span>
-                </button>
-                <button 
-                    onClick={() => setProvider('mtn')}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-3 rounded-3xl border-2 transition-all active:scale-95",
-                        provider === 'mtn' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 grayscale"
-                    )}
-                >
-                    <div className="w-12 h-12 rounded-full bg-[#FFCC00] flex items-center justify-center text-black font-black text-xs shadow-lg">MTN</div>
-                    <span className="text-white text-[9px] font-black uppercase">MoMo</span>
-                </button>
-                <button 
-                    onClick={() => setProvider('wave')}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-3 rounded-3xl border-2 transition-all active:scale-95",
-                        provider === 'wave' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 grayscale"
-                    )}
-                >
-                    <div className="w-12 h-12 rounded-full bg-[#1DC0F1] flex items-center justify-center text-white font-black text-xs shadow-lg">W</div>
-                    <span className="text-white text-[9px] font-black uppercase">Wave</span>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-slate-950 shadow-lg">
+                        <Zap size={18} className="fill-current" />
+                    </div>
+                    <span className="text-white text-[8px] font-black uppercase">Virtuel</span>
                 </button>
             </div>
         </section>
 
-        {/* --- PHONE INPUT --- */}
-        <section className="space-y-3">
-            <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro de téléphone</label>
-            <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
-                    <Smartphone className="h-5 w-5 text-primary" />
+        {/* --- PAYMENT INPUTS --- */}
+        <div className="space-y-6">
+            {provider === 'virtual' ? (
+                <div className="p-6 bg-primary/10 border border-primary/20 rounded-3xl space-y-3 animate-in slide-in-from-top-2 duration-500">
+                    <div className="flex items-center gap-3 text-primary">
+                        <Sparkles size={20} />
+                        <span className="font-black text-xs uppercase tracking-widest">Solde Publicitaire</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium italic">
+                        "En mode virtuel, les fonds sont déduits de votre solde démo. Idéal pour filmer l'expérience utilisateur sans frais réels."
+                    </p>
+                    <div className="pt-2 border-t border-primary/10">
+                        <p className="text-2xl font-black text-white">{(currentUser?.virtualBalance || 0).toLocaleString()} <span className="text-xs text-slate-500">XOF</span></p>
+                    </div>
                 </div>
-                <Input 
-                    type="tel" 
-                    placeholder="Ex: 07 07 07 07" 
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="phone-input w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 pr-4 text-white font-mono text-lg tracking-wider"
-                />
-            </div>
-            <p className="text-slate-600 text-[9px] flex items-center gap-1.5 ml-1 italic">
-                <Info size={12} />
-                Vérifiez que le numéro est bien associé à votre compte Mobile Money.
-            </p>
-        </section>
+            ) : (
+                <section className="space-y-3 animate-in slide-in-from-top-2 duration-500">
+                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro de téléphone Mobile Money</label>
+                    <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
+                            <Smartphone className="h-5 w-5 text-primary" />
+                        </div>
+                        <Input 
+                            type="tel" 
+                            placeholder="Ex: 07 07 07 07" 
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            className="w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 pr-4 text-white font-mono text-lg tracking-wider"
+                        />
+                    </div>
+                </section>
+            )}
 
-        {/* --- COUPON ZONE --- */}
-        <section className="space-y-3">
-            <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Code Promo (Optionnel)</label>
-            <div className="flex gap-2">
-                <Input 
-                    placeholder="Tapez ici..." 
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    className="flex-1 bg-slate-900 border-white/5 rounded-2xl h-12 text-white font-black placeholder:text-slate-700"
-                    disabled={!!appliedCoupon}
-                />
-                {appliedCoupon ? (
-                    <Button variant="ghost" onClick={() => { setAppliedCoupon(null); setCouponCode(''); }} className="h-12 px-4 rounded-xl text-red-400 font-black uppercase text-[10px]">Annuler</Button>
-                ) : (
-                    <Button 
-                        onClick={handleValidateCoupon} 
-                        disabled={isValidating || !couponCode.trim()} 
-                        className="h-12 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest"
-                    >
-                        {isValidating ? <Loader2 className="h-4 w-4 animate-spin"/> : "OK"}
-                    </Button>
-                )}
-            </div>
-        </section>
+            {/* --- COUPON ZONE --- */}
+            <section className="space-y-3">
+                <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Code Promo (Optionnel)</label>
+                <div className="flex gap-2">
+                    <Input 
+                        placeholder="Tapez ici..." 
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className="flex-1 bg-slate-900 border-white/5 rounded-2xl h-12 text-white font-black placeholder:text-slate-700"
+                        disabled={!!appliedCoupon}
+                    />
+                    {appliedCoupon ? (
+                        <Button variant="ghost" onClick={() => { setAppliedCoupon(null); setCouponCode(''); }} className="h-12 px-4 rounded-xl text-red-400 font-black uppercase text-[10px]">Annuler</Button>
+                    ) : (
+                        <Button 
+                            onClick={handleValidateCoupon} 
+                            disabled={isValidating || !couponCode.trim()} 
+                            className="h-12 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest"
+                        >
+                            {isValidating ? <Loader2 className="h-4 w-4 animate-spin"/> : "OK"}
+                        </Button>
+                    )}
+                </div>
+            </section>
+        </div>
 
         {/* --- SECURITY BANNER --- */}
         <div className="bg-slate-900/50 rounded-3xl p-4 border border-white/5 flex items-center gap-4">
@@ -296,7 +322,7 @@ export default function CheckoutPage() {
                 <span>PAYER {discountedPrice.toLocaleString('fr-FR')} XOF</span>
             </Button>
             <p className="text-center text-slate-600 text-[9px] font-bold uppercase tracking-tighter">
-                En validant, vous acceptez les conditions de vente Ndara Afrique.
+                {provider === 'virtual' ? "Transaction de démonstration sans frais réels." : "En validant, vous acceptez les conditions de vente Ndara Afrique."}
             </p>
         </div>
       </footer>
@@ -311,7 +337,7 @@ export default function CheckoutPage() {
                   <h3 className="font-black text-white text-2xl uppercase tracking-tight mb-2">Paiement Réussi !</h3>
                   <p className="text-slate-400 text-sm mb-8 leading-relaxed font-medium">Bienvenue dans la famille Ndara. Votre formation est débloquée et prête à être étudiée.</p>
                   <Button 
-                    onClick={() => router.push(`/student/courses/${slug}`)}
+                    onClick={() => router.push(`/${locale}/courses/${slug}`)}
                     className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl"
                   >
                       Commencer le cours
@@ -322,3 +348,22 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+function ProviderBtn({ active, onClick, label, color, initials, darkText = false }: any) {
+    return (
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
+                active ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 grayscale opacity-40"
+            )}
+        >
+            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-black text-[10px] shadow-lg", color, darkText ? "text-slate-950" : "text-white")}>
+                {initials}
+            </div>
+            <span className="text-white text-[8px] font-black uppercase">{label}</span>
+        </button>
+    );
+}
+
+import { setDoc, serverTimestamp } from 'firebase/firestore';

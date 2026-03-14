@@ -36,7 +36,8 @@ import {
   Share2,
   X,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Rocket
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMemo, useState, useEffect } from 'react';
@@ -153,6 +154,14 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
         { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Statistiques" },
         { href: `/${locale}/admin/monitoring`, icon: Activity, label: "Monitoring" },
         { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Mathias Admin", badge: 'IA' },
+      ]
+    },
+    {
+      label: "MARKETING",
+      items: [
+        { href: `/${locale}/admin/ads-factory`, icon: Rocket, label: "Ads Factory", badge: "NEW" },
+        { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel" },
+        { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ" },
       ]
     },
     {
