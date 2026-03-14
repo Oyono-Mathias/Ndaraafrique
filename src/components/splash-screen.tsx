@@ -1,16 +1,20 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
+/**
+ * @fileOverview Version synchronisée du Splash Screen.
+ * Redirige vers le composant principal SplashScreen.
+ */
 export function SplashScreen() {
   const [isVisible, setIsVisible] = useState(false);
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
-    // This logic now only runs on the client, after the initial render.
+    if (typeof window === 'undefined') return;
+    
     const sessionStarted = sessionStorage.getItem('ndara-session-started');
     if (!sessionStarted) {
       setIsVisible(true);
@@ -18,43 +22,52 @@ export function SplashScreen() {
 
       const fadeTimer = setTimeout(() => {
         setIsFading(true);
-      }, 2500); // Start fading out after 2.5s
+      }, 2500);
 
       const hideTimer = setTimeout(() => {
         setIsVisible(false);
-      }, 3000); // Completely hide after 3s (0.5s fade duration)
+      }, 3000);
 
       return () => {
         clearTimeout(fadeTimer);
         clearTimeout(hideTimer);
       };
-    } else {
-        // If the session has already started, ensure the splash screen is not visible.
-        setIsVisible(false);
     }
-  }, []); // The empty dependency array is crucial here.
+  }, []);
 
-  if (!isVisible) {
-    return null;
-  }
+  if (!isVisible) return null;
 
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f172a] transition-opacity duration-500 ease-out",
+        "fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f172a] transition-opacity duration-700 ease-in-out",
         isFading ? "opacity-0" : "opacity-100"
       )}
     >
-      <div className="relative overflow-hidden">
-        <Image
-          src="/icon.svg"
-          alt="Ndara Afrique Logo"
-          width={150}
-          height={150}
-          className="animate-[logoPulse_2.5s_ease-in-out_infinite]"
-          priority
-        />
-         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[logoSheen_2.5s_ease-in-out_infinite] mix-blend-soft-light"></div>
+      <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')]" />
+      
+      <div className="relative flex flex-col items-center">
+        <div className="absolute inset-0 bg-primary/20 rounded-full animate-[glowReveal_2s_ease-out_forwards_0.5s]" />
+        
+        <div className="relative overflow-hidden p-4">
+          <div className="animate-[cinematicReveal_1.5s_cubic-bezier(0.22,1,0.36,1)_forwards_0.3s] opacity-0 scale-90">
+            <Image
+              src="/logo.png"
+              alt="Ndara Afrique"
+              width={180}
+              height={180}
+              className="relative z-10 drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+              priority
+            />
+          </div>
+          <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-[splashSheen_1.8s_ease-in-out_forwards_0.8s] z-20" />
+        </div>
+
+        <div className="mt-8 overflow-hidden">
+            <p className="text-primary font-black uppercase text-[10px] animate-[textReveal_1.2s_ease-out_forwards_1.2s] opacity-0 translate-y-4">
+                Excellence Panafricaine
+            </p>
+        </div>
       </div>
     </div>
   );
