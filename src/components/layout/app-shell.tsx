@@ -139,12 +139,17 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           
           {showNav && !isFullScreen && (
-            <Header />
+            <header className={cn(
+                "h-16 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md",
+                isFullScreen && "md:hidden"
+            )}>
+                <Header />
+            </header>
           )}
 
           <main className={cn(
             "flex-1",
-            showNav && !isFullScreen ? "pt-16 pb-20 md:p-6 md:pb-6" : "p-0"
+            showNav && !isFullScreen ? "pb-20 md:p-6 md:pb-6" : "p-0"
           )}>
             {children}
           </main>

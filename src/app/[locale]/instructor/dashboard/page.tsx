@@ -4,6 +4,7 @@
  * @fileOverview Dashboard Formateur Ndara Afrique V2 (Design Qwen Immersif).
  * ✅ CONNECTIVITÉ : Calcul réel du taux de réussite et du nombre d'élèves.
  * ✅ PERFORMANCE : Utilisation de onSnapshot pour une réactivité totale.
+ * ✅ DESIGN : Suppression de l'en-tête local au profit de l'en-tête global partagé.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -150,26 +151,9 @@ export default function InstructorDashboard() {
         <div className="flex flex-col gap-0 pb-32 bg-[#0f172a] min-h-screen relative overflow-hidden font-sans">
             <div className="grain-overlay" />
             
-            <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md safe-area-pt border-b border-white/5">
-                <div className="px-6 py-6 flex items-center justify-between">
-                    <div>
-                        <h1 className="font-black text-xl text-white tracking-wide uppercase">Espace Formateur</h1>
-                        <p className="text-gray-300 text-sm font-medium mt-1 italic">Bara ala, Expert 👋</p>
-                    </div>
-                    <Link href="/student/profile" className="active:scale-95 transition-transform">
-                        <div className="w-12 h-12 rounded-full border-2 border-[#10b981]/30 overflow-hidden shadow-xl">
-                            <Avatar className="h-full w-full">
-                                <AvatarImage src={instructor?.profilePictureURL} className="object-cover" />
-                                <AvatarFallback className="bg-slate-800 text-slate-500 font-black">
-                                    {instructor?.fullName?.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
-                        </div>
-                    </Link>
-                </div>
-            </header>
+            {/* L'en-tête est désormais géré par le composant global Header dans AppShell */}
 
-            <main className="flex-1 overflow-y-auto pt-32 px-6 space-y-8 animate-in fade-in duration-700">
+            <main className="flex-1 overflow-y-auto pt-6 px-6 space-y-8 animate-in fade-in duration-700">
 
                 <div className="grid grid-cols-1 gap-4">
                     <Link href="/instructor/revenus" className="block group active:scale-[0.98] transition-all">
