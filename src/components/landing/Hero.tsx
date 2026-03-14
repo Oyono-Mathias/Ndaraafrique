@@ -1,7 +1,13 @@
 'use client';
 
+/**
+ * @fileOverview Hero Section Ndara Afrique V3 (Design Qwen Immersif).
+ * ✅ TYPOGRAPHIE : Massive, uppercase, dégradés cinématiques.
+ * ✅ ANIMATION : Slide-up et pulse glow sur le bouton.
+ */
+
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLocale } from 'next-intl';
@@ -10,68 +16,58 @@ export function Hero() {
   const locale = useLocale();
 
   return (
-    <section className="pt-32 pb-20 bg-gradient-to-br from-[#FFF7ED] to-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 text-ndara-orange text-sm font-semibold">
-                        <span className="w-2 h-2 bg-ndara-orange rounded-full mr-2"></span>
-                        La plateforme #1 pour les talents africains
-                    </div>
-                    <h1 className="text-5xl lg:text-6xl font-heading font-extrabold text-ndara-dark leading-tight">
-                        Apprenez les compétences de <span className="text-ndara-orange">demain</span>, dès aujourd'hui.
-                    </h1>
-                    <p className="text-lg text-gray-600 max-w-lg">
-                        De l'Agritech à la Fintech, en passant par le Trading et la Mécatronique. Ndara connecte les apprenants africains aux experts mondiaux.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Button asChild size="lg" className="rounded-full bg-ndara-orange hover:bg-orange-600 text-white font-bold h-14 px-8 shadow-lg shadow-orange-500/30">
-                            <Link href={`/${locale}/search`}>
-                                Explorer les cours
-                                <ArrowRight className="ml-2 h-5 w-5" />
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" size="lg" className="rounded-full border-gray-300 text-gray-700 bg-white hover:bg-gray-50 h-14 px-8">
-                            <Link href={`/${locale}/devenir-instructeur`}>
-                                Devenir instructeur
-                            </Link>
-                        </Button>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 pt-4">
-                        <div className="flex -space-x-2">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="relative w-8 h-8 rounded-full border-2 border-white overflow-hidden">
-                                    <Image src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" fill className="object-cover" />
-                                </div>
-                            ))}
-                            <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-xs font-bold">+5k</div>
-                        </div>
-                        <p>Rejoignez plus de 50,000 étudiants</p>
-                    </div>
+    <section className="relative pt-32 pb-16 px-6 overflow-hidden bg-[#0f172a]">
+        {/* Background Glows */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-ndara-ochre/10 rounded-full blur-[80px] -ml-20 -mb-20 pointer-events-none" />
+
+        <div className="max-w-4xl mx-auto relative z-10 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_#10b981]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Plateforme #1 en Afrique</span>
+            </div>
+            
+            <h1 className="font-black text-5xl sm:text-7xl leading-[1.1] text-white mb-8 uppercase tracking-tighter animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
+                APPRENEZ.<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-400">RÉUSSISSEZ.</span><br />
+                INSPIREZ.
+            </h1>
+            
+            <p className="text-gray-400 text-sm md:text-lg mb-10 max-w-xs md:max-w-md mx-auto leading-relaxed font-medium italic animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+                "De l'Agritech à la Fintech, accédez aux compétences de demain avec les meilleurs experts du continent."
+            </p>
+
+            <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+                <Button asChild size="lg" className="w-full md:w-auto h-16 px-10 rounded-[2.5rem] bg-primary hover:bg-emerald-400 text-slate-950 font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/20 active:scale-95 transition-all animate-pulse-glow group">
+                    <Link href={`/${locale}/search`} className="flex items-center gap-3">
+                        Commencer l'Aventure
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                </Button>
+            </div>
+        </div>
+
+        {/* Hero Image Immersive */}
+        <div className="mt-16 relative max-w-lg mx-auto animate-in fade-in zoom-in duration-1000 delay-500">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-transparent z-10" />
+            <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+                <Image 
+                    src="https://images.unsplash.com/photo-1531545514256-b1400bc00f31?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                    alt="Étudiants Africains connectés" 
+                    fill 
+                    className="object-cover animate-float"
+                    priority
+                />
+            </div>
+            
+            {/* Floating Badge */}
+            <div className="absolute -bottom-4 -right-4 md:right-4 bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl border border-white/10 shadow-2xl z-20 flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                    <Sparkles className="h-5 w-5" />
                 </div>
-                
-                <div className="relative lg:h-full flex items-center justify-center animate-in fade-in zoom-in duration-1000 delay-300">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-orange-200 to-transparent opacity-30 rounded-full blur-3xl transform translate-x-10 translate-y-10"></div>
-                    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl transform rotate-2 hover:rotate-0 transition duration-500">
-                        <Image 
-                            src="https://image.qwenlm.ai/public_source/9aa2c1ec-a270-4c0a-bf02-2f39a4c5daed/18745b7c6-a2fe-47d6-9d72-32fc38ef42c1.png" 
-                            alt="Étudiants africains" 
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                    </div>
-                    
-                    {/* Floating Badge */}
-                    <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl flex items-center gap-3 animate-bounce" style={{ animationDuration: '3s' }}>
-                        <div className="bg-green-100 p-2 rounded-full text-green-600">
-                            <CheckCircle2 className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-500">Certification</p>
-                            <p className="font-bold text-ndara-dark uppercase text-xs">Reconnue</p>
-                        </div>
-                    </div>
+                <div className="text-left">
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Savoir</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Certifié Ndara</p>
                 </div>
             </div>
         </div>

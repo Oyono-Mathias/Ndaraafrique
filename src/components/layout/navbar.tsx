@@ -1,91 +1,73 @@
 'use client';
 
+/**
+ * @fileOverview Navbar Ndara Afrique V3 - Design Glassmorphism.
+ * ✅ INTERFACE : Tactile, épurée, respecte les safe-areas.
+ */
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Menu, Search } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useLocale } from 'next-intl';
-
-const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <SheetClose asChild>
-    <Link href={href} className="text-gray-500 hover:text-ndara-orange px-3 py-2 rounded-md text-sm font-bold uppercase tracking-widest transition-colors">
-      {children}
-    </Link>
-  </SheetClose>
-);
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const locale = useLocale();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <nav className={cn(
-        "fixed w-full z-50 transition-all duration-300 h-20 flex items-center",
-        scrolled ? "bg-white/95 backdrop-blur-sm shadow-md" : "bg-white"
+        "fixed top-0 w-full z-[100] transition-all duration-500 h-20 flex items-center safe-area-pt",
+        scrolled ? "bg-slate-950/80 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "bg-transparent"
     )}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="max-w-7xl mx-auto px-6 w-full">
             <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                    <Link href={`/${locale}`} className="flex-shrink-0 flex items-center gap-2 group">
-                        <div className="w-10 h-10 bg-ndara-orange rounded-lg flex items-center justify-center text-white font-bold text-xl transition-transform group-hover:scale-110">N</div>
-                        <span className="font-heading font-bold text-2xl text-ndara-dark tracking-tight uppercase">Ndara</span>
-                    </Link>
-                    <div className="hidden md:ml-10 md:flex md:space-x-4">
-                        <Link href={`/${locale}/#categories`} className="text-gray-500 hover:text-ndara-orange px-3 py-2 rounded-md text-xs font-black uppercase tracking-widest transition">Catégories</Link>
-                        <Link href={`/${locale}/search`} className="text-gray-500 hover:text-ndara-orange px-3 py-2 rounded-md text-xs font-black uppercase tracking-widest transition">Formations</Link>
-                        <Link href={`/${locale}/about`} className="text-gray-500 hover:text-ndara-orange px-3 py-2 rounded-md text-xs font-black uppercase tracking-widest transition">Pourquoi Ndara ?</Link>
-                    </div>
-                </div>
-                <div className="hidden md:flex items-center space-x-6">
-                    <div className="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Rechercher..." 
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-xs font-bold bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ndara-orange focus:border-transparent w-48 lg:w-64 transition-all"
-                        />
-                        <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                    </div>
-                    <Link href={`/${locale}/login`} className="text-gray-600 hover:text-ndara-dark font-black uppercase text-[10px] tracking-widest">Se connecter</Link>
-                    <Button asChild size="sm" className="bg-ndara-dark text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition shadow-lg hover:shadow-xl active:scale-95">
-                        <Link href={`/${locale}/login?tab=register`}>S'inscrire</Link>
-                    </Button>
-                </div>
-                
-                <div className="flex items-center md:hidden">
+                <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
+                    <div className="w-9 h-9 rounded-[0.75rem] bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-slate-950 font-black text-base shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">N</div>
+                    <span className="font-black text-xl text-white tracking-tighter uppercase">Ndara</span>
+                </Link>
+
+                <div className="flex items-center gap-4">
+                    <Link href={`/${locale}/login`} className="hidden md:block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white transition-colors">Se connecter</Link>
+                    
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-gray-500">
-                                <Menu className="h-6 w-6" />
-                            </Button>
+                            <button className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-white active:scale-90 transition shadow-xl border border-white/10">
+                                <Menu className="h-5 w-5" />
+                            </button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="bg-white p-0 w-[80%] border-none">
-                            <div className="flex flex-col h-full">
-                                <header className="p-6 border-b flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-ndara-orange rounded flex items-center justify-center text-white font-bold">N</div>
-                                    <span className="font-heading font-bold text-xl text-ndara-dark uppercase tracking-tight">Ndara</span>
+                        <SheetContent side="right" className="bg-[#0f172a]/95 backdrop-blur-2xl p-0 w-full border-none shadow-none">
+                            <div className="flex flex-col h-full safe-area-pt">
+                                <header className="p-8 border-b border-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-slate-950 font-black">N</div>
+                                        <span className="font-black text-xl text-white uppercase tracking-tighter">Ndara</span>
+                                    </div>
+                                    <SheetClose className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
+                                        <X size={20} />
+                                    </SheetClose>
                                 </header>
-                                <div className="flex-1 p-6 space-y-4">
-                                    <Link href={`/${locale}/#categories`} className="block font-bold text-gray-700 uppercase text-sm tracking-widest">Catégories</Link>
-                                    <Link href={`/${locale}/search`} className="block font-bold text-gray-700 uppercase text-sm tracking-widest">Formations</Link>
-                                    <Link href={`/${locale}/about`} className="block font-bold text-gray-700 uppercase text-sm tracking-widest">Pourquoi Ndara ?</Link>
-                                </div>
-                                <footer className="p-6 border-t space-y-3">
-                                    <Button asChild className="w-full h-12 rounded-xl bg-ndara-orange text-white font-black uppercase tracking-widest text-xs">
-                                        <Link href={`/${locale}/login?tab=register`}>S'inscrire gratuitement</Link>
+                                
+                                <nav className="flex-1 p-8 space-y-8">
+                                    <MobileNavLink href={`/${locale}/search`}>Formations</MobileNavLink>
+                                    <MobileNavLink href={`/${locale}/about`}>Notre Vision</MobileNavLink>
+                                    <MobileNavLink href={`/${locale}/abonnements`}>Abonnements</MobileNavLink>
+                                    <MobileNavLink href={`/${locale}/devenir-instructeur`}>Devenir Formateur</MobileNavLink>
+                                </nav>
+
+                                <footer className="p-8 space-y-4 pb-12">
+                                    <Button asChild className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl">
+                                        <Link href={`/${locale}/login?tab=register`}>Commencer Gratuitement</Link>
                                     </Button>
-                                    <Button asChild variant="outline" className="w-full h-12 rounded-xl border-gray-200 text-gray-700 font-bold uppercase tracking-widest text-xs">
-                                        <Link href={`/${locale}/login`}>Connexion</Link>
-                                    </Button>
+                                    <Link href={`/${locale}/login`} className="block text-center text-slate-500 font-bold uppercase text-[10px] tracking-widest py-2">Déjà membre ? Connexion</Link>
                                 </footer>
                             </div>
                         </SheetContent>
@@ -95,4 +77,12 @@ export function Navbar() {
         </div>
     </nav>
   );
+}
+
+function MobileNavLink({ href, children }: { href: string, children: React.ReactNode }) {
+    return (
+        <Link href={href} className="block text-3xl font-black text-white hover:text-primary transition-colors uppercase tracking-tighter">
+            {children}
+        </Link>
+    );
 }

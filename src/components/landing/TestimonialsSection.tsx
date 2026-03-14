@@ -1,133 +1,63 @@
 'use client';
 
 /**
- * @fileOverview Section Témoignages (Le Mur de la Sagesse) Ndara Afrique.
- * Design ultra-prestige basé sur le code de Qwen.
- * ✅ RESPONSIVE : Layout empilé sur mobile.
+ * @fileOverview Le Mur de la Sagesse - Témoignages Ndara Afrique.
+ * ✅ DESIGN : Cartes glassmorphism, badges 'Vérifié'.
  */
 
-import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, getDocs, where } from 'firebase/firestore';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, Quote, ShieldCheck } from 'lucide-react';
-import type { Review, NdaraUser } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 
-interface EnrichedReview extends Review {
-    userName?: string;
-    userAvatar?: string;
-    userRole?: string;
-}
+const TESTIMONIALS = [
+    {
+        name: "Jean Dupont",
+        avatar: "https://i.pravatar.cc/100?img=32",
+        text: "Ndara a changé ma vie. J'ai pu me former au trading sans quitter mon village. Les paiements Mobile Money sont un game changer.",
+        verified: true
+    },
+    {
+        name: "Fatou Diop",
+        avatar: "https://i.pravatar.cc/100?img=45",
+        text: "La qualité des cours en Agritech est incroyable. Des experts qui connaissent vraiment nos réalités locales.",
+        verified: true
+    }
+];
 
 export function TestimonialsSection() {
-  const [reviews, setReviews] = useState<EnrichedReview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const db = getFirestore();
-
-  useEffect(() => {
-    setIsLoading(true);
-    const q = query(collection(db, 'course_reviews'), orderBy('createdAt', 'desc'), limit(6));
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-        try {
-            if (snapshot.empty) {
-                setReviews([]);
-                setIsLoading(false);
-                return;
-            }
-
-            const rawReviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Review));
-            const studentIds = [...new Set(rawReviews.map(r => r.studentId))];
-            const usersMap = new Map<string, NdaraUser>();
-
-            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 30))));
-            usersSnap.forEach(d => usersMap.set(d.id, d.data() as NdaraUser));
-
-            const enriched = rawReviews.map(r => ({
-                ...r,
-                userName: usersMap.get(r.studentId)?.fullName,
-                userAvatar: usersMap.get(r.studentId)?.profilePictureURL,
-                userRole: usersMap.get(r.studentId)?.careerGoals?.currentRole || 'Étudiant Ndara'
-            }));
-
-            setReviews(enriched.filter(r => r.rating >= 4).slice(0, 3));
-        } catch (err) {
-            console.warn("Testimonials error:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    });
-
-    return () => unsubscribe();
-  }, [db]);
-
-  if (isLoading || reviews.length === 0) return null;
-
   return (
-    <section className="py-16 md:py-32 px-4">
-        <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16 md:mb-20 space-y-4">
-                <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tight leading-tight">
-                    <span className="text-white">Le Mur de la </span>
-                    <span className="gradient-text">Sagesse</span>
-                </h2>
-                <p className="text-base md:text-xl text-gray-400 max-w-2xl mx-auto font-medium italic">
-                    Découvrez les témoignages de nos Ndara qui ont transformé leur vie par le savoir.
-                </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                {reviews.map((review, idx) => (
-                    <div 
-                        key={review.id} 
-                        className="testimonial-card glassmorphism rounded-[2.5rem] p-6 md:p-8 flex flex-col justify-between relative overflow-hidden group animate-in fade-in slide-in-from-bottom-8 duration-700"
-                        style={{ animationDelay: `${idx * 200}ms` }}
-                    >
-                        <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-                            <Quote size={100} className="text-primary md:size-[120px]" />
-                        </div>
-
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-1 mb-6">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star 
-                                        key={i} 
-                                        size={14} 
-                                        className={cn(
-                                            "transition-all duration-500",
-                                            i < review.rating ? "text-yellow-400 fill-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" : "text-slate-800"
-                                        )} 
-                                    />
-                                ))}
-                            </div>
-                            <blockquote className="text-slate-300 italic text-base md:text-lg leading-relaxed font-medium mb-8">
-                                “{review.comment}”
-                            </blockquote>
-                        </div>
-
-                        <div className="flex items-center gap-4 pt-6 md:pt-8 border-t border-white/5 relative z-10">
-                            <Avatar className="h-12 w-12 md:h-14 md:w-14 border-2 border-primary/20 shadow-xl">
-                                <AvatarImage src={review.userAvatar} alt={review.userName} className="object-cover" />
-                                <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
-                                    {review.userName?.charAt(0)}
-                                </AvatarFallback>
+    <section className="px-6 mb-20 max-w-4xl mx-auto space-y-10">
+        <h2 className="font-black text-2xl text-white uppercase tracking-tight text-center">Le Mur de la Sagesse</h2>
+        
+        <div className="space-y-6">
+            {TESTIMONIALS.map((t, i) => (
+                <div key={i} className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/5 relative active:scale-[0.98] transition-all shadow-2xl group overflow-hidden">
+                    <Quote className="h-20 w-20 text-white/5 absolute top-2 left-2 rotate-12" />
+                    
+                    <div className="flex items-center gap-4 mb-5 relative z-10">
+                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary to-teal-400">
+                            <Avatar className="h-12 w-12 border-2 border-slate-900">
+                                <AvatarImage src={t.avatar} className="object-cover" />
+                                <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{t.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-black text-white uppercase tracking-tight text-xs md:text-sm truncate">
-                                    {review.userName}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">{review.userRole}</span>
-                                    <Badge className="bg-primary/10 text-primary border-none text-[7px] md:text-[8px] font-black uppercase h-4 px-1.5 shrink-0">
-                                        <ShieldCheck size={10} className="mr-1" /> Certifié
-                                    </Badge>
-                                </div>
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="font-black text-white text-sm uppercase tracking-tight">{t.name}</h4>
+                            <div className="flex text-yellow-500 mt-0.5">
+                                {[...Array(5)].map((_, i) => <Star key={i} size={10} className="fill-current" />)}
                             </div>
                         </div>
+                        {t.verified && (
+                            <div className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">
+                                VÉRIFIÉ
+                            </div>
+                        )}
                     </div>
-                ))}
-            </div>
+                    <p className="text-slate-300 text-sm italic leading-relaxed relative z-10 font-medium border-l-2 border-primary/20 pl-4 py-1">
+                        "{t.text}"
+                    </p>
+                </div>
+            ))}
         </div>
     </section>
   );
