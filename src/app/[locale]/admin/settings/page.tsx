@@ -4,6 +4,7 @@
  * @fileOverview Centre de Contrôle Global Ndara Afrique.
  * 15 Sections de pilotage en temps réel avec raccordement Firestore complet.
  * ✅ DESIGN : Architecture modulaire par onglets optimisée pour mobile.
+ * ✅ RÉSOLU : Ajout du contrôle global allowResaleRights.
  */
 
 import { useState, useEffect } from 'react';
@@ -43,7 +44,8 @@ import {
   Mail,
   ShieldCheck,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -110,6 +112,7 @@ const settingsSchema = z.object({
   // 15. Special Platform Flags
   allowTeacherToTeacherResale: z.boolean().default(false),
   allowCourseBuyout: z.boolean().default(true),
+  allowResaleRights: z.boolean().default(true),
   announcementMessage: z.string().optional(),
 });
 
@@ -138,6 +141,7 @@ export default function AdminSettingsPage() {
         maxFileSizeMb: 50,
         allowTeacherToTeacherResale: false,
         allowCourseBuyout: true,
+        allowResaleRights: true,
     }
   });
 
@@ -191,6 +195,7 @@ export default function AdminSettingsPage() {
           senderName: d.email?.senderName || 'Ndara Afrique',
           allowTeacherToTeacherResale: d.platform?.allowTeacherToTeacherResale ?? false,
           allowCourseBuyout: d.platform?.allowCourseBuyout ?? true,
+          allowResaleRights: d.platform?.allowResaleRights ?? true,
           announcementMessage: d.platform?.announcementMessage || '',
         });
       }
@@ -219,6 +224,7 @@ export default function AdminSettingsPage() {
             announcementMessage: values.announcementMessage || '',
             allowTeacherToTeacherResale: values.allowTeacherToTeacherResale,
             allowCourseBuyout: values.allowCourseBuyout,
+            allowResaleRights: values.allowResaleRights,
             allowInstructorSignup: values.allowRegistration,
             allowYoutube: true,
             allowBunny: values.useBunnyCdn
@@ -396,9 +402,23 @@ export default function AdminSettingsPage() {
                                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                     </FormItem>
                                 )}/>
-                                <FormField control={form.control} name="allowTeacherToTeacherResale" render={({ field }) => (
+                                <FormField control={form.control} name="allowResaleRights" render={({ field }) => (
                                     <FormItem className="flex items-center justify-between p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
-                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Marché Libre (Bourse)</FormLabel><FormDescription className="text-[10px]">Autorise la revente de licences entre experts.</FormDescription></div>
+                                        <div><FormLabel className="text-sm font-bold text-white uppercase flex items-center gap-2">Bourse du Savoir <TrendingUp size={14}/></FormLabel><FormDescription className="text-[10px]">Active le Marché Secondaire public.</FormDescription></div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )}/>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <FormField control={form.control} name="allowTeacherToTeacherResale" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between p-5 bg-slate-800/50 border border-white/5 rounded-2xl">
+                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Marché Libre (Inter-Experts)</FormLabel><FormDescription className="text-[10px]">Autorise la revente directe entre formateurs.</FormDescription></div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="allowCourseBuyout" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between p-5 bg-slate-800/50 border border-white/5 rounded-2xl">
+                                        <div><FormLabel className="text-sm font-bold text-white uppercase">Programme de Rachat</FormLabel><FormDescription className="text-[10px]">Permet aux formateurs de vendre à Ndara.</FormDescription></div>
                                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                     </FormItem>
                                 )}/>

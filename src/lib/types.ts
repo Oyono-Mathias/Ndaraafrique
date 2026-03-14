@@ -424,6 +424,7 @@ export interface Settings {
   platform?: {
     allowTeacherToTeacherResale?: boolean;
     allowCourseBuyout?: boolean;
+    allowResaleRights?: boolean;
     maintenanceMode?: boolean;
     announcementMessage?: string;
     allowInstructorSignup?: boolean;
