@@ -101,15 +101,16 @@ export async function toggleResaleRightsAction({
             updatedAt: FieldValue.serverTimestamp(),
         });
 
+        // Arbitrage Log
         await db.collection('admin_audit_logs').add({
             adminId: userId,
             eventType: 'settings.update',
             target: { id: courseId, type: 'course' },
-            details: `Droits de revente pour "${data.title}" : ${available ? 'Activés' : 'Désactivés'} à ${price} XOF.`,
+            details: `Arbitrage Marché Secondaire pour "${data.title}" : ${available ? 'Mis en vente' : 'Suspendu'} à ${price} XOF.`,
             timestamp: FieldValue.serverTimestamp(),
         });
 
-        return { success: true };
+        return { true: true };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
@@ -155,7 +156,7 @@ export async function purchaseResaleRightsAction({
             const payoutRef = db.collection('payouts').doc();
             batch.set(payoutRef, {
                 instructorId: previousOwner,
-                amount: price, // Ici on pourrait déduire une commission Ndara
+                amount: price,
                 status: 'valide',
                 method: 'Vente Licence Secondaire',
                 date: FieldValue.serverTimestamp()

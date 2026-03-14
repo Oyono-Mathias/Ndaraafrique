@@ -2,13 +2,14 @@
 
 /**
  * @fileOverview Page principale de gestion des cours pour les administrateurs.
- * ✅ NOUVEAU : Intégration du système de rachat (Buyouts).
+ * ✅ NOUVEAU : Intégration du moniteur du Marché Secondaire (Arbitrage).
  */
 
 import { CoursesTable } from '@/components/admin/courses/courses-table';
 import { BuyoutRequestsTable } from '@/components/admin/courses/BuyoutRequestsTable';
+import { ResaleMonitorTable } from '@/components/admin/courses/ResaleMonitorTable';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, BookOpen, ShoppingCart, LayoutGrid } from 'lucide-react';
+import { BookOpen, ShoppingCart, LayoutGrid, TrendingUp } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 
@@ -24,9 +25,9 @@ export default function AdminCoursesPage() {
           <h1 className="text-3xl font-black text-white uppercase tracking-tight">Catalogue de Formations</h1>
           <p className="text-slate-400 text-sm font-medium mt-1">Supervisez, modérez et organisez l'offre de savoir Ndara Afrique.</p>
         </div>
-        <Button asChild className="h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
+        <Button asChild className="h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl transition-all active:scale-95">
           <Link href="/instructor/courses/create">
-            <PlusCircle className="mr-2 h-4 w-4" /> Nouvelle Formation
+            <LayoutGrid className="mr-2 h-4 w-4" /> Nouvelle Formation
           </Link>
         </Button>
       </header>
@@ -36,6 +37,9 @@ export default function AdminCoursesPage() {
             <TabsTrigger value="all" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
                 <LayoutGrid className="h-3.5 w-3.5" /> Catalogue
             </TabsTrigger>
+            <TabsTrigger value="resale" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full text-amber-500">
+                <TrendingUp className="h-3.5 w-3.5" /> Marché Secondaire
+            </TabsTrigger>
             <TabsTrigger value="buyouts" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full text-primary">
                 <ShoppingCart className="h-3.5 w-3.5" /> Demandes de Rachat
             </TabsTrigger>
@@ -43,6 +47,10 @@ export default function AdminCoursesPage() {
 
         <TabsContent value="all" className="mt-8">
             <CoursesTable />
+        </TabsContent>
+
+        <TabsContent value="resale" className="mt-8">
+            <ResaleMonitorTable />
         </TabsContent>
 
         <TabsContent value="buyouts" className="mt-8">
