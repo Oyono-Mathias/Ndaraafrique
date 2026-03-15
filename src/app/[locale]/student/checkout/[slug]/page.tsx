@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V3.
- * ✅ WALLET INTEGRATION : Paiement direct via solde portefeuille.
+ * @fileOverview Tunnel de paiement Ndara Afrique V4.
+ * ✅ DESIGN : Choix direct de l'opérateur (Orange, MTN, Wave).
+ * ✅ LOGIQUE : Utilise MeSomb en arrière-plan pour le Mobile Money.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
-import { doc, getFirestore, updateDoc, increment, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getFirestore, updateDoc, increment, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,8 @@ import {
   Check,
   Zap,
   Sparkles,
-  CreditCard,
-  Layers,
-  Wallet
+  Wallet,
+  LayoutGrid
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
@@ -37,7 +37,6 @@ import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 
 type Provider = 'orange' | 'mtn' | 'wave' | 'virtual' | 'wallet';
-type Gateway = 'moneroo' | 'mesomb' | 'ndara';
 
 function CheckoutContent() {
   const params = useParams();
@@ -49,7 +48,6 @@ function CheckoutContent() {
   const { toast } = useToast();
   const db = getFirestore();
 
-  const [gateway, setGateway] = useState<Gateway>('moneroo');
   const [provider, setProvider] = useState<Provider>('orange');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -90,7 +88,7 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user || !course) return;
     
-    if (provider !== 'virtual' && provider !== 'wallet' && (!phoneNumber || phoneNumber.length < 8)) {
+    if (['orange', 'mtn', 'wave'].includes(provider) && (!phoneNumber || phoneNumber.length < 8)) {
         toast({ variant: 'destructive', title: "Numéro invalide", description: "Veuillez saisir votre numéro Mobile Money." });
         return;
     }
@@ -107,12 +105,10 @@ function CheckoutContent() {
               return;
           }
 
-          // Débiter le portefeuille
           await updateDoc(doc(db, 'users', user.uid), {
               balance: increment(-discountedPrice)
           });
 
-          // Traiter via le processeur central
           await processNdaraPayment({
               transactionId: `WAL-${user.uid.substring(0,5)}-${Date.now()}`,
               provider: 'wallet',
@@ -126,10 +122,11 @@ function CheckoutContent() {
           });
           setIsSuccess(true);
       } else if (provider === 'virtual') {
-          // Mode Démo
+          // Mode Démo Publicitaire
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
-      } else if (gateway === 'mesomb') {
+      } else {
+          // ✅ PAIEMENT VIA MESOMB PAR DÉFAUT
           const result = await initiateMeSombPayment({
               amount: discountedPrice,
               phoneNumber: phoneNumber,
@@ -137,15 +134,14 @@ function CheckoutContent() {
               courseId: course.id,
               userId: user.uid,
           });
-          if (result.success) toast({ title: "Validez sur votre téléphone" });
-          else throw new Error(result.error);
-      } else {
-          toast({ title: `Redirection Moneroo...` });
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          setIsSuccess(true);
+          if (result.success) {
+              toast({ title: "Demande envoyée !", description: "Veuillez valider le paiement sur votre téléphone." });
+          } else {
+              throw new Error(result.error);
+          }
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: "Échec", description: error.message });
+      toast({ variant: 'destructive', title: "Échec du paiement", description: error.message });
     } finally {
       setIsProcessing(false);
     }
@@ -161,10 +157,10 @@ function CheckoutContent() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
-                <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90">
+                <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90 transition">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
-                <h1 className="font-black text-xl text-white uppercase tracking-tight">Checkout</h1>
+                <h1 className="font-black text-xl text-white uppercase tracking-tight">Paiement</h1>
             </div>
             <div className="w-10" />
         </div>
@@ -172,20 +168,20 @@ function CheckoutContent() {
 
       <main className="pt-24 px-4 max-w-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
         
-        {/* --- INVOICE --- */}
+        {/* --- RECEIPT STYLE TICKET --- */}
         <div className="relative">
             <div className="bg-[#FEF3C7] rounded-[2rem] overflow-hidden shadow-2xl relative">
                 <div className="h-3 w-full" style={{ backgroundImage: 'radial-gradient(circle at 10px -1px, transparent 10px, #FEF3C7 11px)', backgroundSize: '20px 20px', backgroundRepeat: 'repeat-x' }} />
                 <div className="px-6 py-5 space-y-4">
                     <div className="flex items-center justify-between border-b-2 border-dashed border-[#D97706]/20 pb-4">
                         <div className="flex-1 min-w-0 pr-4">
-                            <p className="font-mono text-[#D97706]/60 text-[9px] uppercase tracking-widest mb-1">Article</p>
+                            <p className="font-mono text-[#D97706]/60 text-[9px] uppercase tracking-widest mb-1">Désignation</p>
                             <h2 className="font-black text-[#D97706] text-sm leading-tight uppercase truncate">{course.title}</h2>
                         </div>
                         <GraduationCap className="h-8 w-8 text-[#D97706] opacity-20" />
                     </div>
                     <div className="flex justify-between items-end">
-                        <p className="font-mono text-[#D97706]/60 text-[10px] uppercase font-bold tracking-widest">Total TTC</p>
+                        <p className="font-mono text-[#D97706]/60 text-[10px] uppercase font-bold tracking-widest">Montant à régler</p>
                         <p className="font-mono font-black text-[#D97706] text-3xl">
                             {discountedPrice.toLocaleString('fr-FR')} F
                         </p>
@@ -195,15 +191,15 @@ function CheckoutContent() {
             </div>
         </div>
 
-        {/* --- PROVIDER SELECTION --- */}
+        {/* --- OPERATOR SELECTION --- */}
         <section className="space-y-4">
             <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
-                <Layers className="h-3.5 w-3.5 text-primary" />
-                MOYEN DE PAIEMENT
+                <LayoutGrid className="h-3.5 w-3.5 text-primary" />
+                CHOIX DE L'OPÉRATEUR
             </h2>
             <div className="grid grid-cols-4 gap-2">
                 <button 
-                    onClick={() => { setGateway('ndara'); setProvider('wallet'); }}
+                    onClick={() => setProvider('wallet')}
                     className={cn(
                         "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
                         provider === 'wallet' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 opacity-40"
@@ -214,10 +210,12 @@ function CheckoutContent() {
                     </div>
                     <span className="text-white text-[8px] font-black uppercase">Wallet</span>
                 </button>
-                <ProviderBtn active={provider === 'orange'} onClick={() => { setProvider('orange'); setGateway('moneroo'); }} label="Orange" color="bg-[#FF7900]" initials="OM" />
-                <ProviderBtn active={provider === 'mtn'} onClick={() => { setProvider('mtn'); setGateway('moneroo'); }} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
+                
+                <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
+                <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
+                
                 <button 
-                    onClick={() => { setProvider('virtual'); setGateway('ndara'); }}
+                    onClick={() => setProvider('virtual')}
                     className={cn(
                         "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
                         provider === 'virtual' ? "bg-primary/10 border-primary" : "bg-slate-900 border-white/5 opacity-40 grayscale"
@@ -235,17 +233,17 @@ function CheckoutContent() {
             {provider === 'wallet' ? (
                 <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl space-y-3 animate-in slide-in-from-top-2">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
-                        <span>Solde Ndara</span>
+                        <span>Solde Portefeuille</span>
                         <span className="text-primary">{(currentUser?.balance || 0).toLocaleString()} XOF</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 italic">"Paiement instantané via votre portefeuille Ndara."</p>
+                    <p className="text-[10px] text-slate-400 italic">"Paiement instantané sans validation téléphone."</p>
                 </div>
             ) : provider === 'virtual' ? (
                 <div className="p-6 bg-primary/10 border border-primary/20 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
                     <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
-                        <Sparkles size={16} /> Mode Publicitaire
+                        <Sparkles size={16} /> Mode Publicitaire Actif
                     </div>
-                    <p className="text-[10px] text-slate-400 italic">"Paiement simulé."</p>
+                    <p className="text-[10px] text-slate-400 italic">"Ce mode simule un paiement réussi pour vos vidéos de démonstration."</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -281,20 +279,20 @@ function CheckoutContent() {
 
         <div className="bg-slate-900/50 rounded-3xl p-4 border border-white/5 flex items-center gap-4">
             <ShieldCheck className="h-8 w-8 text-emerald-500 opacity-50" />
-            <p className="text-slate-500 text-[10px] font-medium italic">Vos fonds sont protégés par Ndara Secure v2.0</p>
+            <p className="text-slate-500 text-[10px] font-medium italic">Vos fonds sont sécurisés par l'infrastructure Ndara Afrique.</p>
         </div>
 
       </main>
 
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-2xl">
-        <div className="max-w-md mx-auto space-y-4">
+        <div className="max-w-md mx-auto">
             <Button 
                 onClick={handlePayment} 
                 disabled={isProcessing || isSuccess}
                 className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95"
             >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : <Lock className="h-4 w-4 mr-2"/>}
-                PAYER {discountedPrice.toLocaleString('fr-FR')} XOF
+                VALIDER LE PAIEMENT
             </Button>
         </div>
       </footer>
@@ -306,9 +304,9 @@ function CheckoutContent() {
                       <Check className="h-10 w-10 text-slate-900" strokeWidth={4} />
                   </div>
                   <h3 className="font-black text-white text-2xl uppercase mb-2">Succès !</h3>
-                  <p className="text-slate-400 text-sm mb-8 leading-relaxed">Votre formation est débloquée. Préparez-vous à apprendre.</p>
+                  <p className="text-slate-400 text-sm mb-8 leading-relaxed">Votre formation est maintenant débloquée.</p>
                   <Button onClick={() => router.push(`/${locale}/courses/${slug}`)} className="w-full h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
-                      Accéder au cours
+                      Commencer l'étude
                   </Button>
               </div>
           </div>

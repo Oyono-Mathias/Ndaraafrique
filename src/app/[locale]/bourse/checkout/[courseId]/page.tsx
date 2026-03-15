@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel d'acquisition de licence de revente (Marché Secondaire).
- * ✅ RÉSOLU : Correction du Type Error sur result.error.
+ * @fileOverview Tunnel d'acquisition de licence de revente V2.
+ * ✅ DESIGN : Choix de l'opérateur local (MeSomb).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -20,27 +20,24 @@ import {
   Landmark,
   BadgeEuro,
   TrendingUp,
-  Check,
-  UserPlus,
   Smartphone,
-  AlertTriangle,
-  CreditCard,
-  Layers
+  Layers,
+  Check
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { purchaseResaleRightsAction } from '@/actions/courseActions';
+import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 
-type Gateway = 'moneroo' | 'mesomb';
+type Provider = 'orange' | 'mtn' | 'wave';
 
 export default function BourseCheckoutPage() {
   const params = useParams();
   const courseId = params.courseId as string;
   const router = useRouter();
-  const pathname = usePathname();
   const locale = useLocale();
   const { user } = useRole();
   const { toast } = useToast();
@@ -48,7 +45,7 @@ export default function BourseCheckoutPage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [gateway, setGateway] = useState<Gateway>('moneroo');
+  const [provider, setProvider] = useState<Provider>('orange');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -67,15 +64,7 @@ export default function BourseCheckoutPage() {
   }, [db, courseId]);
 
   const handlePurchase = async () => {
-    if (!user) {
-        router.push(`/${locale}/login?tab=register&redirect=${encodeURIComponent(pathname)}`);
-        return;
-    }
-
-    if (!course || !course.resaleRightsAvailable) {
-        toast({ variant: 'destructive', title: "Actif indisponible" });
-        return;
-    }
+    if (!user || !course) return;
 
     if (!phoneNumber || phoneNumber.length < 8) {
         toast({ variant: 'destructive', title: "Numéro requis" });
@@ -85,21 +74,29 @@ export default function BourseCheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // Simulation de délai réseau
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // 1. Initiation du paiement via MeSomb
+      const resMeSomb = await initiateMeSombPayment({
+          amount: course.resaleRightsPrice || 0,
+          phoneNumber: phoneNumber,
+          service: provider === 'orange' ? 'ORANGE' : 'MTN',
+          courseId: course.id,
+          userId: user.uid,
+      });
+
+      if (!resMeSomb.success) throw new Error(resMeSomb.error);
+
+      // 2. Finalisation de la transaction interne
       const result = await purchaseResaleRightsAction({
           courseId: course.id,
           buyerId: user.uid,
-          transactionId: `TXN-LICENSE-${gateway.toUpperCase()}-${Date.now()}`
+          transactionId: `TXN-LICENSE-${resMeSomb.transactionId}`
       });
 
       if (result.success) {
           setIsSuccess(true);
-          toast({ title: "Acquisition réussie !", description: "Vous êtes le nouveau propriétaire." });
+          toast({ title: "Acquisition réussie !", description: "Le titre de propriété est en cours de transfert." });
       } else {
-          // Utilisation d'un cast sécurisé pour satisfaire TypeScript
-          const errorMsg = (result as { success: boolean; error?: string }).error || "Une erreur est survenue.";
+          const errorMsg = (result as any).error || "Une erreur est survenue.";
           throw new Error(errorMsg);
       }
       
@@ -152,14 +149,16 @@ export default function BourseCheckoutPage() {
             </div>
         </div>
 
-        {/* --- GATEWAY SELECTION --- */}
+        {/* --- OPERATOR SELECTION --- */}
         <section className="space-y-4">
-            <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2 text-slate-500">
-                <Layers className="h-3.5 w-3.5" /> CHOISIR LA PASSERELLE
+            <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                MOYEN DE PAIEMENT
             </h2>
-            <div className="grid grid-cols-2 gap-3">
-                <GatewayBtn active={gateway === 'moneroo'} onClick={() => setGateway('moneroo')} label="Moneroo" icon={CreditCard} />
-                <GatewayBtn active={gateway === 'mesomb'} onClick={() => setGateway('mesomb')} label="MeSomb" icon={Smartphone} />
+            <div className="grid grid-cols-3 gap-3">
+                <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
+                <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
+                <ProviderBtn active={provider === 'wave'} onClick={() => setProvider('wave')} label="Wave" color="bg-[#1DC0F1]" initials="W" />
             </div>
         </section>
 
@@ -184,7 +183,7 @@ export default function BourseCheckoutPage() {
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
                 <ShieldCheck size={14} className="text-primary" /> Clause de Transfert
             </h3>
-            <p className="text-xs text-slate-400 leading-relaxed italic">"L'acquisition via {gateway === 'moneroo' ? 'Moneroo' : 'MeSomb'} garantit l'attribution immédiate de votre titre de propriété sur Ndara Afrique."</p>
+            <p className="text-xs text-slate-400 leading-relaxed italic">"L'acquisition via Mobile Money garantit l'attribution immédiate de votre titre de propriété sur Ndara Afrique."</p>
         </div>
 
       </main>
@@ -219,19 +218,19 @@ export default function BourseCheckoutPage() {
   );
 }
 
-function GatewayBtn({ active, onClick, label, icon: Icon }: any) {
+function ProviderBtn({ active, onClick, label, color, initials, darkText = false }: any) {
     return (
         <button 
             onClick={onClick}
             className={cn(
-                "flex flex-col items-center justify-center gap-3 p-4 rounded-3xl border-2 transition-all active:scale-95",
-                active ? "bg-primary/10 border-primary shadow-lg shadow-primary/10" : "bg-slate-900 border-white/5 opacity-50"
+                "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
+                active ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 grayscale opacity-40"
             )}
         >
-            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400">
-                <Icon size={20} />
+            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-black text-[10px] shadow-lg", color, darkText ? "text-slate-950" : "text-white")}>
+                {initials}
             </div>
-            <span className="text-[10px] font-black text-white uppercase tracking-widest">{label}</span>
+            <span className="text-white text-[8px] font-black uppercase">{label}</span>
         </button>
     );
 }
