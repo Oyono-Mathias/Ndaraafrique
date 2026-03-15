@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour l'intégration de MeSomb via l'API REST.
- * Utilise fetch pour garantir la compatibilité maximale avec Vercel et éviter les erreurs de SDK.
+ * Utilise les variables d'environnement standardisées.
  */
 
 interface MeSombPaymentParams {
@@ -21,7 +21,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const secretKey = process.env.MESOMB_SECRET_KEY;
 
   if (!applicationKey || !accessKey || !secretKey) {
-    console.error("MESOMB_CONFIG_MISSING");
+    console.error("MESOMB_CONFIG_MISSING: Vérifiez vos variables d'environnement.");
     return { success: false, error: "Configuration MeSomb incomplète sur le serveur." };
   }
 
