@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
+import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 
@@ -99,10 +100,9 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // Simulation multi-passerelle
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      
       if (provider === 'virtual') {
+          // Mode Publicitaire / Démo
+          await new Promise(resolve => setTimeout(resolve, 2000));
           const balance = currentUser?.virtualBalance || 0;
           if (balance < discountedPrice) {
               toast({ variant: 'destructive', title: "Solde insuffisant", description: "Rechargez votre compte démo." });
@@ -124,13 +124,32 @@ export default function CheckoutPage() {
               transactionId: `DEMO-${Date.now()}`,
               enrollmentType: 'paid'
           });
-      } else {
-          // Logique réelle de redirection vers Moneroo ou MeSomb
-          toast({ title: `Redirection vers ${gateway === 'moneroo' ? 'Moneroo' : 'MeSomb'}...` });
-          // ICI : Intégration du futur initiateMeSombPayment
-      }
+          setIsSuccess(true);
+      } else if (gateway === 'mesomb') {
+          // FLUX MESOMB
+          const result = await initiateMeSombPayment({
+              amount: discountedPrice,
+              phoneNumber: phoneNumber,
+              service: provider === 'orange' ? 'ORANGE' : 'MTN',
+              courseId: course.id,
+              userId: user.uid,
+              affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
+              couponId: appliedCoupon?.id
+          });
 
-      setIsSuccess(true);
+          if (result.success) {
+              setIsSuccess(true);
+              toast({ title: "Paiement réussi !", description: "Votre accès est activé." });
+          } else {
+              toast({ variant: 'destructive', title: "Paiement échoué", description: result.error });
+          }
+      } else {
+          // FLUX MONEROO (Déjà configuré via Webhook)
+          toast({ title: `Redirection vers Moneroo...` });
+          // Simulation Moneroo pour le prototype
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          setIsSuccess(true);
+      }
     } catch (error) {
       toast({ variant: 'destructive', title: "Erreur technique" });
     } finally {
@@ -148,7 +167,7 @@ export default function CheckoutPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
-                <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-gray-400 hover:text-white active:scale-90">
+                <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
                 <h1 className="font-black text-xl text-white uppercase tracking-tight">Checkout</h1>
@@ -182,7 +201,7 @@ export default function CheckoutPage() {
             </div>
         </div>
 
-        {/* --- GATEWAY SELECTION (NEW) --- */}
+        {/* --- GATEWAY SELECTION --- */}
         <section className="space-y-4">
             <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
                 <Layers className="h-3.5 w-3.5 text-primary" />
