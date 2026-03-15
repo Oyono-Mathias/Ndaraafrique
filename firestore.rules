@@ -26,23 +26,27 @@ service cloud.firestore {
         get(/databases/$(database)/documents/courses/$(courseId)).data.ownerId == request.auth.uid;
     }
 
+    // --- RÉGLAGES & ÉLÉMENTS DE DESIGN (LECTURE PUBLIQUE CRITIQUE) ---
+    match /settings/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+    match /carousel_slides/{slideId} { allow read, list: if true; allow write: if isAdmin(); }
+    match /faqs/{faqId} { allow read, list: if true; allow write: if isAdmin(); }
+    match /course_templates/{templateId} { allow read, list: if true; allow write: if isAdmin(); }
+
     // --- COURS & CONTENU (VITRINE PUBLIQUE) ---
     match /courses/{courseId} {
-      // Lecture et Listage public pour le catalogue et la SEO
       allow read, list: if true; 
       
-      // Création autorisée pour tout utilisateur connecté
       allow create: if isSignedIn(); 
       
-      // Modification : Admin OU Créateur OU Propriétaire (pour les prix de revente)
       allow update: if isAdmin() || 
         isCreator(courseId) || 
         (isCourseOwner(courseId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['resaleRightsPrice', 'resaleRightsAvailable', 'updatedAt', 'buyoutStatus', 'buyoutPrice']));
       
-      // Suppression réservée au Créateur original ou Admin
       allow delete: if isAdmin() || isCreator(courseId);
       
-      // --- CONTENU PÉDAGOGIQUE (OUVERT POUR APERÇU) ---
       match /{allSubcollections=**} {
         allow read, list: if true;
         allow write: if isAdmin() || isCreator(courseId);
@@ -51,16 +55,10 @@ service cloud.firestore {
 
     // --- UTILISATEURS (PROFILS PUBLICS POUR LA CRÉDIBILITÉ) ---
     match /users/{userId} {
-      // Autoriser GET et LIST publiquement pour afficher les instructeurs sur l'accueil
       allow read, list: if true;
-      
-      // Création réservée au propriétaire (pendant le signup)
       allow create: if isOwner(userId);
-      
-      // Mise à jour réservée au propriétaire ou admin
       allow update: if isOwner(userId) || isAdmin();
       
-      // Sous-collections privées (notifications, chatHistory)
       match /notifications/{notifId} { allow read, write: if isOwner(userId) || isAdmin(); }
       match /chatHistory/{msgId} { allow read, write: if isOwner(userId); }
       match /activity/{actId} { allow read: if true; allow write: if isOwner(userId) || isAdmin(); }
@@ -83,12 +81,6 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
     }
-
-    // --- RÉGLAGES & ÉLÉMENTS DE DESIGN ---
-    match /settings/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /carousel_slides/{slideId} { allow read, list: if true; allow write: if isAdmin(); }
-    match /faqs/{faqId} { allow read, list: if true; allow write: if isAdmin(); }
-    match /course_templates/{templateId} { allow read, list: if true; allow write: if isAdmin(); }
 
     // --- INSCRIPTIONS & PROGRESSION ---
     match /enrollments/{enrollId} {
