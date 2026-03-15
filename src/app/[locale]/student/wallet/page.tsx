@@ -10,7 +10,6 @@ import { useRole } from '@/context/RoleContext';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Wallet, 
@@ -55,6 +54,9 @@ export default function NdaraWalletPage() {
 
         const unsub = onSnapshot(q, (snap) => {
             setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
+            setIsLoading(false);
+        }, (err) => {
+            console.error("Wallet history error:", err);
             setIsLoading(false);
         });
 
@@ -101,7 +103,7 @@ export default function NdaraWalletPage() {
 
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-emerald-200 text-[9px] font-bold uppercase tracking-widest opacity-60">Membre Ndara</p>
+                                <p className="text-emerald-200 text-[9px] font-bold uppercase mb-1 tracking-wider">Membre Ndara</p>
                                 <p className="text-white text-sm font-black uppercase tracking-widest">{currentUser?.fullName?.split(' ')[0]}</p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -194,7 +196,7 @@ export default function NdaraWalletPage() {
 
 function WalletSkeleton() {
     return (
-        <div className="p-6 space-y-8 pt-32">
+        <div className="p-6 space-y-8 pt-32 bg-[#0f172a] min-h-screen">
             <Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" />
             <div className="grid grid-cols-2 gap-4">
                 <Skeleton className="h-16 rounded-[2rem] bg-slate-900" />

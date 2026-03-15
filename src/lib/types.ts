@@ -103,7 +103,7 @@ export interface NdaraUser {
   countryName?: string;
   rating?: number;
   // --- ECONOMY ---
-  balance?: number; // ✅ Standard cash balance
+  balance?: number; 
   affiliateBalance?: number; 
   pendingAffiliateBalance?: number; 
   referralBalance?: number;
@@ -269,11 +269,9 @@ export interface Course {
     courseId?: string; 
     title: string;
     description: string;
-    // ✅ NEW SEPARATION OF ROLES
-    creatorId: string;      // Original author (immutable)
-    ownerId: string;        // Current financial beneficiary
-    instructorId: string;   // Current pedagogical manager
-    
+    creatorId: string;      
+    ownerId: string;        
+    instructorId: string;   
     category: string;
     price: number;
     originalPrice?: number;
@@ -417,6 +415,37 @@ export interface DesignSettings {
   defaultTheme?: 'light' | 'dark' | 'system';
 }
 
+export interface NdaraPaymentMetadata {
+  userId: string;
+  courseId: string;
+  affiliateId?: string;
+  couponId?: string;
+  type: 'course_purchase' | 'license_purchase' | 'subscription' | 'wallet_topup' | 'commission';
+}
+
+export interface Payment {
+  id: string;
+  userId: string;
+  instructorId: string;
+  courseId: string;
+  courseTitle?: string;
+  amount: number;
+  currency: string;
+  provider: PaymentProvider;
+  date: Timestamp | FieldValue;
+  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
+  metadata?: NdaraPaymentMetadata;
+  refundedAt?: Timestamp | FieldValue;
+  refundTicketId?: string;
+  fraudReview?: {
+    isSuspicious: boolean;
+    riskScore: number;
+    reason: string;
+    checkedAt: Timestamp | FieldValue;
+    reviewed?: boolean;
+  }
+}
+
 export interface Settings {
   general: {
     siteName: string;
@@ -451,7 +480,6 @@ export interface Settings {
     allowYoutube?: boolean;
     allowBunny?: boolean;
     resaleRightsPercentage?: number;
-    // ✅ MARKET SETTINGS
     market?: {
         subscriptionRequired: boolean;
         subscriptionPrice: number;
@@ -577,28 +605,6 @@ export interface Settings {
       teamMembers?: TeamMember[];
     };
   };
-}
-
-export interface Payment {
-  id: string;
-  userId: string;
-  instructorId: string;
-  courseId: string;
-  courseTitle?: string;
-  amount: number;
-  currency: string;
-  provider: PaymentProvider;
-  date: Timestamp | FieldValue;
-  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
-  refundedAt?: Timestamp | FieldValue;
-  refundTicketId?: string;
-  fraudReview?: {
-    isSuspicious: boolean;
-    riskScore: number;
-    reason: string;
-    checkedAt: Timestamp | FieldValue;
-    reviewed?: boolean;
-  }
 }
 
 export interface PayoutRequest {

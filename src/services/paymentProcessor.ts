@@ -1,23 +1,14 @@
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { sendUserNotification, sendAdminNotification } from '@/actions/notificationActions';
-import { detectFraud } from '@/ai/flows/detect-fraud-flow';
-import type { PaymentProvider, Course, Settings, NdaraUser } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
+import { sendUserNotification } from '@/actions/notificationActions';
+import type { PaymentProvider, Course, Settings, NdaraUser, NdaraPaymentMetadata } from '@/lib/types';
 
 /**
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
  * ✅ WALLET V1 : Gestion des flux de crédit/débit portefeuille.
  */
-
-export interface NdaraPaymentMetadata {
-  userId: string;
-  courseId: string;
-  affiliateId?: string;
-  couponId?: string;
-  type: 'course_purchase' | 'license_purchase' | 'subscription' | 'wallet_topup';
-}
 
 export interface NdaraPaymentDetails {
   transactionId: string;
@@ -38,7 +29,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     }
 
     const [courseDoc, settingsDoc, userDoc] = await Promise.all([
-      metadata.courseId !== 'wallet' ? db.collection('courses').doc(metadata.courseId).get() : Promise.resolve(null),
+      (metadata.courseId && metadata.courseId !== 'wallet') ? db.collection('courses').doc(metadata.courseId).get() : Promise.resolve(null),
       db.collection('settings').doc('global').get(),
       db.collection('users').doc(metadata.userId).get()
     ]);
@@ -46,7 +37,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     if (!userDoc.exists) throw new Error("Utilisateur introuvable.");
 
     const settings = settingsDoc.data() as Settings;
-    const userData = userDoc.data() as NdaraUser;
     const batch = db.batch();
 
     // --- ENREGISTREMENT TRANSACTION ---
@@ -110,7 +100,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const ownerId = courseData.ownerId || courseData.instructorId;
       if (ownerId && ownerId !== 'NDARA_OFFICIAL') {
           const ownerRef = db.collection('users').doc(ownerId);
-          // On crédite le solde après commission plateforme (simplifié ici à 80% pour le test)
           const netAmount = (amount * (settings?.commercial?.instructorShare || 80)) / 100;
           batch.update(ownerRef, {
               balance: FieldValue.increment(netAmount),
@@ -129,7 +118,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
     await batch.commit();
 
-    // 7. Notification de l'étudiant
     await sendUserNotification(metadata.userId, {
       text: `Bara ala ! Votre formation est maintenant disponible.`,
       link: `/student/courses/${metadata.courseId}`,
