@@ -1,21 +1,23 @@
 'use client';
 
 /**
- * @fileOverview AppShell Ndara Afrique (Design Qwen Redesign).
- * ✅ GESTION DES ACCÈS : Ouverture des routes publiques professionnelles.
- * ✅ RÉSOLU : Redirection intelligente et protection des zones privées.
+ * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
+ * Gère l'affichage dynamique des menus selon le rôle et la page.
+ * ✅ RÉSOLU : Navigation activée sur la page /search.
+ * ✅ RÉSOLU : Plein écran automatique pour le lecteur de cours.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { StudentBottomNav } from '@/components/layout/student-bottom-nav';
+import { InstructorBottomNav } from '@/components/layout/instructor-bottom-nav';
+import { AdminBottomNav } from '@/components/layout/admin-bottom-nav';
 import { Button } from '@/components/ui/button';
-import { Wrench, PanelLeft, Loader2, Megaphone, X } from 'lucide-react';
+import { Wrench, Loader2, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
@@ -56,7 +58,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const locale = useLocale();
   const pathname = usePathname() || '';
   const db = getFirestore();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const [siteSettings, setSiteSettings] = useState({
       maintenanceMode: false,
@@ -82,116 +83,76 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
+  // Définition des pages publiques (sans sidebar ni bottom nav globale)
   const isPublicPage = useMemo(() => {
-    // 1. Liste des routes statiques publiques
-    const publicPaths = [
-        '/', 
-        '/about', 
-        '/abonnements', 
-        '/search', 
-        '/investir', 
-        '/cgu', 
-        '/mentions-legales', 
-        '/leaderboard', 
-        '/bourse',
-        '/login',
-        '/register',
-        '/forgot-password'
-    ];
-    
+    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
     if (publicPaths.includes(cleanPath)) return true;
-
-    // 2. Routes dynamiques publiques
-    if (cleanPath.startsWith('/verify/')) return true;
-    if (cleanPath.startsWith('/invite/')) return true;
-    if (cleanPath.startsWith('/ref/')) return true;
-    if (cleanPath.startsWith('/course/')) return true;
-    if (cleanPath.startsWith('/bourse/checkout/')) return true;
-
-    // 3. Profils Instructeurs Publics (Exclure les zones de gestion)
-    if (cleanPath.startsWith('/instructor/')) {
-        const instructorPrivateSubRoutes = [
-            '/dashboard', '/courses', '/students', '/revenus', 
-            '/annonces', '/avis', '/devoirs', '/questions-reponses', 
-            '/quiz', '/ressources', '/certificats', '/settings'
-        ];
-        // Si aucune sous-route privée n'est détectée, c'est le profil public
-        return !instructorPrivateSubRoutes.some(sub => cleanPath.includes(sub));
-    }
-
+    if (cleanPath.startsWith('/verify/') || cleanPath.startsWith('/invite/') || cleanPath.startsWith('/ref/') || cleanPath.startsWith('/course/')) return true;
     return false;
   }, [cleanPath]);
 
+  // Le lecteur de cours est toujours en plein écran
+  const isFullScreen = useMemo(() => {
+      return cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
+  }, [cleanPath]);
+
+  // La recherche est une page hybride : publique mais avec nav si connecté
+  const isSearchPage = cleanPath === '/search';
+
   useEffect(() => {
     if (loading) return;
-
-    // Si non connecté et tente d'accéder à une page privée
-    if (!user) {
-      if (!isPublicPage && !isAuthPage) router.push(`/${locale}/login`);
-      return;
+    if (!user && !isPublicPage && !isAuthPage && !isSearchPage) {
+      router.push(`/${locale}/login`);
     }
-
-    // Si connecté, on gère les redirections de rôle pour les zones protégées
-    if (cleanPath === '/' || isPublicPage || cleanPath === '/account') return;
-
-    const isAdminArea = cleanPath.startsWith('/admin');
-    const isInstructorArea = cleanPath.startsWith('/instructor');
-
-    // Un Admin peut tout voir, un Instructeur peut voir l'espace instructeur et étudiant, un Étudiant ne voit que son espace.
-    if (role === 'student' && (isAdminArea || isInstructorArea)) {
-        router.push(`/${locale}/student/dashboard`);
-    } else if (role === 'instructor' && isAdminArea) {
-        router.push(`/${locale}/instructor/dashboard`);
-    }
-  }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage, locale]);
+  }, [user, loading, isPublicPage, isAuthPage, isSearchPage, router, locale]);
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-[#0f172a] text-center p-6">
             <Wrench className="h-16 w-16 text-primary mb-4" />
-            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance Ndara</h1>
-            <p className="text-slate-500 mt-2 font-medium italic">Nous effectuons des mises à jour techniques.</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance</h1>
+            <p className="text-slate-500 mt-2 font-medium italic">Revenez dans quelques instants.</p>
         </div>
       );
   }
 
-  // Le lecteur de cours est en plein écran
-  const isFullScreen = cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
-  const showNav = user && !isAuthPage && !isPublicPage && cleanPath !== '/';
+  // On affiche les menus SI l'utilisateur est connecté ET qu'on n'est pas sur une page 100% publique/auth/plein écran
+  const showMenus = !!user && !isAuthPage && !isPublicPage && !isFullScreen;
   
-  const handleSidebarLinkClick = () => setIsSheetOpen(false);
+  const handleSidebarLinkClick = () => {};
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
   return (
-    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
-        {/* Grain Texture Layer */}
+    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", showMenus && "md:grid md:grid-cols-[280px_1fr]")}>
         <div className="grain-overlay" />
 
-        {showNav && !isFullScreen && (
+        {showMenus && (
           <aside className="hidden md:block h-screen sticky top-0 border-r border-white/5">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
+
         <div className="flex flex-col flex-1 relative z-10">
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           
-          {showNav && !isFullScreen && (
-            <header className={cn(
-                "h-16 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md",
-                isFullScreen && "md:hidden"
-            )}>
+          {showMenus && (
+            <header className="h-16 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md">
                 <Header />
             </header>
           )}
 
-          <main className={cn(
-            "flex-1",
-            showNav && !isFullScreen ? "pb-20 md:p-6 md:pb-6" : "p-0"
-          )}>
+          <main className={cn("flex-1", showMenus ? "pb-24 md:pb-6 md:p-6" : "p-0")}>
             {children}
           </main>
 
-          {role === 'student' && showNav && !isFullScreen && <StudentBottomNav />}
+          {/* Bottom Navigation Mobile par rôle */}
+          {showMenus && (
+              <div className="md:hidden">
+                  {role === 'admin' && <AdminBottomNav />}
+                  {role === 'instructor' && <InstructorBottomNav />}
+                  {role === 'student' && <StudentBottomNav />}
+              </div>
+          )}
         </div>
       </div>
   );
@@ -199,25 +160,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
 
   return (
     <>
       <SplashScreen />
       <OfflineBar />
-      <Suspense fallback={
-        <div className="h-screen flex items-center justify-center bg-[#0f172a]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary"/>
-        </div>
-      }>
-        <AppShellInner>
-            {children}
-        </AppShellInner>
+      <Suspense fallback={<div className="h-screen flex items-center justify-center bg-[#0f172a]"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
+        <AppShellInner>{children}</AppShellInner>
       </Suspense>
     </>
   );
