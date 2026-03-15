@@ -26,15 +26,15 @@ service cloud.firestore {
         get(/databases/$(database)/documents/courses/$(courseId)).data.ownerId == request.auth.uid;
     }
 
-    // --- COURS ---
+    // --- COURS & CONTENU (VITRINE PUBLIQUE) ---
     match /courses/{courseId} {
-      // Lecture publique pour le catalogue
+      // Lecture publique pour le catalogue et la SEO
       allow read: if true; 
       
-      // Création autorisée pour tout utilisateur connecté
+      // Création autorisée pour tout utilisateur connecté (pourra être modéré ensuite)
       allow create: if isSignedIn(); 
       
-      // Modification du cours : Admin OU Créateur OU (Propriétaire uniquement pour les champs de revente)
+      // Modification : Admin OU Créateur OU (Propriétaire uniquement pour les droits de revente)
       allow update: if isAdmin() || 
         isCreator(courseId) || 
         (isCourseOwner(courseId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['resaleRightsPrice', 'resaleRightsAvailable', 'updatedAt', 'buyoutStatus', 'buyoutPrice']));
@@ -42,47 +42,32 @@ service cloud.firestore {
       // Suppression réservée au Créateur original ou Admin
       allow delete: if isAdmin() || isCreator(courseId);
       
-      // --- CONTENU PÉDAGOGIQUE (Sections, Leçons, Quiz, Devoirs) ---
-      match /sections/{sectionId} {
+      // --- CONTENU PÉDAGOGIQUE ---
+      // Ouvert en lecture pour permettre de voir le programme avant achat
+      match /{allSubcollections=**} {
         allow read: if true;
         allow write: if isAdmin() || isCreator(courseId);
-        
-        match /lectures/{lectureId} {
-          allow read: if true;
-          allow write: if isAdmin() || isCreator(courseId);
-        }
-        match /quizzes/{quizId} {
-          allow read: if true;
-          allow write: if isAdmin() || isCreator(courseId);
-          
-          match /questions/{qId} {
-            allow read: if true;
-            allow write: if isAdmin() || isCreator(courseId);
-          }
-        }
-        match /assignments/{assignId} {
-          allow read: if true;
-          allow write: if isAdmin() || isCreator(courseId);
-        }
-      }
-
-      // --- HISTORIQUE DES LICENCES ---
-      match /license_history/{historyId} {
-        allow read: if isAdmin() || isCreator(courseId) || isCourseOwner(courseId);
-        allow write: if false; // Uniquement via Server Action (Admin SDK)
       }
     }
 
-    // --- UTILISATEURS ---
+    // --- UTILISATEURS (PROFILS PUBLICS) ---
     match /users/{userId} {
-      allow read: if isSignedIn();
+      // Lecture publique pour afficher les formateurs sur la Landing Page
+      allow read: if true;
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       
-      // Sous-collections (notifications, historique chat, etc.)
-      match /{allSubcollections=**} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
+      // Sous-collections privées (notifications, chatHistory)
+      match /notifications/{notifId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /chatHistory/{msgId} { allow read, write: if isOwner(userId); }
+      match /activity/{actId} { allow read: if true; allow write: if isOwner(userId) || isAdmin(); }
+    }
+
+    // --- AVIS & TÉMOIGNAGES ---
+    match /course_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.studentId;
     }
 
     // --- MESSAGERIE (CHATS) ---
@@ -95,18 +80,17 @@ service cloud.firestore {
       }
     }
 
-    // --- ACCÈS PUBLICS & RÉGLAGES ---
+    // --- RÉGLAGES & ÉLÉMENTS DE DESIGN ---
     match /settings/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /faqs/{faqId} { allow read: if true; allow write: if isAdmin(); }
     match /carousel_slides/{slideId} { allow read: if true; allow write: if isAdmin(); }
+    match /faqs/{faqId} { allow read: if true; allow write: if isAdmin(); }
     match /course_templates/{templateId} { allow read: if true; allow write: if isAdmin(); }
 
-    // --- INSCRIPTIONS ET PROGRESSION ---
+    // --- INSCRIPTIONS & PROGRESSION ---
     match /enrollments/{enrollId} {
       allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || isAdmin() || request.auth.uid == resource.data.instructorId);
-      allow create: if isSignedIn(); // Permet l'inscription directe
-      allow update: if isAdmin() || isOwner(resource.data.studentId);
-      allow delete: if isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.studentId);
     }
     
     match /course_progress/{progressId} {
@@ -114,30 +98,12 @@ service cloud.firestore {
       allow create: if isSignedIn();
     }
 
-    // --- DEVOIRS (SOUMISSIONS) ---
-    match /devoirs/{submissionId} {
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId || isAdmin());
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (request.auth.uid == resource.data.instructorId || isAdmin());
-    }
-
-    // --- QUESTIONS & RÉPONSES ---
-    match /questions/{questionId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (request.auth.uid == resource.data.instructorId || isAdmin());
-    }
-
-    // --- AFFILIATION & FINANCES ---
-    match /affiliate_transactions/{transId} {
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.affiliateId || isAdmin());
-      allow write: if false; // Géré par le serveur
-    }
-    
-    match /payout_requests/{payoutId} {
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.instructorId || isAdmin());
+    // --- SUPPORT & SÉCURITÉ ---
+    match /support_tickets/{ticketId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isSignedIn();
       allow update: if isAdmin();
+      match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }
 
     match /payments/{paymentId} {
@@ -145,22 +111,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // --- AUTRES COLLECTIONS ---
     match /user_wishlist/{wishId} {
       allow read, write: if isSignedIn() && request.auth.uid == resource.data.userId;
-    }
-    
-    match /quiz_submissions/{subId} {
-      allow read, write: if isSignedIn() && request.auth.uid == resource.data.studentId;
-    }
-
-    match /investor_leads/{leadId} {
-      allow create: if true;
-      allow read, update: if isAdmin();
     }
 
     match /security_logs/{logId} { allow read, write: if isAdmin(); }
     match /admin_audit_logs/{logId} { allow read, write: if isAdmin(); }
+    match /investor_leads/{leadId} { allow create: if true; allow read, update: if isAdmin(); }
 
     // --- RÈGLE PAR DÉFAUT : BLOQUER LE RESTE ---
     match /{document=**} {
