@@ -3,7 +3,7 @@
 /**
  * @fileOverview Carte de cours Ndara Afrique.
  * ✅ VARIANTS : Grid, List, Search-Result, Instructor.
- * ✅ ACTIONS : Raccordement au hook usePurchase pour l'achat immédiat.
+ * ✅ WORDING : Affiche "Payer" pour les cours payants et "S'inscrire" pour les gratuits.
  */
 
 import Link from 'next/link';
@@ -22,7 +22,8 @@ import {
     FileText,
     Trash2,
     ShoppingCart,
-    Play
+    Play,
+    CreditCard
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
@@ -299,6 +300,8 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
       >
         {isEnrolled ? (
             <><Play className="h-3 w-3 mr-2 fill-current" /> Reprendre</>
+        ) : course.price > 0 ? (
+            <><CreditCard className="h-3 w-3 mr-2" /> Payer</>
         ) : (
             <><ShoppingCart className="h-3 w-3 mr-2" /> S'inscrire</>
         )}

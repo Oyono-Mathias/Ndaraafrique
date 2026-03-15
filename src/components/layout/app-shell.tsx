@@ -2,13 +2,12 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
- * Gère l'affichage dynamique des menus selon le rôle et la page.
- * ✅ RÉSOLU : Navigation activée sur la page /search.
- * ✅ RÉSOLU : Plein écran automatique pour le lecteur de cours.
+ * ✅ PERMISSIONS : Accès libre total pour les visiteurs sur les pages publiques et recherche.
+ * ✅ RÉSOLU : Redirection automatique vers le tableau de bord prioritaire.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
@@ -83,28 +82,32 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
-  // Définition des pages publiques (sans sidebar ni bottom nav globale)
+  // Définition des pages publiques (sans redirection pour les invités)
   const isPublicPage = useMemo(() => {
-    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
+    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse', '/search'];
     if (publicPaths.includes(cleanPath)) return true;
-    if (cleanPath.startsWith('/verify/') || cleanPath.startsWith('/invite/') || cleanPath.startsWith('/ref/') || cleanPath.startsWith('/course/')) return true;
+    if (
+        cleanPath.startsWith('/verify/') || 
+        cleanPath.startsWith('/invite/') || 
+        cleanPath.startsWith('/ref/') || 
+        cleanPath.startsWith('/course/') // Détails publics (singular)
+    ) return true;
     return false;
   }, [cleanPath]);
 
-  // Le lecteur de cours est toujours en plein écran
+  // Le lecteur de cours (plural) est toujours en plein écran et privé
   const isFullScreen = useMemo(() => {
       return cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
   }, [cleanPath]);
 
-  // La recherche est une page hybride : publique mais avec nav si connecté
-  const isSearchPage = cleanPath === '/search';
-
   useEffect(() => {
     if (loading) return;
-    if (!user && !isPublicPage && !isAuthPage && !isSearchPage) {
+    
+    // Si pas connecté et page privée -> Redirection login
+    if (!user && !isPublicPage && !isAuthPage) {
       router.push(`/${locale}/login`);
     }
-  }, [user, loading, isPublicPage, isAuthPage, isSearchPage, router, locale]);
+  }, [user, loading, isPublicPage, isAuthPage, router, locale]);
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (

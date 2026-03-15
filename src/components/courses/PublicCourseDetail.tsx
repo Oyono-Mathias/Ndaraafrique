@@ -3,7 +3,7 @@
 /**
  * @fileOverview Vitrine publique d'une formation Ndara Afrique V2.
  * ✅ DESIGN QWEN : Immersion Android-First, Header dégradé, Barre de confiance.
- * ✅ ACTIONS : Inscription redirigeant vers checkout via le hook usePurchase.
+ * ✅ ACTIONS : Wording "Payer" pour les cours payants.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -42,7 +42,8 @@ import {
   Heart,
   CheckCircle2,
   Info,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -368,8 +369,13 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
                 onClick={handleStartLearning} 
                 className="flex-1 h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-[0.15em] shadow-2xl shadow-primary/20 transition-all active:scale-95 group"
             >
-                {isEnrolled ? "REPRENDRE" : "S'INSCRIRE MAINTENANT"}
-                <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                {isEnrolled ? (
+                    <>REPRENDRE <PlayCircle className="ml-2 h-4 w-4" /></>
+                ) : course.price > 0 ? (
+                    <>PAYER MAINTENANT <CreditCard className="ml-2 h-4 w-4" /></>
+                ) : (
+                    <>S'INSCRIRE MAINTENANT <ChevronRight className="ml-2 h-4 w-4" /></>
+                )}
             </Button>
         </div>
       </footer>
