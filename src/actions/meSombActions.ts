@@ -4,7 +4,7 @@ import { PaymentOperation } from '@hachther/mesomb';
 
 /**
  * @fileOverview Actions serveur pour l'intégration de MeSomb via le SDK officiel.
- * Gère l'initiation des paiements (Collect) de manière sécurisée.
+ * Utilise les clés standardisées : MESOMB_APP_KEY, MESOMB_ACCESS_KEY, MESOMB_SECRET_KEY.
  */
 
 interface MeSombPaymentParams {
@@ -23,7 +23,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const secretKey = process.env.MESOMB_SECRET_KEY;
 
   if (!applicationKey || !accessKey || !secretKey) {
-    console.error("MESOMB_CONFIG_MISSING: Ensure APP_KEY, ACCESS_KEY, and SECRET_KEY are set.");
+    console.error("MESOMB_CONFIG_MISSING: Ensure MESOMB_APP_KEY, MESOMB_ACCESS_KEY, and MESOMB_SECRET_KEY are set.");
     return { success: false, error: "Configuration MeSomb incomplète sur le serveur." };
   }
 
@@ -41,7 +41,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
       receiver: params.phoneNumber,
       currency: 'XOF',
       nonce: `NDARA-${Date.now()}`,
-      // Les metadata sont cruciales pour le webhook Ndara
       extra: {
         userId: params.userId,
         courseId: params.courseId,
