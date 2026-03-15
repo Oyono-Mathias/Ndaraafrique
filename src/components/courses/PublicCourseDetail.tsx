@@ -3,8 +3,7 @@
 /**
  * @fileOverview Vitrine publique d'une formation Ndara Afrique V2.
  * ✅ DESIGN QWEN : Immersion Android-First, Header dégradé, Barre de confiance.
- * ✅ ACTIONS : Inscription redirigeant vers checkout ou lecteur avec préfixe locale.
- * ✅ DYNAMIQUE : Suppression des valeurs simulées (avis, participants).
+ * ✅ ACTIONS : Inscription redirigeant vers checkout via le hook usePurchase.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -56,8 +55,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { usePurchase } from '@/hooks/use-purchase';
 
 interface EnrichedReview extends Review {
     userName?: string;
@@ -70,6 +68,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
   const { user, isUserLoading } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
+  const { initiatePurchase } = usePurchase();
 
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
@@ -113,7 +112,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             }
             setLecturesMap(lMap);
 
-            // ✅ RÉCUPÉRATION RÉELLE DES AVIS
             const reviewsQuery = query(collection(db, 'course_reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(10));
             const reviewsSnap = await getDocs(reviewsQuery);
             const rawReviews = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
@@ -131,7 +129,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
                 })));
             }
 
-            // ✅ COMPTAGE RÉEL DES INSCRITS
             const qEnrolled = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
             const snapEnrolled = await getCountFromServer(qEnrolled);
             
@@ -176,14 +173,8 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
   };
 
   const handleStartLearning = () => {
-    if (!user) {
-      router.push(`/${locale}/login?tab=register&redirect=${encodeURIComponent(pathname)}`);
-      return;
-    }
-    if (enrollment) {
-      router.push(`/${locale}/courses/${courseId}`);
-    } else {
-      router.push(`/${locale}/student/checkout/${courseId}`);
+    if (course) {
+        initiatePurchase(course);
     }
   };
 
@@ -196,14 +187,12 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
     <div className="min-h-screen bg-slate-950 pb-32 relative font-sans">
       <div className="grain-overlay" />
       
-      {/* --- IMMERSIVE HEADER --- */}
       <header className="relative h-72 flex-shrink-0">
         <div className="absolute inset-0">
             <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" priority />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
         </div>
 
-        {/* Floating Controls */}
         <div className="absolute top-12 left-4 right-4 flex justify-between z-30">
             <button 
                 onClick={() => router.back()} 
@@ -223,7 +212,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             </button>
         </div>
 
-        {/* Play Overlay */}
         <div className="absolute inset-0 flex items-center justify-center z-20">
             <div className="w-20 h-20 bg-primary/90 rounded-full flex items-center justify-center text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] animate-in zoom-in duration-700">
                 <PlayCircle className="h-10 w-10 ml-1" />
@@ -232,7 +220,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
       </header>
 
       <main className="px-6 -mt-10 relative z-10 max-w-2xl mx-auto space-y-12">
-        {/* --- INFO CARD --- */}
         <div className="space-y-4">
             <div className="flex items-center gap-2">
                 <Badge className="bg-primary/20 text-primary border border-primary/30 font-black uppercase text-[10px] tracking-widest px-3 py-1 rounded-full">
@@ -258,14 +245,12 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             </div>
         </div>
 
-        {/* --- TRUST BAR --- */}
         <section className="grid grid-cols-3 gap-3">
             <TrustItem icon={Lock} label="Paiement" sub="100% Sécurisé" />
             <TrustItem icon={Shield} label="Garantie" sub="Satisfaction" />
             <TrustItem icon={Award} label="Certification" sub="Reconnue" />
         </section>
 
-        {/* --- INSTRUCTOR --- */}
         {instructor && (
             <Link href={`/${locale}/instructor/${instructor.uid}`} className="flex items-center gap-4 p-5 bg-slate-900 border border-white/5 rounded-[2.5rem] active:scale-[0.98] transition-all group shadow-2xl">
                 <div className="relative">
@@ -286,7 +271,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             </Link>
         )}
 
-        {/* --- DESCRIPTION --- */}
         <section className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
                 <div className="h-6 w-1.5 bg-primary rounded-full" />
@@ -297,7 +281,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             </p>
         </section>
 
-        {/* --- PROGRAMME --- */}
         <section className="space-y-6">
             <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
                 <div className="h-6 w-1.5 bg-primary rounded-full" />
@@ -335,8 +318,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             </Accordion>
         </section>
 
-        {/* --- AVIS --- */}
-        <section className="space-y-6">
+        <section className="space-y-6 pb-20">
             <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
                 <div className="h-6 w-1.5 bg-primary rounded-full" />
                 CE QU'ILS EN DISENT
@@ -371,7 +353,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
         </section>
       </main>
 
-      {/* --- FLOATING ACTION BAR --- */}
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-6">
             <div className="flex flex-col">

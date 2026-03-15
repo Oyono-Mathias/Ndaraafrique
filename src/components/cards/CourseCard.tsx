@@ -3,7 +3,7 @@
 /**
  * @fileOverview Carte de cours Ndara Afrique.
  * ✅ VARIANTS : Grid, List, Search-Result, Instructor.
- * ✅ DESIGN : Android-first avec coins arrondis 2rem.
+ * ✅ ACTIONS : Raccordement au hook usePurchase pour l'achat immédiat.
  */
 
 import Link from 'next/link';
@@ -20,7 +20,9 @@ import {
     Image as ImageIcon,
     Pencil,
     FileText,
-    Trash2
+    Trash2,
+    ShoppingCart,
+    Play
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
@@ -29,6 +31,7 @@ import { useLocale } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { usePurchase } from '@/hooks/use-purchase';
 
 interface CourseCardProps {
   course: Course & { progress?: number; lastLessonId?: string };
@@ -43,21 +46,38 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   const { toast } = useToast();
   const router = useRouter();
   const locale = useLocale();
+  const { initiatePurchase } = usePurchase();
   
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   
   const href = `/${locale}/course/${course.id}`;
 
   useEffect(() => {
     if (!user?.uid || !course.id) return;
-    const wishId = `${user.uid}_${course.id}`;
-    const wishlistRef = doc(db, 'user_wishlist', wishId);
     
-    const unsubWish = onSnapshot(wishlistRef, (snap) => {
+    // Check Wishlist
+    const wishId = `${user.uid}_${course.id}`;
+    const unsubWish = onSnapshot(doc(db, 'user_wishlist', wishId), (snap) => {
         setIsWishlisted(snap.exists());
     });
-    return () => unsubWish();
+
+    // Check Enrollment
+    const unsubEnroll = onSnapshot(doc(db, 'enrollments', `${user.uid}_${course.id}`), (snap) => {
+        setIsEnrolled(snap.exists());
+    });
+
+    return () => {
+        unsubWish();
+        unsubEnroll();
+    };
   }, [user?.uid, course.id, db]);
+
+  const handleEnrollClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      initiatePurchase(course);
+  };
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -91,7 +111,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   if (variant === 'instructor') {
     const isPublished = course.status === 'Published';
     const isPending = course.status === 'Pending Review';
-    const isDraft = course.status === 'Draft';
     
     return (
         <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 flex flex-col gap-4 shadow-xl active:scale-[0.98] transition-all group">
@@ -170,10 +189,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                                 <Star className="h-2.5 w-2.5 fill-current" />
                                 <span className="text-white text-[10px] font-black">{course.rating ? course.rating.toFixed(1) : '---'}</span>
                             </div>
-                            <div className="flex items-center text-slate-600 gap-1">
-                                <Users className="h-2.5 w-2.5" />
-                                <span className="text-[9px] font-bold">{(course.participantsCount || 0).toLocaleString()}</span>
-                            </div>
                         </div>
                         <span className="text-[#10b981] text-[13px] font-black uppercase">
                             {course.price === 0 ? 'Offert' : `${(course.price / 1000).toFixed(0)}K XOF`}
@@ -194,9 +209,8 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
           <div className="bg-[#1e293b] border border-white/5 rounded-[2rem] overflow-hidden flex items-center p-4 shadow-xl relative group">
             <div className="relative h-20 w-20 shrink-0 rounded-3xl overflow-hidden bg-slate-800 shadow-inner">
               <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
-              <div className="absolute inset-0 bg-black/20" />
               {isCompleted && (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                       <div className="w-10 h-10 bg-[#10b981] rounded-full flex items-center justify-center shadow-lg">
                           <CheckCircle2 className="h-5 w-5 text-[#0f172a]" />
                       </div>
@@ -236,12 +250,14 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
+  // --- GRID VARIANT (Standard Landing Page) ---
   return (
-    <div className="group h-full">
-      <Link href={href} className="flex flex-col h-full active:scale-[0.98] transition-transform">
+    <div className="group h-full flex flex-col">
+      <Link href={href} className="flex flex-col flex-1 active:scale-[0.98] transition-transform">
         <div className="relative aspect-video w-full rounded-[2rem] overflow-hidden bg-slate-800 shadow-2xl mb-3 border border-white/5">
             <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+            
             <button 
                 onClick={toggleWishlist} 
                 className={cn(
@@ -251,23 +267,42 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             >
                 <Heart className={cn("h-3.5 w-3.5", isWishlisted && "fill-current")} />
             </button>
+
             <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-tighter">
                 {course.category}
             </div>
         </div>
+
         <div className="flex flex-col flex-1 space-y-1 px-1">
             <h3 className="text-[13px] font-black text-white leading-tight line-clamp-2 h-[2rem] uppercase tracking-tight">{course.title}</h3>
-            <div className="flex items-center justify-between mt-2">
+            
+            <div className="flex items-center justify-between mt-3 mb-4">
                 <div className="flex items-center gap-1.5">
                     <Star className="h-2.5 w-2.5 text-yellow-500 fill-yellow-500" />
                     <span className="text-[10px] font-black text-slate-300">{course.rating ? course.rating.toFixed(1) : '---'}</span>
                 </div>
-                <p className="text-sm font-black text-[#10b981] uppercase">
-                    {course.price === 0 ? "Offert" : `${(course.price / 1000).toFixed(0)}K XOF`}
+                <p className="text-sm font-black text-[#10b981] uppercase tracking-tighter">
+                    {course.price === 0 ? "Offert" : `${course.price.toLocaleString('fr-FR')} F`}
                 </p>
             </div>
         </div>
       </Link>
+
+      <Button 
+        onClick={handleEnrollClick}
+        className={cn(
+            "w-full h-11 rounded-2xl font-black uppercase text-[9px] tracking-widest transition-all shadow-lg active:scale-95 border-none",
+            isEnrolled 
+                ? "bg-slate-800 text-primary hover:bg-slate-700" 
+                : "bg-primary text-slate-950 hover:bg-primary/90"
+        )}
+      >
+        {isEnrolled ? (
+            <><Play className="h-3 w-3 mr-2 fill-current" /> Reprendre</>
+        ) : (
+            <><ShoppingCart className="h-3 w-3 mr-2" /> S'inscrire</>
+        )}
+      </Button>
     </div>
   );
 }
