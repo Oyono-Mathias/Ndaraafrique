@@ -4,8 +4,8 @@ import { useRole } from '@/context/RoleContext';
 import { Loader2 } from 'lucide-react';
 
 /**
- * @fileOverview Layout instructeur simplifié.
- * La navigation est centralisée dans l'AppShell pour plus de cohérence.
+ * @fileOverview Layout instructeur purifié.
+ * ✅ RÉSOLU : Navigation gérée par l'AppShell.
  */
 export default function InstructorLayoutAndroid({ children }: { children: React.ReactNode }) {
   const { isUserLoading } = useRole();
@@ -19,10 +19,8 @@ export default function InstructorLayoutAndroid({ children }: { children: React.
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1">
+    <div className="flex flex-col min-h-screen">
         {children}
-      </main>
     </div>
   );
 }

@@ -1,16 +1,14 @@
 'use client';
 
 import { useRole } from "@/context/RoleContext";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
-import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
-import { cn } from "@/lib/utils";
 
 /**
  * @fileOverview Layout Admin purifié.
- * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
+ * ✅ RÉSOLU : Ne gère plus l'affichage de la navigation (délégué à AppShell).
  */
 
 function AdminAccessRequiredScreen() {
@@ -34,22 +32,6 @@ export default function AdminLayout({
 }) {
   const { isUserLoading, role, switchRole } = useRole();
   const { hasPermission } = usePermissions();
-  const pathname = usePathname() || '';
-
-  const cleanPath = useMemo(() => {
-    return pathname.replace(/^\/(en|fr)/, '') || '/';
-  }, [pathname]);
-
-  const showNavigation = useMemo(() => {
-    if (cleanPath === '/admin/settings') return false;
-    
-    const pathSegments = cleanPath.split('/').filter(Boolean);
-    if (pathSegments[0] === 'admin' && pathSegments[1] === 'support' && pathSegments.length > 2) {
-        return false;
-    }
-
-    return true; 
-  }, [cleanPath]);
 
   useEffect(() => {
     if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
@@ -70,13 +52,8 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-background">
-        <main className="flex-1">
-            <div className={cn(showNavigation && "pb-24 md:pb-0")}>
-                {children}
-            </div>
-        </main>
-        {showNavigation && <AdminBottomNav />}
+    <div className="flex flex-col min-h-full">
+        {children}
     </div>
   )
 }

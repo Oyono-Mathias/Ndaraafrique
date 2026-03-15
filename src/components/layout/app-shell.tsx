@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
- * ✅ PERMISSIONS : Accès libre total pour les visiteurs sur les pages publiques et recherche.
- * ✅ RÉSOLU : Redirection automatique vers le tableau de bord prioritaire.
+ * ✅ VISIBILITÉ : Navigation affichée UNIQUEMENT dans les zones Dashboard/Privées.
+ * ✅ RÉSOLU : Disparition de la barre de navigation sur la Landing Page et pages publiques.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -80,34 +80,37 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
-  const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
+  // Définition des zones qui DOIVENT afficher la navigation (Dashboard)
+  const isDashboardArea = useMemo(() => {
+      const areas = ['/student', '/instructor', '/admin', '/account', '/search'];
+      return areas.some(area => cleanPath.startsWith(area));
+  }, [cleanPath]);
 
-  // Définition des pages publiques (sans redirection pour les invités)
+  // Définition des pages 100% publiques (Landing, About, etc.)
   const isPublicPage = useMemo(() => {
-    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse', '/search'];
+    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
     if (publicPaths.includes(cleanPath)) return true;
-    if (
-        cleanPath.startsWith('/verify/') || 
-        cleanPath.startsWith('/invite/') || 
-        cleanPath.startsWith('/ref/') || 
-        cleanPath.startsWith('/course/') // Détails publics (singular)
-    ) return true;
+    if (cleanPath.startsWith('/course/')) return true; // Détail public
     return false;
   }, [cleanPath]);
 
-  // Le lecteur de cours (plural) est toujours en plein écran et privé
+  // Lecteur en plein écran
   const isFullScreen = useMemo(() => {
-      return cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
+      return cleanPath.startsWith('/courses/');
   }, [cleanPath]);
+
+  const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
+
+  // ✅ LOGIQUE CRUCIALE : On n'affiche les menus que si on est connecté ET dans une zone Dashboard ET pas en plein écran
+  const showMenus = !!user && isDashboardArea && !isFullScreen && !isPublicPage;
 
   useEffect(() => {
     if (loading) return;
-    
-    // Si pas connecté et page privée -> Redirection login
-    if (!user && !isPublicPage && !isAuthPage) {
+    // Redirection login si page privée
+    if (!user && !isPublicPage && !isAuthPage && !isFullScreen) {
       router.push(`/${locale}/login`);
     }
-  }, [user, loading, isPublicPage, isAuthPage, router, locale]);
+  }, [user, loading, isPublicPage, isAuthPage, isFullScreen, router, locale]);
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
@@ -119,9 +122,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       );
   }
 
-  // On affiche les menus SI l'utilisateur est connecté ET qu'on n'est pas sur une page 100% publique/auth/plein écran
-  const showMenus = !!user && !isAuthPage && !isPublicPage && !isFullScreen;
-  
   const handleSidebarLinkClick = () => {};
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
@@ -148,7 +148,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             {children}
           </main>
 
-          {/* Bottom Navigation Mobile par rôle */}
           {showMenus && (
               <div className="md:hidden">
                   {role === 'admin' && <AdminBottomNav />}

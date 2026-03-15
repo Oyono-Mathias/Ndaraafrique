@@ -5,8 +5,8 @@ import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 
 /**
- * @fileOverview Layout étudiant simplifié. 
- * La navigation est désormais pilotée de manière centralisée par l'AppShell.
+ * @fileOverview Layout étudiant purifié. 
+ * ✅ RÉSOLU : L'affichage est centralisé dans l'AppShell pour éviter les doublons.
  */
 
 function StudentLayoutContent({ children }: { children: React.ReactNode }) {
@@ -21,10 +21,8 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1">
+    <div className="flex flex-col min-h-screen">
         {children}
-      </main>
     </div>
   );
 }
