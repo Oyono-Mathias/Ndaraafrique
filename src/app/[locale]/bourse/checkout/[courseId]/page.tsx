@@ -3,6 +3,7 @@
 /**
  * @fileOverview Tunnel d'acquisition de licence de revente (Marché Secondaire).
  * ✅ TEMPS RÉEL : Réagit instantanément aux changements de prix ou de disponibilité.
+ * ✅ MULTI-PASSERELLES : Choix entre Moneroo et MeSomb.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -15,7 +16,7 @@ import {
   ArrowLeft, 
   Lock, 
   Loader2, 
-  ChevronRight,
+  ChevronRight, 
   ShieldCheck,
   Landmark,
   BadgeEuro,
@@ -23,7 +24,9 @@ import {
   Check,
   UserPlus,
   Smartphone,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard,
+  Layers
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
@@ -31,6 +34,8 @@ import { Input } from '@/components/ui/input';
 import { purchaseResaleRightsAction } from '@/actions/courseActions';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
+
+type Gateway = 'moneroo' | 'mesomb';
 
 export default function BourseCheckoutPage() {
   const params = useParams();
@@ -44,11 +49,11 @@ export default function BourseCheckoutPage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [gateway, setGateway] = useState<Gateway>('moneroo');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // ✅ ÉCOUTEUR TEMPS RÉEL SUR L'ACTIF
   useEffect(() => {
     if (!courseId) return;
     const unsub = onSnapshot(doc(db, 'courses', courseId), (snap) => {
@@ -64,35 +69,35 @@ export default function BourseCheckoutPage() {
 
   const handlePurchase = async () => {
     if (!user) {
-        toast({ title: "Connexion requise", description: "Veuillez vous identifier pour acquérir cet actif." });
         router.push(`/${locale}/login?tab=register&redirect=${encodeURIComponent(pathname)}`);
         return;
     }
 
     if (!course || !course.resaleRightsAvailable) {
-        toast({ variant: 'destructive', title: "Actif indisponible", description: "Cette licence n'est plus en vente." });
+        toast({ variant: 'destructive', title: "Actif indisponible" });
         return;
     }
 
     if (!phoneNumber || phoneNumber.length < 8) {
-        toast({ variant: 'destructive', title: "Numéro requis", description: "Veuillez saisir votre numéro Mobile Money." });
+        toast({ variant: 'destructive', title: "Numéro requis" });
         return;
     }
 
     setIsProcessing(true);
 
     try {
+      // ICI : Intégration future du flux MeSomb
       await new Promise(resolve => setTimeout(resolve, 3000));
       
       const result = await purchaseResaleRightsAction({
           courseId: course.id,
           buyerId: user.uid,
-          transactionId: `TXN-LICENSE-${Date.now()}`
+          transactionId: `TXN-LICENSE-${gateway.toUpperCase()}-${Date.now()}`
       });
 
       if (result.success) {
           setIsSuccess(true);
-          toast({ title: "Acquisition réussie !", description: "Vous êtes le nouveau propriétaire." });
+          toast({ title: "Acquisition réussie !" });
       } else {
           throw new Error(result.error);
       }
@@ -105,24 +110,10 @@ export default function BourseCheckoutPage() {
   };
 
   if (isLoading) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[3rem] bg-slate-900" /></div>;
-  
-  if (!course || (!course.resaleRightsAvailable && !isSuccess)) {
-      return (
-          <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center space-y-6">
-              <div className="p-6 bg-red-500/10 rounded-full">
-                  <AlertTriangle size={48} className="text-red-500" />
-              </div>
-              <h1 className="text-2xl font-black text-white uppercase">Offre expirée</h1>
-              <p className="text-slate-400 max-w-xs">Cette licence a déjà été acquise ou retirée du marché boursier.</p>
-              <Button onClick={() => router.push(`/${locale}/bourse`)} variant="outline" className="rounded-xl border-slate-800">
-                  Retour à la Bourse
-              </Button>
-          </div>
-      );
-  }
+  if (!course) return null;
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-40 relative font-sans">
+    <div className="min-h-screen bg-slate-950 pb-40 relative">
       <div className="grain-overlay" />
       
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
@@ -131,137 +122,93 @@ export default function BourseCheckoutPage() {
                 <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
-                <h1 className="font-black text-xl text-white uppercase tracking-tight">Acquisition Live</h1>
+                <h1 className="font-black text-xl text-white uppercase tracking-tight">Investissement</h1>
             </div>
             <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full">
                 <div className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
-                <span className="text-[8px] font-black text-primary uppercase">Direct</span>
+                <span className="text-[8px] font-black text-primary uppercase">Bourse Live</span>
             </div>
         </div>
       </header>
 
-      <main className="pt-24 px-6 max-w-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-1000">
+      <main className="pt-24 px-6 max-w-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
         
-        {/* --- LICENSE SUMMARY --- */}
+        {/* --- ACTIF INFO --- */}
         <div className="bg-gradient-to-br from-amber-500/10 to-orange-600/5 border border-amber-500/20 rounded-[2.5rem] p-8 space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-                <BadgeEuro size={80} className="text-amber-500" />
-            </div>
-            
+            <div className="absolute top-0 right-0 p-4 opacity-10"><BadgeEuro size={80} className="text-amber-500" /></div>
             <div className="space-y-1">
-                <div className="flex items-center gap-2 text-amber-500 text-[10px] font-black uppercase tracking-[0.3em]">
-                    <Landmark size={12} />
-                    Licence de Revente
-                </div>
-                <h2 className="text-2xl font-black text-white leading-tight uppercase tracking-tight truncate">{course.title}</h2>
+                <p className="text-amber-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                    <Landmark size={12} /> Licence de Revente
+                </p>
+                <h2 className="text-2xl font-black text-white leading-tight uppercase truncate">{course.title}</h2>
             </div>
-
             <div className="pt-4 border-t border-white/5 flex justify-between items-end">
                 <div className="space-y-1">
-                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Valeur en bourse</p>
+                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Valeur Marché</p>
                     <p className="text-3xl font-black text-white">{(course.resaleRightsPrice || 0).toLocaleString('fr-FR')} <span className="text-sm font-bold text-amber-500">XOF</span></p>
                 </div>
-                <div className="text-right">
-                    <p className="text-[#10b981] text-xs font-black uppercase flex items-center gap-1">
-                        <TrendingUp size={14} /> +12% ROI
-                    </p>
-                </div>
+                <div className="text-right"><p className="text-[#10b981] text-xs font-black uppercase flex items-center gap-1"><TrendingUp size={14} /> +12% ROI</p></div>
             </div>
         </div>
 
-        {/* --- TRANSFER INFO --- */}
-        <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4 shadow-xl">
+        {/* --- GATEWAY SELECTION --- */}
+        <section className="space-y-4">
+            <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2 text-slate-500">
+                <Layers className="h-3.5 w-3.5" /> CHOISIR LA PASSERELLE
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+                <GatewayBtn active={gateway === 'moneroo'} onClick={() => setGateway('moneroo')} label="Moneroo" icon={CreditCard} />
+                <GatewayBtn active={gateway === 'mesomb'} onClick={() => setGateway('mesomb')} label="MeSomb" icon={Smartphone} />
+            </div>
+        </section>
+
+        {/* --- PAYMENT INPUT --- */}
+        <section className="space-y-4">
+            <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money pour débit</label>
+            <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
+                    <Smartphone className="h-5 w-5 text-primary" />
+                </div>
+                <Input 
+                    type="tel" 
+                    placeholder="+236 ..." 
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="h-16 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest pl-16 px-6" 
+                />
+            </div>
+        </section>
+
+        <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                <ShieldCheck size={14} className="text-primary" />
-                Clauses de Transfert
+                <ShieldCheck size={14} className="text-primary" /> Clauser de Transfert
             </h3>
-            <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                    <Check size={14} className="text-primary shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-400 leading-relaxed">Pleine propriété intellectuelle transférée sur Ndara Afrique.</p>
-                </li>
-                <li className="flex items-start gap-3">
-                    <Check size={14} className="text-primary shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-400 leading-relaxed">Encaissement automatique de 100% des futures ventes directes.</p>
-                </li>
-                <li className="flex items-start gap-3">
-                    <Check size={14} className="text-primary shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-400 leading-relaxed">Droit de revente de la licence sur le marché secondaire.</p>
-                </li>
-            </ul>
+            <p className="text-xs text-slate-400 leading-relaxed italic">"L'acquisition via {gateway === 'moneroo' ? 'Moneroo' : 'MeSomb'} garantit l'attribution immédiate de votre titre de propriété sur Ndara Afrique."</p>
         </div>
-
-        {/* --- PAYMENT --- */}
-        {user ? (
-            <section className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money pour débit</label>
-                <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
-                        <Smartphone className="h-5 w-5 text-primary" />
-                    </div>
-                    <Input 
-                        type="tel" 
-                        placeholder="+236 ..." 
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="h-16 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest pl-16 px-6 focus-visible:ring-primary/30" 
-                    />
-                </div>
-            </section>
-        ) : (
-            <div className="bg-primary/5 border border-primary/20 rounded-[2rem] p-6 text-center space-y-4">
-                <Lock className="h-8 w-8 text-primary mx-auto opacity-50" />
-                <p className="text-xs text-slate-400 font-medium leading-relaxed italic">
-                    "Connectez-vous à votre compte Ndara pour finaliser l'acquisition de cet actif numérique."
-                </p>
-            </div>
-        )}
 
       </main>
 
-      {/* --- FIXED ACTION BAR --- */}
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <div className="max-w-md mx-auto space-y-4">
+      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb">
+        <div className="max-w-md mx-auto">
             <Button 
                 onClick={handlePurchase} 
                 disabled={isProcessing || isSuccess}
-                className={cn(
-                    "w-full h-16 rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3",
-                    user ? "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20" : "bg-primary hover:bg-primary/90 text-slate-950 shadow-primary/20"
-                )}
+                className="w-full h-16 rounded-[2rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-3"
             >
-                {isProcessing ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                ) : user ? (
-                    <><Lock className="h-4 w-4" /> SIGNER L'ACQUISITION</>
-                ) : (
-                    <><UserPlus className="h-4 w-4" /> SE CONNECTER POUR ACHETER</>
-                )}
+                {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Lock className="h-4 w-4" />}
+                SIGNER L'ACQUISITION
             </Button>
         </div>
       </footer>
 
-      {/* --- SUCCESS MODAL --- */}
       {isSuccess && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
               <div className="text-center space-y-8 max-w-sm animate-in zoom-in duration-700">
-                  <div className="w-24 h-24 bg-amber-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(245,158,11,0.4)]">
+                  <div className="w-24 h-24 bg-amber-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
                       <Landmark className="h-12 w-12 text-slate-950" />
                   </div>
-                  <div className="space-y-2">
-                      <h3 className="font-black text-white text-3xl uppercase tracking-tight leading-none">Propriétaire !</h3>
-                      <p className="text-slate-400 text-sm font-medium italic">"Bienvenue dans l'élite des détenteurs du savoir."</p>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 text-left">
-                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3">Confirmation de titre</p>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                          La formation <b>{course.title}</b> a été rattachée à votre compte expert. Vous pouvez dès maintenant gérer son contenu et percevoir les revenus.
-                      </p>
-                  </div>
-                  <Button 
-                    onClick={() => router.push(`/${locale}/instructor/dashboard`)}
-                    className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
-                  >
+                  <h3 className="font-black text-white text-3xl uppercase tracking-tight">Propriétaire !</h3>
+                  <Button onClick={() => router.push(`/${locale}/instructor/dashboard`)} className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
                       Aller au Dashboard Expert
                   </Button>
               </div>
@@ -269,4 +216,21 @@ export default function BourseCheckoutPage() {
       )}
     </div>
   );
+}
+
+function GatewayBtn({ active, onClick, label, icon: Icon }: any) {
+    return (
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex flex-col items-center justify-center gap-3 p-4 rounded-3xl border-2 transition-all active:scale-95",
+                active ? "bg-primary/10 border-primary shadow-lg shadow-primary/10" : "bg-slate-900 border-white/5 opacity-50"
+            )}
+        >
+            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400">
+                <Icon size={20} />
+            </div>
+            <span className="text-[10px] font-black text-white uppercase tracking-widest">{label}</span>
+        </button>
+    );
 }
