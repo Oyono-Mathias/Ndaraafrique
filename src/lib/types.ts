@@ -1,7 +1,7 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
-export type PaymentProvider = 'moneroo' | 'mesomb' | 'virtual';
+export type PaymentProvider = 'moneroo' | 'mesomb' | 'virtual' | 'wallet';
 
 export interface NotificationPreferences {
   newPayouts?: boolean;
@@ -103,6 +103,7 @@ export interface NdaraUser {
   countryName?: string;
   rating?: number;
   // --- ECONOMY ---
+  balance?: number; // ✅ Standard cash balance
   affiliateBalance?: number; 
   pendingAffiliateBalance?: number; 
   referralBalance?: number;

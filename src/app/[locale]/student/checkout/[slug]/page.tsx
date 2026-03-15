@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Mobile Money Ndara Afrique V2.
- * ✅ DESIGN QWEN : Reçu vintage, sélecteur de passerelle (Moneroo/MeSomb).
- * ✅ FONCTIONNEL : Gestion des coupons, de l'affiliation et simulation multi-passerelles.
+ * @fileOverview Tunnel de paiement Ndara Afrique V3.
+ * ✅ WALLET INTEGRATION : Paiement direct via solde portefeuille.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -25,18 +24,20 @@ import {
   Zap,
   Sparkles,
   CreditCard,
-  Layers
+  Layers,
+  Wallet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
+import { processNdaraPayment } from '@/services/paymentProcessor';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 
-type Provider = 'orange' | 'mtn' | 'wave' | 'virtual';
-type Gateway = 'moneroo' | 'mesomb';
+type Provider = 'orange' | 'mtn' | 'wave' | 'virtual' | 'wallet';
+type Gateway = 'moneroo' | 'mesomb' | 'ndara';
 
 function CheckoutContent() {
   const params = useParams();
@@ -81,7 +82,7 @@ function CheckoutContent() {
       toast({ title: "Remise appliquée !" });
     } else {
       setAppliedCoupon(null);
-      toast({ variant: 'destructive', title: "Erreur", description: result.error });
+      toast({ variant: 'destructive', title: "Erreur", description: result.error as string });
     }
     setIsValidating(false);
   };
@@ -89,7 +90,7 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user || !course) return;
     
-    if (provider !== 'virtual' && (!phoneNumber || phoneNumber.length < 8)) {
+    if (provider !== 'virtual' && provider !== 'wallet' && (!phoneNumber || phoneNumber.length < 8)) {
         toast({ variant: 'destructive', title: "Numéro invalide", description: "Veuillez saisir votre numéro Mobile Money." });
         return;
     }
@@ -97,58 +98,54 @@ function CheckoutContent() {
     setIsProcessing(true);
 
     try {
-      if (provider === 'virtual') {
-          // Mode Démo
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          const balance = currentUser?.virtualBalance || 0;
+      if (provider === 'wallet') {
+          // ✅ PAIEMENT PAR PORTEFEUILLE
+          const balance = currentUser?.balance || 0;
           if (balance < discountedPrice) {
-              toast({ variant: 'destructive', title: "Solde insuffisant", description: "Rechargez votre compte démo." });
+              toast({ variant: 'destructive', title: "Solde insuffisant", description: "Veuillez recharger votre portefeuille." });
               setIsProcessing(false);
               return;
           }
-          await updateDoc(doc(db, 'users', user.uid), { virtualBalance: increment(-discountedPrice) });
-          const enrollId = `${user.uid}_${course.id}`;
-          await setDoc(doc(db, 'enrollments', enrollId), {
-              studentId: user.uid,
-              courseId: course.id,
-              instructorId: course.instructorId,
-              ownerId: course.ownerId || course.instructorId,
-              status: 'active',
-              enrollmentDate: serverTimestamp(),
-              lastAccessedAt: serverTimestamp(),
-              progress: 0,
-              priceAtEnrollment: discountedPrice,
-              transactionId: `DEMO-${Date.now()}`,
-              enrollmentType: 'paid'
+
+          // Débiter le portefeuille
+          await updateDoc(doc(db, 'users', user.uid), {
+              balance: increment(-discountedPrice)
+          });
+
+          // Traiter via le processeur central
+          await processNdaraPayment({
+              transactionId: `WAL-${user.uid.substring(0,5)}-${Date.now()}`,
+              provider: 'wallet',
+              amount: discountedPrice,
+              currency: 'XOF',
+              metadata: {
+                  userId: user.uid,
+                  courseId: course.id,
+                  type: 'course_purchase'
+              }
           });
           setIsSuccess(true);
+      } else if (provider === 'virtual') {
+          // Mode Démo
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          setIsSuccess(true);
       } else if (gateway === 'mesomb') {
-          // FLUX MESOMB
           const result = await initiateMeSombPayment({
               amount: discountedPrice,
               phoneNumber: phoneNumber,
               service: provider === 'orange' ? 'ORANGE' : 'MTN',
               courseId: course.id,
               userId: user.uid,
-              affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
-              couponId: appliedCoupon?.id
           });
-
-          if (result.success) {
-              // MeSomb lance la demande sur le tel de l'utilisateur
-              toast({ title: "Demande envoyée !", description: "Validez le paiement sur votre téléphone." });
-              // On attend que le webhook valide l'accès
-          } else {
-              toast({ variant: 'destructive', title: "Échec", description: result.error });
-          }
+          if (result.success) toast({ title: "Validez sur votre téléphone" });
+          else throw new Error(result.error);
       } else {
-          // FLUX MONEROO
-          toast({ title: `Redirection vers Moneroo...` });
+          toast({ title: `Redirection Moneroo...` });
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
       }
-    } catch (error) {
-      toast({ variant: 'destructive', title: "Erreur technique" });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: "Échec", description: error.message });
     } finally {
       setIsProcessing(false);
     }
@@ -198,52 +195,29 @@ function CheckoutContent() {
             </div>
         </div>
 
-        {/* --- GATEWAY SELECTION --- */}
+        {/* --- PROVIDER SELECTION --- */}
         <section className="space-y-4">
             <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
                 <Layers className="h-3.5 w-3.5 text-primary" />
-                CHOISIR LA PASSERELLE
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-                <button 
-                    onClick={() => setGateway('moneroo')}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-3 p-4 rounded-3xl border-2 transition-all active:scale-95",
-                        gateway === 'moneroo' ? "bg-primary/10 border-primary shadow-lg shadow-primary/10" : "bg-slate-900 border-white/5 opacity-50"
-                    )}
-                >
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                        <CreditCard size={20} />
-                    </div>
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Moneroo</span>
-                </button>
-                <button 
-                    onClick={() => setGateway('mesomb')}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-3 p-4 rounded-3xl border-2 transition-all active:scale-95",
-                        gateway === 'mesomb' ? "bg-primary/10 border-primary shadow-lg shadow-primary/10" : "bg-slate-900 border-white/5 opacity-50"
-                    )}
-                >
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                        <Smartphone size={20} />
-                    </div>
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest">MeSomb</span>
-                </button>
-            </div>
-        </section>
-
-        {/* --- OPERATOR SELECTION --- */}
-        <section className="space-y-4">
-            <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
-                <Smartphone className="h-3.5 w-3.5 text-primary" />
-                MÉTHODE DE DÉBIT
+                MOYEN DE PAIEMENT
             </h2>
             <div className="grid grid-cols-4 gap-2">
-                <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
-                <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
-                <ProviderBtn active={provider === 'wave'} onClick={() => setProvider('wave')} label="Wave" color="bg-[#1DC0F1]" initials="W" />
                 <button 
-                    onClick={() => setProvider('virtual')}
+                    onClick={() => { setGateway('ndara'); setProvider('wallet'); }}
+                    className={cn(
+                        "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
+                        provider === 'wallet' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 opacity-40"
+                    )}
+                >
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-slate-950 shadow-lg">
+                        <Wallet size={18} />
+                    </div>
+                    <span className="text-white text-[8px] font-black uppercase">Wallet</span>
+                </button>
+                <ProviderBtn active={provider === 'orange'} onClick={() => { setProvider('orange'); setGateway('moneroo'); }} label="Orange" color="bg-[#FF7900]" initials="OM" />
+                <ProviderBtn active={provider === 'mtn'} onClick={() => { setProvider('mtn'); setGateway('moneroo'); }} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
+                <button 
+                    onClick={() => { setProvider('virtual'); setGateway('ndara'); }}
                     className={cn(
                         "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
                         provider === 'virtual' ? "bg-primary/10 border-primary" : "bg-slate-900 border-white/5 opacity-40 grayscale"
@@ -258,12 +232,20 @@ function CheckoutContent() {
         </section>
 
         <section className="space-y-6">
-            {provider === 'virtual' ? (
+            {provider === 'wallet' ? (
+                <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl space-y-3 animate-in slide-in-from-top-2">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        <span>Solde Ndara</span>
+                        <span className="text-primary">{(currentUser?.balance || 0).toLocaleString()} XOF</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic">"Paiement instantané via votre portefeuille Ndara."</p>
+                </div>
+            ) : provider === 'virtual' ? (
                 <div className="p-6 bg-primary/10 border border-primary/20 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
                     <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
                         <Sparkles size={16} /> Mode Publicitaire
                     </div>
-                    <p className="text-[10px] text-slate-400 italic">"Paiement simulé via votre solde virtuel."</p>
+                    <p className="text-[10px] text-slate-400 italic">"Paiement simulé."</p>
                 </div>
             ) : (
                 <div className="space-y-3">

@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
- * ✅ RÉSOLU : Données 100% dynamiques.
- * ✅ GÉO : Rendu du drapeau dynamique basé sur le code ISO du pays.
+ * ✅ WALLET UPDATE : Affichage du solde et lien vers le portefeuille.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -31,7 +30,8 @@ import {
     Loader2,
     Trophy,
     Star,
-    MapPin
+    MapPin,
+    ArrowUpRight
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -122,6 +122,7 @@ export default function StudentProfilePage() {
 
       <main className="flex-1 px-6 pt-24 space-y-8 animate-in fade-in duration-700">
         
+        {/* --- USER HEADER --- */}
         <Card className="bg-slate-900 rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
             <CardContent className="p-8 text-center flex flex-col items-center relative z-10">
@@ -155,17 +156,31 @@ export default function StudentProfilePage() {
                     <Badge className="bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
                         <ShieldCheck className="h-3 w-3 mr-1.5" /> Vérifié
                     </Badge>
-                    {currentUser.role === 'admin' && (
-                        <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
-                            <Rocket className="h-3 w-3 mr-1.5" /> Fondateur
-                        </Badge>
-                    )}
                     <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
                         <Code className="h-3 w-3 mr-1.5" /> Apprenant
                     </Badge>
                 </div>
             </CardContent>
         </Card>
+
+        {/* --- WALLET SHORTCUT --- */}
+        <Link href="/student/wallet" className="block active:scale-[0.98] transition-all">
+            <div className="bg-slate-900 border border-white/5 rounded-[2rem] p-6 shadow-xl flex items-center justify-between relative overflow-hidden group">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                        <Wallet size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-0.5">Solde Ndara</p>
+                        <p className="text-2xl font-black text-white">{(currentUser?.balance || 0).toLocaleString()} <span className="text-xs">XOF</span></p>
+                    </div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-600 group-hover:text-primary transition-colors">
+                    <ArrowUpRight size={20} />
+                </div>
+            </div>
+        </Link>
 
         {/* --- DYNAMIC STATS --- */}
         <section className="grid grid-cols-3 gap-3">
@@ -189,14 +204,14 @@ export default function StudentProfilePage() {
                 />
                 <MenuLink 
                     icon={Wallet} 
-                    label="Historique Financier" 
-                    desc="Paiements et gains" 
+                    label="Portefeuille" 
+                    desc="Gérer mes avoirs" 
                     color="bg-emerald-500/10 text-emerald-400"
-                    href="/student/paiements"
+                    href="/student/wallet"
                 />
                 <MenuLink 
                     icon={Lock} 
-                    label="Sécurité du Compte" 
+                    label="Sécurité" 
                     desc="Mot de passe et 2FA" 
                     color="bg-red-500/10 text-red-400"
                     href="/forgot-password"
@@ -248,16 +263,6 @@ export default function StudentProfilePage() {
                         className="data-[state=checked]:bg-primary"
                     />
                 </div>
-
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
-                            <Bell className="h-5 w-5" />
-                        </div>
-                        <span className="font-bold text-white text-sm uppercase tracking-tight">Alertes Push</span>
-                    </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-primary" />
-                </div>
             </div>
         </div>
 
@@ -288,7 +293,7 @@ export default function StudentProfilePage() {
         </AlertDialog>
 
         <div className="pb-12 text-center">
-            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v2.4 • Innovation & Impact</p>
+            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v2.5 • Fintech Education</p>
         </div>
       </main>
     </div>
