@@ -26,11 +26,13 @@ service cloud.firestore {
         get(/databases/$(database)/documents/courses/$(courseId)).data.ownerId == request.auth.uid;
     }
 
-    // --- RÉGLAGES & ÉLÉMENTS DE DESIGN (LECTURE PUBLIQUE CRITIQUE) ---
-    match /settings/{docId} { 
-      allow read: if true; 
-      allow write: if isAdmin(); 
+    // --- RÉGLAGES DE LA PLATEFORME ---
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
+
+    // --- ÉLÉMENTS DE DESIGN & CONTENU PUBLIC ---
     match /carousel_slides/{slideId} { allow read, list: if true; allow write: if isAdmin(); }
     match /faqs/{faqId} { allow read, list: if true; allow write: if isAdmin(); }
     match /course_templates/{templateId} { allow read, list: if true; allow write: if isAdmin(); }
