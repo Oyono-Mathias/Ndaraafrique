@@ -4,6 +4,7 @@
  * @fileOverview Tunnel d'acquisition de licence de revente (Marché Secondaire).
  * ✅ TEMPS RÉEL : Réagit instantanément aux changements de prix ou de disponibilité.
  * ✅ MULTI-PASSERELLES : Choix entre Moneroo et MeSomb.
+ * ✅ RÉSOLU : Correction du type error lors de la gestion des erreurs du résultat.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -97,9 +98,10 @@ export default function BourseCheckoutPage() {
 
       if (result.success) {
           setIsSuccess(true);
-          toast({ title: "Acquisition réussie !" });
+          toast({ title: "Acquisition réussie !", description: "Vous êtes le nouveau propriétaire." });
       } else {
-          throw new Error(result.error);
+          const errorMessage = (result as any).error || "Une erreur inconnue est survenue.";
+          throw new Error(errorMessage);
       }
       
     } catch (error: any) {

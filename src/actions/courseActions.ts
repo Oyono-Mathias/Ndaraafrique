@@ -118,11 +118,11 @@ export async function purchaseResaleRightsAction({
     courseId: string;
     buyerId: string;
     transactionId: string;
-}) {
+}): Promise<{ success: boolean; error?: string }> {
     const db = getAdminDb();
     
     try {
-        const result = await db.runTransaction(async (transaction) => {
+        await db.runTransaction(async (transaction) => {
             const courseRef = db.collection('courses').doc(courseId);
             const courseDoc = await transaction.get(courseRef);
             
@@ -165,11 +165,9 @@ export async function purchaseResaleRightsAction({
                     date: FieldValue.serverTimestamp()
                 });
             }
-
-            return { success: true };
         });
 
-        return result;
+        return { success: true };
     } catch (e: any) {
         console.error("TRANSACTION_FAILED:", e.message);
         return { success: false, error: e.message };
