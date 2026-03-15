@@ -7,8 +7,9 @@ import { detectFraud } from '@/ai/flows/detect-fraud-flow';
 import type { PaymentProvider, Course, Settings, NdaraUser } from '@/lib/types';
 
 /**
- * @fileOverview Ndara Payment Processor (The Financial Brain).
- * Centralizes logic for enrollments, income distribution, and affiliate commissions.
+ * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
+ * Centralise la distribution des revenus, les inscriptions et les commissions d'affiliation.
+ * Indépendant du prestataire (Moneroo ou MeSomb).
  */
 
 export interface NdaraPaymentMetadata {
@@ -28,21 +29,20 @@ export interface NdaraPaymentDetails {
 }
 
 /**
- * Processes a successful payment across Ndara Afrique.
- * Independent of the payment gateway (Moneroo, MeSomb, etc.).
+ * Traite un paiement réussi à travers tout l'écosystème Ndara.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, provider, amount, currency, metadata } = details;
   const db = getAdminDb();
 
   try {
-    // 1. Idempotency Check: Don't process the same transaction twice
-    const existingPayment = await db.collection('payments').doc(transactionId).get();
+    // 1. Vérification d'idempotence : ne pas traiter deux fois la même transaction
+    const existingPayment = await db.collection('payments').doc(String(transactionId)).get();
     if (existingPayment.exists && existingPayment.data()?.status === 'Completed') {
-      return { success: true, message: 'Transaction already processed.' };
+      return { success: true, message: 'Transaction déjà traitée.' };
     }
 
-    // 2. Fetch critical data for processing
+    // 2. Récupération des données critiques
     const [courseDoc, settingsDoc, userDoc] = await Promise.all([
       db.collection('courses').doc(metadata.courseId).get(),
       db.collection('settings').doc('global').get(),
@@ -50,7 +50,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     ]);
 
     if (!courseDoc.exists || !userDoc.exists) {
-      throw new Error("Critical data missing: User or Course not found.");
+      throw new Error("Données manquantes : Utilisateur ou Cours introuvable.");
     }
 
     const courseData = courseDoc.data() as Course;
@@ -59,8 +59,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
     const batch = db.batch();
 
-    // 3. Log the Payment Document
-    const paymentRef = db.collection('payments').doc(transactionId);
+    // 3. Enregistrement de la transaction brute
+    const paymentRef = db.collection('payments').doc(String(transactionId));
     batch.set(paymentRef, {
       id: transactionId,
       userId: metadata.userId,
@@ -76,7 +76,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       metadata
     });
 
-    // 4. Handle Specific Purchase Type (Course Enrollment)
+    // 4. Gestion de l'achat de formation (Enrollment)
     if (metadata.type === 'course_purchase') {
       const enrollmentRef = db.collection('enrollments').doc(`${metadata.userId}_${metadata.courseId}`);
       
@@ -96,13 +96,13 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         enrollmentType: 'paid'
       }, { merge: true });
 
-      // Handle Coupon Usage
+      // Incrémenter l'usage du coupon si présent
       if (metadata.couponId) {
         const couponRef = db.collection('course_coupons').doc(metadata.couponId);
         batch.update(couponRef, { usedCount: FieldValue.increment(1) });
       }
 
-      // 5. Handle Affiliate Commission
+      // 5. Gestion de la commission Ambassadeur (Affiliation)
       if (metadata.affiliateId && settings?.commercial?.affiliatePercentage && metadata.affiliateId !== metadata.userId) {
         const affiliateRef = db.collection('users').doc(metadata.affiliateId);
         const affDoc = await affiliateRef.get();
@@ -111,7 +111,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           const affData = affDoc.data() as NdaraUser;
           const currentSales = affData.affiliateStats?.sales || 0;
 
-          // Progressive Commission Logic
+          // Logique de commission progressive Ndara
           let commissionPerc = settings.commercial.affiliatePercentage || 10;
           if (currentSales >= 50) commissionPerc += 10;
           else if (currentSales >= 20) commissionPerc += 5;
@@ -144,19 +144,19 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       }
     }
 
-    // Commit all changes atomicity
+    // Validation atomique du batch
     await batch.commit();
 
-    // 6. Async Post-processing: Fraud Detection (Doesn't block the transaction)
+    // 6. Analyse de fraude IA (Asynchrone - ne bloque pas l'inscription)
     const accountAge = Math.floor((Date.now() / 1000) - ((userData.createdAt as any)?.seconds || 0));
     detectFraud({
-      transactionId,
+      transactionId: String(transactionId),
       amount,
-      courseTitle: courseData.title || 'Cours inconnu',
+      courseTitle: courseData.title || 'Formation',
       user: {
         id: metadata.userId,
         accountAgeInSeconds: accountAge,
-        isFirstTransaction: true, // Simplified for now
+        isFirstTransaction: true,
         emailDomain: userData.email.split('@')[1] || '',
       }
     }).then(async (fraudResult) => {
@@ -172,17 +172,17 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
       if (fraudResult.isSuspicious) {
         await sendAdminNotification({
-          title: `⚠️ Alerte Fraude (Passerelle: ${provider})`,
-          body: `Transaction suspecte de ${amount} XOF par ${userData.email}.`,
+          title: `⚠️ Alerte Fraude (${provider})`,
+          body: `Transaction de ${amount} XOF suspecte par ${userData.email}.`,
           link: `/admin/payments?search=${transactionId}`,
           type: 'financialAnomalies'
         });
       }
-    }).catch(e => console.error("AI Fraud Detection failed:", e));
+    }).catch(e => console.error("AI Fraud Analysis failed:", e));
 
-    // 7. Send Notifications
+    // 7. Notification de l'étudiant
     await sendUserNotification(metadata.userId, {
-      text: `Bienvenue ! Votre formation "${courseData.title}" est maintenant débloquée.`,
+      text: `Bara ala ! Votre formation "${courseData.title}" est maintenant disponible.`,
       link: `/student/courses/${metadata.courseId}`,
       type: 'success'
     });

@@ -27,13 +27,11 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
     const url = 'https://mesomb.com/api/v1.1/payment/online/';
     
-    // On prépare les métadonnées pour le webhook
-    // MeSomb permet souvent de passer une référence personnalisée
     const payload = {
       amount: params.amount,
       service: params.service,
       receiver: params.phoneNumber,
-      country: 'CM', // Par défaut pour MeSomb, ajustable selon le pays
+      country: 'CM', // Ajustable selon le marché cible
       currency: 'XOF',
       reference: `NDARA-${Date.now()}`,
       metadata: {
@@ -57,10 +55,11 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
 
     const data = await response.json();
 
-    if (response.ok && data.status === 'SUCCESS') {
-      return { success: true, transactionId: data.transaction.pk };
+    if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
+      // Pour MeSomb, le statut peut être immédiat ou asynchrone
+      return { success: true, transactionId: data.transaction?.pk || data.reference };
     } else {
-      return { success: false, error: data.detail || "Le paiement a été rejeté ou est en attente." };
+      return { success: false, error: data.detail || "La demande de paiement a été rejetée par MeSomb." };
     }
 
   } catch (error: any) {

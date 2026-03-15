@@ -2,11 +2,11 @@
 
 /**
  * @fileOverview Tunnel de paiement Mobile Money Ndara Afrique V2.
- * ✅ DESIGN QWEN : Reçu vintage, sélecteur de passerelle (Moneroo/MeSomb) et fournisseur.
+ * ✅ DESIGN QWEN : Reçu vintage, sélecteur de passerelle (Moneroo/MeSomb).
  * ✅ FONCTIONNEL : Gestion des coupons, de l'affiliation et simulation multi-passerelles.
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { doc, getFirestore, updateDoc, increment, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -18,10 +18,7 @@ import {
   Lock, 
   Loader2, 
   ChevronRight,
-  Ticket,
-  CheckCircle2,
   Smartphone,
-  Wallet,
   ShieldCheck,
   GraduationCap,
   Check,
@@ -41,7 +38,7 @@ import { useLocale } from 'next-intl';
 type Provider = 'orange' | 'mtn' | 'wave' | 'virtual';
 type Gateway = 'moneroo' | 'mesomb';
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
@@ -101,7 +98,7 @@ export default function CheckoutPage() {
 
     try {
       if (provider === 'virtual') {
-          // Mode Publicitaire / Démo
+          // Mode Démo
           await new Promise(resolve => setTimeout(resolve, 2000));
           const balance = currentUser?.virtualBalance || 0;
           if (balance < discountedPrice) {
@@ -138,15 +135,15 @@ export default function CheckoutPage() {
           });
 
           if (result.success) {
-              setIsSuccess(true);
-              toast({ title: "Paiement réussi !", description: "Votre accès est activé." });
+              // MeSomb lance la demande sur le tel de l'utilisateur
+              toast({ title: "Demande envoyée !", description: "Validez le paiement sur votre téléphone." });
+              // On attend que le webhook valide l'accès
           } else {
-              toast({ variant: 'destructive', title: "Paiement échoué", description: result.error });
+              toast({ variant: 'destructive', title: "Échec", description: result.error });
           }
       } else {
-          // FLUX MONEROO (Déjà configuré via Webhook)
+          // FLUX MONEROO
           toast({ title: `Redirection vers Moneroo...` });
-          // Simulation Moneroo pour le prototype
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
       }
@@ -353,4 +350,12 @@ function ProviderBtn({ active, onClick, label, color, initials, darkText = false
             <span className="text-white text-[8px] font-black uppercase">{label}</span>
         </button>
     );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={<div className="p-8 pt-24"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>}>
+            <CheckoutContent />
+        </Suspense>
+    )
 }

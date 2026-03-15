@@ -3,26 +3,25 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Webhook MeSomb.
- * Reçoit les notifications de succès et les transmet au processeur central.
+ * Reçoit les confirmations de succès et les transmet au processeur central Ndara.
  */
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // MeSomb envoie les données de transaction
-    // On vérifie le statut du paiement
+    // MeSomb envoie l'état de la transaction
     if (body.status === 'SUCCESS' || body.success === true) {
       
       const transaction = body.transaction || body;
       const metadata = transaction.metadata;
 
       if (!metadata?.userId || !metadata?.courseId) {
-        console.error("MeSomb Webhook: Missing metadata", metadata);
+        console.error("MeSomb Webhook: Métadonnées incomplètes", metadata);
         return NextResponse.json({ error: 'Incomplete metadata' }, { status: 400 });
       }
 
-      // Appel du moteur financier unique
+      // Appel du moteur financier unique Ndara
       await processNdaraPayment({
         transactionId: transaction.pk || transaction.id,
         provider: 'mesomb',

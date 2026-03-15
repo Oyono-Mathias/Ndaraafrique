@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
- * @fileOverview Moneroo Webhook Adapter.
- * Receives the raw notification from Moneroo and delegates to the central Ndara Payment Processor.
+ * @fileOverview Adaptateur Webhook Moneroo.
+ * Reçoit la notification brute et délègue au processeur central Ndara.
  */
 
 export async function POST(req: Request) {
@@ -11,16 +11,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { status, metadata, id: transactionId, amount, currency_code } = body.data || {};
 
-    // 1. We only care about successful payments
     if (status === 'successful') {
       const { userId, courseId, affiliateId, couponId, type } = metadata || {};
 
       if (!userId || !courseId) {
-        console.error("Moneroo Webhook: Missing critical metadata", metadata);
+        console.error("Moneroo Webhook: Métadonnées critiques manquantes", metadata);
         return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
       }
 
-      // 2. Map to Ndara Transaction Format and call the central processor
+      // Transmission au processeur central
       await processNdaraPayment({
         transactionId,
         provider: 'moneroo',
@@ -38,7 +37,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true, processed: true });
     }
 
-    // Other statuses (failed, pending) are just acknowledged
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
