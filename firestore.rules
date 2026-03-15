@@ -31,18 +31,18 @@ service cloud.firestore {
       // Lecture publique pour le catalogue
       allow read: if true; 
       
-      // Création autorisée pour tout utilisateur connecté (pour devenir instructeur)
+      // Création autorisée pour tout utilisateur connecté
       allow create: if isSignedIn(); 
       
       // Modification du cours : Admin OU Créateur OU (Propriétaire uniquement pour les champs de revente)
       allow update: if isAdmin() || 
         isCreator(courseId) || 
-        (isCourseOwner(courseId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['resaleRightsPrice', 'resaleRightsAvailable', 'updatedAt']));
+        (isCourseOwner(courseId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['resaleRightsPrice', 'resaleRightsAvailable', 'updatedAt', 'buyoutStatus', 'buyoutPrice']));
       
-      // Suppression uniquement réservée au Créateur original ou Admin
+      // Suppression réservée au Créateur original ou Admin
       allow delete: if isAdmin() || isCreator(courseId);
       
-      // --- CONTENU PÉDAGOGIQUE (Sous-collections) ---
+      // --- CONTENU PÉDAGOGIQUE (Sections, Leçons, Quiz, Devoirs) ---
       match /sections/{sectionId} {
         allow read: if true;
         allow write: if isAdmin() || isCreator(courseId);
@@ -54,6 +54,11 @@ service cloud.firestore {
         match /quizzes/{quizId} {
           allow read: if true;
           allow write: if isAdmin() || isCreator(courseId);
+          
+          match /questions/{qId} {
+            allow read: if true;
+            allow write: if isAdmin() || isCreator(courseId);
+          }
         }
         match /assignments/{assignId} {
           allow read: if true;
@@ -64,7 +69,7 @@ service cloud.firestore {
       // --- HISTORIQUE DES LICENCES ---
       match /license_history/{historyId} {
         allow read: if isAdmin() || isCreator(courseId) || isCourseOwner(courseId);
-        allow write: if false; // Écriture uniquement via Server Action (Admin SDK)
+        allow write: if false; // Uniquement via Server Action (Admin SDK)
       }
     }
 
@@ -74,7 +79,7 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       
-      // Sous-collections privées
+      // Sous-collections (notifications, historique chat, etc.)
       match /{allSubcollections=**} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
@@ -90,15 +95,18 @@ service cloud.firestore {
       }
     }
 
-    // --- ACCÈS PUBLICS (RÉGLAGES, FAQ, CAROUSEL) ---
+    // --- ACCÈS PUBLICS & RÉGLAGES ---
     match /settings/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /faqs/{faqId} { allow read: if true; allow write: if isAdmin(); }
     match /carousel_slides/{slideId} { allow read: if true; allow write: if isAdmin(); }
+    match /course_templates/{templateId} { allow read: if true; allow write: if isAdmin(); }
 
     // --- INSCRIPTIONS ET PROGRESSION ---
     match /enrollments/{enrollId} {
-      allow read: if isSignedIn(); // Ouvert pour permettre la vérification des droits
-      allow write: if isAdmin(); // Géré par les paiements et le SDK Admin
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || isAdmin() || request.auth.uid == resource.data.instructorId);
+      allow create: if isSignedIn(); // Permet l'inscription directe
+      allow update: if isAdmin() || isOwner(resource.data.studentId);
+      allow delete: if isAdmin();
     }
     
     match /course_progress/{progressId} {
@@ -106,9 +114,57 @@ service cloud.firestore {
       allow create: if isSignedIn();
     }
 
-    // --- AUTRES COLLECTIONS (NOTATIONS, QUESTIONS, ETC.) ---
+    // --- DEVOIRS (SOUMISSIONS) ---
+    match /devoirs/{submissionId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.instructorId || isAdmin());
+    }
+
+    // --- QUESTIONS & RÉPONSES ---
+    match /questions/{questionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.instructorId || isAdmin());
+    }
+
+    // --- AFFILIATION & FINANCES ---
+    match /affiliate_transactions/{transId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.affiliateId || isAdmin());
+      allow write: if false; // Géré par le serveur
+    }
+    
+    match /payout_requests/{payoutId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.instructorId || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin() || request.auth.uid == resource.data.instructorId);
+      allow write: if isAdmin();
+    }
+
+    // --- AUTRES COLLECTIONS ---
+    match /user_wishlist/{wishId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+    
+    match /quiz_submissions/{subId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.studentId;
+    }
+
+    match /investor_leads/{leadId} {
+      allow create: if true;
+      allow read, update: if isAdmin();
+    }
+
+    match /security_logs/{logId} { allow read, write: if isAdmin(); }
+    match /admin_audit_logs/{logId} { allow read, write: if isAdmin(); }
+
+    // --- RÈGLE PAR DÉFAUT : BLOQUER LE RESTE ---
     match /{document=**} {
-      allow read, write: if isAdmin() || isSignedIn();
+      allow read, write: if false;
     }
   }
 }
