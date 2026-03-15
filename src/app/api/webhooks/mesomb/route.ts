@@ -1,32 +1,19 @@
 import { NextResponse } from 'next/server';
 import { processNdaraPayment } from '@/services/paymentProcessor';
-import { Signature } from '@hachther/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb sécurisé par signature.
- * Vérifie l'authenticité de la requête avant de valider l'inscription.
+ * @fileOverview Webhook MeSomb optimisé.
+ * Traite les notifications de paiement réussies en les raccordant au moteur Ndara.
  */
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const headers = req.headers;
     
-    // 1. Vérification de la signature (Sécurité CEO)
-    // MeSomb envoie X-MeSomb-Signature, X-MeSomb-Nonce, X-MeSomb-Timestamp
-    const signatureHeader = headers.get('x-mesomb-signature');
-    const nonce = headers.get('x-mesomb-nonce');
-    const timestamp = headers.get('x-mesomb-timestamp');
-    const secretKey = process.env.MESOMB_SECRET_KEY;
+    // MeSomb envoie SUCCESS ou un booléen success selon la version
+    const isSuccess = body.status === 'SUCCESS' || body.success === true;
 
-    if (signatureHeader && nonce && timestamp && secretKey) {
-        const sig = new Signature();
-        // Note: La validation de signature dépend de la version du SDK. 
-        // Si le SDK ne valide pas directement l'objet JSON, on se fie au statut SUCCESS.
-        // Pour ce MVP, nous vérifions le statut envoyé par le serveur MeSomb.
-    }
-
-    if (body.status === 'SUCCESS' || body.success === true) {
+    if (isSuccess) {
       const transaction = body.transaction || body;
       const metadata = transaction.metadata || transaction.extra;
 

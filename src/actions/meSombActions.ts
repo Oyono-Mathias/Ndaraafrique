@@ -1,10 +1,8 @@
 'use server';
 
-import { PaymentOperation } from '@hachther/mesomb';
-
 /**
- * @fileOverview Actions serveur pour l'intégration de MeSomb via le SDK officiel.
- * Utilise les clés standardisées : MESOMB_APP_KEY, MESOMB_ACCESS_KEY, MESOMB_SECRET_KEY.
+ * @fileOverview Actions serveur pour l'intégration de MeSomb via l'API REST.
+ * Utilise fetch pour garantir la compatibilité maximale avec Vercel et éviter les erreurs de SDK.
  */
 
 interface MeSombPaymentParams {
@@ -23,47 +21,50 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const secretKey = process.env.MESOMB_SECRET_KEY;
 
   if (!applicationKey || !accessKey || !secretKey) {
-    console.error("MESOMB_CONFIG_MISSING: Ensure MESOMB_APP_KEY, MESOMB_ACCESS_KEY, and MESOMB_SECRET_KEY are set.");
+    console.error("MESOMB_CONFIG_MISSING");
     return { success: false, error: "Configuration MeSomb incomplète sur le serveur." };
   }
 
   try {
-    const payment = new PaymentOperation({
-      applicationKey,
-      accessKey,
-      secretKey,
+    // Initiation de la collecte via l'API REST MeSomb v1.1
+    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect/', {
+      method: 'POST',
+      headers: {
+        'X-MeSomb-Application': applicationKey,
+        'X-MeSomb-AccessKey': accessKey,
+        'X-MeSomb-SecretKey': secretKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: params.amount,
+        service: params.service,
+        receiver: params.phoneNumber,
+        currency: 'XOF',
+        nonce: `NDARA-${Date.now()}`,
+        extra: {
+          userId: params.userId,
+          courseId: params.courseId,
+          affiliateId: params.affiliateId || '',
+          couponId: params.couponId || '',
+          type: 'course_purchase'
+        }
+      }),
     });
 
-    // Initiation de la collecte (Collect)
-    const response = await payment.makeCollect({
-      amount: params.amount,
-      service: params.service,
-      receiver: params.phoneNumber,
-      currency: 'XOF',
-      nonce: `NDARA-${Date.now()}`,
-      extra: {
-        userId: params.userId,
-        courseId: params.courseId,
-        affiliateId: params.affiliateId || '',
-        couponId: params.couponId || '',
-        type: 'course_purchase'
-      }
-    });
+    const data = await response.json();
 
-    const data = response.transaction;
-
-    if (response.isOperationSuccess() && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
+    if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
       return { 
         success: true, 
         transactionId: data.pk || data.id,
         message: "Demande de paiement envoyée. Veuillez valider sur votre téléphone." 
       };
     } else {
-      return { success: false, error: "La demande de paiement a été rejetée ou a échoué." };
+      return { success: false, error: data.detail || "La demande de paiement a été rejetée ou a échoué." };
     }
 
   } catch (error: any) {
-    console.error("MESOMB_SDK_ERROR:", error.message);
-    return { success: false, error: "Impossible de contacter la passerelle MeSomb via le SDK." };
+    console.error("MESOMB_API_ERROR:", error.message);
+    return { success: false, error: "Impossible de contacter la passerelle MeSomb." };
   }
 }

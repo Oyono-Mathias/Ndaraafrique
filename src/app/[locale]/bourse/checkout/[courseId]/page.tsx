@@ -2,9 +2,7 @@
 
 /**
  * @fileOverview Tunnel d'acquisition de licence de revente (Marché Secondaire).
- * ✅ TEMPS RÉEL : Réagit instantanément aux changements de prix ou de disponibilité.
- * ✅ MULTI-PASSERELLES : Choix entre Moneroo et MeSomb.
- * ✅ RÉSOLU : Correction du type error lors de la gestion des erreurs du résultat.
+ * ✅ RÉSOLU : Correction du Type Error sur result.error.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -87,8 +85,8 @@ export default function BourseCheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // ICI : Intégration future du flux MeSomb
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Simulation de délai réseau
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       const result = await purchaseResaleRightsAction({
           courseId: course.id,
@@ -100,8 +98,9 @@ export default function BourseCheckoutPage() {
           setIsSuccess(true);
           toast({ title: "Acquisition réussie !", description: "Vous êtes le nouveau propriétaire." });
       } else {
-          const errorMessage = (result as any).error || "Une erreur inconnue est survenue.";
-          throw new Error(errorMessage);
+          // Utilisation d'un cast sécurisé pour satisfaire TypeScript
+          const errorMsg = (result as { success: boolean; error?: string }).error || "Une erreur est survenue.";
+          throw new Error(errorMsg);
       }
       
     } catch (error: any) {
@@ -183,7 +182,7 @@ export default function BourseCheckoutPage() {
 
         <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                <ShieldCheck size={14} className="text-primary" /> Clauser de Transfert
+                <ShieldCheck size={14} className="text-primary" /> Clause de Transfert
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed italic">"L'acquisition via {gateway === 'moneroo' ? 'Moneroo' : 'MeSomb'} garantit l'attribution immédiate de votre titre de propriété sur Ndara Afrique."</p>
         </div>
