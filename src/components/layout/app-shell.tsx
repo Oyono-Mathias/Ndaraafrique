@@ -3,7 +3,7 @@
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
  * ✅ VISIBILITÉ : Navigation affichée UNIQUEMENT dans les zones Dashboard/Privées.
- * ✅ RÉSOLU : Disparition de la barre de navigation sur la Landing Page et pages publiques.
+ * ✅ RÉSOLU : Intégration de la nouvelle BottomNav mobile étudiante.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -12,7 +12,7 @@ import { useRole } from '@/context/RoleContext';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
-import { StudentBottomNav } from '@/components/layout/student-bottom-nav';
+import { BottomNav } from '@/components/navigation/BottomNav';
 import { InstructorBottomNav } from '@/components/layout/instructor-bottom-nav';
 import { AdminBottomNav } from '@/components/layout/admin-bottom-nav';
 import { Button } from '@/components/ui/button';
@@ -80,17 +80,23 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
-  // Définition des zones qui DOIVENT afficher la navigation (Dashboard)
+  // Définition des pages où la BottomNav DOIT être visible (Espace Étudiant)
+  const showStudentBottomNav = useMemo(() => {
+      const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile'];
+      return allowedPaths.some(path => cleanPath === path || (path !== '/' && cleanPath.startsWith(path)));
+  }, [cleanPath]);
+
+  // Définition des zones qui affichent la navigation desktop (Sidebar)
   const isDashboardArea = useMemo(() => {
       const areas = ['/student', '/instructor', '/admin', '/account', '/search'];
       return areas.some(area => cleanPath.startsWith(area));
   }, [cleanPath]);
 
-  // Définition des pages 100% publiques (Landing, About, etc.)
+  // Définition des pages publiques
   const isPublicPage = useMemo(() => {
     const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
     if (publicPaths.includes(cleanPath)) return true;
-    if (cleanPath.startsWith('/course/')) return true; // Détail public
+    if (cleanPath.startsWith('/course/')) return true; 
     return false;
   }, [cleanPath]);
 
@@ -101,12 +107,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
-  // ✅ LOGIQUE CRUCIALE : On n'affiche les menus que si on est connecté ET dans une zone Dashboard ET pas en plein écran
-  const showMenus = !!user && isDashboardArea && !isFullScreen && !isPublicPage;
-
+  // Redirection intelligente
   useEffect(() => {
     if (loading) return;
-    // Redirection login si page privée
     if (!user && !isPublicPage && !isAuthPage && !isFullScreen) {
       router.push(`/${locale}/login`);
     }
@@ -126,10 +129,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
   return (
-    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", showMenus && "md:grid md:grid-cols-[280px_1fr]")}>
+    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", !!user && isDashboardArea && !isFullScreen && !isPublicPage && "md:grid md:grid-cols-[280px_1fr]")}>
         <div className="grain-overlay" />
 
-        {showMenus && (
+        {!!user && isDashboardArea && !isFullScreen && !isPublicPage && (
           <aside className="hidden md:block h-screen sticky top-0 border-r border-white/5">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
@@ -138,21 +141,22 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-1 relative z-10">
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           
-          {showMenus && (
+          {!!user && isDashboardArea && !isFullScreen && !isPublicPage && (
             <header className="h-16 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md">
                 <Header />
             </header>
           )}
 
-          <main className={cn("flex-1", showMenus ? "pb-24 md:pb-6 md:p-6" : "p-0")}>
+          <main className={cn("flex-1", (!!user && isDashboardArea && !isFullScreen && !isPublicPage) ? "pb-24 md:pb-6 md:p-6" : "p-0")}>
             {children}
           </main>
 
-          {showMenus && (
+          {/* Bottom Nav Logique Mobile */}
+          {!!user && !isFullScreen && (
               <div className="md:hidden">
-                  {role === 'admin' && <AdminBottomNav />}
-                  {role === 'instructor' && <InstructorBottomNav />}
-                  {role === 'student' && <StudentBottomNav />}
+                  {role === 'admin' && cleanPath.startsWith('/admin') && <AdminBottomNav />}
+                  {role === 'instructor' && cleanPath.startsWith('/instructor') && <InstructorBottomNav />}
+                  {role === 'student' && showStudentBottomNav && <BottomNav />}
               </div>
           )}
         </div>
