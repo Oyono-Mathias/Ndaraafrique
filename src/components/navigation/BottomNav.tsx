@@ -28,19 +28,19 @@ export function BottomNav() {
 
   const navItems = [
     { 
-      label: 'DASHBOARD', 
+      label: 'ACCUEIL', 
       icon: LayoutDashboard, 
       href: `/${locale}/student/dashboard`, 
       path: '/student/dashboard' 
     },
     { 
-      label: 'COURSES', 
+      label: 'CATALOGUE', 
       icon: BookOpen, 
       href: `/${locale}/courses`, 
       path: '/courses' 
     },
     { 
-      label: 'MY COURSES', 
+      label: 'MES COURS', 
       icon: GraduationCap, 
       href: `/${locale}/student/courses`, 
       path: '/student/courses' 
@@ -52,7 +52,7 @@ export function BottomNav() {
       path: '/bourse' 
     },
     { 
-      label: 'PROFILE', 
+      label: 'PROFIL', 
       icon: UserCircle, 
       href: `/${locale}/student/profile`, 
       path: '/student/profile' 

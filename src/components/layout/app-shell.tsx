@@ -80,10 +80,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
-  // Définition des pages où la BottomNav DOIT être visible (Espace Étudiant)
+  // Définition des pages où la BottomNav DOIT être visible (Espace Étudiant connecté)
   const showStudentBottomNav = useMemo(() => {
-      const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile'];
-      return allowedPaths.some(path => cleanPath === path || (path !== '/' && cleanPath.startsWith(path)));
+      const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile', '/search'];
+      const isExcluded = ['/', '/login', '/register', '/student/messages'].includes(cleanPath) 
+        || cleanPath.includes('/checkout/') 
+        || (cleanPath.startsWith('/courses/') && cleanPath.split('/').length > 2); // Exclure le lecteur de cours /courses/[id]
+        
+      return allowedPaths.some(path => cleanPath === path || cleanPath.startsWith(path)) && !isExcluded;
   }, [cleanPath]);
 
   // Définition des zones qui affichent la navigation desktop (Sidebar)
