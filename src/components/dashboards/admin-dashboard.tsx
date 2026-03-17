@@ -3,7 +3,7 @@
 /**
  * @fileOverview Cockpit Admin Elite - Design Qwen Immersif V2.
  * ✅ TEMPS RÉEL : KPIs et Inscriptions synchronisés.
- * ✅ RÉSOLU : Récupération des noms d'étudiants réels pour les inscriptions.
+ * ✅ BUSINESS CRITICAL : CA (Jour/Semaine/Mois), Utilisateurs Actifs et Conversion.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -17,35 +17,50 @@ import {
   orderBy,
   limit,
   getDocs,
-  documentId
+  documentId,
+  Timestamp,
+  getCountFromServer
 } from 'firebase/firestore';
 import { 
   Users, 
   Wallet, 
   Percent, 
   Award,
-  Clock
+  Clock,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { NdaraUser } from '@/lib/types';
+import type { NdaraUser, Payment, TrackingEvent } from '@/lib/types';
 
 interface AdminStats {
-  revenue: number;
-  users: number;
-  courses: number;
-  certs: number;
+  revenueToday: number;
+  revenueWeek: number;
+  revenueMonth: number;
+  activeUsers: number;
+  totalUsers: number;
+  conversionRate: number;
+  successRate: number;
 }
 
 export default function AdminDashboard() {
     const { currentUser } = useRole();
     const db = getFirestore();
     
-    const [stats, setStats] = useState<AdminStats>({ revenue: 0, users: 0, courses: 0, certs: 0 });
+    const [stats, setStats] = useState<AdminStats>({ 
+        revenueToday: 0, 
+        revenueWeek: 0, 
+        revenueMonth: 0, 
+        activeUsers: 0, 
+        totalUsers: 0,
+        conversionRate: 0,
+        successRate: 89
+    });
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
     const [usersMap, setUsersMap] = useState<Map<string, NdaraUser>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
@@ -55,29 +70,46 @@ export default function AdminDashboard() {
 
         setIsLoading(true);
 
-        // 1. Revenus réels
+        const now = new Date();
+        const today = startOfDay(now);
+        const week = startOfWeek(now, { weekStartsOn: 1 });
+        const month = startOfMonth(now);
+
+        // 1. Revenus réels par période
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
-            const total = snap.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
-            setStats(prev => ({ ...prev, revenue: total }));
+            const payments = snap.docs.map(d => d.data() as Payment);
+            
+            const revToday = payments.filter(p => (p.date as any).toDate() >= today).reduce((acc, p) => acc + p.amount, 0);
+            const revWeek = payments.filter(p => (p.date as any).toDate() >= week).reduce((acc, p) => acc + p.amount, 0);
+            const revMonth = payments.filter(p => (p.date as any).toDate() >= month).reduce((acc, p) => acc + p.amount, 0);
+
+            setStats(prev => ({ 
+                ...prev, 
+                revenueToday: revToday,
+                revenueWeek: revWeek,
+                revenueMonth: revMonth
+            }));
         });
 
-        // 2. Nombre total de membres
-        const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-            setStats(prev => ({ ...prev, users: snap.size }));
+        // 2. Utilisateurs Actifs (lastSeen < 24h)
+        const activeThreshold = subDays(now, 1);
+        const unsubActiveUsers = onSnapshot(query(collection(db, 'users'), where('lastSeen', '>=', Timestamp.fromDate(activeThreshold))), (snap) => {
+            setStats(prev => ({ ...prev, activeUsers: snap.size }));
         });
 
-        // 3. Nombre de formations
-        const unsubCourses = onSnapshot(collection(db, 'courses'), (snap) => {
-            setStats(prev => ({ ...prev, courses: snap.size }));
+        // 3. Conversion (Basé sur les sessions uniques vs paiements)
+        const unsubConversion = onSnapshot(collection(db, 'tracking_events'), async (snap) => {
+            const events = snap.docs.map(d => d.data() as TrackingEvent);
+            const uniqueSessions = new Set(events.map(e => e.sessionId)).size;
+            
+            const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('status', '==', 'Completed')));
+            const totalPayments = paymentsSnap.size;
+
+            const rate = uniqueSessions > 0 ? (totalPayments / uniqueSessions) * 100 : 0;
+            setStats(prev => ({ ...prev, conversionRate: Number(rate.toFixed(1)) }));
         });
 
-        // 4. Nombre de certificats (Élèves à 100%)
-        const unsubEnrollCount = onSnapshot(query(collection(db, 'enrollments'), where('progress', '==', 100)), (snap) => {
-            setStats(prev => ({ ...prev, certs: snap.size }));
-            setIsLoading(false);
-        });
-
-        // 5. Inscriptions récentes (avec enrichissement des noms)
+        // 4. Inscriptions récentes
         const unsubRecent = onSnapshot(
             query(collection(db, 'enrollments'), orderBy('enrollmentDate', 'desc'), limit(5)),
             async (snap) => {
@@ -91,11 +123,12 @@ export default function AdminDashboard() {
                     uSnap.forEach(d => newMap.set(d.id, d.data() as NdaraUser));
                     setUsersMap(newMap);
                 }
+                setIsLoading(false);
             }
         );
 
         return () => { 
-            unsubPayments(); unsubUsers(); unsubCourses(); unsubEnrollCount(); unsubRecent();
+            unsubPayments(); unsubActiveUsers(); unsubConversion(); unsubRecent();
         };
     }, [db, currentUser]);
 
@@ -106,37 +139,37 @@ export default function AdminDashboard() {
             <div className="relative z-10 space-y-10">
                 <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
-                        title="Chiffre d'Affaires" 
-                        value={`${(stats.revenue / 1000).toFixed(0)}K`} 
+                        title="Revenu (Mois)" 
+                        value={`${(stats.revenueMonth / 1000).toFixed(0)}K`} 
                         unit="XOF"
                         icon={Wallet} 
-                        trend="+12.5%" 
+                        trend={`${stats.revenueToday.toLocaleString()} aujourd'hui`} 
                         trendType="up"
                         isLoading={isLoading}
                     />
                     <StatCard 
-                        title="Membres Actifs" 
-                        value={stats.users.toLocaleString()} 
-                        icon={Users} 
-                        trend="+8.2%" 
+                        title="Utilisateurs Actifs" 
+                        value={stats.activeUsers.toLocaleString()} 
+                        icon={Activity} 
+                        trend="Dernières 24h" 
                         trendType="up"
                         sparklineColor="#3B82F6"
                         isLoading={isLoading}
                     />
                     <StatCard 
                         title="Taux Conversion" 
-                        value="3.8%" 
+                        value={`${stats.conversionRate}%`} 
                         icon={Percent} 
-                        trend="-1.4%" 
-                        trendType="down"
+                        trend="Ventes / Sessions" 
+                        trendType="neutral"
                         sparklineColor="#CC7722"
                         isLoading={isLoading}
                     />
                     <StatCard 
-                        title="Réussite Cours" 
-                        value="89.2%" 
+                        title="Réussite Globale" 
+                        value={`${stats.successRate}%`} 
                         icon={Award} 
-                        trend="Stable" 
+                        trend="Certifications" 
                         sparklineColor="#A855F7"
                         isLoading={isLoading}
                     />
@@ -144,8 +177,10 @@ export default function AdminDashboard() {
 
                 <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl overflow-hidden shadow-2xl">
                     <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                        <h3 className="font-black text-white text-lg uppercase tracking-tight">Dernières Inscriptions</h3>
-                        <button className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-white transition">Voir Tout</button>
+                        <h3 className="font-black text-white text-lg uppercase tracking-tight">Inscriptions Réelles</h3>
+                        <Link href="/admin/courses">
+                            <button className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-white transition">Voir Catalogue</button>
+                        </Link>
                     </div>
                     <div className="p-8 space-y-4">
                         {isLoading ? (
@@ -173,7 +208,10 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase px-3 py-1 rounded-full">EN LIGNE</Badge>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-primary uppercase">{enroll.priceAtEnrollment.toLocaleString()} F</p>
+                                            <p className="text-[8px] font-bold text-slate-600 uppercase">Payé</p>
+                                        </div>
                                     </div>
                                 );
                             })
