@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
- * @fileOverview Table de gestion des cours pour les administrateurs.
- * ✅ DESIGN : Miniatures rectangulaires arrondies (rounded-lg).
- * ✅ NOUVEAU : Option de réattribution d'instructeur.
+ * @fileOverview Gestionnaire du Catalogue Admin - Design Qwen Cards Immersif.
+ * ✅ MODÉRATION : Section prioritaire pour les cours "En Examen".
+ * ✅ BOURSE : Indicateurs visuels des licences en vente.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -12,7 +13,6 @@ import { getFirestore, collection, query, orderBy, where, getDocs } from 'fireba
 import type { Course, NdaraUser } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,34 +20,47 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Search, Edit, Trash2, Loader2, Eye, ShieldCheck, Clock, Archive, BookOpen, UserPlus } from 'lucide-react';
+import { 
+    MoreVertical, 
+    Search, 
+    Edit, 
+    Trash2, 
+    Loader2, 
+    Eye, 
+    ShieldCheck, 
+    Clock, 
+    Archive, 
+    UserPlus,
+    TrendingUp,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    FileText
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { updateCourseStatusByAdmin, deleteCourseByAdmin } from '@/actions/courseActions';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { 
+    AlertDialog, 
+    AlertDialogTrigger, 
+    AlertDialogContent, 
+    AlertDialogHeader, 
+    AlertDialogFooter, 
+    AlertDialogTitle, 
+    AlertDialogDescription, 
+    AlertDialogAction, 
+    AlertDialogCancel 
+} from "@/components/ui/alert-dialog";
 import Image from 'next/image';
 import { AssignInstructorModal } from './AssignInstructorModal';
 
-const getStatusVariant = (status: Course['status']) => {
-  switch (status) {
-    case 'Published': return 'success';
-    case 'Pending Review': return 'warning';
-    case 'Draft': return 'secondary';
-    default: return 'outline';
-  }
-};
-
-const CourseRow = ({ 
+const CourseAdminCard = ({ 
     course, 
     instructor,
     onAssignClick 
@@ -62,12 +75,17 @@ const CourseRow = ({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isStatusChanging, setIsStatusChanging] = useState(false);
 
+    const isPublished = course.status === 'Published';
+    const isPending = course.status === 'Pending Review';
+    const isDraft = course.status === 'Draft';
+    const isInMarket = course.resaleRightsAvailable === true;
+
     const handleStatusUpdate = async (status: Course['status']) => {
         if (!adminUser || status === course.status) return;
         setIsStatusChanging(true);
         const result = await updateCourseStatusByAdmin({ courseId: course.id, status, adminId: adminUser.uid });
         if (result.success) {
-            toast({ title: 'Statut mis à jour', description: `La formation est maintenant en mode ${status}.` });
+            toast({ title: 'Statut mis à jour' });
         } else {
             toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         }
@@ -79,7 +97,7 @@ const CourseRow = ({
         setIsDeleting(true);
         const result = await deleteCourseByAdmin({ courseId: course.id, adminId: adminUser.uid });
         if (result.success) {
-            toast({ title: 'Cours supprimé', description: "La formation a été retirée du catalogue." });
+            toast({ title: 'Formation supprimée' });
         } else {
             toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         }
@@ -87,231 +105,248 @@ const CourseRow = ({
     };
 
     return (
-        <TableRow className="group border-slate-800 hover:bg-slate-800/20">
-            <TableCell>
-                <div className="flex items-center gap-4">
-                    <div className="relative h-10 w-14 rounded-lg overflow-hidden bg-slate-800 shadow-lg border border-white/5 shrink-0">
-                        <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/100/100`} alt={course.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-sm text-white line-clamp-1 uppercase tracking-tight">{course.title}</span>
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">{course.category}</span>
-                    </div>
+        <div className={cn(
+            "glass-card rounded-[2.5rem] overflow-hidden border transition-all active:scale-[0.98] group relative",
+            isPending ? "border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]" : "border-white/5 shadow-2xl",
+            isDraft && "opacity-75"
+        )}>
+            {/* Market Badge */}
+            {isInMarket && (
+                <div className="absolute top-3 left-3 z-20 animate-in zoom-in duration-500">
+                    <Badge className="bg-blue-600 hover:bg-blue-600 text-white border-none font-black text-[8px] uppercase px-2 py-1 flex items-center gap-1 shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                        <TrendingUp size={10} />
+                        EN BOURSE
+                    </Badge>
                 </div>
-            </TableCell>
-            <TableCell className="hidden md:table-cell">
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 border border-slate-700 shadow-sm">
-                        <AvatarImage src={instructor?.profilePictureURL} />
-                        <AvatarFallback className="bg-slate-800 text-slate-500 text-[10px] font-black">
-                            {instructor?.fullName?.charAt(0)}
-                        </AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-bold text-slate-300">{instructor?.fullName || 'N/A'}</span>
+            )}
+
+            <div className="flex p-4 gap-4 items-center">
+                {/* Thumbnail */}
+                <div className="w-28 h-20 rounded-2xl overflow-hidden shrink-0 relative bg-slate-800 shadow-inner">
+                    <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/200/150`} alt={course.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-black/20" />
                 </div>
-            </TableCell>
-            <TableCell>
-                <div className="flex flex-col">
-                    <span className="text-sm font-black text-white">{course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'OFFERT'}</span>
-                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">Prix public</span>
-                </div>
-            </TableCell>
-            <TableCell>
-                <Badge variant={getStatusVariant(course.status)} className="font-black text-[9px] uppercase border-none px-2 py-0">
-                    {course.status}
-                </Badge>
-            </TableCell>
-            <TableCell className="text-right">
-                <AlertDialog>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-all active:scale-90">
-                                <MoreHorizontal className="h-5 w-5" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-300">
-                            <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Actions Admin</DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-slate-800" />
-                            
-                            <DropdownMenuItem onClick={() => router.push(`/instructor/courses/edit/${course.id}`)} className="cursor-pointer gap-2 py-2.5">
-                                <Edit className="h-4 w-4 text-primary" />
-                                <span className="font-bold text-xs uppercase tracking-tight">Éditer le contenu</span>
-                            </DropdownMenuItem>
 
-                            <DropdownMenuItem onClick={() => onAssignClick(course)} className="cursor-pointer gap-2 py-2.5 text-primary">
-                                <UserPlus className="h-4 w-4" />
-                                <span className="font-bold text-xs uppercase tracking-tight">Assigner l'expert</span>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem onClick={() => router.push(`/course/${course.id}`)} className="cursor-pointer gap-2 py-2.5">
-                                <Eye className="h-4 w-4 text-blue-400" />
-                                <span className="font-bold text-xs uppercase tracking-tight">Aperçu public</span>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator className="bg-slate-800" />
-
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger className="cursor-pointer gap-2 py-2.5" disabled={isStatusChanging}>
-                                    {isStatusChanging ? <Loader2 className="h-4 w-4 animate-spin text-primary"/> : <Clock className="h-4 w-4 text-amber-400" />}
-                                    <span className="font-bold text-xs uppercase tracking-tight">Changer le statut</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                    <DropdownMenuSubContent className="bg-slate-900 border-slate-800 text-slate-300">
-                                        <DropdownMenuItem onClick={() => handleStatusUpdate('Published')} className="cursor-pointer font-bold text-xs uppercase text-emerald-400">
-                                            <ShieldCheck className="mr-2 h-4 w-4" /> Publier
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleStatusUpdate('Pending Review')} className="cursor-pointer font-bold text-xs uppercase text-amber-400">
-                                            <Clock className="mr-2 h-4 w-4" /> Mettre en examen
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleStatusUpdate('Draft')} className="cursor-pointer font-bold text-xs uppercase text-slate-400">
-                                            <Archive className="mr-2 h-4 w-4" /> Passer en brouillon
-                                        </DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
-
-                            <DropdownMenuSeparator className="bg-slate-800" />
-                            
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="cursor-pointer gap-2 py-2.5 text-red-500">
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="font-bold text-xs uppercase tracking-tight">Supprimer</span>
+                {/* Info */}
+                <div className="flex-1 min-w-0 py-1">
+                    <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-black text-white text-[13px] leading-tight uppercase tracking-tight truncate pr-2">{course.title}</h3>
+                        
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-500 hover:text-white transition active:scale-90">
+                                    <MoreVertical size={16} />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-300">
+                                <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Arbitrage Admin</DropdownMenuLabel>
+                                <DropdownMenuSeparator className="bg-slate-800" />
+                                
+                                <DropdownMenuItem onClick={() => router.push(`/instructor/courses/edit/${course.id}`)} className="cursor-pointer gap-3 py-3">
+                                    <Edit className="h-4 w-4 text-primary" />
+                                    <span className="font-bold text-xs uppercase">Modifier le contenu</span>
                                 </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <AlertDialogContent className="bg-slate-900 border-slate-800 rounded-[2rem]">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle className="text-xl font-black text-white uppercase tracking-tight">Attention</AlertDialogTitle>
-                            <AlertDialogDescription className="text-slate-400">
-                                Supprimer définitivement la formation <b>"{course.title}"</b> ? Cette action est irréversible et supprimera tout le contenu associé.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="p-6 pt-0">
-                            <AlertDialogCancel className="bg-slate-800 border-none rounded-xl font-bold uppercase text-[10px]">Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-600 font-bold uppercase text-[10px] rounded-xl">
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Supprimer
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </TableCell>
-        </TableRow>
+
+                                <DropdownMenuItem onClick={() => onAssignClick(course)} className="cursor-pointer gap-3 py-3 text-primary">
+                                    <UserPlus className="h-4 w-4" />
+                                    <span className="font-bold text-xs uppercase">Réattribuer Expert</span>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator className="bg-slate-800" />
+
+                                {isPending ? (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('Published')} className="cursor-pointer gap-3 py-3 text-emerald-400">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span className="font-bold text-xs uppercase">Publier & Valider</span>
+                                    </DropdownMenuItem>
+                                ) : isPublished ? (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('Draft')} className="cursor-pointer gap-3 py-3">
+                                        <Archive className="h-4 w-4" />
+                                        <span className="font-bold text-xs uppercase">Retirer (Brouillon)</span>
+                                    </DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('Published')} className="cursor-pointer gap-3 py-3 text-emerald-400">
+                                        <ShieldCheck className="h-4 w-4" />
+                                        <span className="font-bold text-xs uppercase">Forcer la Publication</span>
+                                    </DropdownMenuItem>
+                                )}
+
+                                <DropdownMenuSeparator className="bg-slate-800" />
+                                
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer gap-3 py-3 text-red-500">
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="font-bold text-xs uppercase">Supprimer</span>
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-slate-900 border-slate-800 rounded-[2rem]">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="text-white font-black uppercase tracking-tight">Confirmer suppression</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-slate-400">
+                                                Voulez-vous vraiment supprimer <b>"{course.title}"</b> ? Cette action est irréversible.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter className="p-6 pt-0">
+                                            <AlertDialogCancel className="bg-slate-800 border-none rounded-xl font-bold text-[10px] uppercase">Annuler</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white font-bold text-[10px] uppercase rounded-xl">Supprimer</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <Avatar className="h-4 w-4 border border-white/10">
+                            <AvatarImage src={instructor?.profilePictureURL} />
+                            <AvatarFallback className="text-[6px] font-black">{instructor?.fullName?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest truncate max-w-[120px]">{instructor?.fullName || 'Chargement...'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-auto">
+                        <Badge className={cn(
+                            "text-[8px] font-black uppercase px-2 py-0.5 border-none rounded-md",
+                            isPublished ? "bg-emerald-500/10 text-emerald-500" : 
+                            isPending ? "bg-amber-500/10 text-amber-500 animate-pulse" : 
+                            "bg-slate-800 text-slate-500"
+                        )}>
+                            {isPublished ? 'En Ligne' : isPending ? 'En Examen' : 'Brouillon'}
+                        </Badge>
+
+                        <div className="text-right">
+                            <p className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">
+                                {isInMarket ? 'LICENCE BOURSE' : 'PRIX PUBLIC'}
+                            </p>
+                            <p className={cn(
+                                "text-sm font-black",
+                                isInMarket ? "text-blue-400" : "text-white"
+                            )}>
+                                {(isInMarket ? course.resaleRightsPrice : course.price || 0)?.toLocaleString('fr-FR')} <span className="text-[10px] opacity-50">F</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
 export function CoursesTable() {
     const db = getFirestore();
+    const [searchTerm, setSearchTerm] = useState('');
+    const { currentUser: adminUser } = useRole();
+
     const coursesQuery = useMemo(() => query(collection(db, 'courses'), orderBy('createdAt', 'desc')), [db]);
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
-    const [instructorsLoading, setInstructorsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    
     const [selectedCourseForAssign, setSelectedCourseForAssign] = useState<Course | null>(null);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
     useEffect(() => {
-        if (coursesLoading || !courses) return;
-
+        if (!courses) return;
         const fetchInstructors = async () => {
-            const instructorIds = [...new Set(courses.map(c => c.instructorId).filter(Boolean))];
-            if (instructorIds.length === 0) {
-                setInstructorsLoading(false);
-                return;
-            }
-            
-            const newInstructors = new Map<string, Partial<NdaraUser>>();
-            const idsToFetch = instructorIds.filter(id => !instructorsMap.has(id));
+            const ids = [...new Set(courses.map(c => c.instructorId).filter(Boolean))];
+            const idsToFetch = ids.filter(id => !instructorsMap.has(id));
+            if (idsToFetch.length === 0) return;
 
-            if (idsToFetch.length > 0) {
-                for (let i = 0; i < idsToFetch.length; i += 30) {
-                    const chunk = idsToFetch.slice(i, i + 30);
-                    if (chunk.length === 0) continue;
-                    const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
-                    const usersSnapshot = await getDocs(usersQuery);
-                    usersSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        newInstructors.set(data.uid, { fullName: data.fullName, profilePictureURL: data.profilePictureURL });
-                    });
-                }
-                setInstructorsMap(prev => new Map([...prev, ...newInstructors]));
+            const newMap = new Map(instructorsMap);
+            for (let i = 0; i < idsToFetch.length; i += 30) {
+                const chunk = idsToFetch.slice(i, i + 30);
+                const q = query(collection(db, 'users'), where('uid', 'in', chunk));
+                const snap = await getDocs(q);
+                snap.forEach(d => newMap.set(d.id, d.data()));
             }
-            setInstructorsLoading(false);
+            setInstructorsMap(newMap);
         };
-
         fetchInstructors();
-    }, [courses, coursesLoading, db, instructorsMap]);
+    }, [courses, db, instructorsMap]);
 
-    const filteredCourses = useMemo(() => {
-        if (!courses) return [];
-        return courses.filter(course =>
-            course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            course.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    const { queue, rest } = useMemo(() => {
+        const filtered = (courses || []).filter(c => 
+            c.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            instructorsMap.get(c.instructorId)?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [courses, searchTerm]);
+        return {
+            queue: filtered.filter(c => c.status === 'Pending Review'),
+            rest: filtered.filter(c => c.status !== 'Pending Review')
+        };
+    }, [courses, searchTerm, instructorsMap]);
 
-    const handleOpenAssign = (course: Course) => {
-        setSelectedCourseForAssign(course);
-        setIsAssignModalOpen(true);
-    };
-
-    const isLoading = coursesLoading || instructorsLoading;
+    if (coursesLoading) {
+        return (
+            <div className="grid gap-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-[2.5rem] bg-slate-900" />)}
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            <AssignInstructorModal 
-                isOpen={isAssignModalOpen} 
-                onOpenChange={setIsAssignModalOpen} 
-                course={selectedCourseForAssign} 
-            />
+        <div className="space-y-10">
+            <AssignInstructorModal isOpen={isAssignModalOpen} onOpenChange={setIsAssignModalOpen} course={selectedCourseForAssign} />
 
-            <div className="relative max-w-sm">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <div className="relative max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                 <Input
-                    placeholder="Chercher par titre ou catégorie..."
-                    className="h-12 pl-12 bg-slate-900 border-slate-800 rounded-2xl text-white shadow-xl focus-visible:ring-primary/30"
+                    placeholder="Chercher une formation, un expert..."
+                    className="h-14 pl-12 bg-slate-900 border-white/5 rounded-[2rem] text-white shadow-xl focus-visible:ring-primary/30"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="border-slate-800 bg-slate-800/30">
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Formation</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest hidden md:table-cell">Instructeur</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Investissement</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">État</TableHead>
-                            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(5)].map((_, i) => (
-                                <TableRow key={i} className="border-slate-800"><TableCell colSpan={5}><Skeleton className="h-12 w-full bg-slate-800/50 rounded-xl"/></TableCell></TableRow>
-                            ))
-                        ) : filteredCourses.length > 0 ? (
-                            filteredCourses.map(course => (
-                                <CourseRow 
-                                    key={course.id} 
-                                    course={course} 
-                                    instructor={instructorsMap.get(course.instructorId)}
-                                    onAssignClick={handleOpenAssign}
-                                />
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-64 text-center opacity-20">
-                                    <BookOpen className="h-16 w-16 mx-auto mb-4" />
-                                    <p className="font-black uppercase text-xs">Aucune formation trouvée</p>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+            {/* --- SECTION 1 : FILE DE MODÉRATION --- */}
+            {queue.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                            <AlertCircle className="text-amber-500 h-4 w-4" />
+                            File de Modération
+                        </h2>
+                        <Badge className="bg-amber-500/10 text-amber-500 border-none font-black text-[9px] uppercase px-2">{queue.length} Prioritaires</Badge>
+                    </div>
+                    <div className="grid gap-4">
+                        {queue.map(course => (
+                            <CourseAdminCard 
+                                key={course.id} 
+                                course={course} 
+                                instructor={instructorsMap.get(course.instructorId)} 
+                                onAssignClick={(c) => { setSelectedCourseForAssign(c); setIsAssignModalOpen(true); }}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* --- SECTION 2 : CATALOGUE COMPLET --- */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                        <LayoutGrid className="text-slate-500 h-4 w-4" />
+                        Répertoire Complet
+                    </h2>
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{rest.length} Formations</span>
+                </div>
+                
+                {rest.length > 0 ? (
+                    <div className="grid gap-4">
+                        {rest.map(course => (
+                            <CourseAdminCard 
+                                key={course.id} 
+                                course={course} 
+                                instructor={instructorsMap.get(course.instructorId)} 
+                                onAssignClick={(c) => { setSelectedCourseForAssign(c); setIsAssignModalOpen(true); }}
+                            />
+                        ))}
+                    </div>
+                ) : !queue.length && (
+                    <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
+                        <BookOpen className="h-16 w-16 mx-auto mb-4 text-slate-700" />
+                        <p className="font-black uppercase tracking-widest text-xs">Le catalogue est vide</p>
+                    </div>
+                )}
             </div>
         </div>
     );
