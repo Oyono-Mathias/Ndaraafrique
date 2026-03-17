@@ -101,9 +101,15 @@
 
   /* --- VINTAGE TICKET --- */
   .vintage-ticket {
-    background: #1e293b;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(245, 158, 11, 0.05),
+        rgba(245, 158, 11, 0.05) 10px,
+        rgba(245, 158, 11, 0.1) 10px,
+        rgba(245, 158, 11, 0.1) 20px
+    );
+    border: 1px dashed rgba(245, 158, 11, 0.4);
     position: relative;
-    border: 1px dashed rgba(148, 163, 184, 0.3);
   }
   .vintage-ticket::before, .vintage-ticket::after {
     content: '';
@@ -114,6 +120,7 @@
     background: #0f172a;
     border-radius: 50%;
     transform: translateY(-50%);
+    z-index: 10;
   }
   .vintage-ticket::before { left: -11px; }
   .vintage-ticket::after { right: -11px; }
@@ -154,5 +161,9 @@
   @keyframes shimmer {
     0% { transform: skewX(-20deg) translateX(-150%); }
     100% { transform: skewX(-20deg) translateX(150%); }
+  }
+
+  .funnel-bar {
+    transition: width 1s ease-out;
   }
 }
