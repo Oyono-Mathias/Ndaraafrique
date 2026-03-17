@@ -8,19 +8,24 @@ import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/typ
 /**
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
  * Seul point d'entrée pour l'activation des droits après paiement.
- * Gère l'idempotence, l'attribution, les commissions et le wallet.
- * ✅ SUPPORT TOPUP : Gère les recharges de portefeuille (Wallet).
+ * ✅ ROBUSTE : Capture les erreurs de configuration Firebase Admin.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
-  const db = getAdminDb();
+  
+  let db;
+  try {
+      db = getAdminDb();
+  } catch (e: any) {
+      console.error("PAYMENT_PROCESSOR_CONFIG_ERROR:", e.message);
+      throw new Error("Le serveur n'est pas configuré pour traiter les transactions (FIREBASE_SERVICE_ACCOUNT_KEY manquante).");
+  }
 
   try {
     // 1. VÉRIFICATION IDEMPOTENCE
     const existingPayment = await db.collection('payments').doc(String(transactionId)).get();
     if (existingPayment.exists && existingPayment.data()?.status === 'Completed') {
-      console.log(`Transaction ${transactionId} déjà traitée.`);
       return { success: true };
     }
 
@@ -150,13 +155,18 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     // 4. FINALISATION
     await batch.commit();
 
-    await sendUserNotification(metadata.userId, {
-      text: isTopup 
-        ? `Votre compte a été crédité de ${amount.toLocaleString()} XOF.`
-        : `Félicitations ! Votre formation "${paymentData.courseTitle}" est disponible.`,
-      link: isTopup ? `/student/wallet` : `/student/courses/${metadata.courseId}`,
-      type: 'success'
-    });
+    // Notifier l'utilisateur (optionnel, capture les erreurs de messaging)
+    try {
+        await sendUserNotification(metadata.userId, {
+          text: isTopup 
+            ? `Votre compte a été crédité de ${amount.toLocaleString()} XOF.`
+            : `Félicitations ! Votre formation "${paymentData.courseTitle}" est disponible.`,
+          link: isTopup ? `/student/wallet` : `/student/courses/${metadata.courseId}`,
+          type: 'success'
+        });
+    } catch (e) {
+        console.warn("Notification failed, but payment processed.");
+    }
 
     return { success: true };
 

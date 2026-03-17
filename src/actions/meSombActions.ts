@@ -6,7 +6,7 @@ import { createHmac, randomBytes } from 'crypto';
 /**
  * @fileOverview Actions serveur pour MeSomb avec signature HMAC-SHA256.
  * Inclut un mode simulation pour le prototypage.
- * ✅ ENRICHI : Support du type de transaction (Recharge vs Achat).
+ * ✅ SÉCURISÉ : Gestion des erreurs fatales pour éviter le crash des Server Components.
  */
 
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
@@ -26,42 +26,51 @@ interface MeSombPaymentParams {
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
-  const applicationKey = process.env.MESOMB_APP_KEY;
-  const accessKey = process.env.MESOMB_ACCESS_KEY;
-  const secretKey = process.env.MESOMB_SECRET_KEY;
-
-  // --- MODE SIMULATION (POUR DÉMO NDARA) ---
-  if (!applicationKey || applicationKey.includes('YOUR_') || !accessKey || !secretKey) {
-    console.warn("MESOMB_SIMULATION: Clés absentes. Passage en mode démo.");
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const simId = `DEMO-MOMO-${Date.now()}`;
-
-    // On appelle le processeur directement pour simuler le webhook
-    await processNdaraPayment({
-        transactionId: simId,
-        gatewayTransactionId: "SIMULATED_GATEWAY_ID",
-        provider: 'mesomb',
-        amount: params.amount,
-        currency: 'XOF',
-        metadata: {
-            userId: params.userId,
-            courseId: params.courseId,
-            affiliateId: params.affiliateId,
-            couponId: params.couponId,
-            type: params.type || 'course_purchase'
-        }
-    });
-
-    return { 
-        success: true, 
-        transactionId: "SIMULATED", 
-        message: "Simulation réussie ! Votre solde est mis à jour." 
-    };
-  }
-
   try {
+    const applicationKey = process.env.MESOMB_APP_KEY;
+    const accessKey = process.env.MESOMB_ACCESS_KEY;
+    const secretKey = process.env.MESOMB_SECRET_KEY;
+
+    // --- MODE SIMULATION (POUR DÉMO NDARA) ---
+    if (!applicationKey || applicationKey.includes('YOUR_') || !accessKey || !secretKey) {
+      console.warn("MESOMB_SIMULATION: Clés absentes. Passage en mode démo.");
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const simId = `DEMO-MOMO-${Date.now()}`;
+
+      // On appelle le processeur directement pour simuler le webhook
+      // On enveloppe dans un try/catch interne car processNdaraPayment utilise Firebase Admin
+      try {
+          await processNdaraPayment({
+              transactionId: simId,
+              gatewayTransactionId: "SIMULATED_GATEWAY_ID",
+              provider: 'mesomb',
+              amount: params.amount,
+              currency: 'XOF',
+              metadata: {
+                  userId: params.userId,
+                  courseId: params.courseId,
+                  affiliateId: params.affiliateId,
+                  couponId: params.couponId,
+                  type: params.type || 'course_purchase'
+              }
+          });
+      } catch (adminError: any) {
+          console.error("ADMIN_SDK_ERROR during simulation:", adminError.message);
+          return { 
+              success: false, 
+              error: "Configuration serveur incomplète : La clé FIREBASE_SERVICE_ACCOUNT_KEY est manquante dans les réglages Vercel." 
+          };
+      }
+
+      return { 
+          success: true, 
+          transactionId: "SIMULATED", 
+          message: "Simulation réussie ! Votre solde est mis à jour." 
+      };
+    }
+
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect/';
     const date = Math.floor(Date.now() / 1000);
     const nonce = randomBytes(16).toString('hex');
@@ -102,10 +111,14 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      return { success: false, error: data.detail || "Erreur MeSomb." };
+      return { success: false, error: data.detail || "Erreur de la passerelle MeSomb." };
     }
 
   } catch (error: any) {
-    return { success: false, error: "Impossible de joindre MeSomb." };
+    console.error("INITIATE_PAYMENT_FATAL:", error.message);
+    return { 
+        success: false, 
+        error: "Le service de paiement est indisponible. Détails : " + error.message 
+    };
   }
 }
