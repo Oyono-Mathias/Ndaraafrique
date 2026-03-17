@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Barre latérale Administrateur Elite - Design Qwen.
  * ✅ TEMPS RÉEL : Compteurs connectés via onSnapshot.
+ * ✅ RÉSOLU : Ajout des props siteName et logoUrl pour la cohérence des types.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -39,6 +39,12 @@ import {
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+
+interface AdminSidebarProps {
+  onLinkClick: () => void;
+  siteName?: string;
+  logoUrl?: string;
+}
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
   href: string, 
@@ -82,7 +88,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
   );
 };
 
-export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
+export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarProps) {
   const db = getFirestore();
   const locale = useLocale();
   const { currentUser, secureSignOut } = useRole();
@@ -164,7 +170,7 @@ export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
       <header className="p-6 border-b border-white/5 space-y-6">
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">N</div>
-            <h2 className="font-black text-xl text-white uppercase tracking-tight">Ndara Admin</h2>
+            <h2 className="font-black text-xl text-white uppercase tracking-tight">{siteName || 'Ndara Admin'}</h2>
         </div>
 
         <div className="bg-slate-800/50 backdrop-blur-md rounded-3xl p-4 flex items-center gap-3 border border-white/5 shadow-xl">
