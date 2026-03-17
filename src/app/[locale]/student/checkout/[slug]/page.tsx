@@ -3,12 +3,12 @@
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V4.
  * ✅ DESIGN : Choix direct de l'opérateur (Orange, MTN, Wave).
- * ✅ LOGIQUE : Utilise MeSomb en arrière-plan pour le Mobile Money.
+ * ✅ LOGIQUE : Bascule automatiquement en mode simulation si les clés sont absentes.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
-import { doc, getFirestore, updateDoc, increment, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, getFirestore, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -97,7 +97,6 @@ function CheckoutContent() {
 
     try {
       if (provider === 'wallet') {
-          // ✅ PAIEMENT PAR PORTEFEUILLE
           const balance = currentUser?.balance || 0;
           if (balance < discountedPrice) {
               toast({ variant: 'destructive', title: "Solde insuffisant", description: "Veuillez recharger votre portefeuille." });
@@ -122,20 +121,28 @@ function CheckoutContent() {
           });
           setIsSuccess(true);
       } else if (provider === 'virtual') {
-          // Mode Démo Publicitaire
+          // Mode Démo Purement Visuel
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
       } else {
-          // ✅ PAIEMENT VIA MESOMB PAR DÉFAUT
+          // ✅ APPEL MESOMB (Simulé si clés manquantes)
           const result = await initiateMeSombPayment({
               amount: discountedPrice,
               phoneNumber: phoneNumber,
               service: provider === 'orange' ? 'ORANGE' : 'MTN',
               courseId: course.id,
               userId: user.uid,
+              affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
+              couponId: appliedCoupon?.id
           });
+
           if (result.success) {
-              toast({ title: "Demande envoyée !", description: "Veuillez valider le paiement sur votre téléphone." });
+              // Si c'est une simulation, MeSomb aura déjà appelé processNdaraPayment
+              if (result.transactionId === "SIMULATED") {
+                  setIsSuccess(true);
+              } else {
+                  toast({ title: "Demande envoyée !", description: result.message });
+              }
           } else {
               throw new Error(result.error);
           }
@@ -147,7 +154,7 @@ function CheckoutContent() {
     }
   };
 
-  if (courseLoading) return <div className="p-8 pt-24"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
+  if (courseLoading) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
   if (!course) return null;
 
   return (
@@ -334,7 +341,7 @@ function ProviderBtn({ active, onClick, label, color, initials, darkText = false
 
 export default function CheckoutPage() {
     return (
-        <Suspense fallback={<div className="p-8 pt-24"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>}>
+        <Suspense fallback={<div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>}>
             <CheckoutContent />
         </Suspense>
     )
