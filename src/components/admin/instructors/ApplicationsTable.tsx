@@ -1,32 +1,34 @@
 'use client';
 
+/**
+ * @fileOverview File d'attente des Candidatures - Design Qwen Cards.
+ * ✅ ANDROID-FIRST : Cartes tactiles avec indicateurs de temps.
+ */
+
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { NdaraUser } from '@/lib/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, Frown } from 'lucide-react';
+import { Clock, ChevronRight, UserCheck, Frown } from 'lucide-react';
 import { ApplicationDetailsModal } from './ApplicationDetailsModal';
+import { cn } from '@/lib/utils';
 
 export function ApplicationsTable() {
   const db = getFirestore();
   const [selectedApplication, setSelectedApplication] = useState<NdaraUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Correction : On retire l'orderBy de la requête Firestore pour éviter de masquer les docs sans date
   const applicationsQuery = useMemo(
     () => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)),
     [db]
   );
   const { data: rawApplications, isLoading } = useCollection<NdaraUser>(applicationsQuery);
 
-  // Tri manuel en mémoire pour garantir la visibilité
   const applications = useMemo(() => {
     if (!rawApplications) return [];
     return [...rawApplications].sort((a, b) => {
@@ -40,10 +42,6 @@ export function ApplicationsTable() {
     setSelectedApplication(application);
     setIsModalOpen(true);
   };
-  
-  const handleActionComplete = () => {
-    // Le listener temps réel de useCollection mettra à jour la liste automatiquement.
-  }
 
   return (
     <>
@@ -51,67 +49,65 @@ export function ApplicationsTable() {
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         application={selectedApplication}
-        onActionComplete={handleActionComplete}
+        onActionComplete={() => setIsModalOpen(false)}
       />
-      <div className="border rounded-lg dark:border-slate-700">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Candidat</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Date de candidature</TableHead>
-              <TableHead>Spécialité</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              [...Array(3)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={5}><Skeleton className="h-10 w-full bg-slate-800"/></TableCell>
-                </TableRow>
-              ))
-            ) : applications && applications.length > 0 ? (
-              applications.map(app => (
-                <TableRow key={app.uid}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={app.profilePictureURL} />
-                        <AvatarFallback>{app.fullName?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{app.fullName}</div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+            <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em]">File d'attente</h2>
+            <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase px-2">{applications.length} En cours</Badge>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900" />)}
+          </div>
+        ) : applications.length > 0 ? (
+          <div className="grid gap-3">
+            {applications.map(app => (
+              <button
+                key={app.uid}
+                onClick={() => handleViewDetails(app)}
+                className="w-full text-left bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-[2rem] p-4 flex items-center gap-4 transition-all active:scale-[0.98] group relative overflow-hidden shadow-xl"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-primary/10 transition-all" />
+                
+                <div className="relative flex-shrink-0">
+                    <Avatar className="h-16 w-16 border-2 border-white/10 shadow-2xl">
+                        <AvatarImage src={app.profilePictureURL} className="object-cover" />
+                        <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                            {app.fullName?.charAt(0)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-ndara-ochre rounded-full border-2 border-slate-900 flex items-center justify-center shadow-lg">
+                        <Clock className="w-3 h-3 text-white" />
                     </div>
-                  </TableCell>
-                  <TableCell>{app.email}</TableCell>
-                  <TableCell>
-                    {app.createdAt && typeof (app.createdAt as any).toDate === 'function'
-                      ? formatDistanceToNow((app.createdAt as any).toDate(), { locale: fr, addSuffix: true })
-                      : 'Date inconnue'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{app.instructorApplication?.specialty || 'Non spécifié'}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Détails
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Frown className="h-8 w-8" />
-                    <p>Aucune nouvelle candidature pour le moment.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                </div>
+
+                <div className="flex-1 min-w-0 pt-1">
+                    <h3 className="font-black text-white text-base truncate uppercase tracking-tight">{app.fullName}</h3>
+                    <p className="text-primary text-xs font-bold truncate tracking-tight mb-2">
+                        Spécialité : {app.instructorApplication?.specialty || 'Non spécifié'}
+                    </p>
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                        <span className="bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                            Reçu {app.createdAt && typeof (app.createdAt as any).toDate === 'function' ? formatDistanceToNow((app.createdAt as any).toDate(), { locale: fr, addSuffix: true }) : 'récemment'}
+                        </span>
+                        <span>•</span>
+                        <span className="truncate">{app.countryName || 'Afrique'}</span>
+                    </div>
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-slate-700 group-hover:text-primary transition-all mr-2" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
+            <UserCheck className="h-16 w-16 mx-auto mb-4 text-slate-700" />
+            <p className="font-black uppercase tracking-widest text-xs">Aucun dossier à traiter</p>
+          </div>
+        )}
       </div>
     </>
   );
