@@ -1,13 +1,18 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+/**
+ * @fileOverview Répertoire des Membres Ndara Afrique - Design Elite Qwen.
+ * ✅ ANDROID-FIRST : Liste de cartes tactiles, recherche et filtres par pilules.
+ * ✅ TEMPS RÉEL : Synchronisation complète avec Firebase.
+ */
+
+import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, getDocs, where, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,17 +20,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
-  MoreHorizontal,
-  PlusCircle,
   Search,
+  MoreVertical,
   User as UserProfileIcon,
   Trash2,
   Loader2,
@@ -34,8 +34,13 @@ import {
   UserCog,
   Ban,
   UserCheck,
-  Users,
-  Clock,
+  Plus,
+  Filter,
+  Mic,
+  ShieldCheck,
+  Star,
+  MapPin,
+  Clock
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -58,289 +63,268 @@ import {
 } from "@/components/ui/alert-dialog";
 import { GrantCourseModal } from './GrantCourseModal';
 import { UserDetailsModal } from './UserDetailsModal';
+import { cn } from '@/lib/utils';
+import { africanCountries } from '@/lib/countries';
 
-const UserRow = ({ 
+const UserCard = ({ 
     user: targetUser, 
     onGrantRequest, 
     onViewProfile 
 }: { 
-    user: NdaraUser & { id: string }, 
+    user: NdaraUser, 
     onGrantRequest: (user: NdaraUser) => void,
     onViewProfile: (user: NdaraUser) => void
 }) => {
     const { currentUser: adminUser, user: adminAuthUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
-    const [isAlertOpen, setIsAlertOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
 
     const handleStatusUpdate = async (status: 'active' | 'suspended') => {
         if (!adminUser || isActionLoading) return;
         setIsActionLoading(true);
-        const result = await updateUserStatus({ userId: targetUser.uid || targetUser.id, status, adminId: adminUser.uid });
-        if (result.success) {
-            toast({ title: 'Statut mis à jour' });
-        } else {
-            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-        }
+        const result = await updateUserStatus({ userId: targetUser.uid, status, adminId: adminUser.uid });
+        if (result.success) toast({ title: status === 'active' ? 'Compte réactivé' : 'Compte suspendu' });
+        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         setIsActionLoading(false);
-    }
-
-    const handleDeleteUser = async () => {
-        if (!adminAuthUser) return;
-        setIsDeleting(true);
-        try {
-            const idToken = await adminAuthUser.getIdToken(true);
-            const result = await deleteUserAccount({ userId: targetUser.uid || targetUser.id, idToken });
-            if (result.success) {
-                toast({ title: 'Utilisateur supprimé' });
-                setIsAlertOpen(false);
-            } else {
-                toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-            }
-        } catch(e: any) {
-            toast({ variant: 'destructive', title: 'Erreur', description: e.message });
-        } finally {
-            setIsDeleting(false);
-        }
-    }
-    
-    const handleContactUser = async () => {
-        if (!adminUser || isActionLoading) return;
-        setIsActionLoading(true);
-        try {
-            const chatId = await startChat(adminUser.uid, targetUser.uid || targetUser.id);
-            router.push(`/admin/messages?chatId=${chatId}`);
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de démarrer la discussion." });
-        } finally {
-            setIsActionLoading(false);
-        }
     };
 
     const handleRoleChange = async (newRole: UserRole) => {
         if (!adminUser || newRole === targetUser.role || isActionLoading) return;
         setIsActionLoading(true);
-        const result = await updateUserRole({ userId: targetUser.uid || targetUser.id, role: newRole, adminId: adminUser.uid });
-        if (result.success) {
-            toast({ title: 'Rôle mis à jour' });
-        } else {
-            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-        }
+        const result = await updateUserRole({ userId: targetUser.uid, role: newRole, adminId: adminUser.uid });
+        if (result.success) toast({ title: 'Rôle mis à jour' });
+        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         setIsActionLoading(false);
     };
 
+    const handleContact = async () => {
+        if (!adminUser || isActionLoading) return;
+        setIsActionLoading(true);
+        try {
+            const chatId = await startChat(adminUser.uid, targetUser.uid);
+            router.push(`/admin/messages?chatId=${chatId}`);
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de lancer le chat." });
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
     const createdAt = (targetUser.createdAt as any)?.toDate?.() || null;
+    const country = africanCountries.find(c => c.code === targetUser.countryCode);
 
     return (
-        <TableRow className="group border-slate-800 hover:bg-slate-800/20">
-            <TableCell>
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border border-slate-800 shadow-lg">
-                        <AvatarImage src={targetUser.profilePictureURL} className="object-cover" />
-                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{targetUser.fullName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-sm text-white">{targetUser.fullName || 'Nouvel Utilisateur'}</span>
-                        <span className="text-[10px] text-slate-500 font-medium">@{targetUser.username || targetUser.id.substring(0, 8)}</span>
+        <div className={cn(
+            "bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-[2rem] p-4 relative overflow-hidden transition-all active:scale-[0.98] group",
+            targetUser.status === 'suspended' && "opacity-60 grayscale"
+        )}>
+            {targetUser.status === 'suspended' && (
+                <div className="absolute inset-0 bg-red-900/5 pointer-events-none" />
+            )}
+            
+            <div className="flex items-start gap-4 relative z-10">
+                {/* Avatar Zone */}
+                <div className="relative flex-shrink-0">
+                    <div className={cn(
+                        "w-14 h-14 rounded-full overflow-hidden border-2 shadow-xl",
+                        targetUser.role === 'admin' ? "border-purple-500" : targetUser.role === 'instructor' ? "border-primary" : "border-slate-700"
+                    )}>
+                        <Avatar className="h-full w-full">
+                            <AvatarImage src={targetUser.profilePictureURL} className="object-cover" />
+                            <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                                {targetUser.fullName?.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
                     </div>
+                    {targetUser.isOnline && (
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-slate-950 shadow-[0_0_10px_#10b981] animate-pulse" />
+                    )}
                 </div>
-            </TableCell>
-            <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email || 'N/A'}</TableCell>
-            <TableCell>
-                <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
-                    {targetUser.role || 'student'}
-                </Badge>
-            </TableCell>
-            <TableCell>
-                 <Badge variant={targetUser.status === 'active' ? 'success' : 'warning'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
-                    {targetUser.status || 'active'}
-                 </Badge>
-            </TableCell>
-            <TableCell className="text-[10px] font-black text-slate-500 uppercase">
-                {createdAt ? format(createdAt, "d MMM yyyy", { locale: fr }) : 'En attente'}
-            </TableCell>
-            <TableCell className="text-right">
-                <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-all active:scale-90" disabled={isActionLoading}>
-                                {isActionLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <MoreHorizontal className="h-4 w-4" />}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuPortal>
+
+                {/* Info Zone */}
+                <div className="flex-1 min-w-0 pt-1">
+                    <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-black text-white text-base truncate uppercase tracking-tight">
+                            {targetUser.fullName}
+                        </h3>
+                        
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="text-slate-500 hover:text-white transition p-1">
+                                    <MoreVertical size={20} />
+                                </button>
+                            </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-300">
-                                <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Actions Admin</DropdownMenuLabel>
+                                <DropdownMenuSeparator className="bg-slate-800" />
+                                <DropdownMenuItem onClick={() => onViewProfile(targetUser)} className="gap-2 py-3 cursor-pointer">
+                                    <UserProfileIcon size={16} className="text-primary" /> Voir Profil
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleContact} className="gap-2 py-3 cursor-pointer">
+                                    <MessageSquare size={16} className="text-blue-400" /> Messagerie
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="gap-2 py-3 cursor-pointer">
+                                    <Gift size={16} className="text-primary" /> Offrir un cours
+                                </DropdownMenuItem>
+                                
                                 <DropdownMenuSeparator className="bg-slate-800" />
                                 
-                                <DropdownMenuItem onClick={() => onViewProfile(targetUser)} className="cursor-pointer gap-2 py-2.5">
-                                    <UserProfileIcon className="h-4 w-4 text-primary" />
-                                    <span className="font-bold text-xs uppercase tracking-tight">Voir le profil</span>
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuItem onClick={handleContactUser} className="cursor-pointer gap-2 py-2.5">
-                                    <MessageSquare className="h-4 w-4 text-blue-400" />
-                                    <span className="font-bold text-xs uppercase tracking-tight">Messagerie</span>
-                                </DropdownMenuItem>
-
-                                <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="cursor-pointer gap-2 py-2.5 text-primary">
-                                    <Gift className="h-4 w-4" />
-                                    <span className="font-bold text-xs uppercase tracking-tight">Offrir cours</span>
-                                </DropdownMenuItem>
-
-                                <DropdownMenuSeparator className="bg-slate-800" />
-                                
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="cursor-pointer gap-2 py-2.5">
-                                        <UserCog className="h-4 w-4 text-amber-400" />
-                                        <span className="font-bold text-xs uppercase tracking-tight">Changer rôle</span>
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuPortal>
-                                        <DropdownMenuSubContent className="bg-slate-900 border-slate-800 text-slate-300">
-                                            <DropdownMenuItem onClick={() => handleRoleChange('student')} className="cursor-pointer font-bold text-xs uppercase">Étudiant</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleRoleChange('instructor')} className="cursor-pointer font-bold text-xs uppercase">Instructeur</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleRoleChange('admin')} className="cursor-pointer font-bold text-xs uppercase text-red-400">Admin</DropdownMenuItem>
-                                        </DropdownMenuSubContent>
-                                    </DropdownMenuPortal>
-                                </DropdownMenuSub>
-
-                                {targetUser.status === 'active' ? (
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="cursor-pointer gap-2 py-2.5 text-amber-500">
-                                        <Ban className="h-4 w-4" />
-                                        <span className="font-bold text-xs uppercase tracking-tight">Suspendre</span>
-                                    </DropdownMenuItem>
-                                ) : (
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="cursor-pointer gap-2 py-2.5 text-green-500">
-                                        <UserCheck className="h-4 w-4" />
-                                        <span className="font-bold text-xs uppercase tracking-tight">Réactiver</span>
-                                    </DropdownMenuItem>
+                                {targetUser.role !== 'admin' && (
+                                    <>
+                                        {targetUser.role === 'student' ? (
+                                            <DropdownMenuItem onClick={() => handleRoleChange('instructor')} className="gap-2 py-3 cursor-pointer text-primary">
+                                                <Star size={16} /> Passer Expert
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            <DropdownMenuItem onClick={() => handleRoleChange('student')} className="gap-2 py-3 cursor-pointer">
+                                                <UserCog size={16} /> Retirer droits Expert
+                                            </DropdownMenuItem>
+                                        )}
+                                    </>
                                 )}
 
-                                <DropdownMenuSeparator className="bg-slate-800" />
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="cursor-pointer gap-2 py-2.5 text-red-500">
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="font-bold text-xs uppercase tracking-tight">Supprimer</span>
+                                {targetUser.status === 'active' ? (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="gap-2 py-3 cursor-pointer text-red-500">
+                                        <Ban size={16} /> Suspendre
                                     </DropdownMenuItem>
-                                </AlertDialogTrigger>
+                                ) : (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="gap-2 py-3 cursor-pointer text-emerald-500">
+                                        <UserCheck size={16} /> Réactiver
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
-                        </DropdownMenuPortal>
-                    </DropdownMenu>
-                    <AlertDialogContent className="bg-slate-900 border-slate-800">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle className="text-xl font-black text-white uppercase tracking-tight">Attention</AlertDialogTitle>
-                            <AlertDialogDescription className="text-slate-400">
-                                Supprimer définitivement <b>{targetUser.fullName || targetUser.email}</b> ? Cette action est irréversible.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-slate-800 border-none">Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="bg-red-600 font-bold">
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Supprimer
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </TableCell>
-        </TableRow>
-    )
-}
+                        </DropdownMenu>
+                    </div>
+                    
+                    <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-3">@{targetUser.username}</p>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Badge className={cn(
+                            "border-none text-[8px] font-black uppercase px-2 py-0.5 h-4",
+                            targetUser.role === 'admin' ? "bg-purple-500/20 text-purple-400" : targetUser.role === 'instructor' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400"
+                        )}>
+                            {targetUser.role === 'admin' ? 'Super Admin' : targetUser.role === 'instructor' ? 'Expert' : 'Étudiant'}
+                        </Badge>
+                        
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                            <span>{country?.emoji || '🌍'}</span>
+                            <span className="truncate max-w-[80px]">{targetUser.countryName || 'Afrique'}</span>
+                        </div>
+
+                        {createdAt && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600 uppercase tracking-tighter ml-auto">
+                                <Clock size={10} />
+                                {format(createdAt, 'MMM yyyy', { locale: fr })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export function UsersTable() {
     const db = getFirestore();
-    const usersQuery = useMemo(() => query(collection(db, 'users')), [db]);
+    const { toast } = useToast();
+    const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState<'all' | 'student' | 'instructor' | 'admin' | 'suspended'>('all');
     const [selectedUser, setSelectedUser] = useState<NdaraUser | null>(null);
     const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        let list = [...users];
-        
-        // On affiche d'abord tout le monde, puis on filtre si nécessaire
-        if (searchTerm.trim() !== '') {
-            const s = searchTerm.toLowerCase();
-            list = list.filter(u => 
-                (u.fullName || '').toLowerCase().includes(s) || 
-                (u.email || '').toLowerCase().includes(s) || 
-                (u.username || '').toLowerCase().includes(s)
-            );
-        }
-        
-        // Tri manuel en mémoire par date de création (décroissant)
-        return list.sort((a, b) => {
-            const dA = (a.createdAt as any)?.toDate?.() || new Date(0);
-            const dB = (b.createdAt as any)?.toDate?.() || new Date(0);
-            return dB.getTime() - dA.getTime();
+        return users.filter(u => {
+            const matchesSearch = (u.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 (u.username || '').toLowerCase().includes(searchTerm.toLowerCase());
+            
+            let matchesFilter = true;
+            if (activeFilter === 'student') matchesFilter = u.role === 'student';
+            else if (activeFilter === 'instructor') matchesFilter = u.role === 'instructor';
+            else if (activeFilter === 'admin') matchesFilter = u.role === 'admin';
+            else if (activeFilter === 'suspended') matchesFilter = u.status === 'suspended';
+
+            return matchesSearch && matchesFilter;
         });
-    }, [users, searchTerm]);
+    }, [users, searchTerm, activeFilter]);
 
-    const handleOpenGrantModal = (user: NdaraUser) => {
-        setSelectedUser(user);
-        setIsGrantModalOpen(true);
-    };
-
-    const handleViewProfile = (user: NdaraUser) => {
-        setSelectedUser(user);
-        setIsDetailsModalOpen(true);
-    };
-    
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in duration-700 pb-32">
             <GrantCourseModal isOpen={isGrantModalOpen} onOpenChange={setIsGrantModalOpen} targetUser={selectedUser} />
             <UserDetailsModal isOpen={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen} user={selectedUser} />
 
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            {/* Header & Search */}
+            <div className="space-y-6">
+                <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" />
                     <Input 
-                        placeholder="Chercher par nom, email..." 
-                        className="pl-10 h-12 bg-slate-900 border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-primary/30"
+                        placeholder="Rechercher un membre, email..." 
+                        className="h-14 pl-12 bg-slate-900/50 border-white/5 rounded-full text-white placeholder:text-slate-600 focus-visible:ring-primary/20 shadow-xl"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <button className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary active:scale-95">
+                        <Mic size={18} />
+                    </button>
                 </div>
-                 <Button className="h-12 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Nouveau membre
-                </Button>
+
+                {/* Filter Pills */}
+                <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-2">
+                    {['all', 'student', 'instructor', 'admin', 'suspended'].map((filter) => (
+                        <button
+                            key={filter}
+                            onClick={() => setActiveFilter(filter as any)}
+                            className={cn(
+                                "flex-shrink-0 px-6 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                                activeFilter === filter 
+                                    ? "bg-primary text-slate-950 border-primary shadow-lg shadow-primary/20" 
+                                    : "bg-slate-900 border-white/5 text-slate-500 hover:text-white"
+                            )}
+                        >
+                            {filter === 'all' ? 'Tous' : filter === 'student' ? 'Étudiants' : filter === 'instructor' ? 'Experts' : filter === 'admin' ? 'Admins' : 'Suspendus'}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-             <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="border-slate-800 bg-slate-800/30">
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Utilisateur</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Email</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Rôle</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Date</TableHead>
-                            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(5)].map((_, i) => (
-                                <TableRow key={i} className="border-slate-800"><TableCell colSpan={6}><Skeleton className="h-12 w-full bg-slate-800/50 rounded-xl"/></TableCell></TableRow>
-                            ))
-                        ) : filteredUsers.length > 0 ? (
-                            filteredUsers.map(user => (
-                                <UserRow 
-                                    key={user.id} 
-                                    user={user as any} 
-                                    onGrantRequest={handleOpenGrantModal}
-                                    onViewProfile={handleViewProfile}
-                                />
-                            ))
-                        ) : (
-                            <TableRow><TableCell colSpan={6} className="h-64 text-center opacity-20"><Users className="h-16 w-16 mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucun membre trouvé</p></TableCell></TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+            {/* Users List */}
+            <div className="space-y-4">
+                {isLoading ? (
+                    <div className="space-y-4">
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900" />)}
+                    </div>
+                ) : filteredUsers.length > 0 ? (
+                    <div className="grid gap-4">
+                        {filteredUsers.map(user => (
+                            <UserCard 
+                                key={user.uid} 
+                                user={user} 
+                                onGrantRequest={(u) => { setSelectedUser(u); setIsGrantModalOpen(true); }}
+                                onViewProfile={(u) => { setSelectedUser(u); setIsDetailsModalOpen(true); }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
+                        <Search className="h-16 w-16 mx-auto mb-4 text-slate-700" />
+                        <p className="font-black uppercase tracking-widest text-xs">Aucun membre trouvé</p>
+                    </div>
+                )}
             </div>
+
+            {/* FAB Button */}
+            <button 
+                onClick={() => toast({ title: "Importation CSV", description: "Bientôt disponible dans le cockpit." })}
+                className="fixed bottom-24 right-6 w-16 h-16 bg-primary rounded-full flex items-center justify-center text-slate-950 shadow-2xl shadow-primary/40 z-40 hover:bg-emerald-400 transition-all active:scale-90 animate-pulse-glow"
+            >
+                <Plus size={32} strokeWidth={3} />
+            </button>
         </div>
-    )
+    );
 }
