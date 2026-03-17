@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * @fileOverview En-tête global de l'application (Design Android-First).
+ * @fileOverview En-tête global de l'application (Design Android-First Immersif).
  * ✅ MENU : Déclencheur du menu latéral pour mobile (Hamburger).
  * ✅ NOTIFICATIONS : Cloche connectée à Firestore avec badge d'invisibilité.
- * ✅ TITRE : Dynamique selon le contexte (Espace Formateur, etc).
+ * ✅ TITRE : Dynamique selon le contexte.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -51,18 +51,17 @@ export function Header() {
     }, [currentUser?.uid, db]);
 
     const getPageTitle = () => {
-        if (pathname.includes('/instructor/dashboard')) return "Espace Formateur";
-        if (pathname.includes('/student/dashboard')) return "Ndara Afrique";
-        if (pathname.includes('/admin')) return "Administration";
-        if (pathname.includes('/instructor/')) return "Expert Ndara";
-        return "Ndara";
+        if (pathname.includes('/admin')) return "TABLEAU DE BORD";
+        if (pathname.includes('/instructor/dashboard')) return "ESPACE FORMATEUR";
+        if (pathname.includes('/student/dashboard')) return "NDARA AFRIQUE";
+        return "NDARA";
     };
 
     return (
-        <div className="flex h-16 items-center justify-between px-4 w-full">
+        <div className="flex h-16 items-center justify-between px-4 w-full glass safe-top border-b border-white/5">
             
             {/* Left: Mobile Menu Trigger + Contextual Title */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                 <div className="md:hidden">
                     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>
@@ -70,7 +69,7 @@ export function Header() {
                                 <PanelLeft className="h-5 w-5" />
                             </button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="p-0 w-full max-w-[300px] bg-[#0f172a] border-none shadow-2xl">
+                        <SheetContent side="left" className="p-0 w-full max-w-[300px] bg-slate-900 border-none shadow-2xl">
                             {role === 'admin' ? (
                                 <AdminSidebar {...sidebarProps} />
                             ) : role === 'instructor' ? (
@@ -82,40 +81,36 @@ export function Header() {
                     </Sheet>
                 </div>
 
-                <div className="flex flex-col">
-                    <h1 className="font-black text-sm text-white uppercase tracking-wider leading-none">
-                        {getPageTitle()}
-                    </h1>
-                    {pathname.includes('/instructor/') && (
-                        <span className="text-primary text-[9px] font-black uppercase tracking-[0.2em] mt-1">
-                            Mode Expert
-                        </span>
-                    )}
-                </div>
+                <h1 className="font-black text-lg text-white uppercase tracking-wider leading-none truncate max-w-[180px] sm:max-w-none">
+                    {getPageTitle()}
+                </h1>
             </div>
 
             {/* Right: Search, Notifications, Profile */}
-            <div className="flex items-center gap-2">
-                <button 
-                    onClick={() => router.push(`/${locale}/search`)}
-                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90"
-                >
-                    <Search className="h-5 w-5" />
-                </button>
+            <div className="flex items-center gap-3">
+                {/* Search Pill - Visible on MD+ */}
+                <div className="hidden md:flex items-center bg-black/20 rounded-full px-4 py-2 border border-white/5 focus-within:border-primary/50 transition">
+                    <Search className="w-4 h-4 text-gray-500 mr-2" />
+                    <input 
+                        type="text" 
+                        placeholder="Rechercher..." 
+                        className="bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-500 w-32 lg:w-48"
+                    />
+                </div>
 
                 <button 
                     onClick={() => router.push(`/${locale}/student/notifications`)}
-                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90 relative"
+                    className="relative w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90"
                 >
                     <Bell className="h-5 w-5" />
                     {hasUnread && (
-                        <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#0f172a] shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />
+                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900 shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />
                     )}
                 </button>
                 
-                <Link href={`/${locale}/student/profile`} className="active:scale-90 transition-transform ml-1">
+                <Link href={`/${locale}/student/profile`} className="active:scale-90 transition-transform lg:hidden">
                     <div className="p-[2px] rounded-full bg-gradient-to-tr from-primary/40 to-blue-500/40">
-                        <Avatar className="h-8 w-8 border-2 border-[#0f172a] shadow-xl overflow-hidden">
+                        <Avatar className="h-8 w-8 border-2 border-slate-900 shadow-xl overflow-hidden">
                             <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
                             <AvatarFallback className="bg-slate-800 text-slate-300 text-[10px] font-black uppercase">
                                 {currentUser?.fullName?.charAt(0) || 'N'}

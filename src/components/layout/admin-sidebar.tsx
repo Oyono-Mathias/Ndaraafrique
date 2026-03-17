@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Barre latérale Administrateur - Design Elite Qwen.
+ * @fileOverview Barre latérale Administrateur Elite - Design Qwen.
+ * ✅ TEMPS RÉEL : Compteurs connectés via onSnapshot.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -27,12 +28,9 @@ import {
   GalleryHorizontal, 
   History, 
   Shield, 
-  ArrowLeftRight, 
-  LogOut, 
-  X, 
   Activity, 
-  ChevronRight,
-  Rocket,
+  LogOut, 
+  X,
   ClipboardList,
   CreditCard
 } from "lucide-react";
@@ -76,16 +74,16 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
             </span>
         </div>
         {count !== undefined && count > 0 && (
-            <Badge className="bg-red-500 text-white border-none text-[9px] font-black">{count}</Badge>
+            <Badge className="bg-red-500 text-white border-none text-[9px] font-black h-5 px-1.5 min-w-[20px] justify-center">{count}</Badge>
         )}
     </Link>
   );
 };
 
-export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: () => void, siteName?: string, logoUrl?: string }) {
+export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
   const db = getFirestore();
   const locale = useLocale();
-  const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
+  const { currentUser, secureSignOut } = useRole();
 
   const [counts, setCounts] = useState({
       pendingInstructors: 0,
@@ -138,7 +136,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: 
   ];
 
   return (
-    <aside className="w-full h-full bg-[#1E293B] border-r border-white/5 flex flex-col relative overflow-hidden font-sans">
+    <aside className="w-full h-full bg-slate-900 border-r border-white/5 flex flex-col relative overflow-hidden font-sans">
       <div className="grain-overlay opacity-[0.03]" />
 
       <header className="p-6 border-b border-white/5 space-y-6">
@@ -147,7 +145,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: 
             <h2 className="font-black text-xl text-white uppercase tracking-tight">Ndara Admin</h2>
         </div>
 
-        <div className="bg-slate-900/50 backdrop-blur-md rounded-3xl p-4 flex items-center gap-3 border border-white/5 shadow-xl">
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-3xl p-4 flex items-center gap-3 border border-white/5 shadow-xl">
             <div className="relative shrink-0">
                 <Avatar className="h-12 w-12 border-2 border-primary shadow-2xl">
                     <AvatarImage src={currentUser?.profilePictureURL} />
