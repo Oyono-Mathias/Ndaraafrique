@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -32,7 +33,8 @@ import {
   LogOut, 
   X,
   ClipboardList,
-  CreditCard
+  CreditCard,
+  Radio
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -109,14 +111,16 @@ export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
       items: [
         { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Tableau de Bord" },
         { href: `/${locale}/admin/statistiques`, icon: Activity, label: "Analytics" },
+        { href: `/${locale}/admin/monitoring`, icon: Activity, label: "IA & Monitoring" },
       ]
     },
     {
       label: "OPÉRATIONS",
       items: [
         { href: `/${locale}/admin/users`, icon: Users, label: "Membres" },
-        { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Cours & Experts" },
+        { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Catalogue" },
         { href: `/${locale}/admin/moderation`, icon: ClipboardList, label: "Modération", count: counts.pendingCourses },
+        { href: `/${locale}/admin/notifications`, icon: Radio, label: "Diffusion Push" },
       ]
     },
     {
@@ -124,13 +128,31 @@ export function AdminSidebar({ onLinkClick }: { onLinkClick: () => void }) {
       items: [
         { href: `/${locale}/admin/payouts`, icon: Wallet, label: "Trésorerie", count: counts.pendingPayouts },
         { href: `/${locale}/admin/payments`, icon: CreditCard, label: "Transactions" },
+        { href: `/${locale}/admin/marketing`, icon: Sparkles, label: "Growth Hub" },
       ]
     },
     {
-      label: "CONFIGURATION",
+      label: "SUPPORT",
       items: [
-        { href: `/${locale}/admin/settings`, icon: Settings, label: "Paramètres" },
-        { href: `/${locale}/admin/roles`, icon: Shield, label: "Sécurité" },
+        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Centre d'Aide", count: counts.openTickets },
+        { href: `/${locale}/admin/messages`, icon: MessageSquare, label: "Modération Messagerie" },
+        { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ & Base" },
+      ]
+    },
+    {
+      label: "INTERFACE",
+      items: [
+        { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel Accueil" },
+        { href: `/${locale}/admin/templates`, icon: GalleryHorizontal, label: "Bibliothèque Visuels" },
+        { href: `/${locale}/admin/seo`, icon: Globe, label: "SEO & Social" },
+      ]
+    },
+    {
+      label: "SÉCURITÉ",
+      items: [
+        { href: `/${locale}/admin/settings`, icon: Settings, label: "Réglages Globaux" },
+        { href: `/${locale}/admin/roles`, icon: Shield, label: "Rôles & Accès" },
+        { href: `/${locale}/admin/logs`, icon: History, label: "Journal d'Audit" },
       ]
     }
   ];

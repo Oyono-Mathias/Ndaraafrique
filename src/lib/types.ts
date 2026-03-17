@@ -789,3 +789,17 @@ export interface UserRecommendations {
   courses: RecommendedCourseItem[];
   updatedAt: Timestamp | FieldValue;
 }
+
+export interface PushCampaign {
+  id: string;
+  target: 'all' | 'instructor' | 'student';
+  message: string;
+  status: 'scheduled' | 'sent';
+  scheduledFor: Timestamp | FieldValue;
+  sentAt?: Timestamp | FieldValue;
+  stats?: {
+    delivered: number;
+    clicked: number;
+  };
+  createdAt: Timestamp | FieldValue;
+}

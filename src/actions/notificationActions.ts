@@ -1,8 +1,10 @@
+
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue, DocumentData, Timestamp } from 'firebase-admin/firestore';
+import type { PushCampaign } from '@/lib/types';
 
 interface NotificationPayload {
   text: string;
@@ -162,4 +164,20 @@ export async function sendAdminNotification(payload: { title: string; body: stri
       console.error("Error sending admin notification:", e);
       return { success: false, message: "Erreur serveur" };
   }
+}
+
+export async function createPushCampaign(campaign: Omit<PushCampaign, 'id' | 'createdAt'>) {
+    try {
+        const db = getAdminDb();
+        const campaignRef = db.collection('push_campaigns').doc();
+        await campaignRef.set({
+            ...campaign,
+            id: campaignRef.id,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        return { success: true, id: campaignRef.id };
+    } catch (e: any) {
+        console.error("Error creating push campaign:", e);
+        return { success: false, error: e.message };
+    }
 }
