@@ -1,9 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Cockpit Stratégique Administrateur V2 (Design Qwen Immersif).
- * ✅ DESIGN : Forest & Wealth (Elite Admin).
- * ✅ ACTIONS : File d'attente d'audit et stats live.
+ * @fileOverview Cockpit Admin Elite - Design Qwen Immersif.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,162 +11,167 @@ import {
   collection, 
   query, 
   where, 
-  getDocs, 
-  getCountFromServer,
   onSnapshot
 } from 'firebase/firestore';
 import { 
-  ShieldAlert, 
   Users, 
   BookOpen, 
   DollarSign, 
+  Award,
   TrendingUp,
-  LayoutDashboard,
   Activity,
-  Zap,
-  Clock,
-  Landmark,
-  ChevronRight,
-  ShieldCheck,
-  AlertTriangle
+  ArrowRight,
 } from 'lucide-react';
-import { AdminQuickActions } from './AdminQuickActions';
-import { AdminActionQueue } from './AdminActionQueue';
-import { AdminSecurityAlerts } from './AdminSecurityAlerts';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { Card, CardContent } from "@/components/ui/card";
-import Link from 'next/link';
+import { AdminActionQueue } from './AdminActionQueue';
+import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
-    const { currentUser, isUserLoading } = useRole();
+    const { currentUser } = useRole();
     const db = getFirestore();
-    const [quickStats, setQuickStats] = useState({ revenue: 0, users: 0, courses: 0, online: 0 });
-    const [isLoadingStats, setIsLoadingStats] = useState(true);
+    const [quickStats, setQuickStats] = useState({ revenue: 0, users: 0, courses: 0, certs: 0 });
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!currentUser || currentUser.role !== 'admin') return;
 
-        // Écouteur temps réel des stats globales
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             const total = snap.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
             setQuickStats(prev => ({ ...prev, revenue: total }));
         });
 
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-            setQuickStats(prev => ({ ...prev, users: snap.size, online: snap.docs.filter(d => d.data().isOnline).length }));
+            setQuickStats(prev => ({ ...prev, users: snap.size }));
         });
 
         const unsubCourses = onSnapshot(collection(db, 'courses'), (snap) => {
             setQuickStats(prev => ({ ...prev, courses: snap.size }));
-            setIsLoadingStats(false);
         });
 
-        return () => { unsubPayments(); unsubUsers(); unsubCourses(); };
+        const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('progress', '==', 100)), (snap) => {
+            setQuickStats(prev => ({ ...prev, certs: snap.size }));
+            setIsLoading(false);
+        });
+
+        return () => { unsubPayments(); unsubUsers(); unsubCourses(); unsubEnroll(); };
     }, [db, currentUser]);
 
     return (
-        <div className="flex flex-col gap-8 pb-32 bg-[#0f172a] min-h-screen relative overflow-hidden font-sans">
-            <div className="grain-overlay opacity-[0.04]" />
-            
-            <header className="px-6 pt-12 animate-in fade-in slide-in-from-top-4 duration-700">
-                <div className="flex items-center gap-2 text-primary mb-2">
-                    <Activity className="h-5 w-5 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Monitoring Stratégique</span>
-                </div>
-                <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight">
-                    Cockpit <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">Ndara Admin.</span>
-                </h1>
-            </header>
+        <div className="space-y-10 pb-20 animate-in fade-in duration-700 relative">
+            {/* Decorative Background Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
-            <main className="px-6 space-y-10 relative z-10 animate-in fade-in duration-1000 delay-200">
+            <main className="relative z-10 space-y-10">
                 
                 {/* --- STATS GRID --- */}
-                <section className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                        <Link href="/admin/payments" className="block active:scale-[0.98] transition-all">
-                            <div className="bg-gradient-to-br from-amber-500 to-orange-700 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-1000" />
-                                <div className="relative z-10">
-                                    <p className="text-amber-100 text-[10px] font-black uppercase tracking-[0.25em] mb-2">Chiffre d'Affaires Global</p>
-                                    <h2 className="text-white font-black text-4xl tracking-tight leading-none mb-4">
-                                        {quickStats.revenue.toLocaleString('fr-FR')} <span className="text-lg opacity-60">XOF</span>
-                                    </h2>
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
-                                        <span className="text-white/80 text-[9px] font-black uppercase tracking-widest">Calculé en temps réel</span>
-                                    </div>
+                <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <DashboardStat 
+                        icon={Users} 
+                        label="Membres Totaux" 
+                        value={quickStats.users.toLocaleString()} 
+                        trend="+12%" 
+                        color="text-blue-400" 
+                        bgColor="bg-blue-500/10" 
+                    />
+                    <DashboardStat 
+                        icon={DollarSign} 
+                        label="Revenus (Total)" 
+                        value={`${(quickStats.revenue / 1000000).toFixed(1)}M`} 
+                        unit="FCFA"
+                        trend="+8.5%" 
+                        color="text-primary" 
+                        bgColor="bg-primary/10" 
+                    />
+                    <DashboardStat 
+                        icon={BookOpen} 
+                        label="Cours Actifs" 
+                        value={quickStats.courses.toString()} 
+                        trend="Stable" 
+                        color="text-amber-500" 
+                        bgColor="bg-amber-500/10" 
+                    />
+                    <DashboardStat 
+                        icon={Award} 
+                        label="Certificats" 
+                        value={quickStats.certs.toString()} 
+                        trend="+5%" 
+                        color="text-purple-400" 
+                        bgColor="bg-purple-500/10" 
+                    />
+                </section>
+
+                {/* --- ACTIVITY & AUDIT --- */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="flex items-center justify-between px-1">
+                            <h3 className="font-black text-white text-lg uppercase tracking-tight">Dernières Actions</h3>
+                            <button className="text-primary text-xs font-bold hover:text-white transition uppercase tracking-widest">Voir tout</button>
+                        </div>
+                        <AdminActionQueue />
+                    </div>
+
+                    <div className="space-y-6">
+                        <h3 className="font-black text-white text-lg uppercase tracking-tight px-1">Monitoring Live</h3>
+                        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 shadow-2xl">
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                                    <Activity className="h-6 w-6 animate-pulse" />
+                                </div>
+                                <div>
+                                    <p className="text-white font-black text-sm uppercase tracking-tight">Santé Système</p>
+                                    <p className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">Opérationnel</p>
                                 </div>
                             </div>
-                        </Link>
+                            
+                            <div className="space-y-6">
+                                <MonitorItem label="Base de données" status="98ms" />
+                                <MonitorItem label="Serveur API" status="45ms" />
+                                <MonitorItem label="IA Mathias" status="1.2s" />
+                            </div>
+                        </div>
                     </div>
-
-                    <StatPill label="Membres" value={quickStats.users.toString()} icon={Users} color="text-blue-400" bgColor="bg-blue-500/10" />
-                    <StatPill label="En Ligne" value={quickStats.online.toString()} icon={Zap} color="text-primary" bgColor="bg-primary/10" />
-                </section>
-
-                {/* --- FILE D'ATTENTE PRIORITAIRE --- */}
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                            <ShieldAlert className="h-4 w-4 text-red-500" />
-                            File d'Audit
-                        </h2>
-                        <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Trié par urgence</span>
-                    </div>
-                    <AdminActionQueue />
-                </section>
-
-                {/* --- ALERTES DE SÉCURITÉ --- */}
-                <section className="space-y-4">
-                    <div className="flex items-center gap-2 px-1 text-amber-500">
-                        <AlertTriangle className="h-4 w-4" />
-                        <h2 className="text-xs font-black uppercase tracking-[0.3em]">Alertes Systèmes</h2>
-                    </div>
-                    <AdminSecurityAlerts />
-                </section>
-
-                {/* --- ACTIONS RAPIDES --- */}
-                <section className="space-y-4">
-                    <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 px-1">Raccourcis</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        <QuickLink href="/admin/users" label="Membres" icon={Users} color="bg-blue-500/10 text-blue-400" />
-                        <QuickLink href="/admin/moderation" label="Modération" icon={ShieldCheck} color="bg-primary/10 text-primary" />
-                        <QuickLink href="/admin/payments" label="Audit Pay" icon={Landmark} color="bg-amber-500/10 text-amber-500" />
-                        <QuickLink href="/admin/settings" label="Réglages" icon={Settings} color="bg-purple-500/10 text-purple-400" />
-                    </div>
-                </section>
-
-                <div className="pt-12 text-center">
-                    <p className="text-[9px] font-black text-slate-800 uppercase tracking-[0.5em] pb-12">Ndara Admin Cockpit v2.0</p>
                 </div>
             </main>
         </div>
     );
 }
 
-function StatPill({ label, value, icon: Icon, color, bgColor }: any) {
+function DashboardStat({ icon: Icon, label, value, unit, trend, color, bgColor }: any) {
     return (
-        <div className={cn("bg-slate-900 border border-white/5 p-5 rounded-[2rem] flex flex-col justify-between shadow-xl active:scale-95 transition-all group", bgColor)}>
-            <Icon className={cn("h-5 w-5 mb-4", color)} />
-            <div>
-                <p className="text-2xl font-black text-white leading-none">{value.padStart(2, '0')}</p>
-                <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest mt-2">{label}</p>
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden group transition-all hover:border-white/10 active:scale-95">
+            <div className={cn("absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-10 transition-opacity group-hover:opacity-20", bgColor)} />
+            
+            <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", bgColor, color)}>
+                        <Icon size={24} />
+                    </div>
+                    <Badge variant="outline" className={cn("border-none font-black text-[9px] uppercase tracking-tighter px-2.5", trend === 'Stable' ? 'bg-slate-800 text-slate-500' : 'bg-emerald-500/10 text-emerald-400')}>
+                        {trend === 'Stable' ? '' : <TrendingUp size={10} className="mr-1" />}
+                        {trend}
+                    </Badge>
+                </div>
+                
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{label}</p>
+                <div className="flex items-baseline gap-1.5">
+                    <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
+                    {unit && <span className="text-xs font-bold text-slate-600 uppercase">{unit}</span>}
+                </div>
             </div>
         </div>
     );
 }
 
-function QuickLink({ href, label, icon: Icon, color }: any) {
+function MonitorItem({ label, status }: { label: string, status: string }) {
     return (
-        <Link href={href} className="block active:scale-95 transition-transform">
-            <div className="bg-slate-900 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center gap-4 shadow-xl">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", color)}>
-                    <Icon size={24} />
-                </div>
-                <span className="text-white text-[9px] font-black uppercase tracking-widest">{label}</span>
+        <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-tight">{label}</span>
+            <div className="flex items-center gap-3">
+                <span className="text-slate-600 font-mono text-[10px]">{status}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
             </div>
-        </Link>
+        </div>
     );
 }

@@ -1,9 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Barre latérale Administrateur Ndara Afrique.
- * ✅ DESIGN : Elite Qwen (Fintech Vintage).
- * ✅ NAVIGATION : Supporte le changement de rôle et les compteurs temps réel.
+ * @fileOverview Barre latérale Administrateur - Design Elite Qwen.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -16,7 +14,7 @@ import {
   LayoutDashboard, 
   Users, 
   BookOpen, 
-  CreditCard, 
+  Wallet, 
   MessageSquare, 
   HelpCircle, 
   Settings, 
@@ -34,19 +32,20 @@ import {
   X, 
   Activity, 
   ChevronRight,
-  Rocket
+  Rocket,
+  ClipboardList,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const SidebarItem = ({ href, icon: Icon, label, count, onClick, badge }: { 
+const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
   href: string, 
   icon: React.ElementType, 
   label: string, 
   count?: number, 
-  onClick: () => void,
-  badge?: string
+  onClick: () => void 
 }) => {
   const pathname = usePathname() || '';
   const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
@@ -58,40 +57,27 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick, badge }: {
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between px-4 py-3.5 my-0.5 cursor-pointer transition-all duration-200 rounded-2xl mx-2 group relative",
+        "flex items-center justify-between px-4 py-3 rounded-2xl mx-2 my-0.5 transition-all duration-200 group",
         isActive
-          ? 'bg-primary/10 border-l-0'
+          ? 'bg-primary/10 text-primary shadow-lg shadow-primary/5'
           : 'text-slate-400 hover:bg-white/5 hover:text-white'
       )}
     >
-        <div className="flex items-center">
-            <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                isActive ? "bg-primary text-slate-950 shadow-lg shadow-primary/20" : "bg-white/5 text-slate-500 group-hover:text-primary"
-            )}>
-                <Icon size={18} />
-            </div>
+        <div className="flex items-center gap-3">
+            <Icon size={20} className={cn(
+                "transition-transform group-hover:scale-110",
+                isActive ? "text-primary" : "text-slate-500 group-hover:text-primary"
+            )} />
             <span className={cn(
-                "ml-4 text-[13px] font-bold uppercase tracking-tight",
-                isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                "text-[13px] font-bold tracking-tight",
+                isActive ? "text-white" : "text-slate-400"
             )}>
                 {label}
             </span>
         </div>
-        
-        <div className="flex items-center gap-2">
-            {badge && (
-                <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase px-2 py-0.5">{badge}</Badge>
-            )}
-            {count !== undefined && count > 0 && (
-                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/20 animate-pulse">
-                    <span className="text-white text-[9px] font-black">{count}</span>
-                </div>
-            )}
-            {!count && !isActive && (
-                <ChevronRight size={14} className="text-slate-700 group-hover:text-slate-500 transition-all" />
-            )}
-        </div>
+        {count !== undefined && count > 0 && (
+            <Badge className="bg-red-500 text-white border-none text-[9px] font-black">{count}</Badge>
+        )}
     </Link>
   );
 };
@@ -100,7 +86,6 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: 
   const db = getFirestore();
   const locale = useLocale();
   const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
-  const isInstructor = availableRoles.includes('instructor');
 
   const [counts, setCounts] = useState({
       pendingInstructors: 0,
@@ -120,121 +105,76 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: 
     return () => { unsubInstructors(); unsubCourses(); unsubPayouts(); unsubTickets(); };
   }, [db, currentUser]);
 
-  const groups = [
+  const menuGroups = [
     {
       label: "COCKPIT",
       items: [
-        { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Dashboard" },
-        { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Statistiques" },
-        { href: `/${locale}/admin/monitoring`, icon: Activity, label: "Monitoring" },
-      ]
-    },
-    {
-      label: "MARKETING",
-      items: [
-        { href: `/${locale}/admin/ads-factory`, icon: Rocket, label: "Ads Factory", badge: "NEW" },
-        { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Mathias Admin", badge: 'IA' },
-        { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel" },
-        { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ" },
+        { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Tableau de Bord" },
+        { href: `/${locale}/admin/statistiques`, icon: Activity, label: "Analytics" },
       ]
     },
     {
       label: "OPÉRATIONS",
       items: [
         { href: `/${locale}/admin/users`, icon: Users, label: "Membres" },
-        { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", count: counts.pendingCourses },
-        { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", count: counts.pendingInstructors },
-        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Support", count: counts.openTickets },
+        { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Cours & Experts" },
+        { href: `/${locale}/admin/moderation`, icon: ClipboardList, label: "Modération", count: counts.pendingCourses },
       ]
     },
     {
       label: "FINANCES",
       items: [
+        { href: `/${locale}/admin/payouts`, icon: Wallet, label: "Trésorerie", count: counts.pendingPayouts },
         { href: `/${locale}/admin/payments`, icon: CreditCard, label: "Transactions" },
-        { href: `/${locale}/admin/payouts`, icon: Landmark, label: "Retraits", count: counts.pendingPayouts },
       ]
     },
     {
       label: "CONFIGURATION",
       items: [
         { href: `/${locale}/admin/settings`, icon: Settings, label: "Paramètres" },
-        { href: `/${locale}/admin/roles`, icon: Shield, label: "Permissions" },
-        { href: `/${locale}/admin/logs`, icon: History, label: "Audit Logs" },
+        { href: `/${locale}/admin/roles`, icon: Shield, label: "Sécurité" },
       ]
     }
   ];
 
   return (
-    <aside className="w-full h-full bg-[#0f172a] border-r border-white/5 flex flex-col shadow-2xl relative overflow-hidden font-sans">
+    <aside className="w-full h-full bg-[#1E293B] border-r border-white/5 flex flex-col relative overflow-hidden font-sans">
       <div className="grain-overlay opacity-[0.03]" />
 
-      <header className="px-6 py-8 border-b border-white/5">
-        <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-500/20">N</div>
-                <div>
-                    <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">{siteName || 'ADMIN'}</h2>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Ndara Afrique</p>
-                </div>
-            </div>
-            <button onClick={onLinkClick} className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
-                <X size={20} />
-            </button>
+      <header className="p-6 border-b border-white/5 space-y-6">
+        <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">N</div>
+            <h2 className="font-black text-xl text-white uppercase tracking-tight">Ndara Admin</h2>
         </div>
 
-        <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 shadow-xl">
-            <div className="flex items-center gap-4">
-                <Avatar className="h-14 w-14 border-2 border-amber-500/30 shadow-2xl">
-                    <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
+        <div className="bg-slate-900/50 backdrop-blur-md rounded-3xl p-4 flex items-center gap-3 border border-white/5 shadow-xl">
+            <div className="relative shrink-0">
+                <Avatar className="h-12 w-12 border-2 border-primary shadow-2xl">
+                    <AvatarImage src={currentUser?.profilePictureURL} />
                     <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
                         {currentUser?.fullName?.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-white text-sm truncate uppercase tracking-tight">{currentUser?.fullName}</h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                        <Shield className="h-3 w-3 text-amber-500" />
-                        <span className="text-amber-500 text-[9px] font-black uppercase tracking-widest">Super Admin</span>
-                    </div>
-                </div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-slate-900"></div>
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="font-black text-white text-sm truncate leading-tight uppercase">{currentUser?.fullName}</p>
+                <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mt-1">Super Admin</p>
             </div>
         </div>
       </header>
 
-      <div className="px-6 py-4 border-b border-white/5 space-y-3">
-          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Changer de mode</p>
-          <div className="grid grid-cols-2 gap-2">
-              <button 
-                  onClick={() => { switchRole('student'); onLinkClick(); }}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
-              >
-                  <ArrowLeftRight size={12} />
-                  <span>Étudiant</span>
-              </button>
-              {isInstructor && (
-                  <button 
-                      onClick={() => { switchRole('instructor'); onLinkClick(); }}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-[#10b981] hover:text-slate-950 transition-all active:scale-95 shadow-lg"
-                  >
-                      <ArrowLeftRight size={12} />
-                      <span>Formateur</span>
-                  </button>
-              )}
-          </div>
-      </div>
-
-      <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">
-        {groups.map((group) => (
-          <div key={group.label} className="mb-6">
-            <p className="px-8 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-3">{group.label}</p>
-            <div className="space-y-0.5">
+      <nav className="flex-1 py-6 overflow-y-auto hide-scrollbar">
+        {menuGroups.map((group) => (
+          <div key={group.label} className="mb-8">
+            <p className="px-8 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mb-4">{group.label}</p>
+            <div className="space-y-1">
                 {group.items.map((item) => (
                 <SidebarItem 
                     key={item.href} 
                     href={item.href} 
                     icon={item.icon} 
                     label={item.label}
-                    badge={item.badge}
                     count={item.count}
                     onClick={onLinkClick}
                 />
@@ -244,13 +184,13 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: 
         ))}
       </nav>
 
-      <footer className="px-6 py-6 border-t border-white/5 bg-black/20">
+      <footer className="p-6 border-t border-white/5">
           <button 
               onClick={() => secureSignOut()}
-              className="w-full h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
+              className="w-full h-12 rounded-2xl bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3"
           >
               <LogOut size={16} />
-              <span>Se Déconnecter</span>
+              Quitter le Cockpit
           </button>
       </footer>
     </aside>

@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Barre de navigation mobile pour l'Administrateur.
- * ✅ DESIGN : Fintech Elite avec labels MAJUSCULES et lueurs actives.
- * 5 Onglets : Dashboard, Utilisateurs, Cours, Paiements, Support.
+ * @fileOverview Barre de navigation mobile pour l'Administrateur - Design Qwen.
+ * ✅ Labels MAJUSCULES, lueurs actives émeraude.
  */
 
 import Link from 'next/link';
@@ -12,8 +11,8 @@ import {
   LayoutDashboard,
   Users,
   BookOpen,
-  CreditCard,
-  HelpCircle,
+  Wallet,
+  Headset,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React, { useMemo } from 'react';
@@ -31,12 +30,12 @@ export function AdminBottomNav() {
     { href: `/${locale}/admin`, icon: LayoutDashboard, label: 'ACCUEIL', path: '/admin' },
     { href: `/${locale}/admin/users`, icon: Users, label: 'MEMBRES', path: '/admin/users' },
     { href: `/${locale}/admin/courses`, icon: BookOpen, label: 'COURS', path: '/admin/courses' },
-    { href: `/${locale}/admin/payments`, icon: CreditCard, label: 'FINANCES', path: '/admin/payments' },
-    { href: `/${locale}/admin/support`, icon: HelpCircle, label: 'SUPPORT', path: '/admin/support' },
+    { href: `/${locale}/admin/payouts`, icon: Wallet, label: 'FINANCES', path: '/admin/payouts' },
+    { href: `/${locale}/admin/support`, icon: Headset, label: 'SUPPORT', path: '/admin/support' },
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0f172a]/95 backdrop-blur-lg border-t border-white/10 flex items-stretch justify-around z-[100] safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-slate-900/70 backdrop-blur-xl border-t border-white/5 flex items-stretch justify-around z-[100] safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
       {navItems.map((item) => {
         const isActive = cleanPath === item.path || (item.path !== '/admin' && cleanPath.startsWith(item.path));
         
@@ -59,7 +58,7 @@ export function AdminBottomNav() {
               )}
             </div>
             <span className={cn(
-              "text-[8px] font-black tracking-[0.15em] transition-colors duration-300",
+              "text-[9px] font-black tracking-widest transition-colors duration-300",
               isActive ? "text-primary" : "text-slate-600"
             )}>
               {item.label}
