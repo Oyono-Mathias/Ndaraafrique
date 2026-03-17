@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -38,7 +37,8 @@ import {
     CheckCircle2,
     XCircle,
     AlertCircle,
-    FileText
+    FileText,
+    LayoutGrid
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
