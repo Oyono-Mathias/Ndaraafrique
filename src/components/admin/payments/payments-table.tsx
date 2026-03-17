@@ -171,7 +171,7 @@ export function PaymentsTable() {
     const isLoading = paymentsLoading || relatedDataLoading;
 
     return (
-        <Tabs value={filter} onValueChange={(value) => setFilter(value as any)} className="space-y-4">
+        <Tabs value={filter} onValueChange={(v: string) => setFilter(v as any)} className="space-y-4">
             <div className="flex justify-between items-center">
                  <TabsList>
                     <TabsTrigger value="all">Toutes les transactions</TabsTrigger>

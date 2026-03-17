@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -160,7 +159,7 @@ export default function AdminMonitoringPage() {
                                     desc="Devoirs & Quiz" 
                                     color="text-purple-400" 
                                     checked={settings?.platform?.ai?.autoCorrection ?? true}
-                                    onChange={(v) => toggleAiFeature('autoCorrection', v)}
+                                    onChange={(v: boolean) => toggleAiFeature('autoCorrection', v)}
                                 />
                                 <AiToggleItem 
                                     icon={Bot} 
@@ -168,7 +167,7 @@ export default function AdminMonitoringPage() {
                                     desc="Réponses 24/7" 
                                     color="text-blue-400" 
                                     checked={settings?.platform?.ai?.autonomousTutor ?? true}
-                                    onChange={(v) => toggleAiFeature('autonomousTutor', v)}
+                                    onChange={(v: boolean) => toggleAiFeature('autonomousTutor', v)}
                                 />
                                 <AiToggleItem 
                                     icon={ShieldAlert} 
@@ -177,7 +176,7 @@ export default function AdminMonitoringPage() {
                                     color="text-red-400" 
                                     isCritical
                                     checked={settings?.platform?.ai?.fraudDetection ?? true}
-                                    onChange={(v) => toggleAiFeature('fraudDetection', v)}
+                                    onChange={(v: boolean) => toggleAiFeature('fraudDetection', v)}
                                 />
                             </>
                         )}
@@ -274,7 +273,15 @@ export default function AdminMonitoringPage() {
     );
 }
 
-function AiToggleItem({ icon: Icon, label, desc, color, isCritical = false, checked, onChange }: any) {
+function AiToggleItem({ icon: Icon, label, desc, color, isCritical = false, checked, onChange }: {
+    icon: any;
+    label: string;
+    desc: string;
+    color: string;
+    isCritical?: boolean;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+}) {
     return (
         <div className={cn(
             "flex items-center justify-between p-4 rounded-3xl border transition-all active:scale-[0.98]",

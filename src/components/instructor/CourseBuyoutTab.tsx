@@ -171,21 +171,20 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Button 
+                                <button 
                                     onClick={() => handleTogglePublicResale(true)} 
                                     disabled={isSubmitting || course.resaleRightsAvailable} 
-                                    className="h-16 rounded-[1.5rem] bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs tracking-widest shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
+                                    className="h-16 rounded-[1.5rem] bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs tracking-widest shadow-xl shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50"
                                 >
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : course.resaleRightsAvailable ? "ACTIF EN BOURSE" : "LISTER EN BOURSE"}
-                                </Button>
+                                </button>
                                 {course.resaleRightsAvailable && (
-                                    <Button 
+                                    <button 
                                         onClick={() => handleTogglePublicResale(false)} 
-                                        variant="outline" 
-                                        className="h-16 rounded-[1.5rem] border-slate-800 bg-slate-900 font-black uppercase text-[10px] tracking-widest text-red-400 active:scale-95"
+                                        className="h-16 rounded-[1.5rem] border border-slate-800 bg-slate-900 font-black uppercase text-[10px] tracking-widest text-red-400 active:scale-95"
                                     >
                                         RETIRER DU MARCHÉ
-                                    </Button>
+                                    </button>
                                 )}
                             </div>
                         </CardContent>
@@ -202,7 +201,7 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
                                 <Input type="number" value={buyoutPrice} onChange={(e) => setBuyoutPrice(Number(e.target.value))} className="h-14 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black text-white" />
                             </div>
                             <div className="flex items-start gap-3 p-5 bg-slate-950/50 rounded-2xl border border-white/5">
-                                <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} className="mt-1" />
+                                <Checkbox id="agree" checked={agreed} onCheckedChange={(v: boolean) => setAgreed(v)} className="mt-1" />
                                 <Label htmlFor="agree" className="text-xs text-slate-400 leading-relaxed cursor-pointer font-medium italic">Je certifie être l'unique auteur de ce contenu et accepte de céder l'intégralité de mes droits de propriété intellectuelle à Ndara Afrique.</Label>
                             </div>
                             <Button onClick={handleBuyoutRequest} disabled={isSubmitting || !agreed || !canAct} className="w-full h-16 rounded-[1.5rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 active:scale-95">

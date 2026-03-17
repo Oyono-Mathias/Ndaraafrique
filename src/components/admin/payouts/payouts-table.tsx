@@ -82,7 +82,7 @@ export function PayoutsTable() {
 
     return (
         <div className="space-y-6">
-            <Tabs value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)} className="w-full">
+            <Tabs value={statusFilter} onValueChange={(v: string) => setStatusFilter(v as any)} className="w-full">
                 <TabsList className="bg-slate-900 border-slate-800 p-1 rounded-2xl h-14 w-full sm:w-auto">
                     <TabsTrigger value="pending" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
                         <Clock className="h-3.5 w-3.5" /> En attente

@@ -202,7 +202,7 @@ export function RolesManager() {
                                             ) : (
                                                 <Switch 
                                                     checked={isActive} 
-                                                    onCheckedChange={(v) => handlePermissionChange(key, v)}
+                                                    onCheckedChange={(v: boolean) => handlePermissionChange(key, v)}
                                                     className="data-[state=checked]:bg-primary"
                                                 />
                                             )}
