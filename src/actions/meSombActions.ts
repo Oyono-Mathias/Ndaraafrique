@@ -4,12 +4,12 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour l'intégration de MeSomb via l'API REST.
- * ✅ RÉSOLU : Ajout de la génération de signature HMAC-SHA256 pour corriger "No signature provided".
+ * @fileOverview Actions serveur pour MeSomb avec signature HMAC-SHA256.
+ * Inclut un mode simulation pour le prototypage.
  */
 
 /**
- * Génère la signature de sécurité exigée par MeSomb v1.1
+ * Génère la signature de sécurité cryptographique exigée par MeSomb.
  */
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
     const credentials = `${method}\n${url}\n${date}\n${nonce}`;
@@ -33,12 +33,12 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
 
   // --- MODE SIMULATION (POUR DÉMO NDARA) ---
   if (!applicationKey || applicationKey.includes('YOUR_') || !accessKey || !secretKey) {
-    console.warn("MESOMB_SIMULATION_MODE: Clés manquantes. Simulation du paiement en cours...");
+    console.warn("MESOMB_SIMULATION: Clés absentes. Passage en mode démo.");
     
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     await processNdaraPayment({
-        transactionId: `SIM-MOMO-${Date.now()}`,
+        transactionId: `DEMO-MOMO-${Date.now()}`,
         provider: 'mesomb',
         amount: params.amount,
         currency: 'XOF',
@@ -54,7 +54,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     return { 
         success: true, 
         transactionId: "SIMULATED", 
-        message: "Simulation réussie ! (Aucune clé MeSomb détectée)" 
+        message: "Simulation réussie ! Votre formation est débloquée." 
     };
   }
 
@@ -96,15 +96,13 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
       return { 
         success: true, 
         transactionId: data.pk || data.id,
-        message: "Demande de paiement envoyée. Veuillez valider sur votre téléphone." 
+        message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      const errorDetail = data.detail || data.message || "Erreur de communication MeSomb.";
-      return { success: false, error: errorDetail };
+      return { success: false, error: data.detail || "Erreur MeSomb." };
     }
 
   } catch (error: any) {
-    console.error("MESOMB_API_ERROR:", error.message);
-    return { success: false, error: "Impossible de contacter la passerelle MeSomb." };
+    return { success: false, error: "Impossible de joindre MeSomb." };
   }
 }

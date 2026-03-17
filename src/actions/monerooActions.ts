@@ -5,7 +5,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Actions serveur pour la passerelle Moneroo.
- * ✅ RÉSOLU : Ajout de l'initiation de paiement (Create Payment).
+ * Gère l'initiation sécurisée (Server-to-Server).
  */
 
 class Moneroo {
@@ -26,7 +26,7 @@ class Moneroo {
         returnUrl: string;
     }) {
         if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-            throw new Error("Clé secrète Moneroo non configurée.");
+            throw new Error("Clé secrète Moneroo non configurée sur le serveur.");
         }
 
         const response = await fetch('https://api.moneroo.io/v1/payments', {
@@ -51,31 +51,6 @@ class Moneroo {
             throw new Error(error.message || "Erreur lors de la création du paiement Moneroo.");
         }
 
-        return response.json();
-    }
-
-    async verify(transactionId: string): Promise<{ status: string; data?: any; message?: string }> {
-        if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-             console.warn("Moneroo secret key is not configured.");
-             return {
-                status: 'error',
-                message: 'Moneroo secret key not configured on the server.',
-             };
-        }
-        
-        const url = `https://api.moneroo.io/v1/payments/${transactionId}`;
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${this.secretKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(errorBody.message || `Moneroo API error: ${response.statusText}`);
-        }
-        
         return response.json();
     }
 }
@@ -115,51 +90,9 @@ export async function initiateMonerooPayment(params: {
             return { success: true, checkoutUrl: response.data.checkout_url };
         }
         
-        return { success: false, error: "Impossible d'obtenir l'URL de paiement." };
+        return { success: false, error: "Impossible d'obtenir l'URL de paiement Moneroo." };
     } catch (e: any) {
         console.error("MONEROO_INIT_ERROR:", e.message);
         return { success: false, error: e.message };
-    }
-}
-
-export async function verifyMonerooTransaction(transactionId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    const secretKey = process.env.MONEROO_SECRET_KEY;
-
-    try {
-        const moneroo = new Moneroo(secretKey);
-        const response = await moneroo.verify(transactionId);
-        
-        if (response?.status === 'success' && response.data?.status === 'successful') {
-            
-            const metadata = response.data.metadata;
-
-            if (!metadata?.userId || !metadata?.courseId) {
-                console.error("Moneroo manual verification: Missing metadata", metadata);
-                return { success: false, error: 'Transaction metadata is incomplete.' };
-            }
-
-            // ✅ Call the central payment processor
-            await processNdaraPayment({
-                transactionId: response.data.id,
-                provider: 'moneroo',
-                amount: response.data.amount,
-                currency: response.data.currency_code,
-                metadata: {
-                    userId: metadata.userId,
-                    courseId: metadata.courseId,
-                    affiliateId: metadata.affiliateId,
-                    couponId: metadata.couponId,
-                    type: metadata.type || 'course_purchase'
-                }
-            });
-
-            return { success: true, data: response.data };
-        } else {
-            return { success: false, error: response?.message || `Paiement non finalisé.` };
-        }
-
-    } catch (error: any) {
-        console.error("Error verifying Moneroo transaction:", error);
-        return { success: false, error: error.message || 'Erreur de vérification.' };
     }
 }

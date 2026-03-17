@@ -1,43 +1,27 @@
 import { NextResponse } from 'next/server';
 import { processNdaraPayment } from '@/services/paymentProcessor';
-import { createHmac } from 'crypto';
 
 /**
- * @fileOverview Webhook MeSomb avec vérification de signature native.
+ * @fileOverview Webhook MeSomb (Entrée unique).
  */
 
 export async function POST(req: Request) {
   try {
-    const body = await req.text();
-    const signature = req.headers.get('x-mesomb-signature');
-    const secretKey = process.env.MESOMB_SECRET_KEY;
-
-    // 1. Sécurité : Vérifier la signature si possible (Optionnel selon config MeSomb)
-    // En mode développement, on peut passer si la clé n'est pas forcée.
-    if (signature && secretKey) {
-        const hmac = createHmac('sha256', secretKey);
-        const digest = hmac.update(body).digest('hex');
-        if (digest !== signature) {
-            console.warn("MeSomb Webhook: Signature invalide détectée.");
-            // En production, on retournerait un 401.
-        }
-    }
-
-    const payload = JSON.parse(body);
+    const body = await req.json();
     
-    // MeSomb envoie SUCCESS ou un booléen success selon la version
-    const isSuccess = payload.status === 'SUCCESS' || payload.success === true;
+    // MeSomb envoie SUCCESS ou un statut équivalent
+    const isSuccess = body.status === 'SUCCESS' || body.success === true;
 
     if (isSuccess) {
-      const transaction = payload.transaction || payload;
+      const transaction = body.transaction || body;
       const metadata = transaction.metadata || transaction.extra;
 
       if (!metadata?.userId || !metadata?.courseId) {
-        console.error("MeSomb Webhook: Métadonnées critiques manquantes", metadata);
+        console.error("MeSomb Webhook: Métadonnées manquantes", metadata);
         return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
       }
 
-      // 2. Traitement financier centralisé Ndara via le moteur central
+      // Activation centrale
       await processNdaraPayment({
         transactionId: String(transaction.pk || transaction.id),
         provider: 'mesomb',
