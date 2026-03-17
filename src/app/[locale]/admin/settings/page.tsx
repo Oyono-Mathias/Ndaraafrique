@@ -697,19 +697,19 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="notifyInApp" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Alertes In-App</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                                 </FormItem>
                             )}/>
                             <FormField control={form.control} name="notifyEmail" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Notifications Email</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                                 </FormItem>
                             )}/>
                             <FormField control={form.control} name="notifySales" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Alertes de Ventes</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                                 </FormItem>
                             )}/>
                         </CardContent>

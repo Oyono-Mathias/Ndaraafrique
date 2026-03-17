@@ -6,7 +6,7 @@ import { createHmac, randomBytes } from 'crypto';
 /**
  * @fileOverview Actions serveur pour MeSomb avec signature HMAC-SHA256.
  * Inclut un mode simulation pour le prototypage.
- * ✅ ENRICHI : Traçabilité gateway même en simulation.
+ * ✅ ENRICHI : Support du type de transaction (Recharge vs Achat).
  */
 
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
@@ -22,6 +22,7 @@ interface MeSombPaymentParams {
   userId: string;
   affiliateId?: string;
   couponId?: string;
+  type?: 'course_purchase' | 'wallet_topup';
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
@@ -49,14 +50,14 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
             courseId: params.courseId,
             affiliateId: params.affiliateId,
             couponId: params.couponId,
-            type: 'course_purchase'
+            type: params.type || 'course_purchase'
         }
     });
 
     return { 
         success: true, 
         transactionId: "SIMULATED", 
-        message: "Simulation réussie ! Votre formation est débloquée." 
+        message: "Simulation réussie ! Votre solde est mis à jour." 
     };
   }
 
@@ -87,7 +88,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
           courseId: params.courseId,
           affiliateId: params.affiliateId || '',
           couponId: params.couponId || '',
-          type: 'course_purchase'
+          type: params.type || 'course_purchase'
         }
       }),
     });
