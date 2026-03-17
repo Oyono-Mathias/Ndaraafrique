@@ -3,7 +3,7 @@
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
  * ✅ VISIBILITÉ : Navigation affichée UNIQUEMENT dans les zones Dashboard/Privées.
- * ✅ RÉSOLU : Intégration de la nouvelle BottomNav mobile étudiante.
+ * ✅ RÉSOLU : Distinction claire entre BottomNav Admin, Formateur et Étudiant.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -80,23 +80,31 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
-  // Définition des pages où la BottomNav DOIT être visible (Espace Étudiant connecté)
+  // BottomNav Étudiant
   const showStudentBottomNav = useMemo(() => {
-      const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile', '/search'];
+      const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile', '/search', '/student/annuaire', '/student/wishlist', '/student/results', '/student/mes-certificats', '/student/devoirs'];
       const isExcluded = ['/', '/login', '/register', '/student/messages'].includes(cleanPath) 
         || cleanPath.includes('/checkout/') 
-        || (cleanPath.startsWith('/courses/') && cleanPath.split('/').length > 2); // Exclure le lecteur de cours /courses/[id]
+        || (cleanPath.startsWith('/courses/') && cleanPath.split('/').length > 2); 
         
-      return allowedPaths.some(path => cleanPath === path || cleanPath.startsWith(path)) && !isExcluded;
-  }, [cleanPath]);
+      return role === 'student' && allowedPaths.some(path => cleanPath === path || cleanPath.startsWith(path)) && !isExcluded;
+  }, [cleanPath, role]);
 
-  // Définition des zones qui affichent la navigation desktop (Sidebar)
+  // BottomNav Admin
+  const showAdminBottomNav = useMemo(() => {
+      return role === 'admin' && cleanPath.startsWith('/admin');
+  }, [cleanPath, role]);
+
+  // BottomNav Formateur
+  const showInstructorBottomNav = useMemo(() => {
+      return role === 'instructor' && cleanPath.startsWith('/instructor');
+  }, [cleanPath, role]);
+
   const isDashboardArea = useMemo(() => {
       const areas = ['/student', '/instructor', '/admin', '/account', '/search'];
       return areas.some(area => cleanPath.startsWith(area));
   }, [cleanPath]);
 
-  // Définition des pages publiques
   const isPublicPage = useMemo(() => {
     const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
     if (publicPaths.includes(cleanPath)) return true;
@@ -104,14 +112,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return false;
   }, [cleanPath]);
 
-  // Lecteur en plein écran
   const isFullScreen = useMemo(() => {
       return cleanPath.startsWith('/courses/');
   }, [cleanPath]);
 
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
-  // Redirection intelligente
   useEffect(() => {
     if (loading) return;
     if (!user && !isPublicPage && !isAuthPage && !isFullScreen) {
@@ -155,12 +161,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             {children}
           </main>
 
-          {/* Bottom Nav Logique Mobile */}
+          {/* Bottom Nav Logique Mobile Multi-Rôle */}
           {!!user && !isFullScreen && (
               <div className="md:hidden">
-                  {role === 'admin' && cleanPath.startsWith('/admin') && <AdminBottomNav />}
-                  {role === 'instructor' && cleanPath.startsWith('/instructor') && <InstructorBottomNav />}
-                  {role === 'student' && showStudentBottomNav && <BottomNav />}
+                  {showAdminBottomNav && <AdminBottomNav />}
+                  {showInstructorBottomNav && <InstructorBottomNav />}
+                  {showStudentBottomNav && <BottomNav />}
               </div>
           )}
         </div>

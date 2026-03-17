@@ -2,68 +2,43 @@
 
 /**
  * @fileOverview Barre latérale Administrateur Ndara Afrique.
- * Harmonisée avec le design Elite Qwen.
+ * ✅ DESIGN : Elite Qwen (Fintech Vintage).
+ * ✅ NAVIGATION : Supporte le changement de rôle et les compteurs temps réel.
  */
 
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  CreditCard,
-  MessageSquare,
-  HelpCircle,
-  Settings,
-  ShieldAlert,
-  Sparkles,
-  UserCheck,
-  Landmark,
-  BarChart3,
-  MessageCircleQuestion,
-  GalleryHorizontal,
-  History,
-  Shield,
-  Zap,
-  ArrowLeftRight,
-  Activity,
-  Target,
-  Mail,
-  Trophy,
-  Globe,
-  Share2,
-  X,
-  LogOut,
+import { useLocale } from 'next-intl';
+import { getFirestore, collection, query, where, onSnapshot } from "firebase/firestore";
+import { 
+  LayoutDashboard, 
+  Users, 
+  BookOpen, 
+  CreditCard, 
+  MessageSquare, 
+  HelpCircle, 
+  Settings, 
+  ShieldAlert, 
+  Sparkles, 
+  UserCheck, 
+  Landmark, 
+  BarChart3, 
+  MessageCircleQuestion, 
+  GalleryHorizontal, 
+  History, 
+  Shield, 
+  ArrowLeftRight, 
+  LogOut, 
+  X, 
+  Activity, 
   ChevronRight,
   Rocket
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMemo, useState, useEffect } from 'react';
-import { collection, query, where, getFirestore, onSnapshot } from "firebase/firestore";
-import { Badge } from "@/components/ui/badge";
-import { useLocale } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface AdminSidebarProps {
-  siteName?: string;
-  logoUrl?: string;
-  onLinkClick: () => void;
-}
-
-interface NavItem {
-  href: string;
-  icon: React.ElementType;
-  label: string;
-  badge?: string;
-  countId?: string;
-}
-
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
+import { Badge } from "@/components/ui/badge";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick, badge }: { 
   href: string, 
@@ -92,7 +67,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick, badge }: {
         <div className="flex items-center">
             <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                isActive ? "bg-primary text-slate-950" : "bg-white/5 text-slate-500 group-hover:text-primary"
+                isActive ? "bg-primary text-slate-950 shadow-lg shadow-primary/20" : "bg-white/5 text-slate-500 group-hover:text-primary"
             )}>
                 <Icon size={18} />
             </div>
@@ -121,8 +96,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick, badge }: {
   );
 };
 
-
-export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarProps) {
+export function AdminSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick: () => void, siteName?: string, logoUrl?: string }) {
   const db = getFirestore();
   const locale = useLocale();
   const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
@@ -146,20 +120,20 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
     return () => { unsubInstructors(); unsubCourses(); unsubPayouts(); unsubTickets(); };
   }, [db, currentUser]);
 
-  const groups: NavGroup[] = [
+  const groups = [
     {
       label: "COCKPIT",
       items: [
         { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Dashboard" },
         { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Statistiques" },
         { href: `/${locale}/admin/monitoring`, icon: Activity, label: "Monitoring" },
-        { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Mathias Admin", badge: 'IA' },
       ]
     },
     {
       label: "MARKETING",
       items: [
         { href: `/${locale}/admin/ads-factory`, icon: Rocket, label: "Ads Factory", badge: "NEW" },
+        { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Mathias Admin", badge: 'IA' },
         { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel" },
         { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ" },
       ]
@@ -167,24 +141,24 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
     {
       label: "OPÉRATIONS",
       items: [
-        { href: `/${locale}/admin/users`, icon: Users, label: "Utilisateurs" },
-        { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
-        { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
-        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Support", countId: 'openTickets' },
+        { href: `/${locale}/admin/users`, icon: Users, label: "Membres" },
+        { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", count: counts.pendingCourses },
+        { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", count: counts.pendingInstructors },
+        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Support", count: counts.openTickets },
       ]
     },
     {
       label: "FINANCES",
       items: [
         { href: `/${locale}/admin/payments`, icon: CreditCard, label: "Transactions" },
-        { href: `/${locale}/admin/payouts`, icon: Landmark, label: "Retraits", countId: 'pendingPayouts' },
+        { href: `/${locale}/admin/payouts`, icon: Landmark, label: "Retraits", count: counts.pendingPayouts },
       ]
     },
     {
       label: "CONFIGURATION",
       items: [
         { href: `/${locale}/admin/settings`, icon: Settings, label: "Paramètres" },
-        { href: `/${locale}/admin/roles`, icon: Shield, label: "Rôles" },
+        { href: `/${locale}/admin/roles`, icon: Shield, label: "Permissions" },
         { href: `/${locale}/admin/logs`, icon: History, label: "Audit Logs" },
       ]
     }
@@ -197,15 +171,13 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
       <header className="px-6 py-8 border-b border-white/5">
         <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-500/20">
-                    N
-                </div>
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-500/20">N</div>
                 <div>
                     <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">{siteName || 'ADMIN'}</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Ndara Afrique</p>
                 </div>
             </div>
-            <button onClick={() => onLinkClick()} className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
+            <button onClick={onLinkClick} className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
                 <X size={20} />
             </button>
         </div>
@@ -230,7 +202,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
       </header>
 
       <div className="px-6 py-4 border-b border-white/5 space-y-3">
-          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Navigation Rôles</p>
+          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Changer de mode</p>
           <div className="grid grid-cols-2 gap-2">
               <button 
                   onClick={() => { switchRole('student'); onLinkClick(); }}
@@ -242,7 +214,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
               {isInstructor && (
                   <button 
                       onClick={() => { switchRole('instructor'); onLinkClick(); }}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-[#10b981] hover:text-slate-950 transition-all active:scale-95 shadow-lg"
                   >
                       <ArrowLeftRight size={12} />
                       <span>Formateur</span>
@@ -263,7 +235,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
                     icon={item.icon} 
                     label={item.label}
                     badge={item.badge}
-                    count={item.countId ? (counts as any)[item.countId] : undefined}
+                    count={item.count}
                     onClick={onLinkClick}
                 />
                 ))}

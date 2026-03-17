@@ -14,11 +14,14 @@ import { usePermissions } from "@/hooks/use-permissions";
 function AdminAccessRequiredScreen() {
     const router = useRouter();
     return (
-        <div className="flex flex-col items-center justify-center h-[80vh] text-center p-6 bg-background text-foreground rounded-[2rem] border border-border">
-             <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
-            <h1 className="text-2xl font-black uppercase tracking-tight">Accès Interdit</h1>
-            <p className="text-muted-foreground mt-2">Vous n'avez pas les autorisations nécessaires pour accéder à cette zone.</p>
-            <button onClick={() => router.push('/student/dashboard')} className="mt-8 px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">
+        <div className="flex flex-col items-center justify-center h-[80vh] text-center p-6 bg-slate-950 text-white rounded-[2rem] border border-white/5 font-sans relative overflow-hidden">
+             <div className="grain-overlay opacity-[0.05]" />
+             <div className="p-6 bg-red-500/10 rounded-full border-4 border-red-500/20 mb-6">
+                <ShieldAlert className="w-16 h-16 text-red-500" />
+             </div>
+            <h1 className="text-3xl font-black uppercase tracking-tight">Accès Interdit</h1>
+            <p className="text-slate-500 mt-2 max-w-xs mx-auto font-medium italic">"Mo yeke na permission ti lî na yâ ti zone so ape."</p>
+            <button onClick={() => router.push('/student/dashboard')} className="mt-10 px-10 py-4 bg-primary text-slate-950 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-95">
                 Retour au tableau de bord
             </button>
         </div>
@@ -34,20 +37,20 @@ export default function AdminLayout({
   const { hasPermission } = usePermissions();
 
   useEffect(() => {
-    if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
+    if (!isUserLoading && hasPermission('admin.access') && role !== 'admin') {
       switchRole('admin');
     }
   }, [isUserLoading, hasPermission, role, switchRole]);
 
   if (isUserLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen w-full items-center justify-center bg-[#0f172a]">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
   
-  if (!hasPermission('admin:access')) {
+  if (!hasPermission('admin.access')) {
     return <AdminAccessRequiredScreen />;
   }
 
