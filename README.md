@@ -1,54 +1,36 @@
 
+# 🚀 Ndara Afrique v2.5 - L'Excellence Panafricaine
 
-# 🚀 Ndara Afrique - Plateforme d'E-learning Pan-Africaine
+Bienvenue sur la version **Elite** de **Ndara Afrique**, l'infrastructure du savoir conçue pour le futur du continent. Cette application combine une esthétique **Fintech Vintage** avec une puissance technologique **Real-Time** et une intelligence **Mathias IA**.
 
-Bienvenue sur **Ndara Afrique**, la révolution de la formation en ligne conçue pour le continent africain. Cette application est optimisée pour une expérience **Android-First**, avec une esthétique **Vintage** et une infrastructure **100% Temps Réel**.
+## ✨ Architecture du Système
 
-## ✨ Fonctionnalités Clés 
+### 🛡️ Cockpit CEO & Administration (V2.5)
+- **Reporting Prédictif** : Radar de croissance IA et widgets financiers de luxe (CA Brut, Net, Volume Bourse).
+- **Monitoring Cyber-Security** : Console de logs en temps réel et pilotage des moteurs IA Mathias.
+- **Growth Hub** : Usine à coupons "Cinema Ticket", radar de campagnes et radar d'acquisition.
+- **Centre de Support Premium** : Messagerie support immersive avec arbitrage direct des remboursements.
+- **Gestion des Droits** : Bourse du Savoir intégrée pour l'arbitrage des licences de revente.
 
-### 🎓 Espace Étudiant
-- **Tableau de Bord "Live"** : Suivi de progression et activités en temps réel.
-- **Lecteur de Cours Intelligent** : Support Vidéo Premium (Bunny), YouTube, PDF et Texte.
-- **Tuteur MATHIAS (IA)** : Coach personnel disponible 24h/24 pour répondre aux questions pédagogiques.
-- **Paiement Moneroo** : Tunnel de checkout fluide via Mobile Money (MTN, Orange, Wave).
-- **Système de Certificats** : Génération de diplômes officiels style vintage avec sceau de sécurité.
-- **Communauté & Messagerie** : Annuaire des membres par filière et chat instantané sécurisé.
+### 🎓 Espace Étudiant (Android-First)
+- **Expérience Immersive** : Navigation par pilules tactiles, mode sombre profond et texture grainée.
+- **Ndara Wallet** : Portefeuille personnel rechargeable via Orange Money, MTN et Wave.
+- **Tuteur MATHIAS** : Coach IA disponible 24h/24 intégré directement dans le lecteur de cours.
+- **Certification de Prestige** : Génération de diplômes HD avec sceau de sécurité et vérification en ligne.
 
-### 🛠️ Espace Administrateur (Pilotage Total)
-- **Souveraineté de Marque** : Changez le logo, le numéro WhatsApp de support et les réseaux sociaux en un clic.
-- **Contrôle de l'Accueil** : Activez ou désactivez les boutons de la Landing Page selon votre stratégie.
-- **Moteur Ndara IA** : Gérez les recommandations personnalisées pour chaque étudiant.
-- **Gestion Financière** : Suivi des transactions Moneroo et validation des retraits.
+### 👨‍🏫 Espace Expert (Wealth Management)
+- **Gestionnaire de Catalogue** : Interface de création assistée par l'IA Mathias.
+- **Finances Mobiles** : Suivi des ventes et demandes de retrait directes vers Mobile Money.
+- **Impact Communautaire** : Annuaire des élèves, correction de devoirs assistée par l'IA et mur des avis.
 
-## 💰 Économie & Gains (Monétisation)
-Ndara Afrique permet de générer des revenus via 4 canaux :
-1. **Instructeurs** : Vente directe de cours avec reversement via Mobile Money.
-2. **Ambassadeurs** : Gains de commissions par l'affiliation (partage de liens de formation).
-3. **Bourse du Savoir** : Achat et vente de licences de revente (Marché Secondaire).
-4. **Buyout** : Option de rachat de contenus par la plateforme pour un cash-out immédiat.
-
-## 🛠️ Stack Technique
-- **Framework** : Next.js 14 (App Router)
-- **Base de données & Auth** : Firebase (Firestore, Auth, Storage)
-- **Infrastructure Média** : Bunny.net (Stream & CDN)
-- **IA** : Firebase Genkit (Gemini 1.5 Flash)
-- **Style** : Tailwind CSS & ShadCN UI
-
-## 🚀 Commandes Utiles
-
-### Sauvegarde & Déploiement GitHub
-```bash
-git add .
-git commit -m "Votre message ici"
-git push origin main
-```
-
-### Déploiement sur Firebase
-```bash
-# Pour le frontend (Hosting)
-npm run build
-firebase deploy --only hosting
-```
+## 🛠️ Stack Technique & Sécurité
+- **Framework** : Next.js 14 (App Router) - Optimisé SEO & PWA.
+- **Base de données** : Firebase Firestore (Real-time Sync).
+- **Authentification** : Firebase Auth (Multi-rôle : Admin, Expert, Ndara).
+- **IA** : Firebase Genkit & Gemini 1.5 Flash (Moteurs Mathias).
+- **Média** : Bunny.net (Stream & CDN) pour une sécurité vidéo maximale.
+- **Paiements** : Moneroo & MeSomb (Paiements Panafricains).
 
 ---
-*Fait avec ❤️ pour l'avenir de l'éducation en Afrique.*
+**"Bara ala, Tonga na ndara."**
+*L'éducation est le levier de l'émergence. Ndara Afrique en est l'infrastructure.*
