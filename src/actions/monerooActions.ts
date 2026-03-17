@@ -3,11 +3,55 @@
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
+/**
+ * @fileOverview Actions serveur pour la passerelle Moneroo.
+ * ✅ RÉSOLU : Ajout de l'initiation de paiement (Create Payment).
+ */
+
 class Moneroo {
     private secretKey: string | undefined;
 
-    constructor(publicKey?: string, secretKey?: string) {
+    constructor(secretKey?: string) {
         this.secretKey = secretKey;
+    }
+
+    /**
+     * Initie un paiement auprès de Moneroo pour obtenir une URL de redirection.
+     */
+    async createPayment(params: {
+        amount: number;
+        currency: string;
+        customer: { name: string; email: string };
+        metadata: any;
+        returnUrl: string;
+    }) {
+        if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
+            throw new Error("Clé secrète Moneroo non configurée.");
+        }
+
+        const response = await fetch('https://api.moneroo.io/v1/payments', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.secretKey}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                amount: params.amount,
+                currency: params.currency,
+                customer: params.customer,
+                metadata: params.metadata,
+                return_url: params.returnUrl,
+                description: `Achat sur Ndara Afrique`
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors de la création du paiement Moneroo.");
+        }
+
+        return response.json();
     }
 
     async verify(transactionId: string): Promise<{ status: string; data?: any; message?: string }> {
@@ -34,18 +78,56 @@ class Moneroo {
         
         return response.json();
     }
-
-    get payments() { return { verify: this.verify.bind(this) }; }
 }
 
+export async function initiateMonerooPayment(params: {
+    amount: number;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    courseId: string;
+    affiliateId?: string;
+    couponId?: string;
+    returnUrl: string;
+}) {
+    const secretKey = process.env.MONEROO_SECRET_KEY;
+    const moneroo = new Moneroo(secretKey);
+
+    try {
+        const response = await moneroo.createPayment({
+            amount: params.amount,
+            currency: 'XOF',
+            customer: {
+                name: params.userName,
+                email: params.userEmail
+            },
+            metadata: {
+                userId: params.userId,
+                courseId: params.courseId,
+                affiliateId: params.affiliateId || '',
+                couponId: params.couponId || '',
+                type: 'course_purchase'
+            },
+            returnUrl: params.returnUrl
+        });
+
+        if (response.status === 'success' && response.data?.checkout_url) {
+            return { success: true, checkoutUrl: response.data.checkout_url };
+        }
+        
+        return { success: false, error: "Impossible d'obtenir l'URL de paiement." };
+    } catch (e: any) {
+        console.error("MONEROO_INIT_ERROR:", e.message);
+        return { success: false, error: e.message };
+    }
+}
 
 export async function verifyMonerooTransaction(transactionId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    const publicKey = process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY;
     const secretKey = process.env.MONEROO_SECRET_KEY;
 
     try {
-        const moneroo = new Moneroo(publicKey, secretKey);
-        const response = await moneroo.payments.verify(transactionId);
+        const moneroo = new Moneroo(secretKey);
+        const response = await moneroo.verify(transactionId);
         
         if (response?.status === 'success' && response.data?.status === 'successful') {
             

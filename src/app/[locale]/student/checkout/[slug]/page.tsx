@@ -3,11 +3,11 @@
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V4.
  * ✅ DESIGN : Choix direct de l'opérateur (Orange, MTN, Wave).
- * ✅ LOGIQUE : Bascule automatiquement en mode simulation si les clés sont absentes.
+ * ✅ LOGIQUE : Supporte désormais Moneroo et MeSomb dynamiquement.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
-import { useParams, useRouter, usePathname } from 'next/navigation';
+import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { doc, getFirestore, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
@@ -32,6 +32,7 @@ import type { Course } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
+import { initiateMonerooPayment } from '@/actions/monerooActions';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
@@ -42,7 +43,7 @@ function CheckoutContent() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const { user, currentUser } = useRole();
   const { toast } = useToast();
@@ -56,6 +57,9 @@ function CheckoutContent() {
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Déterminer la passerelle préférée depuis l'URL
+  const gateway = searchParams.get('gateway') || 'moneroo';
 
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -88,11 +92,6 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user || !course) return;
     
-    if (['orange', 'mtn', 'wave'].includes(provider) && (!phoneNumber || phoneNumber.length < 8)) {
-        toast({ variant: 'destructive', title: "Numéro invalide", description: "Veuillez saisir votre numéro Mobile Money." });
-        return;
-    }
-
     setIsProcessing(true);
 
     try {
@@ -121,30 +120,50 @@ function CheckoutContent() {
           });
           setIsSuccess(true);
       } else if (provider === 'virtual') {
-          // Mode Démo Purement Visuel
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
       } else {
-          // ✅ APPEL MESOMB (Simulé si clés manquantes)
-          const result = await initiateMeSombPayment({
-              amount: discountedPrice,
-              phoneNumber: phoneNumber,
-              service: provider === 'orange' ? 'ORANGE' : 'MTN',
-              courseId: course.id,
-              userId: user.uid,
-              affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
-              couponId: appliedCoupon?.id
-          });
+          // --- LOGIQUE MULTI-GATEWAY ---
+          if (gateway === 'moneroo') {
+              // 🚀 APPEL MONEROO
+              const result = await initiateMonerooPayment({
+                  amount: discountedPrice,
+                  userId: user.uid,
+                  userEmail: user.email!,
+                  userName: currentUser?.fullName || 'Étudiant Ndara',
+                  courseId: course.id,
+                  affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
+                  couponId: appliedCoupon?.id,
+                  returnUrl: `${window.location.origin}/${locale}/student/courses`
+              });
 
-          if (result.success) {
-              // Si c'est une simulation, MeSomb aura déjà appelé processNdaraPayment
-              if (result.transactionId === "SIMULATED") {
-                  setIsSuccess(true);
+              if (result.success && result.checkoutUrl) {
+                  toast({ title: "Redirection vers Moneroo..." });
+                  window.location.href = result.checkoutUrl;
               } else {
-                  toast({ title: "Demande envoyée !", description: result.message });
+                  throw new Error(result.error);
               }
           } else {
-              throw new Error(result.error);
+              // 💳 APPEL MESOMB (Corrigé avec signature)
+              const result = await initiateMeSombPayment({
+                  amount: discountedPrice,
+                  phoneNumber: phoneNumber,
+                  service: provider === 'orange' ? 'ORANGE' : 'MTN',
+                  courseId: course.id,
+                  userId: user.uid,
+                  affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
+                  couponId: appliedCoupon?.id
+              });
+
+              if (result.success) {
+                  if (result.transactionId === "SIMULATED") {
+                      setIsSuccess(true);
+                  } else {
+                      toast({ title: "Demande envoyée !", description: result.message });
+                  }
+              } else {
+                  throw new Error(result.error);
+              }
           }
       }
     } catch (error: any) {
@@ -252,7 +271,7 @@ function CheckoutContent() {
                     </div>
                     <p className="text-[10px] text-slate-400 italic">"Ce mode simule un paiement réussi pour vos vidéos de démonstration."</p>
                 </div>
-            ) : (
+            ) : gateway === 'mesomb' ? (
                 <div className="space-y-3">
                     <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money</label>
                     <div className="relative">
@@ -267,6 +286,13 @@ function CheckoutContent() {
                             className="w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 text-white font-mono text-lg"
                         />
                     </div>
+                </div>
+            ) : (
+                <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-widest">
+                        <ShieldCheck size={14} /> Passerelle Moneroo active
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed font-medium">Vous allez être redirigé vers la page sécurisée de Moneroo pour finaliser votre transaction via Mobile Money ou Carte.</p>
                 </div>
             )}
 
@@ -299,7 +325,7 @@ function CheckoutContent() {
                 className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95"
             >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : <Lock className="h-4 w-4 mr-2"/>}
-                VALIDER LE PAIEMENT
+                {gateway === 'moneroo' && !['wallet', 'virtual'].includes(provider) ? "CONTINUER VERS LE PAIEMENT" : "VALIDER LE PAIEMENT"}
             </Button>
         </div>
       </footer>

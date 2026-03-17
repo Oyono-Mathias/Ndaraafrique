@@ -1,11 +1,20 @@
 'use server';
 
 import { processNdaraPayment } from '@/services/paymentProcessor';
+import { createHmac, randomBytes } from 'crypto';
 
 /**
  * @fileOverview Actions serveur pour l'intégration de MeSomb via l'API REST.
- * ✅ RÉSOLU : Mode simulation intégré si les clés sont absentes (Pour les démos).
+ * ✅ RÉSOLU : Ajout de la génération de signature HMAC-SHA256 pour corriger "No signature provided".
  */
+
+/**
+ * Génère la signature de sécurité exigée par MeSomb v1.1
+ */
+function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
+    const credentials = `${method}\n${url}\n${date}\n${nonce}`;
+    return createHmac('sha256', secretKey).update(credentials).digest('hex');
+}
 
 interface MeSombPaymentParams {
   amount: number;
@@ -23,14 +32,11 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const secretKey = process.env.MESOMB_SECRET_KEY;
 
   // --- MODE SIMULATION (POUR DÉMO NDARA) ---
-  // Si les clés ne sont pas configurées, on simule une réussite pour ne pas bloquer le CEO
   if (!applicationKey || applicationKey.includes('YOUR_') || !accessKey || !secretKey) {
     console.warn("MESOMB_SIMULATION_MODE: Clés manquantes. Simulation du paiement en cours...");
     
-    // On attend 2 secondes pour simuler le réseau
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // On déclenche le traitement financier interne Ndara
     await processNdaraPayment({
         transactionId: `SIM-MOMO-${Date.now()}`,
         provider: 'mesomb',
@@ -53,13 +59,19 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   }
 
   try {
-    // Initiation de la collecte via l'API REST MeSomb v1.1
-    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect/', {
+    const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect/';
+    const date = Math.floor(Date.now() / 1000);
+    const nonce = randomBytes(16).toString('hex');
+    const signature = generateMeSombSignature('POST', url, date, nonce, secretKey);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'X-MeSomb-Application': applicationKey,
         'X-MeSomb-AccessKey': accessKey,
-        'X-MeSomb-SecretKey': secretKey,
+        'X-MeSomb-Signature': signature,
+        'X-MeSomb-Nonce': nonce,
+        'X-MeSomb-Timestamp': date.toString(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -87,8 +99,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         message: "Demande de paiement envoyée. Veuillez valider sur votre téléphone." 
       };
     } else {
-      // ✅ Si l'erreur est "No signature provided", cela confirme que les clés sont mal configurées
-      const errorDetail = data.detail || data.message || "Erreur de signature MeSomb.";
+      const errorDetail = data.detail || data.message || "Erreur de communication MeSomb.";
       return { success: false, error: errorDetail };
     }
 
