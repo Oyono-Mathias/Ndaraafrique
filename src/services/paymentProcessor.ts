@@ -9,7 +9,8 @@ import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/typ
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
  * Seul point d'entrée pour l'activation des droits après paiement.
  * Gère l'idempotence, l'attribution, les commissions et le wallet.
- * ✅ ENRICHI : Traçabilité passerelle et répartition financière détaillée.
+ * ✅ ENRICHI : Calcul automatique des parts (Plateforme, Instructeur, Affilié).
+ * ✅ TRAÇABILITÉ : Enregistrement du gatewayTransactionId.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -36,17 +37,17 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     }
 
     const courseData = courseDoc.data() as Course;
-    const settings = settingsDoc.data() as Settings;
+    const settings = (settingsDoc.exists ? settingsDoc.data() : {}) as Settings;
     const userData = userDoc.data() as NdaraUser;
     
     const batch = db.batch();
 
-    // 3. CALCUL DES RÉPARTITIONS FINANCIÈRES
+    // 3. CALCUL DES RÉPARTITIONS FINANCIÈRES (Basé sur settings ou valeurs par défaut)
     const instructorSharePercent = settings.commercial?.instructorShare || 80;
     const affiliateSharePercent = metadata.affiliateId ? (settings.commercial?.affiliatePercentage || 10) : 0;
     
-    const instructorRevenue = (amount * instructorSharePercent) / 100;
     const affiliateCommission = (amount * affiliateSharePercent) / 100;
+    const instructorRevenue = (amount * instructorSharePercent) / 100;
     const platformFee = amount - instructorRevenue - affiliateCommission;
 
     // 4. ENREGISTREMENT TRANSACTION FINANCIÈRE
@@ -79,7 +80,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       studentId: metadata.userId,
       courseId: metadata.courseId,
       instructorId: courseData.instructorId,
-      status: 'active', // ✅ Statut unifié
+      status: 'active', 
       progress: 0,
       enrollmentDate: FieldValue.serverTimestamp(),
       lastAccessedAt: FieldValue.serverTimestamp(),
@@ -102,7 +103,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     if (metadata.affiliateId && metadata.affiliateId !== metadata.userId) {
         const affiliateId = metadata.affiliateId;
 
-        // On crée une transaction d'affiliation gelée (pending)
         const affTransRef = db.collection('affiliate_transactions').doc();
         const unlockDate = new Date();
         unlockDate.setDate(unlockDate.getDate() + (settings.commercial?.payoutDelayDays || 14));
@@ -121,7 +121,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             unlockDate: Timestamp.fromDate(unlockDate)
         });
 
-        // On crédite le solde 'en attente' de l'ambassadeur
         const affiliateRef = db.collection('users').doc(affiliateId);
         batch.update(affiliateRef, {
             pendingAffiliateBalance: FieldValue.increment(affiliateCommission),

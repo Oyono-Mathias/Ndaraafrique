@@ -9,9 +9,6 @@ import { createHmac, randomBytes } from 'crypto';
  * ✅ ENRICHI : Traçabilité gateway même en simulation.
  */
 
-/**
- * Génère la signature de sécurité cryptographique exigée par MeSomb.
- */
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
     const credentials = `${method}\n${url}\n${date}\n${nonce}`;
     return createHmac('sha256', secretKey).update(credentials).digest('hex');
@@ -40,9 +37,10 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
 
     const simId = `DEMO-MOMO-${Date.now()}`;
 
+    // On appelle le processeur directement pour simuler le webhook
     await processNdaraPayment({
         transactionId: simId,
-        gatewayTransactionId: "SIMULATED_GATEWAY",
+        gatewayTransactionId: "SIMULATED_GATEWAY_ID",
         provider: 'mesomb',
         amount: params.amount,
         currency: 'XOF',
