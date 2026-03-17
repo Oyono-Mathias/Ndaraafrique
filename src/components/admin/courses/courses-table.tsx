@@ -38,7 +38,8 @@ import {
     XCircle,
     AlertCircle,
     FileText,
-    LayoutGrid
+    LayoutGrid,
+    BookOpen
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
