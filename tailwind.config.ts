@@ -18,6 +18,7 @@ export default {
       fontFamily: {
         sans: ["Inter", "var(--font-sans)", ...fontFamily.sans],
         heading: ["Poppins", "sans-serif"],
+        serif: ["Playfair Display", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -32,6 +33,8 @@ export default {
           blue: '#0F172A',
           emerald: '#10b981',
           surface: '#1e293b',
+          gold: '#F59E0B',
+          goldLight: '#FCD34D',
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
