@@ -35,6 +35,7 @@ import {
 import { format, subMonths, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, Course } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 export default function AdminStatsPage() {
     const { currentUser } = useRole();
