@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -21,11 +22,7 @@ import {
   Wallet, 
   Percent, 
   Award,
-  TrendingUp,
-  Clock,
-  ShieldCheck,
-  Search,
-  Bell
+  Clock
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,13 +30,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+
+// ✅ Interface pour garantir le typage correct des statistiques
+interface AdminStats {
+  revenue: number;
+  users: number;
+  courses: number;
+  certs: number;
+}
 
 export default function AdminDashboard() {
     const { currentUser } = useRole();
     const db = getFirestore();
     
-    const [stats, setStats] = useState({ revenue: 0, users: 0, courses: 0, certs: 0 });
+    // Initialisation avec l'interface AdminStats
+    const [stats, setStats] = useState<AdminStats>({ revenue: 0, users: 0, courses: 0, certs: 0 });
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -54,17 +59,17 @@ export default function AdminDashboard() {
             setStats(prev => ({ ...prev, revenue: total }));
         });
 
-        // 2. Utilisateurs
+        // 2. Nombre total de membres
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             setStats(prev => ({ ...prev, users: snap.size }));
         });
 
-        // 3. Formations
+        // 3. Nombre de formations
         const unsubCourses = onSnapshot(collection(db, 'courses'), (snap) => {
             setStats(prev => ({ ...prev, courses: snap.size }));
         });
 
-        // 4. Certificats
+        // 4. Nombre de certificats (Élèves à 100%)
         const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('progress', '==', 100)), (snap) => {
             setStats(prev => ({ ...prev, certs: snap.size }));
             setIsLoading(false);
