@@ -4,9 +4,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour MeSomb avec signature HMAC-SHA256.
- * Inclut un mode simulation pour le prototypage.
- * ✅ SÉCURISÉ : Gestion des erreurs fatales pour éviter le crash des Server Components.
+ * @fileOverview Actions serveur pour MeSomb avec protection contre les crashs fatals.
  */
 
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
@@ -39,8 +37,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
 
       const simId = `DEMO-MOMO-${Date.now()}`;
 
-      // On appelle le processeur directement pour simuler le webhook
-      // On enveloppe dans un try/catch interne car processNdaraPayment utilise Firebase Admin
       try {
           await processNdaraPayment({
               transactionId: simId,
@@ -56,19 +52,21 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
                   type: params.type || 'course_purchase'
               }
           });
+          
+          return { 
+              success: true, 
+              transactionId: "SIMULATED", 
+              message: "Simulation réussie ! Votre solde est mis à jour." 
+          };
       } catch (adminError: any) {
-          console.error("ADMIN_SDK_ERROR during simulation:", adminError.message);
+          console.error("ADMIN_ACTION_FAILED:", adminError.message);
           return { 
               success: false, 
-              error: "Configuration serveur incomplète : La clé FIREBASE_SERVICE_ACCOUNT_KEY est manquante dans les réglages Vercel." 
+              error: adminError.message === "ADMIN_NOT_CONFIGURED" 
+                ? "Le serveur n'est pas encore prêt (Firebase Admin non configuré)." 
+                : "Erreur lors de l'activation : " + adminError.message 
           };
       }
-
-      return { 
-          success: true, 
-          transactionId: "SIMULATED", 
-          message: "Simulation réussie ! Votre solde est mis à jour." 
-      };
     }
 
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect/';
@@ -118,7 +116,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     console.error("INITIATE_PAYMENT_FATAL:", error.message);
     return { 
         success: false, 
-        error: "Le service de paiement est indisponible. Détails : " + error.message 
+        error: "Le service de paiement est indisponible. Veuillez réessayer." 
     };
   }
 }

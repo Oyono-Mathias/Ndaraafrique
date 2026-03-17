@@ -7,20 +7,14 @@ import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/typ
 
 /**
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
- * Seul point d'entrée pour l'activation des droits après paiement.
- * ✅ ROBUSTE : Capture les erreurs de configuration Firebase Admin.
+ * ✅ SÉCURISÉ : Ne crash pas l'application si l'admin n'est pas prêt.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
   
-  let db;
-  try {
-      db = getAdminDb();
-  } catch (e: any) {
-      console.error("PAYMENT_PROCESSOR_CONFIG_ERROR:", e.message);
-      throw new Error("Le serveur n'est pas configuré pour traiter les transactions (FIREBASE_SERVICE_ACCOUNT_KEY manquante).");
-  }
+  // getAdminDb() va jeter "ADMIN_NOT_CONFIGURED" si la clé est mal lue
+  const db = getAdminDb();
 
   try {
     // 1. VÉRIFICATION IDEMPOTENCE
@@ -44,7 +38,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     const [settingsDoc, userDoc, courseDoc] = await Promise.all(promises);
 
     if (!userDoc.exists) {
-        throw new Error("Utilisateur introuvable pour activation.");
+        throw new Error("UTILISATEUR_NON_TROUVE");
     }
 
     const settings = (settingsDoc.exists ? settingsDoc.data() : {}) as Settings;
@@ -67,17 +61,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     };
 
     if (isTopup) {
-        // --- LOGIQUE RECHARGE WALLET ---
         paymentData.courseTitle = "Recharge Wallet Ndara";
-        
         const userRef = db.collection('users').doc(metadata.userId);
-        batch.update(userRef, {
-            balance: FieldValue.increment(amount)
-        });
-
+        batch.update(userRef, { balance: FieldValue.increment(amount) });
     } else {
-        // --- LOGIQUE ACHAT FORMATION ---
-        if (!courseDoc || !courseDoc.exists) throw new Error("Cours introuvable.");
+        if (!courseDoc || !courseDoc.exists) throw new Error("COURS_NON_TROUVE");
         const courseData = courseDoc.data() as Course;
 
         const instructorSharePercent = settings.commercial?.instructorShare || 80;
@@ -151,11 +139,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     }
 
     batch.set(paymentRef, paymentData);
-
-    // 4. FINALISATION
     await batch.commit();
 
-    // Notifier l'utilisateur (optionnel, capture les erreurs de messaging)
     try {
         await sendUserNotification(metadata.userId, {
           text: isTopup 
@@ -171,7 +156,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     return { success: true };
 
   } catch (error: any) {
-    console.error("PAYMENT_PROCESSOR_FATAL:", error.message);
+    console.error("PAYMENT_PROCESSOR_CORE_ERROR:", error.message);
     throw error;
   }
 }
