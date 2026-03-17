@@ -1,12 +1,11 @@
 
-'use client';
+'use server';
 
-import { processNdaraPayment } from '@/services/paymentProcessor';
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour MeSomb avec protection contre les crashs fatals.
- * ✅ RÉSOLU : Intégration des clés de production fournies par l'utilisateur.
+ * @fileOverview Actions serveur pour MeSomb.
+ * Correction : Directive 'use server' impérative pour les appels API et crypto.
  */
 
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
@@ -27,7 +26,6 @@ interface MeSombPaymentParams {
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
-    // Priorité aux variables d'environnement, sinon on utilise les clés de production fournies
     const applicationKey = process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051";
     const accessKey = process.env.MESOMB_ACCESS_KEY || "3ef066c6-dd64-4232-a148-c119e46f3224";
     const secretKey = process.env.MESOMB_SECRET_KEY || "1bf24b1d-7cae-466e-9765-7c7c5b84903e";

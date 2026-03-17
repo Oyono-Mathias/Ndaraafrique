@@ -4,8 +4,7 @@ import { firebaseConfig } from '@/firebase/config';
 
 /**
  * @fileOverview Initialisation ultra-robuste du SDK Firebase Admin.
- * Gère les différents formats de clés (JSON brut, chaînes échappées, etc.)
- * ✅ RÉSOLU : Support amélioré pour les déploiements Vercel.
+ * Supporte les formats JSON directs et les chaînes de caractères échappées.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -25,25 +24,27 @@ function initializeAdmin() {
   try {
     let serviceAccount;
     
-    // Nettoyage agressif des guillemets et espaces
-    const cleanedKey = serviceAccountKey.trim().replace(/^['"]|['"]$/g, '');
-
-    try {
-      // Tentative 1: JSON Standard
-      serviceAccount = JSON.parse(cleanedKey);
-    } catch (e) {
-      // Tentative 2: JSON avec sauts de ligne échappés (\n)
-      serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
+    // Si c'est déjà un objet (chargé par certains environnements)
+    if (typeof serviceAccountKey === 'object') {
+        serviceAccount = serviceAccountKey;
+    } else {
+        // Nettoyage des guillemets et parsing
+        const cleanedKey = serviceAccountKey.trim();
+        try {
+          serviceAccount = JSON.parse(cleanedKey);
+        } catch (e) {
+          // Fallback : tentative de nettoyage des échappements \n
+          serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
+        }
     }
     
-    // Correction cruciale pour la clé privée
+    // Correction impérative de la clé privée pour Vercel
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
-    // Vérification des champs obligatoires pour éviter le crash silent de initializeApp
     if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-        throw new Error("JSON du compte de service incomplet (project_id, private_key ou client_email manquant).");
+        throw new Error("JSON du compte de service incomplet ou illisible.");
     }
 
     return admin.initializeApp({
