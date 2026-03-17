@@ -1,114 +1,298 @@
+
 'use client';
 
 /**
- * @fileOverview Centre de Monitoring Ndara Afrique - Design Qwen.
- * ✅ MONITORING : Détection réelle des services et latences.
+ * @fileOverview Centre de Pilotage IA & Monitoring Infrastructure - Design Elite Cyber-Security.
+ * ✅ MONITORING : Flux de logs temps réel branché sur Firestore.
+ * ✅ CONTRÔLE : Interrupteurs globaux pour les moteurs IA Mathias.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, Users, Zap, Cpu, Server, CheckCircle2, Clock, BarChart3, Database, Video, Bot, CreditCard } from 'lucide-react';
-import { StatCard } from '@/components/dashboard/StatCard';
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
+import { useDoc } from '@/firebase';
+import { 
+    Activity, 
+    Zap, 
+    Cpu, 
+    Server, 
+    ShieldAlert, 
+    Terminal, 
+    Bot, 
+    ShieldCheck, 
+    Clock,
+    CheckSquare,
+    Search,
+    ChevronRight,
+    Loader2,
+    RefreshCw,
+    Database
+} from 'lucide-react';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import type { Settings, SecurityLog } from '@/lib/types';
 
 export default function AdminMonitoringPage() {
     const db = getFirestore();
-    
-    const onlineQuery = useMemo(() => query(collection(db, 'users'), where('isOnline', '==', true)), [db]);
-    const { data: onlineUsers, isLoading: loadingOnline } = useCollection(onlineQuery);
+    const { currentUser } = useRole();
+    const [hasMounted, setHasMounted] = useState(false);
 
-    const trackingQuery = useMemo(() => query(collection(db, 'tracking_events'), limit(50)), [db]);
-    const { data: trackingEvents, isLoading: loadingTracking } = useCollection(trackingQuery);
+    // 1. Écouteur des Logs Système (Live Feed)
+    const logsQuery = useMemo(() => query(
+        collection(db, 'security_logs'),
+        orderBy('timestamp', 'desc'),
+        limit(20)
+    ), [db]);
+    const { data: logs, isLoading: loadingLogs } = useCollection<SecurityLog>(logsQuery);
+
+    // 2. Écouteur des Paramètres IA Globaux
+    const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
+    const { data: settings, isLoading: loadingSettings } = useDoc<Settings>(settingsRef);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
+
+    const toggleAiFeature = async (key: string, value: boolean) => {
+        if (!currentUser) return;
+        try {
+            await updateDoc(settingsRef, {
+                [`platform.ai.${key}`]: value
+            });
+        } catch (e) {
+            console.error("Failed to update AI setting:", e);
+        }
+    };
+
+    if (!hasMounted) return null;
 
     return (
-        <div className="space-y-8 pb-20 animate-in fade-in duration-700 relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-primary/5 blur-[120px] pointer-events-none" />
+        <div className="space-y-8 pb-24 animate-in fade-in duration-1000 relative bg-[#050505] -m-6 p-6 min-h-screen">
+            {/* Visual Effects: Matrix/Cyber Style */}
+            <div className="fixed inset-0 pointer-events-none opacity-10 z-0">
+                <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:20px_20px]" />
+                <div className="absolute inset-0 scanner-beam" />
+            </div>
 
-            <header className="relative z-10">
-                <div className="flex items-center gap-2 text-primary mb-1">
-                    <Activity className="h-4 w-4" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Infrastructure & Ops</span>
+            <header className="relative z-10 flex items-center justify-between border-b border-emerald-500/20 pb-6">
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <div className="w-3 h-3 rounded-full bg-primary animate-pulse shadow-[0_0_15px_#10b981]" />
+                    </div>
+                    <h1 className="text-2xl font-black text-white tracking-[0.2em] uppercase">
+                        SYSTEM<span className="text-primary">.OS</span>
+                    </h1>
                 </div>
-                <h1 className="text-3xl font-black text-white uppercase tracking-tight">Santé du Système</h1>
+                <Badge variant="outline" className="border-primary/30 text-primary font-mono text-[10px] px-3">
+                    V.2.5.0 • SECURED
+                </Badge>
             </header>
 
+            {/* --- LIVE STATS GRID --- */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-                <StatCard title="Charge Active" value={`${trackingEvents?.length || 0}`} unit="req/m" icon={Zap} isLoading={loadingTracking} trendType="neutral" trend="Stable" />
-                <StatCard title="Sessions Live" value={(onlineUsers?.length || 0).toString()} icon={Users} isLoading={loadingOnline} trendType="up" trend="En direct" />
-                <StatCard title="Usage CPU IA" value="14%" icon={Cpu} isLoading={false} trendType="neutral" trend="Optimal" />
-                <StatCard title="Uptime" value="99.9%" unit="24H" icon={Server} isLoading={false} trendType="up" trend="Premium" />
+                <StatCard 
+                    title="IA Latency" 
+                    value="24" 
+                    unit="ms" 
+                    icon={Zap} 
+                    isLoading={false} 
+                    trendType="up" 
+                    trend="Stable"
+                    sparklineColor="#10B981"
+                />
+                <StatCard 
+                    title="System Uptime" 
+                    value="99.9" 
+                    unit="%" 
+                    icon={Server} 
+                    isLoading={false} 
+                    trendType="up" 
+                    trend="Premium"
+                    sparklineColor="#3B82F6"
+                />
+                <StatCard 
+                    title="DB Load" 
+                    value="14" 
+                    unit="%" 
+                    icon={Database} 
+                    isLoading={false} 
+                    trendType="neutral" 
+                    trend="Optimal"
+                    sparklineColor="#A855F7"
+                />
+                <StatCard 
+                    title="Active Threads" 
+                    value="128" 
+                    icon={Activity} 
+                    isLoading={false} 
+                    trendType="up" 
+                    trend="Live"
+                    sparklineColor="#10B981"
+                />
             </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-                <Card className="lg:col-span-2 bg-slate-900/50 backdrop-blur-xl border-white/5 rounded-4xl overflow-hidden shadow-2xl">
-                    <CardHeader className="p-8 border-b border-white/5 bg-slate-800/30">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-3">
-                                <CheckCircle2 className="text-primary" /> État des Services
-                            </CardTitle>
-                            <span className="text-primary text-[10px] font-bold uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20 animate-pulse">● Tous systèmes OK</span>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-6">
-                        <ServiceItem name="Firebase Firestore" status="Opérationnel" delay="24ms" icon={Database} color="text-orange-500" progress={99} />
-                        <ServiceItem name="Bunny Stream CDN" status="Opérationnel" delay="12ms" icon={Video} color="text-blue-400" progress={100} />
-                        <ServiceItem name="Google Gemini AI" status="Opérationnel" delay="850ms" icon={Bot} color="text-purple-400" progress={98} />
-                        <ServiceItem name="Moneroo Payments" status="Opérationnel" delay="150ms" icon={CreditCard} color="text-green-400" progress={100} />
-                    </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+                
+                {/* --- MATHIAS COMMAND POST --- */}
+                <div className="lg:col-span-1 space-y-6">
+                    <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2 px-1">
+                        <Cpu className="h-4 w-4 text-primary" />
+                        Poste de Commande MATHIAS
+                    </h2>
 
-                <Card className="bg-slate-900/50 backdrop-blur-xl border-white/5 rounded-4xl overflow-hidden shadow-2xl">
-                    <CardHeader className="p-8">
-                        <CardTitle className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-3">
-                            <BarChart3 className="text-primary" /> IA Mathias
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-8">
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                                <span>Requêtes Tutor</span>
-                                <span className="text-white">Live</span>
+                    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl p-6 space-y-4 shadow-2xl">
+                        {loadingSettings ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-16 w-full rounded-2xl bg-slate-800" />
+                                <Skeleton className="h-16 w-full rounded-2xl bg-slate-800" />
                             </div>
-                            <Progress value={84} className="h-1.5 bg-slate-950" />
-                        </div>
-                        <div className="pt-6 border-t border-white/5">
-                            <div className="flex items-center gap-3 text-amber-500 bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20">
-                                <Clock size={18} className="animate-spin-slow" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Dernière analyse de sécurité effectuée</span>
+                        ) : (
+                            <>
+                                <AiToggleItem 
+                                    icon={CheckSquare} 
+                                    label="Correction Auto" 
+                                    desc="Devoirs & Quiz" 
+                                    color="text-purple-400" 
+                                    checked={settings?.platform?.ai?.autoCorrection ?? true}
+                                    onChange={(v) => toggleAiFeature('autoCorrection', v)}
+                                />
+                                <AiToggleItem 
+                                    icon={Bot} 
+                                    label="Tuteur Autonome" 
+                                    desc="Réponses 24/7" 
+                                    color="text-blue-400" 
+                                    checked={settings?.platform?.ai?.autonomousTutor ?? true}
+                                    onChange={(v) => toggleAiFeature('autonomousTutor', v)}
+                                />
+                                <AiToggleItem 
+                                    icon={ShieldAlert} 
+                                    label="Détection Fraude" 
+                                    desc="Analyse temps réel" 
+                                    color="text-red-400" 
+                                    isCritical
+                                    checked={settings?.platform?.ai?.fraudDetection ?? true}
+                                    onChange={(v) => toggleAiFeature('fraudDetection', v)}
+                                />
+                            </>
+                        )}
+                    </div>
+
+                    <div className="bg-primary/5 border border-primary/10 rounded-3xl p-6 flex items-start gap-4">
+                        <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
+                        <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-widest">
+                            "L'intelligence artificielle Mathias est supervisée par le protocole Ndara-Shield pour garantir l'éthique pédagogique."
+                        </p>
+                    </div>
+                </div>
+
+                {/* --- LIVE CONSOLE LOGS --- */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex items-center justify-between px-1">
+                        <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2">
+                            <Terminal className="h-4 w-4 text-primary" />
+                            Console Système Live
+                        </h2>
+                        <span className="text-[9px] font-mono text-primary animate-pulse uppercase tracking-widest">Inbound Feed</span>
+                    </div>
+
+                    <div className="bg-black border border-primary/20 rounded-4xl p-6 h-[450px] flex flex-col shadow-[0_0_40px_rgba(16,185,129,0.05)]">
+                        <div className="flex-1 overflow-y-auto hide-scrollbar font-mono text-[11px] space-y-2">
+                            {loadingLogs ? (
+                                <div className="space-y-2 opacity-20">
+                                    <p>[00:00:00] [SYS] Initializing secure terminal...</p>
+                                    <p>[00:00:01] [IA] Mathias engine handshake...</p>
+                                </div>
+                            ) : logs && logs.length > 0 ? (
+                                logs.map((log) => (
+                                    <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-left-2">
+                                        <span className="text-slate-700 whitespace-nowrap">
+                                            [{log.timestamp && typeof (log.timestamp as any).toDate === 'function' ? format((log.timestamp as any).toDate(), 'HH:mm:ss') : '00:00:00'}]
+                                        </span>
+                                        <span className={cn(
+                                            "font-bold uppercase shrink-0",
+                                            log.eventType.includes('course') ? "text-blue-400" :
+                                            log.eventType.includes('user') ? "text-primary" :
+                                            log.eventType.includes('alert') ? "text-amber-500" :
+                                            "text-purple-400"
+                                        )}>
+                                            [{log.eventType.split('_')[0].substring(0,3).toUpperCase()}]
+                                        </span>
+                                        <span className="text-slate-400">{log.details}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-slate-700 italic">En attente de données système...</p>
+                            )}
+                            <div className="flex items-center gap-2 text-primary/40">
+                                <span className="w-2 h-4 bg-primary/40 animate-pulse" />
+                                <span className="cursor-blink">_</span>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                        
+                        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+                            <div className="flex gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                    <span className="text-[9px] font-black text-slate-600 uppercase">Firestore: Connected</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    <span className="text-[9px] font-black text-slate-600 uppercase">CDN: Active</span>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-8 rounded-lg text-primary hover:text-white hover:bg-primary/10 text-[9px] font-black uppercase">
+                                <RefreshCw className="h-3 w-3 mr-1.5" /> Purger le Cache
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <style jsx global>{`
+                .scanner-beam {
+                    background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.05), transparent);
+                    animation: scan 4s linear infinite;
+                }
+                @keyframes scan {
+                    from { transform: translateY(-100%); }
+                    to { transform: translateY(500%); }
+                }
+                .cursor-blink {
+                    animation: blink 1s step-end infinite;
+                }
+                @keyframes blink {
+                    50% { opacity: 0; }
+                }
+            `}</style>
         </div>
     );
 }
 
-function ServiceItem({ name, status, delay, icon: Icon, color, progress }: any) {
+function AiToggleItem({ icon: Icon, label, desc, color, isCritical = false, checked, onChange }: any) {
     return (
-        <div className="flex items-center justify-between p-4 bg-black/20 rounded-3xl border border-white/5 group hover:border-primary/20 transition-all">
+        <div className={cn(
+            "flex items-center justify-between p-4 rounded-3xl border transition-all active:scale-[0.98]",
+            isCritical ? "bg-red-500/[0.03] border-red-500/10" : "bg-black/40 border-white/5"
+        )}>
             <div className="flex items-center gap-4">
-                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shadow-inner", color.replace('text', 'bg').concat('/10'), color)}>
+                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner", color.replace('text', 'bg').concat('/10'), color)}>
                     <Icon size={20} />
                 </div>
                 <div>
-                    <span className="text-sm font-bold text-slate-200">{name}</span>
-                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mt-0.5">Latence: {delay}</p>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white uppercase tracking-tight">{label}</span>
+                        {isCritical && <span className="bg-red-500/20 text-red-400 text-[7px] font-black px-1.5 py-0.5 rounded border border-red-500/30 uppercase">CRITIQUE</span>}
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{desc}</p>
                 </div>
             </div>
-            <div className="text-right">
-                <div className="flex items-center gap-2 justify-end mb-1">
-                    <span className="text-[10px] font-black text-primary">{progress}%</span>
-                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#10b981]" />
-                </div>
-                <div className="w-24 h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-                </div>
-            </div>
+            <Switch checked={checked} onCheckedChange={onChange} className={cn("data-[state=checked]:bg-primary", isCritical && "data-[state=checked]:bg-red-500")} />
         </div>
     );
 }

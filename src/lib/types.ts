@@ -1,3 +1,4 @@
+
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -493,6 +494,11 @@ export interface Settings {
     allowYoutube?: boolean;
     allowBunny?: boolean;
     resaleRightsPercentage?: number;
+    ai?: {
+        autoCorrection: boolean;
+        autonomousTutor: boolean;
+        fraudDetection: boolean;
+    };
     market?: {
         subscriptionRequired: boolean;
         subscriptionPrice: number;
