@@ -72,7 +72,6 @@ export default function AdminStatsPage() {
             .filter(p => p.metadata?.type === 'license_purchase')
             .reduce((acc, p) => acc + (p.amount || 0), 0);
 
-        // ✅ CALCUL RÉEL DE L'HISTORIQUE (6 DERNIERS MOIS)
         const now = new Date();
         const historyData = [];
         for (let i = 5; i >= 0; i--) {

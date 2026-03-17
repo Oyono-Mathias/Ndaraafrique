@@ -202,7 +202,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
                     href={item.href} 
                     icon={item.icon} 
                     label={item.label}
-                    count={item.count}
+                    count={(item as any).count}
                     onClick={onLinkClick}
                 />
                 ))}
