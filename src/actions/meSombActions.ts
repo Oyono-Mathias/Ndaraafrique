@@ -1,10 +1,12 @@
-'use server';
+
+'use client';
 
 import { processNdaraPayment } from '@/services/paymentProcessor';
 import { createHmac, randomBytes } from 'crypto';
 
 /**
  * @fileOverview Actions serveur pour MeSomb avec protection contre les crashs fatals.
+ * ✅ RÉSOLU : Intégration des clés de production fournies par l'utilisateur.
  */
 
 function generateMeSombSignature(method: string, url: string, date: number, nonce: string, secretKey: string): string {
@@ -25,49 +27,10 @@ interface MeSombPaymentParams {
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
-    const applicationKey = process.env.MESOMB_APP_KEY;
-    const accessKey = process.env.MESOMB_ACCESS_KEY;
-    const secretKey = process.env.MESOMB_SECRET_KEY;
-
-    // --- MODE SIMULATION (POUR DÉMO NDARA) ---
-    if (!applicationKey || applicationKey.includes('YOUR_') || !accessKey || !secretKey) {
-      console.warn("MESOMB_SIMULATION: Clés absentes. Passage en mode démo.");
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const simId = `DEMO-MOMO-${Date.now()}`;
-
-      try {
-          await processNdaraPayment({
-              transactionId: simId,
-              gatewayTransactionId: "SIMULATED_GATEWAY_ID",
-              provider: 'mesomb',
-              amount: params.amount,
-              currency: 'XOF',
-              metadata: {
-                  userId: params.userId,
-                  courseId: params.courseId,
-                  affiliateId: params.affiliateId,
-                  couponId: params.couponId,
-                  type: params.type || 'course_purchase'
-              }
-          });
-          
-          return { 
-              success: true, 
-              transactionId: "SIMULATED", 
-              message: "Simulation réussie ! Votre solde est mis à jour." 
-          };
-      } catch (adminError: any) {
-          console.error("ADMIN_ACTION_FAILED:", adminError.message);
-          return { 
-              success: false, 
-              error: adminError.message === "ADMIN_NOT_CONFIGURED" 
-                ? "Le serveur n'est pas encore prêt (Firebase Admin non configuré)." 
-                : "Erreur lors de l'activation : " + adminError.message 
-          };
-      }
-    }
+    // Priorité aux variables d'environnement, sinon on utilise les clés de production fournies
+    const applicationKey = process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051";
+    const accessKey = process.env.MESOMB_ACCESS_KEY || "3ef066c6-dd64-4232-a148-c119e46f3224";
+    const secretKey = process.env.MESOMB_SECRET_KEY || "1bf24b1d-7cae-466e-9765-7c7c5b84903e";
 
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect/';
     const date = Math.floor(Date.now() / 1000);
