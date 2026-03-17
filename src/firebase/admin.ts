@@ -3,72 +3,46 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation ultra-robuste du SDK Firebase Admin.
- * Supporte les formats JSON directs et les chaînes de caractères échappées.
+ * @fileOverview Initialisation Firebase Admin.
+ * Nettoyage automatique des guillemets et des sauts de ligne pour Vercel.
  */
 
-const projectId = firebaseConfig.projectId;
-
-function initializeAdmin() {
-  if (typeof window !== 'undefined') return null;
-
+export function initializeAdmin() {
   if (admin.apps.length > 0) return admin.app();
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-  if (!serviceAccountKey) {
-      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
-      return null;
-  }
+  let key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!key) return null;
 
   try {
-    let serviceAccount;
-    
-    // Si c'est déjà un objet (chargé par certains environnements)
-    if (typeof serviceAccountKey === 'object') {
-        serviceAccount = serviceAccountKey;
-    } else {
-        // Nettoyage des guillemets et parsing
-        const cleanedKey = serviceAccountKey.trim();
-        try {
-          serviceAccount = JSON.parse(cleanedKey);
-        } catch (e) {
-          // Fallback : tentative de nettoyage des échappements \n
-          serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
-        }
-    }
-    
-    // Correction impérative de la clé privée pour Vercel
-    if (serviceAccount && typeof serviceAccount.private_key === 'string') {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-    }
+    // Nettoyage des guillemets éventuels autour du JSON
+    key = key.trim();
+    if (key.startsWith("'") || key.startsWith('"')) key = key.substring(1, key.length - 1);
 
-    if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-        throw new Error("JSON du compte de service incomplet ou illisible.");
+    const serviceAccount = JSON.parse(key);
+    
+    // Correction impérative de la clé privée (sauts de ligne)
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
     return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id || projectId
+      projectId: serviceAccount.project_id || firebaseConfig.projectId
     });
-  } catch (error: any) {
-    console.error('FATAL: Firebase Admin Initialization Failed:', error.message);
+  } catch (e) {
+    console.error("Firebase Admin Init Error:", e);
     return null;
   }
 }
 
 export function getAdminDb() {
   const app = initializeAdmin();
-  if (!app) {
-      throw new Error("ADMIN_NOT_CONFIGURED");
-  }
+  if (!app) throw new Error("ADMIN_NOT_CONFIGURED");
   return app.firestore();
 }
 
 export function getAdminAuth() {
   const app = initializeAdmin();
-  if (!app) {
-      throw new Error("ADMIN_NOT_CONFIGURED");
-  }
+  if (!app) throw new Error("ADMIN_NOT_CONFIGURED");
   return app.auth();
 }
