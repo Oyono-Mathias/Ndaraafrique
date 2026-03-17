@@ -1,4 +1,3 @@
-
 {
   "indexes": [
     {
@@ -45,9 +44,24 @@
       "collectionGroup": "payments",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "payments",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
         { "fieldPath": "instructorId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "enrollments",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "enrollmentDate", "order": "DESCENDING" }
       ]
     },
     {
@@ -56,14 +70,6 @@
       "fields": [
         { "fieldPath": "affiliateId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "affiliate_transactions",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "unlockDate", "order": "ASCENDING" }
       ]
     },
     {

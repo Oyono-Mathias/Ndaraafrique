@@ -37,16 +37,11 @@ service cloud.firestore {
     match /faqs/{faqId} { allow read, list: if true; allow write: if isAdmin(); }
     match /course_templates/{templateId} { allow read, list: if true; allow write: if isAdmin(); }
 
-    // --- COURS & CONTENU (VITRINE PUBLIQUE) ---
+    // --- COURS & CONTENU ---
     match /courses/{courseId} {
       allow read, list: if true; 
-      
       allow create: if isSignedIn(); 
-      
-      allow update: if isAdmin() || 
-        isCreator(courseId) || 
-        (isCourseOwner(courseId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['resaleRightsPrice', 'resaleRightsAvailable', 'updatedAt', 'buyoutStatus', 'buyoutPrice']));
-      
+      allow update: if isAdmin() || isCreator(courseId) || (isCourseOwner(courseId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['resaleRightsPrice', 'resaleRightsAvailable', 'updatedAt', 'buyoutStatus', 'buyoutPrice']));
       allow delete: if isAdmin() || isCreator(courseId);
       
       match /{allSubcollections=**} {
@@ -55,7 +50,7 @@ service cloud.firestore {
       }
     }
 
-    // --- UTILISATEURS (PROFILS PUBLICS POUR LA CRÉDIBILITÉ) ---
+    // --- UTILISATEURS ---
     match /users/{userId} {
       allow read, list: if true;
       allow create: if isOwner(userId);
@@ -67,7 +62,7 @@ service cloud.firestore {
       match /cart/{itemId} { allow read, write: if isOwner(userId); }
     }
 
-    // --- AVIS & TÉMOIGNAGES (MUR DE LA SAGESSE) ---
+    // --- AVIS & TÉMOIGNAGES ---
     match /course_reviews/{reviewId} {
       allow read, list: if true;
       allow create: if isSignedIn();
@@ -86,8 +81,6 @@ service cloud.firestore {
 
     // --- INSCRIPTIONS & PROGRESSION ---
     match /enrollments/{enrollId} {
-      // Autorise le 'get' pour vérifier l'existence (évite l'erreur si le doc n'existe pas)
-      // La donnée n'est accessible que si l'utilisateur est lié au document s'il existe
       allow read: if isSignedIn() && (isAdmin() || resource == null || request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId);
       allow list: if isSignedIn() && (isAdmin() || request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId);
       allow create: if isSignedIn() && request.resource.data.studentId == request.auth.uid;
@@ -113,18 +106,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /user_wishlist/{wishId} {
-      allow read, list: if isSignedIn() && (isAdmin() || resource == null || request.auth.uid == resource.data.userId);
-      allow write: if isSignedIn() && (isAdmin() || request.auth.uid == request.resource.data.userId || request.auth.uid == resource.data.userId);
+    match /payout_requests/{payoutId} {
+      allow read, list: if isSignedIn() && (isAdmin() || request.auth.uid == resource.data.instructorId);
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
     }
 
-    match /security_logs/{logId} { allow read, write, list: if isAdmin(); }
-    match /admin_audit_logs/{logId} { allow read, write, list: if isAdmin(); }
+    match /security_logs/{logId} { allow read, list: if isAdmin(); allow create: if true; }
+    match /admin_audit_logs/{logId} { allow read, list: if isAdmin(); allow create: if isAdmin(); }
     match /investor_leads/{leadId} { allow create: if true; allow read, update, list: if isAdmin(); }
 
-    // --- RÈGLE PAR DÉFAUT : BLOQUER LE RESTE ---
+    // --- RÈGLE PAR DÉFAUT ---
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }

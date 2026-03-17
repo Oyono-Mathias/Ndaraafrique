@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Cockpit Admin Elite - Design Qwen Immersif V2.
  * ✅ TEMPS RÉEL : KPIs et Inscriptions synchronisés.
+ * ✅ RÉSOLU : Récupération des noms d'étudiants réels pour les inscriptions.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -15,7 +15,9 @@ import {
   where, 
   onSnapshot,
   orderBy,
-  limit
+  limit,
+  getDocs,
+  documentId
 } from 'firebase/firestore';
 import { 
   Users, 
@@ -30,8 +32,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { NdaraUser } from '@/lib/types';
 
-// ✅ Interface pour garantir le typage correct des statistiques
 interface AdminStats {
   revenue: number;
   users: number;
@@ -43,9 +45,9 @@ export default function AdminDashboard() {
     const { currentUser } = useRole();
     const db = getFirestore();
     
-    // Initialisation avec l'interface AdminStats
     const [stats, setStats] = useState<AdminStats>({ revenue: 0, users: 0, courses: 0, certs: 0 });
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
+    const [usersMap, setUsersMap] = useState<Map<string, NdaraUser>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -70,31 +72,38 @@ export default function AdminDashboard() {
         });
 
         // 4. Nombre de certificats (Élèves à 100%)
-        const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('progress', '==', 100)), (snap) => {
+        const unsubEnrollCount = onSnapshot(query(collection(db, 'enrollments'), where('progress', '==', 100)), (snap) => {
             setStats(prev => ({ ...prev, certs: snap.size }));
             setIsLoading(false);
         });
 
-        // 5. Inscriptions récentes
+        // 5. Inscriptions récentes (avec enrichissement des noms)
         const unsubRecent = onSnapshot(
             query(collection(db, 'enrollments'), orderBy('enrollmentDate', 'desc'), limit(5)),
-            (snap) => {
-                setRecentEnrollments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            async (snap) => {
+                const enrolls = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setRecentEnrollments(enrolls);
+
+                const studentIds = [...new Set(enrolls.map((e: any) => e.studentId))];
+                if (studentIds.length > 0) {
+                    const uSnap = await getDocs(query(collection(db, 'users'), where(documentId(), 'in', studentIds.slice(0, 30))));
+                    const newMap = new Map(usersMap);
+                    uSnap.forEach(d => newMap.set(d.id, d.data() as NdaraUser));
+                    setUsersMap(newMap);
+                }
             }
         );
 
         return () => { 
-            unsubPayments(); unsubUsers(); unsubCourses(); unsubEnroll(); unsubRecent();
+            unsubPayments(); unsubUsers(); unsubCourses(); unsubEnrollCount(); unsubRecent();
         };
     }, [db, currentUser]);
 
     return (
         <div className="space-y-10 pb-20 animate-in fade-in duration-700 relative">
-            {/* Background Radial Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="relative z-10 space-y-10">
-                {/* KPI Grid */}
                 <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
                         title="Chiffre d'Affaires" 
@@ -112,7 +121,6 @@ export default function AdminDashboard() {
                         trend="+8.2%" 
                         trendType="up"
                         sparklineColor="#3B82F6"
-                        sparklinePath="M0,30 C30,30 60,20 90,25 C120,30 150,10 180,5"
                         isLoading={isLoading}
                     />
                     <StatCard 
@@ -122,7 +130,6 @@ export default function AdminDashboard() {
                         trend="-1.4%" 
                         trendType="down"
                         sparklineColor="#CC7722"
-                        sparklinePath="M0,10 C40,15 80,25 120,20 C160,15 180,30 180,40"
                         isLoading={isLoading}
                     />
                     <StatCard 
@@ -131,12 +138,10 @@ export default function AdminDashboard() {
                         icon={Award} 
                         trend="Stable" 
                         sparklineColor="#A855F7"
-                        sparklinePath="M0,20 C50,20 100,20 150,15 C170,10 180,5 180,5"
                         isLoading={isLoading}
                     />
                 </section>
 
-                {/* Recent activity table Qwen Style */}
                 <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl overflow-hidden shadow-2xl">
                     <div className="p-8 border-b border-white/5 flex items-center justify-between">
                         <h3 className="font-black text-white text-lg uppercase tracking-tight">Dernières Inscriptions</h3>
@@ -146,25 +151,32 @@ export default function AdminDashboard() {
                         {isLoading ? (
                             [...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl bg-slate-800" />)
                         ) : recentEnrollments.length > 0 ? (
-                            recentEnrollments.map((enroll) => (
-                                <div key={enroll.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5 group hover:border-primary/20 transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/5 shadow-inner">
-                                            <Avatar className="h-full w-full">
-                                                <AvatarFallback className="text-[10px] font-black">N</AvatarFallback>
-                                            </Avatar>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-white text-sm uppercase tracking-tight">Étudiant Ndara</p>
-                                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-                                                <Clock size={10} />
-                                                {enroll.enrollmentDate ? formatDistanceToNow((enroll.enrollmentDate as any).toDate(), { locale: fr, addSuffix: true }) : '---'}
+                            recentEnrollments.map((enroll) => {
+                                const student = usersMap.get(enroll.studentId);
+                                return (
+                                    <div key={enroll.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5 group hover:border-primary/20 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="relative">
+                                                <Avatar className="h-10 w-10 border border-white/10 shadow-inner">
+                                                    <AvatarImage src={student?.profilePictureURL} />
+                                                    <AvatarFallback className="text-[10px] font-black bg-slate-800">
+                                                        {student?.fullName?.charAt(0) || 'N'}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                {student?.isOnline && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-slate-900" />}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-white text-sm uppercase tracking-tight">{student?.fullName || 'Chargement...'}</p>
+                                                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                                                    <Clock size={10} />
+                                                    {enroll.enrollmentDate ? formatDistanceToNow((enroll.enrollmentDate as any).toDate(), { locale: fr, addSuffix: true }) : '---'}
+                                                </div>
                                             </div>
                                         </div>
+                                        <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase px-3 py-1 rounded-full">EN LIGNE</Badge>
                                     </div>
-                                    <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase px-3 py-1 rounded-full">ACTIF</Badge>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="py-12 text-center opacity-20">
                                 <Users className="h-12 w-12 mx-auto mb-4" />
