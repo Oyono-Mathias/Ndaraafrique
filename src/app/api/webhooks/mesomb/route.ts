@@ -3,6 +3,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Webhook MeSomb (Entrée unique).
+ * ✅ ENRICHI : Transmission de l'ID passerelle original.
  */
 
 export async function POST(req: Request) {
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
       // Activation centrale
       await processNdaraPayment({
         transactionId: String(transaction.pk || transaction.id),
+        gatewayTransactionId: String(transaction.pk || transaction.id),
         provider: 'mesomb',
         amount: transaction.amount,
         currency: transaction.currency || 'XOF',

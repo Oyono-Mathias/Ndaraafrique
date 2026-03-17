@@ -4,6 +4,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 /**
  * @fileOverview Webhook Moneroo (Entrée unique).
  * Reçoit la confirmation de paiement et délègue au processeur central.
+ * ✅ ENRICHI : Transmission de l'ID passerelle original.
  */
 
 export async function POST(req: Request) {
@@ -23,14 +24,15 @@ export async function POST(req: Request) {
       // Appel du cerveau financier Ndara
       await processNdaraPayment({
         transactionId: String(transactionId),
+        gatewayTransactionId: String(transactionId),
         provider: 'moneroo',
         amount: amount || 0,
         currency: currency_code || 'XOF',
         metadata: {
           userId,
           courseId,
-          affiliateId,
-          couponId,
+          affiliateId: affiliateId || undefined,
+          couponId: couponId || undefined,
           type: type || 'course_purchase'
         }
       });

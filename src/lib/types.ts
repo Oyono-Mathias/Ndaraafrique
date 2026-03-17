@@ -326,7 +326,7 @@ export interface Enrollment {
     enrollmentDate: Timestamp | FieldValue;
     progress: number;
     priceAtEnrollment: number; 
-    status?: 'pending' | 'active'; 
+    status?: 'active' | 'refunded' | 'revoked' | 'expired' | 'pending'; 
     completedLessons?: string[];
     lastWatchedLesson?: string;
     lastAccessedAt?: Timestamp | FieldValue;
@@ -423,6 +423,15 @@ export interface NdaraPaymentMetadata {
   type: 'course_purchase' | 'license_purchase' | 'subscription' | 'wallet_topup' | 'commission';
 }
 
+export interface NdaraPaymentDetails {
+  transactionId: string;
+  gatewayTransactionId?: string;
+  provider: PaymentProvider;
+  amount: number;
+  currency: string;
+  metadata: NdaraPaymentMetadata;
+}
+
 export interface Payment {
   id: string;
   userId: string;
@@ -432,6 +441,10 @@ export interface Payment {
   amount: number;
   currency: string;
   provider: PaymentProvider;
+  gatewayTransactionId?: string;
+  platformFee?: number;
+  instructorRevenue?: number;
+  affiliateCommission?: number;
   date: Timestamp | FieldValue;
   status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
   metadata?: NdaraPaymentMetadata;

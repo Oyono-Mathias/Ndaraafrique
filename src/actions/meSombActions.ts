@@ -6,6 +6,7 @@ import { createHmac, randomBytes } from 'crypto';
 /**
  * @fileOverview Actions serveur pour MeSomb avec signature HMAC-SHA256.
  * Inclut un mode simulation pour le prototypage.
+ * ✅ ENRICHI : Traçabilité gateway même en simulation.
  */
 
 /**
@@ -37,8 +38,11 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     
     await new Promise(resolve => setTimeout(resolve, 2000));
 
+    const simId = `DEMO-MOMO-${Date.now()}`;
+
     await processNdaraPayment({
-        transactionId: `DEMO-MOMO-${Date.now()}`,
+        transactionId: simId,
+        gatewayTransactionId: "SIMULATED_GATEWAY",
         provider: 'mesomb',
         amount: params.amount,
         currency: 'XOF',
