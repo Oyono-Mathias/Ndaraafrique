@@ -6,6 +6,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 /**
  * @fileOverview Actions serveur pour la passerelle Moneroo.
  * Gère l'initiation sécurisée (Server-to-Server).
+ * ✅ SÉCURITÉ : Vérifie la présence des clés API avant l'appel.
  */
 
 class Moneroo {
@@ -26,7 +27,7 @@ class Moneroo {
         returnUrl: string;
     }) {
         if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-            throw new Error("Clé secrète Moneroo non configurée sur le serveur.");
+            throw new Error("Clé secrète Moneroo non configurée sur le serveur. Veuillez contacter l'administrateur.");
         }
 
         const response = await fetch('https://api.moneroo.io/v1/payments', {
@@ -66,6 +67,12 @@ export async function initiateMonerooPayment(params: {
     returnUrl: string;
 }) {
     const secretKey = process.env.MONEROO_SECRET_KEY;
+    
+    // ✅ CEO Request: Sécurité automatique si les clés sont absentes
+    if (!secretKey || secretKey === "YOUR_MONEROO_SECRET_KEY_HERE" || secretKey.length < 10) {
+        return { success: false, error: "La passerelle Moneroo est actuellement en maintenance technique (Clés non configurées)." };
+    }
+
     const moneroo = new Moneroo(secretKey);
 
     try {

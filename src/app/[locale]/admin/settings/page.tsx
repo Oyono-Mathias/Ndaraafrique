@@ -4,7 +4,7 @@
  * @fileOverview Centre de Contrôle Global Ndara Afrique - Version 100% Complète.
  * 15 Sections de pilotage en temps réel raccordées à settings/global.
  * ✅ DESIGN : Architecture modulaire optimisée.
- * ✅ FONCTIONNEL : Toutes les sections sont implémentées et validées.
+ * ✅ FONCTIONNEL : Pilotage dynamique des passerelles de paiement.
  */
 
 import { useState, useEffect } from 'react';
@@ -53,7 +53,8 @@ import {
   Share2,
   Zap,
   Server,
-  Key
+  Key,
+  Shield
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -87,6 +88,8 @@ const settingsSchema = z.object({
   // 3. Payments
   enableMtn: z.boolean(),
   enableOrange: z.boolean(),
+  mesombEnabled: z.boolean(),
+  monerooEnabled: z.boolean(),
   paymentMode: z.enum(['test', 'live']),
   // 4. Courses
   courseAutoApproval: z.boolean(),
@@ -168,6 +171,8 @@ export default function AdminSettingsPage() {
         allowTeacherToTeacherResale: false,
         allowCourseBuyout: true,
         allowResaleRights: true,
+        mesombEnabled: true,
+        monerooEnabled: false,
     }
   });
 
@@ -199,6 +204,8 @@ export default function AdminSettingsPage() {
           currency: d.commercial?.currency || 'XOF',
           enableMtn: d.payments?.enableMtn ?? true,
           enableOrange: d.payments?.enableOrange ?? true,
+          mesombEnabled: d.payments?.mesombEnabled ?? true,
+          monerooEnabled: d.payments?.monerooEnabled ?? false,
           paymentMode: d.payments?.paymentMode || 'test',
           courseAutoApproval: d.courses?.autoApproval ?? false,
           minCoursePrice: d.courses?.minPrice || 0,
@@ -293,6 +300,8 @@ export default function AdminSettingsPage() {
         payments: {
             enableMtn: values.enableMtn,
             enableOrange: values.enableOrange,
+            mesombEnabled: values.mesombEnabled,
+            monerooEnabled: values.monerooEnabled,
             paymentMode: values.paymentMode
         },
         courses: {
@@ -530,17 +539,45 @@ export default function AdminSettingsPage() {
                 {/* 3. PAYMENTS */}
                 <TabsContent value="payments" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Passerelles Mobile Money</CardTitle></CardHeader>
+                        <CardHeader className="bg-primary/5 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-bold uppercase flex items-center gap-3">
+                                <Shield className="text-primary h-6 w-6" />
+                                Passerelles de Paiement
+                            </CardTitle>
+                        </CardHeader>
                         <CardContent className="p-8 space-y-6">
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="mesombEnabled" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="font-bold uppercase text-xs">Activer MeSomb</FormLabel>
+                                            <FormDescription className="text-[9px]">MTN, Orange, Wave Direct</FormDescription>
+                                        </div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="monerooEnabled" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="font-bold uppercase text-xs">Activer Moneroo</FormLabel>
+                                            <FormDescription className="text-[9px]">Multi-pays & Checkout Global</FormDescription>
+                                        </div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )}/>
+                            </div>
+
+                            <Separator className="bg-white/5" />
+
                             <FormField control={form.control} name="enableMtn" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
-                                    <FormLabel className="font-bold">Activer MTN MoMo</FormLabel>
+                                    <FormLabel className="font-bold">Afficher MTN MoMo</FormLabel>
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                 </FormItem>
                             )}/>
                             <FormField control={form.control} name="enableOrange" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
-                                    <FormLabel className="font-bold">Activer Orange Money</FormLabel>
+                                    <FormLabel className="font-bold">Afficher Orange Money</FormLabel>
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                 </FormItem>
                             )}/>

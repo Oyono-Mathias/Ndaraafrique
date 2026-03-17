@@ -3,7 +3,7 @@
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V4.
  * ✅ DESIGN : Choix direct de l'opérateur (Orange, MTN, Wave).
- * ✅ LOGIQUE : Supporte désormais Moneroo et MeSomb dynamiquement.
+ * ✅ LOGIQUE : Pilotage dynamique des passerelles (Moneroo/MeSomb) via Admin.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -25,10 +25,12 @@ import {
   Zap,
   Sparkles,
   Wallet,
-  LayoutGrid
+  LayoutGrid,
+  CreditCard,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Course } from '@/lib/types';
+import type { Course, Settings } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -58,11 +60,19 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Déterminer la passerelle préférée depuis l'URL
-  const gateway = searchParams.get('gateway') || 'moneroo';
+  const [settings, setSettings] = useState<Settings['payments'] | null>(null);
 
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        if (snap.exists()) {
+            setSettings(snap.data().payments);
+        }
+    });
+    return () => unsub();
+  }, [db]);
 
   const discountedPrice = useMemo(() => {
     if (!course) return 0;
@@ -90,7 +100,7 @@ function CheckoutContent() {
   };
 
   const handlePayment = async () => {
-    if (!user || !course) return;
+    if (!user || !course || !settings) return;
     
     setIsProcessing(true);
 
@@ -123,9 +133,11 @@ function CheckoutContent() {
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
       } else {
-          // --- LOGIQUE MULTI-GATEWAY ---
-          if (gateway === 'moneroo') {
-              // 🚀 APPEL MONEROO
+          // --- LOGIQUE MULTI-GATEWAY DYNAMIQUE ---
+          // On priorise Moneroo si activé en admin, sinon MeSomb
+          const useMoneroo = settings.monerooEnabled;
+
+          if (useMoneroo) {
               const result = await initiateMonerooPayment({
                   amount: discountedPrice,
                   userId: user.uid,
@@ -144,7 +156,9 @@ function CheckoutContent() {
                   throw new Error(result.error);
               }
           } else {
-              // 💳 APPEL MESOMB (Corrigé avec signature)
+              // 💳 UTILISATION DE MESOMB
+              if (!settings.mesombEnabled) throw new Error("Toutes les passerelles de paiement sont actuellement suspendues.");
+
               const result = await initiateMeSombPayment({
                   amount: discountedPrice,
                   phoneNumber: phoneNumber,
@@ -173,7 +187,7 @@ function CheckoutContent() {
     }
   };
 
-  if (courseLoading) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
+  if (courseLoading || !settings) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
   if (!course) return null;
 
   return (
@@ -237,8 +251,12 @@ function CheckoutContent() {
                     <span className="text-white text-[8px] font-black uppercase">Wallet</span>
                 </button>
                 
-                <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
-                <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
+                {settings.enableOrange && (
+                    <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
+                )}
+                {settings.enableMtn && (
+                    <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
+                )}
                 
                 <button 
                     onClick={() => setProvider('virtual')}
@@ -271,9 +289,9 @@ function CheckoutContent() {
                     </div>
                     <p className="text-[10px] text-slate-400 italic">"Ce mode simule un paiement réussi pour vos vidéos de démonstration."</p>
                 </div>
-            ) : gateway === 'mesomb' ? (
+            ) : !settings.monerooEnabled ? (
                 <div className="space-y-3">
-                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money</label>
+                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money (MeSomb)</label>
                     <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
                             <Smartphone className="h-5 w-5 text-primary" />
@@ -321,11 +339,11 @@ function CheckoutContent() {
         <div className="max-w-md mx-auto">
             <Button 
                 onClick={handlePayment} 
-                disabled={isProcessing || isSuccess}
+                disabled={isProcessing || isSuccess || (!phoneNumber && !settings.monerooEnabled && provider !== 'wallet' && provider !== 'virtual')}
                 className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95"
             >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : <Lock className="h-4 w-4 mr-2"/>}
-                {gateway === 'moneroo' && !['wallet', 'virtual'].includes(provider) ? "CONTINUER VERS LE PAIEMENT" : "VALIDER LE PAIEMENT"}
+                {settings.monerooEnabled && !['wallet', 'virtual'].includes(provider) ? "CONTINUER VERS MONEROO" : "VALIDER LE PAIEMENT"}
             </Button>
         </div>
       </footer>

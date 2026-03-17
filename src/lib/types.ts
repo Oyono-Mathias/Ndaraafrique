@@ -513,6 +513,8 @@ export interface Settings {
     enableOrange: boolean;
     enableWave?: boolean;
     enableCard?: boolean;
+    mesombEnabled: boolean;
+    monerooEnabled: boolean;
     momoMerchantId?: string;
     momoApiKey?: string;
     paymentMode: 'test' | 'live';
