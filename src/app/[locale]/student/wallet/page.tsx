@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Ndara Wallet - Espace de Gestion Financière.
- * ✅ DESIGN : Esthétique Fintech Neo-Banque (Neo-card, stat-pills, grain).
- * ✅ ACTIONS : Rechargement via MoMo et historique des flux.
+ * ✅ DESIGN : Esthétique Fintech Neo-Banque.
+ * ✅ ACTIONS : Rechargement via MoMo (MeSomb) implémenté.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -24,7 +24,9 @@ import {
     BadgeEuro,
     Landmark,
     ShieldCheck,
-    Loader2
+    Loader2,
+    Check,
+    Lock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -32,15 +34,23 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Payment } from '@/lib/types';
+import { initiateMeSombPayment } from '@/actions/meSombActions';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 export default function NdaraWalletPage() {
-    const { currentUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading, user } = useRole();
     const db = getFirestore();
     const router = useRouter();
     const { toast } = useToast();
     
     const [transactions, setTransactions] = useState<Payment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
+    const [rechargeAmount, setRechargeAmount] = useState('');
+    const [rechargePhone, setRechargePhone] = useState('');
+    const [rechargeMethod, setRechargeMethod] = useState<'ORANGE' | 'MTN'>('ORANGE');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (!currentUser?.uid) return;
@@ -63,6 +73,43 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [currentUser?.uid, db]);
 
+    const handleRecharge = async () => {
+        if (!user) return;
+        const amountNum = parseFloat(rechargeAmount);
+        if (isNaN(amountNum) || amountNum < 100) {
+            toast({ variant: 'destructive', title: "Montant invalide", description: "Minimum 100 XOF." });
+            return;
+        }
+        if (!rechargePhone || rechargePhone.length < 8) {
+            toast({ variant: 'destructive', title: "Numéro requis" });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const result = await initiateMeSombPayment({
+                amount: amountNum,
+                phoneNumber: rechargePhone,
+                service: rechargeMethod,
+                courseId: 'WALLET_RECHARGE',
+                userId: user.uid,
+                type: 'wallet_topup' as any // Force metadata type
+            });
+
+            if (result.success) {
+                toast({ title: "Demande envoyée !", description: result.message || "Validez sur votre téléphone." });
+                setIsRechargeModalOpen(false);
+                setRechargeAmount('');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Échec recharge", description: e.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (isUserLoading) return <WalletSkeleton />;
 
     return (
@@ -72,7 +119,7 @@ export default function NdaraWalletPage() {
             <header className="fixed top-0 w-full z-50 bg-slate-950/95 backdrop-blur-md safe-area-pt border-b border-white/5">
                 <div className="px-6 py-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500">
+                        <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90 transition">
                             <ArrowLeft size={20} />
                         </button>
                         <h1 className="font-black text-xl text-white uppercase tracking-tight">Mon Wallet</h1>
@@ -106,21 +153,25 @@ export default function NdaraWalletPage() {
                                 <p className="text-emerald-200 text-[9px] font-bold uppercase mb-1 tracking-wider">Membre Ndara</p>
                                 <p className="text-white text-sm font-black uppercase tracking-widest">{currentUser?.fullName?.split(' ')[0]}</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center text-white/80">
-                                    <TrendingUp size={20} />
-                                </div>
+                            <div className="flex items-center gap-3 text-white/80">
+                                <TrendingUp size={20} />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* --- QUICK ACTIONS --- */}
                 <div className="grid grid-cols-2 gap-4">
-                    <Button onClick={() => toast({ title: "Module de recharge", description: "Bientôt disponible via MoMo." })} className="h-16 rounded-[2rem] bg-white text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all border-none">
+                    <Button 
+                        onClick={() => setIsRechargeModalOpen(true)} 
+                        className="h-16 rounded-[2rem] bg-white text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all border-none"
+                    >
                         <Plus className="mr-2 h-4 w-4" /> Recharger
                     </Button>
-                    <Button variant="outline" onClick={() => router.push('/student/ambassadeur')} className="h-16 rounded-[2rem] border-white/5 bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95">
+                    <Button 
+                        variant="outline" 
+                        onClick={() => router.push('/student/ambassadeur')} 
+                        className="h-16 rounded-[2rem] border-white/5 bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all"
+                    >
                         <TrendingUp className="mr-2 h-4 w-4 text-primary" /> Affiliation
                     </Button>
                 </div>
@@ -140,10 +191,10 @@ export default function NdaraWalletPage() {
                             [...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl bg-slate-800" />)
                         ) : transactions.length > 0 ? transactions.map(txn => {
                             const date = (txn.date as any)?.toDate?.() || new Date();
-                            const isIncoming = txn.metadata?.type === 'wallet_topup' || txn.metadata?.type === 'commission';
+                            const isIncoming = txn.metadata?.type === 'wallet_topup' || txn.metadata?.type === 'commission' || txn.instructorId === currentUser?.uid;
                             
                             return (
-                                <div key={txn.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all">
+                                <div key={txn.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
                                     <div className="flex items-center gap-4">
                                         <div className={cn(
                                             "w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-inner",
@@ -152,8 +203,8 @@ export default function NdaraWalletPage() {
                                             {isIncoming ? <ArrowUpRight size={20} /> : <CreditCard size={20} />}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-bold text-white text-sm truncate uppercase tracking-tight">
-                                                {txn.courseTitle || txn.metadata?.type || 'Transaction'}
+                                            <p className="font-bold text-white text-sm truncate uppercase tracking-tight group-hover:text-primary transition-colors">
+                                                {txn.courseTitle || 'Transaction'}
                                             </p>
                                             <p className="text-slate-600 text-[9px] font-black uppercase tracking-tighter mt-0.5">
                                                 {format(date, 'dd MMM à HH:mm', { locale: fr })}
@@ -190,13 +241,89 @@ export default function NdaraWalletPage() {
                 </div>
 
             </main>
+
+            {/* --- RECHARGE DIALOG --- */}
+            <Dialog open={isRechargeModalOpen} onOpenChange={setIsRechargeModalOpen}>
+                <DialogContent className="bg-slate-900 border-white/5 rounded-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative">
+                    <DialogHeader className="p-8 pb-0">
+                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Recharge Wallet</DialogTitle>
+                        <DialogDescription className="text-slate-400 font-medium italic">Créditez votre compte instantanément.</DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Opérateur</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <ProviderBtn active={rechargeMethod === 'ORANGE'} onClick={() => setRechargeMethod('ORANGE')} label="Orange" color="bg-orange-500" />
+                                <ProviderBtn active={rechargeMethod === 'MTN'} onClick={() => setRechargeMethod('MTN')} label="MTN" color="bg-yellow-500" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Numéro de téléphone</label>
+                            <div className="relative">
+                                <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-600" />
+                                <Input 
+                                    type="tel" 
+                                    placeholder="+236..." 
+                                    value={rechargePhone}
+                                    onChange={(e) => setRechargePhone(e.target.value)}
+                                    className="h-14 pl-12 bg-slate-950 border-white/5 rounded-2xl text-white font-mono text-lg" 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Montant à créditer (XOF)</label>
+                            <Input 
+                                type="number" 
+                                placeholder="1000" 
+                                value={rechargeAmount}
+                                onChange={(e) => setRechargeAmount(e.target.value)}
+                                className="h-16 bg-slate-950 border-white/5 rounded-2xl text-white font-black text-3xl px-6 text-center" 
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter className="p-8 bg-slate-950/50 border-t border-white/5 gap-3">
+                        <DialogClose asChild>
+                            <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
+                        </DialogClose>
+                        <Button 
+                            onClick={handleRecharge}
+                            disabled={isSubmitting || !rechargePhone || !rechargeAmount}
+                            className="flex-1 h-14 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl transition-all"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Lock size={16} className="mr-2" />}
+                            Confirmer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
+    );
+}
+
+function ProviderBtn({ active, onClick, label, color }: any) {
+    return (
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex items-center justify-center p-4 rounded-2xl border-2 transition-all active:scale-95 gap-3",
+                active ? "border-primary bg-primary/5" : "border-transparent bg-slate-950 grayscale opacity-50"
+            )}
+        >
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-[10px]", color)}>
+                {label.charAt(0)}
+            </div>
+            <span className="text-[10px] font-black text-white uppercase tracking-widest">{label}</span>
+        </button>
     );
 }
 
 function WalletSkeleton() {
     return (
-        <div className="p-6 space-y-8 pt-32 bg-[#0f172a] min-h-screen">
+        <div className="p-6 space-y-8 pt-32 bg-slate-950 min-h-screen">
             <Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" />
             <div className="grid grid-cols-2 gap-4">
                 <Skeleton className="h-16 rounded-[2rem] bg-slate-900" />
