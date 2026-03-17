@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Loader2, 
     Check, 
@@ -155,13 +156,13 @@ export function ApplicationDetailsModal({ isOpen, onOpenChange, application, onA
         {/* Decision Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900/90 backdrop-blur-xl border-t border-white/5 z-20 safe-area-pb">
             <div className="flex gap-3">
-                <Button 
+                <button 
                     onClick={() => handleDecision('rejected')} 
                     disabled={isSubmitting}
                     className="flex-1 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest transition-all active:scale-95"
                 >
                     {isSubmitting ? <Loader2 className="animate-spin" /> : <><X className="mr-2 h-4 w-4" /> Rejeter</>}
-                </Button>
+                </button>
                 <Button 
                     onClick={() => handleDecision('accepted')} 
                     disabled={isSubmitting}
@@ -190,7 +191,7 @@ function InstructorProfileSkeleton() {
         <div className="p-6 space-y-8">
             <Skeleton className="h-32 w-32 rounded-full mx-auto bg-slate-800" />
             <Skeleton className="h-8 w-3/4 mx-auto bg-slate-800" />
-            <Skeleton className="h-48 w-full rounded-[2rem] bg-slate-800" />
+            <Skeleton className="h-4 w-full rounded-[2rem] bg-slate-800" />
         </div>
     );
 }
