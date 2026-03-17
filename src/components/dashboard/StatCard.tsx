@@ -15,10 +15,12 @@ interface StatCardProps {
   trendType?: 'up' | 'down' | 'neutral';
   sparklineColor?: string;
   sparklinePath?: string;
+  accentColor?: string;
 }
 
 /**
  * @fileOverview Carte de statistique "Glassmorphism" haute-fidélité (Design Qwen).
+ * Supporte désormais une couleur d'accentuation personnalisée via accentColor.
  */
 export const StatCard: React.FC<StatCardProps> = ({ 
     title, 
@@ -29,10 +31,14 @@ export const StatCard: React.FC<StatCardProps> = ({
     trend, 
     trendType = 'neutral',
     sparklineColor = "#10B981",
-    sparklinePath = "M0,40 C20,35 40,45 60,20 C80,5 100,25 120,10 C140,0 160,15 180,5"
+    sparklinePath = "M0,40 C20,35 40,45 60,20 C80,5 100,25 120,10 C140,0 160,15 180,5",
+    accentColor
 }) => {
   return (
-    <Card className="bg-slate-900/60 backdrop-blur-xl border-white/5 shadow-2xl rounded-4xl relative overflow-hidden group transition-all active:scale-95">
+    <Card className={cn(
+        "bg-slate-900/60 backdrop-blur-xl border-white/5 shadow-2xl rounded-4xl relative overflow-hidden group transition-all active:scale-95",
+        accentColor
+    )}>
       {/* Decorative Glow */}
       <div className={cn(
         "absolute -right-4 -top-4 w-32 h-32 rounded-full blur-3xl opacity-10 transition-opacity duration-500 group-hover:opacity-20",
