@@ -181,6 +181,66 @@
       "courses_label": "Courses"
     }
   },
+  "Admin": {
+    "title": "Admin Cockpit",
+    "subtitle": "Strategic supervision of the Ndara network.",
+    "strategic_perspective": "Strategic Perspective",
+    "ceo_reporting": "CEO Reporting",
+    "real_enrollments": "Real Enrollments",
+    "view_catalog": "View Catalog",
+    "no_recent_activity": "No recent activity",
+    "groups": {
+      "cockpit": "COCKPIT",
+      "operations": "OPERATIONS",
+      "finances": "FINANCES",
+      "support": "SUPPORT",
+      "interface": "INTERFACE",
+      "security": "SECURITY"
+    },
+    "labels": {
+      "super_admin": "Super Admin",
+      "exit": "Exit Cockpit"
+    },
+    "stats": {
+      "revenue": "Revenue (Month)",
+      "active_users": "Active Users",
+      "conversion": "Conversion Rate",
+      "success": "Global Success",
+      "today": "today",
+      "last_24h": "Last 24h",
+      "real_time": "Real Time"
+    }
+  },
+  "Instructor": {
+    "title": "Instructor Area",
+    "subtitle": "Manage your academy with Ndara Africa.",
+    "total_earnings": "Total Earnings",
+    "enrollments": "Enrollments",
+    "to_correct": "To Correct",
+    "all_corrected": "Everything corrected!",
+    "revenue_by_course": "Revenue by course",
+    "no_sales": "No sales recorded",
+    "manage_catalog": "Manage my catalog",
+    "student_directory": "Student directory",
+    "groups": {
+      "management": "MANAGEMENT",
+      "growth": "GROWTH",
+      "pedagogy": "PEDAGOGY",
+      "results": "RESULTS"
+    },
+    "labels": {
+      "expert": "Expert Instructor",
+      "switch_mode": "Switch mode",
+      "logout": "Log Out"
+    },
+    "stats": {
+      "available_balance": "Available Balance",
+      "payout_request": "Request transfer",
+      "active_students": "Active students",
+      "completion_rate": "Completion rate",
+      "treasury": "Treasury"
+    }
+  },
   "Actions": {
     "success": {
       "generic": "Success!",

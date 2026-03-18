@@ -181,6 +181,66 @@
       "courses_label": "Cours"
     }
   },
+  "Admin": {
+    "title": "Cockpit Admin",
+    "subtitle": "Supervision stratégique du réseau Ndara.",
+    "strategic_perspective": "Perspective Stratégique",
+    "ceo_reporting": "Reporting CEO",
+    "real_enrollments": "Inscriptions Réelles",
+    "view_catalog": "Voir Catalogue",
+    "no_recent_activity": "Aucun mouvement récent",
+    "groups": {
+      "cockpit": "COCKPIT",
+      "operations": "OPÉRATIONS",
+      "finances": "FINANCES",
+      "support": "SUPPORT",
+      "interface": "INTERFACE",
+      "security": "SÉCURITÉ"
+    },
+    "labels": {
+      "super_admin": "Super Admin",
+      "exit": "Quitter le Cockpit"
+    },
+    "stats": {
+      "revenue": "Revenu (Mois)",
+      "active_users": "Utilisateurs Actifs",
+      "conversion": "Taux Conversion",
+      "success": "Réussite Globale",
+      "today": "aujourd'hui",
+      "last_24h": "Dernières 24h",
+      "real_time": "Temps Réel"
+    }
+  },
+  "Instructor": {
+    "title": "Espace Formateur",
+    "subtitle": "Gérez votre académie avec Ndara Afrique.",
+    "total_earnings": "Gains Totaux",
+    "enrollments": "Inscriptions",
+    "to_correct": "À corriger",
+    "all_corrected": "Tout est corrigé !",
+    "revenue_by_course": "Revenus par formation",
+    "no_sales": "Aucune vente enregistrée",
+    "manage_catalog": "Gérer mon catalogue",
+    "student_directory": "Annuaire des étudiants",
+    "groups": {
+      "management": "GESTION",
+      "growth": "CROISSANCE",
+      "pedagogy": "PÉDAGOGIE",
+      "results": "RÉSULTATS"
+    },
+    "labels": {
+      "expert": "Expert Formateur",
+      "switch_mode": "Changer de mode",
+      "logout": "Se Déconnecter"
+    },
+    "stats": {
+      "available_balance": "Solde Disponible",
+      "payout_request": "Demander un virement",
+      "active_students": "Étudiants actifs",
+      "completion_rate": "Taux de complétion",
+      "treasury": "Trésorerie"
+    }
+  },
   "Actions": {
     "success": {
       "generic": "Opération réussie",

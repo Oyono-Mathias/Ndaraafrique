@@ -2,15 +2,14 @@
 
 /**
  * @fileOverview Barre latérale Administrateur Elite - Design Qwen.
- * ✅ TEMPS RÉEL : Compteurs connectés via onSnapshot.
- * ✅ RÉSOLU : Ajout des props siteName et logoUrl pour la cohérence des types.
+ * ✅ I18N : Intégration complète des traductions Admin (FR/EN/SG).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRole } from "@/context/RoleContext";
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { getFirestore, collection, query, where, onSnapshot } from "firebase/firestore";
 import { 
   LayoutDashboard, 
@@ -55,8 +54,8 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
   onClick: () => void 
 }) => {
   const pathname = usePathname() || '';
-  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
-  const cleanHref = href.replace(/^\/(en|fr)/, '') || '/';
+  const cleanPath = pathname.replace(/^\/(en|fr|sg)/, '') || '/';
+  const cleanHref = href.replace(/^\/(en|fr|sg)/, '') || '/';
   const isActive = cleanPath === cleanHref || (cleanHref !== '/admin' && cleanPath.startsWith(cleanHref));
 
   return (
@@ -92,6 +91,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
 export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarProps) {
   const db = getFirestore();
   const locale = useLocale();
+  const t = useTranslations('Admin');
   const { currentUser, secureSignOut } = useRole();
 
   const [counts, setCounts] = useState({
@@ -114,15 +114,15 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
 
   const menuGroups = [
     {
-      label: "COCKPIT",
+      label: t('groups.cockpit'),
       items: [
         { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Tableau de Bord" },
-        { href: `/${locale}/admin/statistiques`, icon: Activity, label: "Analytics" },
+        { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Analytics" },
         { href: `/${locale}/admin/monitoring`, icon: Activity, label: "IA & Monitoring" },
       ]
     },
     {
-      label: "OPÉRATIONS",
+      label: t('groups.operations'),
       items: [
         { href: `/${locale}/admin/users`, icon: Users, label: "Membres" },
         { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Catalogue" },
@@ -131,7 +131,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
       ]
     },
     {
-      label: "FINANCES",
+      label: t('groups.finances'),
       items: [
         { href: `/${locale}/admin/payouts`, icon: Wallet, label: "Trésorerie", count: counts.pendingPayouts },
         { href: `/${locale}/admin/payments`, icon: CreditCard, label: "Transactions" },
@@ -139,7 +139,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
       ]
     },
     {
-      label: "SUPPORT",
+      label: t('groups.support'),
       items: [
         { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Centre d'Aide", count: counts.openTickets },
         { href: `/${locale}/admin/messages`, icon: MessageSquare, label: "Modération Messagerie" },
@@ -147,7 +147,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
       ]
     },
     {
-      label: "INTERFACE",
+      label: t('groups.interface'),
       items: [
         { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel Accueil" },
         { href: `/${locale}/admin/templates`, icon: GalleryHorizontal, label: "Bibliothèque Visuels" },
@@ -155,7 +155,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
       ]
     },
     {
-      label: "SÉCURITÉ",
+      label: t('groups.security'),
       items: [
         { href: `/${locale}/admin/settings`, icon: Settings, label: "Réglages Globaux" },
         { href: `/${locale}/admin/roles`, icon: Shield, label: "Rôles & Accès" },
@@ -186,7 +186,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
             </div>
             <div className="flex-1 min-w-0">
                 <p className="font-black text-white text-sm truncate leading-tight uppercase">{currentUser?.fullName}</p>
-                <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mt-1">Super Admin</p>
+                <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mt-1">{t('labels.super_admin')}</p>
             </div>
         </div>
       </header>
@@ -217,7 +217,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
               className="w-full h-12 rounded-2xl bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3"
           >
               <LogOut size={16} />
-              Quitter le Cockpit
+              {t('labels.exit')}
           </button>
       </footer>
     </aside>

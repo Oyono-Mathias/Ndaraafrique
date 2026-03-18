@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Cockpit Admin Elite - Design Qwen Immersif V2.
- * ✅ TEMPS RÉEL : KPIs et Inscriptions synchronisés.
- * ✅ BUSINESS CRITICAL : CA (Jour/Semaine/Mois), Utilisateurs Actifs et Conversion.
+ * ✅ I18N : Intégration complète des traductions Admin (FR/EN/SG).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -33,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslations } from 'next-intl';
 import type { NdaraUser, Payment, TrackingEvent } from '@/lib/types';
 import Link from 'next/link';
 
@@ -58,6 +58,7 @@ const safeToDate = (date: any): Date | null => {
 export default function AdminDashboard() {
     const { currentUser } = useRole();
     const db = getFirestore();
+    const t = useTranslations('Admin');
     
     const [stats, setStats] = useState<AdminStats>({ 
         revenueToday: 0, 
@@ -157,25 +158,25 @@ export default function AdminDashboard() {
             <div className="relative z-10 space-y-10">
                 <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
-                        title="Revenu (Mois)" 
+                        title={t('stats.revenue')} 
                         value={`${((stats.revenueMonth || 0) / 1000).toFixed(0)}K`} 
                         unit="XOF"
                         icon={Wallet} 
-                        trend={`${(stats.revenueToday || 0).toLocaleString()} aujourd'hui`} 
+                        trend={`${(stats.revenueToday || 0).toLocaleString()} ${t('stats.today')}`} 
                         trendType="up"
                         isLoading={isLoading}
                     />
                     <StatCard 
-                        title="Utilisateurs Actifs" 
+                        title={t('stats.active_users')} 
                         value={(stats.activeUsers || 0).toLocaleString()} 
                         icon={Activity} 
-                        trend="Dernières 24h" 
+                        trend={t('stats.last_24h')} 
                         trendType="up"
                         sparklineColor="#3B82F6"
                         isLoading={isLoading}
                     />
                     <StatCard 
-                        title="Taux Conversion" 
+                        title={t('stats.conversion')} 
                         value={`${stats.conversionRate || 0}%`} 
                         icon={Percent} 
                         trend="Ventes / Sessions" 
@@ -184,7 +185,7 @@ export default function AdminDashboard() {
                         isLoading={isLoading}
                     />
                     <StatCard 
-                        title="Réussite Globale" 
+                        title={t('stats.success')} 
                         value={`${stats.successRate || 0}%`} 
                         icon={Award} 
                         trend="Certifications" 
@@ -195,9 +196,9 @@ export default function AdminDashboard() {
 
                 <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl overflow-hidden shadow-2xl">
                     <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                        <h3 className="font-black text-white text-lg uppercase tracking-tight">Inscriptions Réelles</h3>
+                        <h3 className="font-black text-white text-lg uppercase tracking-tight">{t('real_enrollments')}</h3>
                         <Link href="/admin/courses">
-                            <button className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-white transition">Voir Catalogue</button>
+                            <button className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-white transition">{t('view_catalog')}</button>
                         </Link>
                     </div>
                     <div className="p-8 space-y-4">
@@ -237,7 +238,7 @@ export default function AdminDashboard() {
                         ) : (
                             <div className="py-12 text-center opacity-20">
                                 <Users className="h-12 w-12 mx-auto mb-4" />
-                                <p className="text-[10px] font-black uppercase tracking-widest">Aucun mouvement récent</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest">{t('no_recent_activity')}</p>
                             </div>
                         )}
                     </div>

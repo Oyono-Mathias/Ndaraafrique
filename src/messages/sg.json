@@ -181,6 +181,66 @@
       "courses_label": "Ambage"
     }
   },
+  "Admin": {
+    "title": "Cockpit Admin",
+    "subtitle": "Supervision stratégique ti réseau Ndara.",
+    "strategic_perspective": "Perspective Stratégique",
+    "ceo_reporting": "Reporting CEO",
+    "real_enrollments": "Asara mbeti fafadesi",
+    "view_catalog": "Ba Catalogue",
+    "no_recent_activity": "Mbeni sango ayeke pëpe",
+    "groups": {
+      "cockpit": "COCKPIT",
+      "operations": "KUA TI KODORO",
+      "finances": "NGINZA",
+      "support": "MABOKO",
+      "interface": "INTERFACE",
+      "security": "BATA NDARA"
+    },
+    "labels": {
+      "super_admin": "Super Admin",
+      "exit": "Zigui na Cockpit"
+    },
+    "stats": {
+      "revenue": "Nginza (Nze)",
+      "active_users": "Andara so akpe kua",
+      "conversion": "Wungo ti Vente",
+      "success": "Reussite kue",
+      "today": "fafadesi",
+      "last_24h": "Na yâ ti 24h",
+      "real_time": "Temps Réel"
+    }
+  },
+  "Instructor": {
+    "title": "Espace Expert",
+    "subtitle": "Bata académie ti mo na Ndara Afrique.",
+    "total_earnings": "Wungo ti nginza kue",
+    "enrollments": "Asara mbeti",
+    "to_correct": "Ti kiri lekengo ni",
+    "all_corrected": "Kue aleke awe !",
+    "revenue_by_course": "Nginza na lêge ti kua",
+    "no_sales": "Mbeni vente ayeke pëpe",
+    "manage_catalog": "Bata catalogue ti mbi",
+    "student_directory": "Mbeti ti andara",
+    "groups": {
+      "management": "BATA KUA",
+      "growth": "MAÏNGO",
+      "pedagogy": "LEKE KUA",
+      "results": "REUSSITE"
+    },
+    "labels": {
+      "expert": "Wandara ti fa kua",
+      "switch_mode": "Changé lêge ni",
+      "logout": "Lungula terê"
+    },
+    "stats": {
+      "available_balance": "Nginza so ayeke dä",
+      "payout_request": "Hunda virement",
+      "active_students": "Andara so akpe kua",
+      "completion_rate": "Taux ti reussite",
+      "treasury": "Trésorerie"
+    }
+  },
   "Actions": {
     "success": {
       "generic": "Kua ni asara nzoni",

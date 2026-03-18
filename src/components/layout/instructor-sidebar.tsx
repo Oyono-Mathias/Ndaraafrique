@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Barre latérale Instructeur Ndara Afrique.
- * Harmonisée avec le design Elite Qwen.
+ * ✅ I18N : Intégration complète des traductions Instructeur (FR/EN/SG).
  */
 
 import React from 'react';
@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SidebarProps {
@@ -43,8 +43,8 @@ interface SidebarProps {
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname() || '';
-  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
-  const cleanHref = href.replace(/^\/(en|fr)/, '') || '/';
+  const cleanPath = pathname.replace(/^\/(en|fr|sg)/, '') || '/';
+  const cleanHref = href.replace(/^\/(en|fr|sg)/, '') || '/';
   const isActive = cleanPath.startsWith(cleanHref);
 
   return (
@@ -83,10 +83,11 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
   const { currentUser, switchRole, availableRoles, secureSignOut } = useRole();
   const isAdmin = availableRoles.includes('admin');
   const locale = useLocale();
+  const t = useTranslations('Instructor');
 
   const groups = [
     {
-      label: "GESTION",
+      label: t('groups.management'),
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: `/${locale}/instructor/dashboard` },
         { label: "Mes formations", icon: BookOpen, href: `/${locale}/instructor/courses` },
@@ -94,7 +95,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
       ]
     },
     {
-      label: "CROISSANCE",
+      label: t('groups.growth'),
       items: [
         { label: "Ambassadeur", icon: BadgeEuro, href: `/${locale}/student/ambassadeur` },
         { label: "Coupons", icon: Ticket, href: `/${locale}/instructor/coupons` },
@@ -102,7 +103,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
       ]
     },
     {
-      label: "PÉDAGOGIE",
+      label: t('groups.pedagogy'),
       items: [
         { label: "Devoirs", icon: ClipboardCheck, href: `/${locale}/instructor/devoirs` },
         { label: "Quiz", icon: FileQuestion, href: `/${locale}/instructor/quiz` },
@@ -111,7 +112,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
       ]
     },
     {
-      label: "RÉSULTATS",
+      label: t('groups.results'),
       items: [
         { label: "Étudiants", icon: Users, href: `/${locale}/instructor/students` },
         { label: "Finances", icon: Landmark, href: `/${locale}/instructor/revenus` },
@@ -153,7 +154,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
                     <p className="text-slate-500 text-[10px] font-bold">@{currentUser?.username}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                         <span className="text-xs">🇨🇫</span>
-                        <span className="text-primary text-[9px] font-black uppercase tracking-widest">Expert Formateur</span>
+                        <span className="text-primary text-[9px] font-black uppercase tracking-widest">{t('labels.expert')}</span>
                     </div>
                 </div>
             </div>
@@ -161,7 +162,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
       </header>
 
       <div className="px-6 py-4 border-b border-white/5 space-y-3">
-          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Changer de mode</p>
+          <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">{t('labels.switch_mode')}</p>
           <div className="grid grid-cols-2 gap-2">
               <button 
                   onClick={() => { switchRole('student'); onLinkClick?.(); }}
@@ -207,7 +208,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
               className="w-full h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
           >
               <LogOut size={16} />
-              <span>Se Déconnecter</span>
+              <span>{t('labels.logout')}</span>
           </button>
       </footer>
     </aside>
