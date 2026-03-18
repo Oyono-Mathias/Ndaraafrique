@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -128,6 +129,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
         { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Catalogue" },
         { href: `/${locale}/admin/moderation`, icon: ClipboardList, label: "Modération", count: counts.pendingCourses },
         { href: `/${locale}/admin/notifications`, icon: Radio, label: "Diffusion Push" },
+        { href: `/${locale}/admin/countries`, icon: Globe, label: "Pays & Devises" },
       ]
     },
     {

@@ -3,11 +3,12 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - Design Fintech Indigo V4 Premium.
- * ✅ I18N : Intégration complète des traductions (FR, EN, SG).
+ * ✅ UX MOBILE : Bouton sticky et padding optimisé.
+ * ✅ DATA : Sélecteur de pays dynamique branché sur Firestore.
  */
 
 import { useRole } from '@/context/RoleContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,7 +30,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { Payment } from '@/lib/types';
+import type { Payment, Country } from '@/lib/types';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
@@ -43,9 +44,9 @@ export default function NdaraWalletPage() {
     const router = useRouter();
     const { toast } = useToast();
     const t = useTranslations('Wallet');
-    const common = useTranslations('Common');
     
     const [transactions, setTransactions] = useState<Payment[]>([]);
+    const [countries, setCountries] = useState<Country[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -54,7 +55,20 @@ export default function NdaraWalletPage() {
     const [customAmount, setCustomAmount] = useState('');
     const [selectedProvider, setSelectedProvider] = useState<'orange' | 'mtn' | 'wave' | null>(null);
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [countryPrefix, setCountryPrefix] = useState('+225');
+    const [selectedCountryId, setSelectedCountryId] = useState<string>('');
+
+    // Écouteur des pays dynamiques
+    useEffect(() => {
+        const q = query(collection(db, 'countries'), where('active', '==', true));
+        const unsub = onSnapshot(q, (snap) => {
+            const list = snap.docs.map(d => d.data() as Country);
+            setCountries(list);
+            if (list.length > 0 && !selectedCountryId) {
+                setSelectedCountryId(list[0].id);
+            }
+        });
+        return () => unsub();
+    }, [db, selectedCountryId]);
 
     useEffect(() => {
         if (!currentUser?.uid) return;
@@ -76,6 +90,10 @@ export default function NdaraWalletPage() {
 
         return () => unsub();
     }, [currentUser?.uid, db]);
+
+    const activeCountry = useMemo(() => 
+        countries.find(c => c.id === selectedCountryId), 
+    [countries, selectedCountryId]);
 
     const handleSelectAmount = (val: number) => {
         setSelectedAmount(val);
@@ -135,9 +153,7 @@ export default function NdaraWalletPage() {
                             <ArrowLeft className="h-5 w-5" />
                         </button>
                         <h1 className="text-base font-bold uppercase tracking-widest">{t('title')}</h1>
-                        <button className="p-2.5 bg-white/15 rounded-full hover:bg-white/25 transition active:scale-95 relative">
-                            <Bell className="h-5 w-5" />
-                        </button>
+                        <div className="w-10" />
                     </div>
                     
                     <div className="text-center py-2">
@@ -227,22 +243,21 @@ export default function NdaraWalletPage() {
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">{t('phone_label')}</label>
                         <div className="flex gap-3">
                             <div className="relative flex items-center w-28 shrink-0">
-                                <img src="https://flagcdn.com/w40/ci.png" className="absolute left-3 w-6 h-4 object-cover rounded shadow-sm" alt="Flag" />
+                                <span className="absolute left-3 text-lg">{activeCountry?.flagEmoji || '🌍'}</span>
                                 <select 
-                                    value={countryPrefix}
-                                    onChange={(e) => setCountryPrefix(e.target.value)}
+                                    value={selectedCountryId}
+                                    onChange={(e) => setSelectedCountryId(e.target.value)}
                                     className="block w-full pl-10 pr-2 py-4 border-2 border-slate-100 rounded-xl bg-slate-50 text-sm font-black text-slate-700 cursor-pointer appearance-none outline-none focus:border-indigo-500"
                                 >
-                                    <option value="+225">+225</option>
-                                    <option value="+236">+236</option>
-                                    <option value="+237">+237</option>
-                                    <option value="+221">+221</option>
+                                    {countries.map(c => (
+                                        <option key={c.id} value={c.id}>{c.prefix}</option>
+                                    ))}
                                 </select>
                                 <ChevronDown className="absolute right-3 h-4 w-4 text-slate-400 pointer-events-none" />
                             </div>
                             <Input 
                                 type="tel" 
-                                placeholder="07 00 00 00 00" 
+                                placeholder="00 00 00 00" 
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
                                 className="flex-1 h-14 px-5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-black text-base transition-all"
@@ -253,7 +268,7 @@ export default function NdaraWalletPage() {
                     <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
                         <div className="flex justify-between items-center mb-4 px-1">
                             <h3 className="text-slate-900 font-black text-xs uppercase tracking-widest">{t('recent_transactions')}</h3>
-                            <button onClick={() => router.push('/student/paiements')} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:underline">{t('view_all')}</button>
+                            <button onClick={() => router.push('/student/paiements')} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:underline">Voir tout</button>
                         </div>
                         <div className="space-y-2.5">
                             {isLoading ? (
@@ -295,8 +310,8 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-30 safe-area-pb">
-                    <div className="px-5 pt-4 pb-6">
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-30 safe-area-pb md:sticky md:bottom-0">
+                    <div className="max-w-md mx-auto px-5 pt-4 pb-6">
                         <div className="flex justify-between items-end mb-4 px-1">
                             <div>
                                 <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{t('total_to_pay')}</span>
@@ -305,7 +320,7 @@ export default function NdaraWalletPage() {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="text-emerald-600 text-[9px] font-black bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 uppercase tracking-widest">{t('fees')}</span>
+                                <span className="text-emerald-600 text-[9px] font-black bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 uppercase tracking-widest">0 FRAIS</span>
                             </div>
                         </div>
                         <Button 
@@ -338,12 +353,12 @@ export default function NdaraWalletPage() {
                                         <span className="font-black text-slate-900 text-base capitalize">{selectedProvider}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{t('ref_label')}</span>
+                                        <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">ID Transaction</span>
                                         <span className="font-mono text-slate-900 text-[11px] font-black">#TRX{(Math.random() * 1000000).toFixed(0)}</span>
                                     </div>
                                 </div>
                                 <Button onClick={() => setShowSuccess(false)} className="w-full h-16 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black uppercase text-xs tracking-widest shadow-xl transition-all">
-                                    {t('back_to_wallet')}
+                                    RETOUR AU WALLET
                                 </Button>
                             </div>
                         </div>

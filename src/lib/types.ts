@@ -28,6 +28,17 @@ export interface FAQ {
   updatedAt?: Timestamp | FieldValue;
 }
 
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  currency: string;
+  prefix: string;
+  flagEmoji: string;
+  active: boolean;
+  createdAt?: Timestamp | FieldValue;
+}
+
 export interface CarouselSlide {
   id: string;
   imageUrl: string;
