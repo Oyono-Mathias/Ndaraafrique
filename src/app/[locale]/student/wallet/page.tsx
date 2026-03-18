@@ -2,46 +2,47 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant V4 - Design Fintech Indigo.
- * ✅ DYNAMIQUE : Charge les pays et leurs méthodes de paiement depuis Firestore.
- * ✅ UX MOBILE : Bouton sticky et padding optimisé.
+ * @fileOverview Ndara Wallet Étudiant V5 - Fintech Robustness.
+ * ✅ SÉCURITÉ : Utilise des transactions 'Pending' avant crédit.
+ * ✅ RÉALISME : Logos réels, sticky footer, historique temps réel.
  */
 
 import { useRole } from '@/context/RoleContext';
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
+import { useToast } from '@/hooks/use-toast';
 import { 
-    ArrowDownLeft, 
+    ArrowLeft, 
     Smartphone, 
     Check, 
     Loader2, 
-    History,
-    Wallet as WalletIcon,
-    ArrowLeft,
-    ChevronDown,
-    CircleDollarSign,
-    ShoppingBag as ShoppingBagIcon
+    History, 
+    ChevronDown, 
+    CircleDollarSign, 
+    ArrowDownLeft, 
+    ShoppingBag as ShoppingBagIcon,
+    AlertCircle
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { Payment, Country, PaymentMethod } from '@/lib/types';
-import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { Input } from '@/components/ui/input';
-import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { WalletCard } from '@/components/wallet/WalletCard';
 import { PaymentMethodCard } from '@/components/wallet/PaymentMethodCard';
+import { initiateMeSombPayment } from '@/actions/meSombActions';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import type { Payment, Country, PaymentMethod } from '@/lib/types';
 
-const PRESET_AMOUNTS = [1000, 2000, 5000, 10000];
+const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
 
 export default function NdaraWalletPage() {
-    const { currentUser, isUserLoading, user } = useRole();
+    const { currentUser, user, isUserLoading } = useRole();
     const db = getFirestore();
     const router = useRouter();
+    const locale = useLocale();
     const { toast } = useToast();
     const t = useTranslations('Wallet');
     
@@ -49,7 +50,6 @@ export default function NdaraWalletPage() {
     const [countries, setCountries] = useState<Country[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
     
     const [selectedAmount, setSelectedAmount] = useState<number>(0);
     const [customAmount, setCustomAmount] = useState('');
@@ -61,22 +61,20 @@ export default function NdaraWalletPage() {
     useEffect(() => {
         const q = query(collection(db, 'countries'), where('active', '==', true));
         const unsub = onSnapshot(q, (snap) => {
-            const list = snap.docs.map(d => d.data() as Country);
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Country));
             setCountries(list);
-            if (list.length > 0 && !selectedCountryId) {
-                setSelectedCountryId(list[0].id);
-            }
+            if (list.length > 0 && !selectedCountryId) setSelectedCountryId(list[0].id);
         });
         return () => unsub();
     }, [db, selectedCountryId]);
 
-    // 2. Écouteur des transactions
+    // 2. Écouteur des transactions & solde temps réel
     useEffect(() => {
-        if (!currentUser?.uid) return;
+        if (!user?.uid) return;
 
         const q = query(
             collection(db, 'payments'),
-            where('userId', '==', currentUser.uid),
+            where('userId', '==', user.uid),
             orderBy('date', 'desc'),
             limit(10)
         );
@@ -87,7 +85,7 @@ export default function NdaraWalletPage() {
         });
 
         return () => unsub();
-    }, [currentUser?.uid, db]);
+    }, [user?.uid, db]);
 
     const activeCountry = useMemo(() => 
         countries.find(c => c.id === selectedCountryId), 
@@ -98,25 +96,31 @@ export default function NdaraWalletPage() {
         return (activeCountry.paymentMethods || []).filter(m => m.active);
     }, [activeCountry]);
 
-    const handleSelectAmount = (val: number) => {
-        setSelectedAmount(val);
-        setCustomAmount('');
-    };
-
-    const handleCustomAmountChange = (val: string) => {
-        setCustomAmount(val);
-        setSelectedAmount(val ? parseInt(val) : 0);
-    };
-
     const handleRecharge = async () => {
-        if (!user || selectedAmount <= 0 || !selectedMethod || phoneNumber.length < 8) {
-            toast({ variant: 'destructive', title: "Erreur", description: t('validation_msg') });
+        if (!user || selectedAmount <= 0 || !selectedMethod) {
+            toast({ variant: 'destructive', title: "Données manquantes", description: "Veuillez choisir un montant et un moyen de paiement." });
             return;
         }
 
         setIsProcessing(true);
         try {
-            // Utilise le provider configuré dans la méthode de paiement
+            // A. Création de la transaction 'Pending' pour l'audit
+            const tempRef = await addDoc(collection(db, 'payments'), {
+                userId: user.uid,
+                amount: selectedAmount,
+                currency: activeCountry?.currency || 'XOF',
+                provider: selectedMethod.provider,
+                status: 'Pending',
+                date: serverTimestamp(),
+                courseTitle: 'Recharge Wallet Ndara',
+                metadata: {
+                    userId: user.uid,
+                    type: 'wallet_topup',
+                    courseId: 'WALLET_RECHARGE'
+                }
+            });
+
+            // B. Appel à la passerelle réelle (MeSomb)
             const result = await initiateMeSombPayment({
                 amount: selectedAmount,
                 phoneNumber: phoneNumber,
@@ -127,12 +131,15 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
-                setShowSuccess(true);
+                toast({ title: "Demande envoyée !", description: "Veuillez confirmer sur votre téléphone." });
+                // On réinitialise les champs de saisie
+                setCustomAmount('');
+                setSelectedAmount(0);
             } else {
                 throw new Error(result.error);
             }
         } catch (e: any) {
-            toast({ variant: 'destructive', title: "Erreur", description: e.message });
+            toast({ variant: 'destructive', title: "Échec", description: e.message });
         } finally {
             setIsProcessing(false);
         }
@@ -149,21 +156,20 @@ export default function NdaraWalletPage() {
                     <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition">
                         <ArrowLeft className="h-5 w-5" />
                     </button>
-                    <h1 className="font-black text-lg text-white uppercase tracking-[0.2em]">{t('title')}</h1>
+                    <h1 className="font-black text-lg text-white uppercase tracking-[0.2em]">Ndara Wallet</h1>
                     <div className="w-10" />
                 </div>
             </header>
 
             <main className="flex-1 pt-24 pb-48 px-6 space-y-8 animate-in fade-in duration-700">
                 
-                {/* --- SHARED WALLET CARD --- */}
                 <WalletCard 
                     balance={currentUser?.balance || 0} 
                     userName={currentUser?.fullName || 'Ndara'} 
                     variant="indigo"
                 />
 
-                {/* --- COUNTRY SELECTOR --- */}
+                {/* --- SELECTION PAYS --- */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-4">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Région de recharge</label>
                     <div className="relative">
@@ -181,7 +187,7 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                {/* --- AMOUNT SELECTION --- */}
+                {/* --- MONTANT --- */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
@@ -194,7 +200,7 @@ export default function NdaraWalletPage() {
                         {PRESET_AMOUNTS.map(val => (
                             <button 
                                 key={val}
-                                onClick={() => handleSelectAmount(val)}
+                                onClick={() => { setSelectedAmount(val); setCustomAmount(''); }}
                                 className={cn(
                                     "py-4 rounded-xl border-2 font-black text-xs transition-all active:scale-95",
                                     selectedAmount === val && !customAmount
@@ -210,13 +216,13 @@ export default function NdaraWalletPage() {
                     <Input 
                         type="number" 
                         value={customAmount}
-                        onChange={(e) => handleCustomAmountChange(e.target.value)}
+                        onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(parseInt(e.target.value) || 0); }}
                         className="h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-indigo-500 text-slate-900 font-black text-lg text-center"
-                        placeholder={t('other_amount')}
+                        placeholder="Autre montant..."
                     />
                 </div>
 
-                {/* --- DYNAMIC PAYMENT METHODS --- */}
+                {/* --- METHODES DYNAMIQUES --- */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
@@ -247,7 +253,7 @@ export default function NdaraWalletPage() {
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('phone_label')}</label>
                         <div className="flex gap-2">
                             <div className="h-14 px-4 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-600 border border-slate-200">
-                                {activeCountry?.prefix}
+                                {activeCountry?.prefix || '+'}
                             </div>
                             <Input 
                                 type="tel" 
@@ -260,37 +266,44 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                {/* --- RECENT HISTORY --- */}
+                {/* --- HISTORIQUE TEMPS REEL --- */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-6">
                     <div className="flex justify-between items-center px-1">
-                        <h3 className="text-slate-900 font-black text-xs uppercase tracking-widest">{t('recent_transactions')}</h3>
-                        <button onClick={() => router.push('/student/paiements')} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest">Voir tout</button>
+                        <h3 className="text-slate-900 font-black text-xs uppercase tracking-widest">Mouvements</h3>
+                        <History size={14} className="text-slate-300" />
                     </div>
                     <div className="space-y-3">
                         {isLoading ? <Skeleton className="h-20 w-full rounded-2xl" /> : transactions.length > 0 ? (
-                            transactions.slice(0, 3).map(txn => (
-                                <div key={txn.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl active:bg-slate-100 transition-colors">
+                            transactions.map(txn => (
+                                <div key={txn.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group transition-all">
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             "w-10 h-10 rounded-xl flex items-center justify-center shadow-inner",
-                                            txn.amount > 0 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                                            txn.status === 'Completed' ? (txn.amount > 0 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600") : "bg-amber-100 text-amber-600"
                                         )}>
                                             {txn.amount > 0 ? <ArrowDownLeft size={20} /> : <ShoppingBagIcon size={18} />}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{format((txn.date as any).toDate(), 'dd MMM', { locale: fr })}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[140px]">{txn.courseTitle || 'Recharge'}</p>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                                                {txn.date && (txn.date as any).toDate ? format((txn.date as any).toDate(), 'dd MMM HH:mm', { locale: fr }) : '...'}
+                                            </p>
                                         </div>
                                     </div>
-                                    <span className={cn("text-sm font-black", txn.amount > 0 ? "text-emerald-600" : "text-slate-900")}>
-                                        {txn.amount > 0 ? '+' : '-'}{Math.abs(txn.amount).toLocaleString()}
-                                    </span>
+                                    <div className="text-right">
+                                        <p className={cn("text-sm font-black", txn.amount > 0 ? "text-emerald-600" : "text-slate-900")}>
+                                            {txn.amount > 0 ? '+' : '-'}{Math.abs(txn.amount).toLocaleString()}
+                                        </p>
+                                        <span className={cn("text-[8px] font-black uppercase", txn.status === 'Pending' ? "text-amber-500 animate-pulse" : "text-slate-400")}>
+                                            {txn.status === 'Pending' ? 'Audit' : 'Validé'}
+                                        </span>
+                                    </div>
                                 </div>
                             ))
                         ) : (
                             <div className="py-10 text-center opacity-20">
                                 <History size={40} className="mx-auto mb-2 text-slate-400" />
-                                <p className="text-[10px] font-black uppercase tracking-widest">Zéro transaction</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest">Aucune transaction</p>
                             </div>
                         )}
                     </div>
@@ -302,47 +315,40 @@ export default function NdaraWalletPage() {
                 <div className="max-w-md mx-auto space-y-4">
                     <div className="flex justify-between items-end px-2">
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total à régler</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Injection totale</p>
                             <p className="text-3xl font-black text-slate-950 leading-none">
-                                {selectedAmount.toLocaleString()} <span className="text-sm font-bold text-indigo-600">{activeCountry?.currency}</span>
+                                {selectedAmount.toLocaleString()} <span className="text-sm font-bold text-indigo-600">{activeCountry?.currency || 'XOF'}</span>
                             </p>
                         </div>
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] uppercase px-3 h-6 mb-1">0 FRAIS</Badge>
+                        <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 size={14} className="text-emerald-500" />
+                            <span className="text-[9px] font-black text-emerald-600 uppercase">Audit sécurisé</span>
+                        </div>
                     </div>
                     <Button 
                         onClick={handleRecharge} 
-                        disabled={isProcessing || selectedAmount <= 0 || !selectedMethod}
+                        disabled={isProcessing || selectedAmount <= 0 || !selectedMethod || phoneNumber.length < 8}
                         className="w-full h-16 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-sm tracking-widest shadow-2xl shadow-indigo-200 transition-all active:scale-95 border-none"
                     >
-                        {isProcessing ? <Loader2 className="animate-spin" /> : <><Check size={20} className="mr-3" strokeWidth={3} /> Confirmer le paiement</>}
+                        {isProcessing ? <Loader2 className="animate-spin" /> : <><Check size={20} className="mr-3" strokeWidth={3} /> Lancer la transaction</>}
                     </Button>
                 </div>
             </footer>
-
-            {/* Success Overlay */}
-            {showSuccess && (
-                <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-500">
-                    <div className="text-center space-y-8 animate-in zoom-in duration-700 max-w-sm w-full">
-                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(16,185,129,0.4)]">
-                            <Check className="h-12 w-12 text-slate-950" strokeWidth={4} />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-3xl font-black text-white uppercase tracking-tight">{t('success_title')}</h3>
-                            <p className="text-slate-400 text-sm font-medium italic">{t('success_desc')}</p>
-                        </div>
-                        <Button onClick={() => setShowSuccess(false)} className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
-                            Continuer sur Ndara
-                        </Button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
 
+function CheckCircle2(props: any) {
+    return (
+        <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+    )
+}
+
 function WalletSkeleton() {
     return (
-        <div className="p-6 space-y-8 pt-32">
+        <div className="p-6 space-y-8 pt-32 bg-slate-50 min-h-screen">
             <Skeleton className="h-48 w-full rounded-[2.5rem] bg-slate-200" />
             <Skeleton className="h-32 w-full rounded-3xl bg-slate-200" />
             <Skeleton className="h-64 w-full rounded-3xl bg-slate-200" />
