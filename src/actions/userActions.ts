@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ RÉSOLU : Ajout du système de solde virtuel pour publicité/démo.
+ * ✅ RÉSOLU : Ajout du système de solde virtuel et réel.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -16,6 +16,73 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
         return userDoc.exists && userDoc.data()?.role === 'admin';
     } catch {
         return false;
+    }
+}
+
+/**
+ * RECHARGER LE WALLET RÉEL (Action Admin)
+ * Utilisé pour créditer manuellement un compte (dépôt physique, correction, etc.)
+ */
+export async function rechargeUserWallet({ 
+    userId, 
+    amount, 
+    adminId,
+    reason 
+}: { 
+    userId: string; 
+    amount: number; 
+    adminId: string;
+    reason: string;
+}) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
+
+    if (amount <= 0) return { success: false, error: "Le montant doit être positif." };
+
+    try {
+        const db = getAdminDb();
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(userId);
+        const auditRef = db.collection('admin_audit_logs').doc();
+        const paymentRef = db.collection('payments').doc();
+
+        // 1. Mise à jour du solde
+        batch.update(userRef, {
+            balance: FieldValue.increment(amount),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        // 2. Création du reçu de transaction
+        batch.set(paymentRef, {
+            id: paymentRef.id,
+            userId,
+            amount,
+            currency: 'XOF',
+            provider: 'admin_recharge',
+            status: 'Completed',
+            date: FieldValue.serverTimestamp(),
+            courseTitle: `Recharge Admin: ${reason}`,
+            metadata: {
+                type: 'wallet_topup',
+                adminId,
+                reason
+            }
+        });
+
+        // 3. Journal d'audit
+        batch.set(auditRef, {
+            adminId,
+            eventType: 'user.wallet.recharge',
+            target: { id: userId, type: 'user' },
+            details: `Recharge réelle de ${amount} XOF effectuée. Motif: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        console.error("RECHARGE_WALLET_ERROR:", e);
+        return { success: false, error: e.message };
     }
 }
 
