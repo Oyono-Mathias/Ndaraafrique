@@ -1,42 +1,47 @@
+
 'use client';
 
 /**
  * @fileOverview Section Statistiques Ndara Afrique - Design Fintech Elite.
  * Affiche l'ampleur du réseau en temps réel.
+ * ✅ I18N : Traduction des labels de statistiques.
  */
 
-import { Users, Globe, BookOpen, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, Globe, BookOpen, TrendingUp } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useTranslations } from 'next-intl';
 
 export function Stats() {
+    const t = useTranslations('Landing.stats');
+
     return (
         <section className="px-6 mb-20 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatBox 
                     icon={Users} 
                     value="50k+" 
-                    label="Ndara Inscrits" 
+                    label={t('students')} 
                     color="text-blue-400" 
                     bgColor="bg-blue-500/10" 
                 />
                 <StatBox 
                     icon={BookOpen} 
                     value="1,200+" 
-                    label="Formations" 
+                    label={t('courses')} 
                     color="text-primary" 
                     bgColor="bg-primary/10" 
                 />
                 <StatBox 
                     icon={TrendingUp} 
                     value="98%" 
-                    label="Taux de Réussite" 
+                    label={t('success')} 
                     color="text-emerald-400" 
                     bgColor="bg-emerald-500/10" 
                 />
                 <StatBox 
                     icon={Globe} 
                     value="54" 
-                    label="Pays Visés" 
+                    label={t('countries')} 
                     color="text-orange-400" 
                     bgColor="bg-orange-500/10" 
                 />

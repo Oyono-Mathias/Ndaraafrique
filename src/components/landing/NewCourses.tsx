@@ -1,19 +1,22 @@
+
 'use client';
 
 /**
  * @fileOverview Section "Nouveaux Horizons" - Affiche les 6 cours les plus récents.
+ * ✅ I18N : Traduction des titres et badges.
  */
 
 import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, getDocs } from 'firebase/firestore';
-import { Clock, Star, ArrowRight, BookOpen } from 'lucide-react';
+import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { Star, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { Course } from '@/lib/types';
 
 export function NewCourses() {
     const locale = useLocale();
+    const t = useTranslations('Landing.sections');
     const db = getFirestore();
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -45,8 +48,8 @@ export function NewCourses() {
                     <BookOpen size={20} />
                 </div>
                 <div className="space-y-1">
-                    <h2 className="font-black text-2xl md:text-3xl text-white uppercase tracking-tight">Nouveaux Horizons</h2>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Les dernières pépites ajoutées au catalogue</p>
+                    <h2 className="font-black text-2xl md:text-3xl text-white uppercase tracking-tight">{t('new_title')}</h2>
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{t('new_desc')}</p>
                 </div>
             </div>
 
@@ -57,7 +60,7 @@ export function NewCourses() {
                             <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                             <div className="absolute inset-0 bg-black/20" />
                             <div className="absolute bottom-3 left-3 bg-blue-500/90 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest shadow-lg">
-                                NOUVEAU
+                                {t('new_badge')}
                             </div>
                         </div>
                         <div className="p-6 space-y-4">

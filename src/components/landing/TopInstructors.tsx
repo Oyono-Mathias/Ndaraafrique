@@ -1,27 +1,27 @@
+
 'use client';
 
 /**
  * @fileOverview Section "Maîtres du Savoir" - Affiche les formateurs les plus populaires.
+ * ✅ I18N : Traduction des labels et descriptions.
  */
 
 import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, limit, onSnapshot, getDocs } from 'firebase/firestore';
-import { ShieldCheck, Users, BookOpen, Star, ArrowUpRight } from 'lucide-react';
+import { ShieldCheck, Users, BookOpen } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
-import type { NdaraUser } from '@/lib/types';
+import { useLocale, useTranslations } from 'next-intl';
 
 export function TopInstructors() {
     const locale = useLocale();
+    const t = useTranslations('Landing.sections');
     const db = getFirestore();
     const [instructors, setInstructors] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         setIsLoading(true);
-        // On récupère les 4 instructeurs approuvés ayant le plus d'élèves (simulé par le nombre de clics d'affiliation pour le MVP)
         const q = query(
             collection(db, "users"), 
             where("role", "==", "instructor"),
@@ -32,7 +32,6 @@ export function TopInstructors() {
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             const data = await Promise.all(snapshot.docs.map(async (docSnap) => {
                 const userData = docSnap.data();
-                // Compter les cours réels de cet instructeur
                 const coursesQ = query(collection(db, 'courses'), where('instructorId', '==', docSnap.id), where('status', '==', 'Published'));
                 const coursesSnap = await getDocs(coursesQ);
                 
@@ -55,8 +54,8 @@ export function TopInstructors() {
     return (
         <section className="px-6 mb-24 max-w-6xl mx-auto space-y-12">
             <div className="text-center space-y-2">
-                <h2 className="font-black text-3xl text-white uppercase tracking-tight">Maîtres du Savoir</h2>
-                <p className="text-slate-500 text-xs font-medium italic">Apprenez avec les experts les plus influents du continent.</p>
+                <h2 className="font-black text-3xl text-white uppercase tracking-tight">{t('experts_title')}</h2>
+                <p className="text-slate-500 text-xs font-medium italic">{t('experts_desc')}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -91,11 +90,11 @@ export function TopInstructors() {
                             <div className="grid grid-cols-2 gap-4 w-full pt-4 border-t border-white/5">
                                 <div className="space-y-1">
                                     <p className="text-white font-black text-sm leading-none">{(instructor.affiliateStats?.registrations || 0) + 120}</p>
-                                    <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest">Ndara</p>
+                                    <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest">{t('experts_label')}</p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-white font-black text-sm leading-none">{instructor.coursesCount || 1}</p>
-                                    <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest">Cours</p>
+                                    <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest">{t('courses_label')}</p>
                                 </div>
                             </div>
                         </div>

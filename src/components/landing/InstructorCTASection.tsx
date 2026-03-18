@@ -1,20 +1,23 @@
+
 'use client';
 
 /**
  * @fileOverview CTA pour les experts - Piloté par les réglages Admin.
+ * ✅ I18N : Traduction complète du CTA formateur.
  */
 
 import { useMemo } from 'react';
 import { GraduationCap, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { getFirestore, doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase';
 import type { Settings } from '@/lib/types';
 
 export function InstructorCTASection() {
   const locale = useLocale();
+  const t = useTranslations('Landing.cta_instructor');
   const db = getFirestore();
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
@@ -36,16 +39,16 @@ export function InstructorCTASection() {
                 
                 <div className="space-y-3">
                     <h2 className="font-black text-3xl text-white uppercase tracking-tight leading-none">
-                        {content?.finalCtaTitle || "Rejoignez l'Élite des Formateurs"}
+                        {content?.finalCtaTitle || t('title')}
                     </h2>
                     <p className="text-white/80 text-xs md:text-sm font-medium italic leading-relaxed max-w-xs">
-                        {content?.finalCtaSubtitle || "Monétisez votre savoir et formez la prochaine génération de leaders africains."}
+                        {content?.finalCtaSubtitle || t('subtitle')}
                     </p>
                 </div>
 
                 <Button asChild className="w-full h-16 rounded-[2rem] bg-white hover:bg-slate-100 text-[#9a5a1a] font-black uppercase text-xs tracking-[0.2em] shadow-2xl transition-all">
                     <Link href={`/${locale}/devenir-instructeur`} className="flex items-center gap-2">
-                        {content?.finalCtaButtonText || "Devenir Instructeur"}
+                        {content?.finalCtaButtonText || t('button')}
                         <ArrowRight className="h-4 w-4" />
                     </Link>
                 </Button>

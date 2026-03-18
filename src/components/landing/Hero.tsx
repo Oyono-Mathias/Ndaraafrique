@@ -1,16 +1,18 @@
+
 'use client';
 
 /**
  * @fileOverview Hero Section Ndara Afrique V4 - Intégration de la barre de recherche.
+ * ✅ I18N : Traduction complète des textes par défaut.
  */
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles, Search, Mic } from 'lucide-react';
+import { ArrowRight, Sparkles, Search } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { getFirestore, doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase';
 import type { Settings } from '@/lib/types';
@@ -18,6 +20,7 @@ import { Input } from '@/components/ui/input';
 
 export function Hero() {
   const locale = useLocale();
+  const t = useTranslations('Landing.hero');
   const router = useRouter();
   const db = getFirestore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,17 +46,17 @@ export function Hero() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_#10b981]" />
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
-                    {settings?.general?.siteName || "Ndara Afrique"} #1 en Afrique
+                    {content?.heroBadge || t('badge')}
                 </span>
             </div>
             
             <h1 
                 className="font-black text-5xl sm:text-7xl leading-[1.1] text-white mb-8 uppercase tracking-tighter animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100"
-                dangerouslySetInnerHTML={{ __html: content?.heroTitle || "APPRENEZ.<br />RÉUSSISSEZ.<br />INSPIREZ." }}
+                dangerouslySetInnerHTML={{ __html: content?.heroTitle || t('title') }}
             />
             
             <p className="text-gray-400 text-sm md:text-lg mb-10 max-w-xs md:max-w-xl mx-auto leading-relaxed font-medium italic animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-                "{content?.heroSubtitle || "De l'Agritech à la Fintech, accédez aux compétences de demain avec les meilleurs experts du continent."}"
+                "{content?.heroSubtitle || t('subtitle')}"
             </p>
 
             {/* Barre de Recherche Immersive */}
@@ -63,7 +66,7 @@ export function Hero() {
                         <Search className="h-5 w-5 text-primary" />
                     </div>
                     <Input 
-                        placeholder="Que voulez-vous apprendre aujourd'hui ?"
+                        placeholder={t('search_placeholder')}
                         className="h-16 pl-16 pr-16 rounded-[2rem] bg-white/5 border-white/10 text-white shadow-2xl focus-visible:ring-primary/20 text-lg placeholder:text-slate-600"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -76,10 +79,10 @@ export function Hero() {
 
             <div className="flex flex-wrap justify-center gap-4 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-400">
                 <Button asChild size="lg" className="h-14 px-10 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all">
-                    <Link href={`/${locale}/search`}>Explorer le Catalogue</Link>
+                    <Link href={`/${locale}/search`}>{t('cta_explore')}</Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="h-14 px-10 rounded-2xl border-white/10 bg-white/5 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
-                    <Link href={`/${locale}/devenir-instructeur`}>Devenir Formateur</Link>
+                <Button asChild variant="outline" size="lg" className="h-14 rounded-2xl border-white/10 bg-white/5 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
+                    <Link href={`/${locale}/devenir-instructeur`}>{t('cta_instructor')}</Link>
                 </Button>
             </div>
         </div>
@@ -103,8 +106,8 @@ export function Hero() {
                     <Sparkles className="h-5 w-5" />
                 </div>
                 <div className="text-left">
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Savoir</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Certifié Ndara</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{t('badge_card_title')}</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">{t('badge_card_subtitle')}</p>
                 </div>
             </div>
         </div>

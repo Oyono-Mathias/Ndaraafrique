@@ -1,16 +1,18 @@
+
 'use client';
 
 /**
  * @fileOverview Section Catégories - Chips de Navigation Tactiles.
- * ✅ INTERFACE : Scroll horizontal fluide optimisé pour le pouce (Android).
+ * ✅ I18N : Traduction du label 'Tous'.
  */
 
 import { Leaf, ChartLine, Coins, Cpu, LayoutGrid } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 const CATEGORIES = [
-    { id: 'all', name: "Tous", icon: LayoutGrid },
+    { id: 'all', name: "all", icon: LayoutGrid },
     { id: 'agritech', name: "AgriTech", icon: Leaf },
     { id: 'fintech', name: "FinTech", icon: ChartLine },
     { id: 'trading', name: "Trading", icon: Coins },
@@ -19,6 +21,7 @@ const CATEGORIES = [
 
 export function Categories() {
   const [active, setActive] = useState('all');
+  const t = useTranslations('Landing.categories');
 
   return (
     <section className="mb-16 overflow-hidden">
@@ -35,7 +38,7 @@ export function Categories() {
                     )}
                 >
                     <cat.icon className="h-4 w-4" />
-                    {cat.name}
+                    {cat.id === 'all' ? t('all') : cat.name}
                 </button>
             ))}
         </div>

@@ -1,23 +1,25 @@
+
 'use client';
 
 /**
  * @fileOverview Section 'Liberté de Paiement' Ndara Afrique.
- * ✅ FOCUS : Mobile Money (Orange, MTN, Wave).
- * ✅ DESIGN : App bancaire moderne, contrastes forts.
+ * ✅ I18N : Traduction des textes fintech.
  */
 
-import { ShieldCheck, Smartphone, CheckCircle2 } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export function FintechSection() {
+  const t = useTranslations('Landing.fintech');
+
   return (
     <section className="px-6 mb-20 max-w-4xl mx-auto">
         <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-48 h-48 bg-ndara-ochre/15 rounded-full blur-[60px] -mr-20 -mt-20" />
             
             <div className="relative z-10 text-center mb-10 space-y-2">
-                <h2 className="font-black text-2xl text-white uppercase tracking-tight">Liberté de Paiement</h2>
-                <p className="text-slate-500 text-xs font-medium italic">"Payez facilement avec vos solutions locales préférées."</p>
+                <h2 className="font-black text-2xl text-white uppercase tracking-tight">{t('title')}</h2>
+                <p className="text-slate-500 text-xs font-medium italic">"{t('subtitle')}"</p>
             </div>
 
             <div className="flex justify-center items-center gap-5 mb-10 relative z-10">
@@ -32,8 +34,8 @@ export function FintechSection() {
                         <ShieldCheck className="h-6 w-6" />
                     </div>
                     <div>
-                        <p className="text-white text-[11px] font-black uppercase tracking-widest">Transactions Sécurisées</p>
-                        <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">Audit Ndara Secure v2.0</p>
+                        <p className="text-white text-[11px] font-black uppercase tracking-widest">{t('secure_title')}</p>
+                        <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">{t('secure_desc')}</p>
                     </div>
                 </div>
                 <CheckCircle2 className="text-emerald-500 h-5 w-5" />

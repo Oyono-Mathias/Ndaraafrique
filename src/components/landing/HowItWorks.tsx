@@ -1,49 +1,54 @@
+
 'use client';
 
 /**
  * @fileOverview Section "Comment ça marche" - Le Parcours Ndara V4.
+ * ✅ I18N : Traduction intégrale du parcours étudiant.
  */
 
-import { Search, PlayCircle, Trophy, Check } from 'lucide-react';
+import { Search, PlayCircle, Trophy } from 'lucide-react';
 import { cn } from "@/lib/utils";
-
-const steps = [
-  {
-    title: '1. Choisir',
-    description: 'Explorez le catalogue d\'experts et trouvez la formation qui répond à vos ambitions professionnelles.',
-    icon: Search,
-    color: 'from-blue-500 to-blue-700',
-    accent: 'text-blue-400',
-    features: ['AgriTech', 'FinTech', 'Trading']
-  },
-  {
-    title: '2. Apprendre',
-    description: 'Accédez instantanément à vos cours et bénéficiez de l\'assistance 24h/24 de Mathias, votre tuteur IA.',
-    icon: PlayCircle,
-    color: 'from-primary to-emerald-700',
-    accent: 'text-primary',
-    features: ['Vidéo HD', 'Accès Mobile', 'IA Mathias']
-  },
-  {
-    title: '3. Réussir',
-    description: "Validez vos quiz, remettez vos devoirs et obtenez un certificat officiel reconnu pour propulser votre carrière.",
-    icon: Trophy,
-    color: 'from-amber-500 to-orange-700',
-    accent: 'text-amber-400',
-    features: ['Certificat', 'Badges', 'Impact']
-  },
-];
+import { useTranslations } from 'next-intl';
 
 export function HowItWorks() {
+  const t = useTranslations('Landing.how_it_works');
+
+  const steps = [
+    {
+      title: t('step1.title'),
+      description: t('step1.desc'),
+      icon: Search,
+      color: 'from-blue-500 to-blue-700',
+      accent: 'text-blue-400',
+      features: ['AgriTech', 'FinTech', 'Trading']
+    },
+    {
+      title: t('step2.title'),
+      description: t('step2.desc'),
+      icon: PlayCircle,
+      color: 'from-primary to-emerald-700',
+      accent: 'text-primary',
+      features: ['Vidéo HD', 'Accès Mobile', 'IA Mathias']
+    },
+    {
+      title: t('step3.title'),
+      description: t('step3.desc'),
+      icon: Trophy,
+      color: 'from-amber-500 to-orange-700',
+      accent: 'text-amber-400',
+      features: ['Certificat', 'Badges', 'Impact']
+    },
+  ];
+
   return (
     <section className="py-24 px-6 relative overflow-hidden bg-black/20">
         <div className="max-w-6xl mx-auto relative z-10">
             <div className="text-center mb-20 space-y-4">
                 <div className="inline-block p-2 px-4 bg-primary/10 rounded-full mb-2">
-                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Votre Voyage vers l'Excellence</p>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">{t('badge')}</p>
                 </div>
                 <h2 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight leading-tight">
-                    Comment ça <span className="text-primary">marche ?</span>
+                    {t('title')}
                 </h2>
             </div>
             
@@ -73,9 +78,9 @@ export function HowItWorks() {
 
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-white/5 w-full">
                             {step.features.map((feature, fIdx) => (
-                                <Badge key={fIdx} variant="outline" className={cn("bg-transparent border-white/10 text-[8px] font-black uppercase tracking-widest", step.accent)}>
+                                <span key={fIdx} className={cn("px-2 py-1 rounded-md border bg-transparent border-white/10 text-[8px] font-black uppercase tracking-widest", step.accent)}>
                                     {feature}
-                                </Badge>
+                                </span>
                             ))}
                         </div>
                     </div>
@@ -84,8 +89,4 @@ export function HowItWorks() {
         </div>
     </section>
   );
-}
-
-function Badge({ children, variant, className }: any) {
-    return <span className={cn("px-2 py-1 rounded-md border", className)}>{children}</span>;
 }

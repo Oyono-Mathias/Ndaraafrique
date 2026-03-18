@@ -1,21 +1,23 @@
+
 'use client';
 
 /**
  * @fileOverview Catalogue de Prestige - Formations d'Élite en Temps Réel.
+ * ✅ I18N : Traduction des titres et descriptions de section.
  */
 
 import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, getDocs } from 'firebase/firestore';
-import { Star, Users, ArrowRight, Loader2, BookOpen } from 'lucide-react';
+import { Star, Users, ArrowRight, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
-import { Button } from '@/components/ui/button';
-import type { Course, NdaraUser } from '@/lib/types';
+import { useLocale, useTranslations } from 'next-intl';
+import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export function PopularCourses() {
     const locale = useLocale();
+    const t = useTranslations('Landing.sections');
     const db = getFirestore();
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -55,10 +57,10 @@ export function PopularCourses() {
         <section className="px-6 mb-20 max-w-6xl mx-auto space-y-8">
             <div className="flex items-center justify-between px-1">
                 <div className="space-y-1">
-                    <h2 className="font-black text-2xl md:text-3xl text-white uppercase tracking-tight">Formations d'Élite</h2>
+                    <h2 className="font-black text-2xl md:text-3xl text-white uppercase tracking-tight">{t('popular_title')}</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        Les plus suivies par la communauté
+                        {t('popular_desc')}
                     </p>
                 </div>
             </div>

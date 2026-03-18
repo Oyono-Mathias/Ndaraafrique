@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Log In",
@@ -112,5 +113,73 @@
     "by": "By",
     "lessons": "Lessons",
     "certified": "Certified"
+  },
+  "Landing": {
+    "hero": {
+      "badge": "Ndara Africa #1 in Africa",
+      "title": "LEARN.<br />SUCCEED.<br />INSPIRE.",
+      "subtitle": "From Agritech to Fintech, access tomorrow's skills with the continent's best experts.",
+      "search_placeholder": "What do you want to learn today?",
+      "cta_explore": "Explore the Catalog",
+      "cta_instructor": "Become a Teacher",
+      "badge_card_title": "Knowledge",
+      "badge_card_subtitle": "Ndara Certified"
+    },
+    "stats": {
+      "students": "Enrolled Ndara",
+      "courses": "Courses",
+      "success": "Success Rate",
+      "countries": "Target Countries"
+    },
+    "categories": {
+      "all": "All"
+    },
+    "how_it_works": {
+      "badge": "Your Journey to Excellence",
+      "title": "How it works?",
+      "step1": { "title": "1. Choose", "desc": "Explore the catalog of experts and find the training that meets your professional ambitions." },
+      "step2": { "title": "2. Learn", "desc": "Instantly access your courses and benefit from 24/7 assistance from Mathias, your AI tutor." },
+      "step3": { "title": "3. Succeed", "desc": "Pass your quizzes, submit your assignments and get an official recognized certificate to boost your career." }
+    },
+    "bourse": {
+      "badge": "Next Generation Assets",
+      "title": "The Knowledge Market.",
+      "subtitle": "Don't just learn. Own elite courses and earn lifelong income.",
+      "item1": "Acquire resale licenses.",
+      "item2": "Collect 100% of future enrollments.",
+      "item3": "Resell your assets for profit.",
+      "cta": "Explore the Market",
+      "card_roi": "ROI Projection",
+      "card_val": "Current Valuation",
+      "card_security": "Secure title transfer"
+    },
+    "testimonials": {
+      "title": "The Wisdom Wall",
+      "subtitle": "Ndara speaks: success is best told by those who live it.",
+      "verified": "VERIFIED"
+    },
+    "fintech": {
+      "title": "Payment Liberty",
+      "subtitle": "Pay easily with your favorite local solutions.",
+      "secure_title": "Secure Transactions",
+      "secure_desc": "Ndara Secure v2.0 Audit"
+    },
+    "cta_instructor": {
+      "title": "Join the Elite Instructors",
+      "subtitle": "Monetize your knowledge and train the next generation of African leaders.",
+      "button": "Become an Instructor"
+    },
+    "sections": {
+      "popular_title": "Elite Courses",
+      "popular_desc": "Most followed by the community",
+      "new_title": "New Horizons",
+      "new_desc": "Latest gems added to the catalog",
+      "experts_title": "Masters of Wisdom",
+      "experts_desc": "Learn from the continent's most influential experts",
+      "view_all": "VIEW ALL",
+      "new_badge": "NEW",
+      "experts_label": "Ndara",
+      "courses_label": "Courses"
+    }
   }
 }

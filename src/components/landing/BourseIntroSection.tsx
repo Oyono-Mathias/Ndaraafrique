@@ -1,18 +1,20 @@
+
 'use client';
 
 /**
  * @fileOverview Section d'introduction à la Bourse du Savoir pour la Landing Page.
- * Présente le concept de propriété d'actifs numériques aux visiteurs.
+ * ✅ I18N : Traduction complète du concept boursier.
  */
 
 import { TrendingUp, BadgeEuro, Landmark, ArrowRight, LineChart, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 export function BourseIntroSection() {
   const locale = useLocale();
+  const t = useTranslations('Landing.bourse');
 
   return (
     <section className="px-6 mb-20 max-w-4xl mx-auto">
@@ -25,26 +27,26 @@ export function BourseIntroSection() {
                 <div className="flex-1 space-y-6 text-center md:text-left">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 animate-in fade-in slide-in-from-top-4 duration-700">
                         <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-[9px] font-black text-primary uppercase tracking-[0.3em]">Actifs de Nouvelle Génération</span>
+                        <span className="text-[9px] font-black text-primary uppercase tracking-[0.3em]">{t('badge')}</span>
                     </div>
                     
                     <h2 className="text-3xl md:text-4xl font-black text-white leading-tight uppercase tracking-tight">
-                        La Bourse du <br/><span className="text-primary">Savoir.</span>
+                        {t('title')}
                     </h2>
                     
                     <p className="text-slate-400 text-sm leading-relaxed font-medium italic max-w-sm mx-auto md:mx-0">
-                        "Ne vous contentez pas d'apprendre. Devenez propriétaire de formations d'élite et percevez des revenus à vie."
+                        "{t('subtitle')}"
                     </p>
 
                     <div className="grid gap-4 py-2">
-                        <BenefitItem icon={BadgeEuro} text="Acquérez des licences de revente." />
-                        <BenefitItem icon={Landmark} text="Encaissez 100% des inscriptions futures." />
-                        <BenefitItem icon={LineChart} text="Revendez vos actifs avec profit." />
+                        <BenefitItem icon={BadgeEuro} text={t('item1')} />
+                        <BenefitItem icon={Landmark} text={t('item2')} />
+                        <BenefitItem icon={LineChart} text={t('item3')} />
                     </div>
 
                     <Button asChild className="w-full md:w-auto h-16 px-10 rounded-[2rem] bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 group transition-all active:scale-95">
                         <Link href={`/${locale}/bourse`} className="flex items-center gap-3">
-                            Explorer le Marché
+                            {t('cta')}
                             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </Button>
@@ -63,13 +65,13 @@ export function BourseIntroSection() {
                                 <TrendingUp size={24} />
                             </div>
                             <div className="text-right">
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Projection ROI</p>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{t('card_roi')}</p>
                                 <p className="text-sm font-black text-emerald-500">+24.8%</p>
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Cote Actuelle</p>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('card_val')}</p>
                             <div className="flex items-baseline gap-1">
                                 <span className="text-3xl font-black text-white">150,000</span>
                                 <span className="text-xs font-bold text-primary">XOF</span>
@@ -82,7 +84,7 @@ export function BourseIntroSection() {
                             </div>
                             <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
                                 <ShieldCheck size={10} className="text-primary" />
-                                Transfert de titre sécurisé
+                                {t('card_security')}
                             </div>
                         </div>
                     </div>

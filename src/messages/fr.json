@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Se connecter",
@@ -112,5 +113,73 @@
     "by": "Par",
     "lessons": "Leçons",
     "certified": "Certifiant"
+  },
+  "Landing": {
+    "hero": {
+      "badge": "Ndara Afrique #1 en Afrique",
+      "title": "APPRENEZ.<br />RÉUSSISSEZ.<br />INSPIREZ.",
+      "subtitle": "De l'Agritech à la Fintech, accédez aux compétences de demain avec les meilleurs experts du continent.",
+      "search_placeholder": "Que voulez-vous apprendre aujourd'hui ?",
+      "cta_explore": "Explorer le Catalogue",
+      "cta_instructor": "Devenir Formateur",
+      "badge_card_title": "Savoir",
+      "badge_card_subtitle": "Certifié Ndara"
+    },
+    "stats": {
+      "students": "Ndara Inscrits",
+      "courses": "Formations",
+      "success": "Taux de Réussite",
+      "countries": "Pays Visés"
+    },
+    "categories": {
+      "all": "Tous"
+    },
+    "how_it_works": {
+      "badge": "Votre Voyage vers l'Excellence",
+      "title": "Comment ça marche ?",
+      "step1": { "title": "1. Choisir", "desc": "Explorez le catalogue d'experts et trouvez la formation qui répond à vos ambitions professionnelles." },
+      "step2": { "title": "2. Apprendre", "desc": "Accédez instantanément à vos cours et bénéficiez de l'assistance 24h/24 de Mathias, votre tuteur IA." },
+      "step3": { "title": "3. Réussir", "desc": "Validez vos quiz, remettez vos devoirs et obtenez un certificat officiel reconnu pour propulser votre carrière." }
+    },
+    "bourse": {
+      "badge": "Actifs de Nouvelle Génération",
+      "title": "La Bourse du Savoir.",
+      "subtitle": "Ne vous contentez pas d'apprendre. Devenez propriétaire de formations d'élite et percevez des revenus à vie.",
+      "item1": "Acquérez des licences de revente.",
+      "item2": "Encaissez 100% des inscriptions futures.",
+      "item3": "Revendez vos actifs avec profit.",
+      "cta": "Explorer le Marché",
+      "card_roi": "Projection ROI",
+      "card_val": "Cote Actuelle",
+      "card_security": "Transfert de titre sécurisé"
+    },
+    "testimonials": {
+      "title": "Le Mur de la Sagesse",
+      "subtitle": "Parole de Ndara : la réussite se raconte mieux par ceux qui la vivent.",
+      "verified": "VÉRIFIÉ"
+    },
+    "fintech": {
+      "title": "Liberté de Paiement",
+      "subtitle": "Payez facilement avec vos solutions locales préférées.",
+      "secure_title": "Transactions Sécurisées",
+      "secure_desc": "Audit Ndara Secure v2.0"
+    },
+    "cta_instructor": {
+      "title": "Rejoignez l'Élite des Formateurs",
+      "subtitle": "Monétisez votre savoir et formez la prochaine génération de leaders africains.",
+      "button": "Devenir Instructeur"
+    },
+    "sections": {
+      "popular_title": "Formations d'Élite",
+      "popular_desc": "Les plus suivies par la communauté",
+      "new_title": "Nouveaux Horizons",
+      "new_desc": "Les dernières pépites ajoutées au catalogue",
+      "experts_title": "Maîtres du Savoir",
+      "experts_desc": "Apprenez avec les experts les plus influents du continent",
+      "view_all": "VOIR TOUT",
+      "new_badge": "NOUVEAU",
+      "experts_label": "Ndara",
+      "courses_label": "Cours"
+    }
   }
 }
