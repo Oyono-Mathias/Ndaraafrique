@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Cockpit Admin Elite - Design Qwen Immersif V2.
+ * ✅ REAL-TIME : 100% branché sur onSnapshot pour une réactivité totale.
  * ✅ I18N : Intégration complète des traductions Admin (FR/EN/SG).
  */
 
@@ -83,7 +84,7 @@ export default function AdminDashboard() {
         const week = startOfWeek(now, { weekStartsOn: 1 });
         const month = startOfMonth(now);
 
-        // 1. Revenus réels par période
+        // 1. Revenus réels par période (Temps Réel)
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             const payments = snap.docs.map(d => d.data() as Payment);
             
@@ -106,29 +107,40 @@ export default function AdminDashboard() {
                 ...prev, 
                 revenueToday: revToday,
                 revenueWeek: revWeek,
-                revenueMonth: revMonth
+                revenueMonth: revMonth,
+                totalPaymentsCount: payments.length
             }));
         });
 
-        // 2. Utilisateurs Actifs (lastSeen < 24h)
+        // 2. Utilisateurs Actifs (lastSeen < 24h) & Total Utilisateurs (Temps Réel)
         const activeThreshold = subDays(now, 1);
-        const unsubActiveUsers = onSnapshot(query(collection(db, 'users'), where('lastSeen', '>=', Timestamp.fromDate(activeThreshold))), (snap) => {
-            setStats(prev => ({ ...prev, activeUsers: snap.size }));
+        const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+            const allUsers = snap.docs.map(d => d.data() as NdaraUser);
+            const active = allUsers.filter(u => {
+                const d = safeToDate(u.lastSeen);
+                return d && d >= activeThreshold;
+            }).length;
+
+            setStats(prev => ({ 
+                ...prev, 
+                activeUsers: active,
+                totalUsers: allUsers.length 
+            }));
         });
 
-        // 3. Conversion (Basé sur les sessions uniques vs paiements)
-        const unsubConversion = onSnapshot(collection(db, 'tracking_events'), async (snap) => {
+        // 3. Conversion (Temps Réel sur les événements de tracking)
+        const unsubTracking = onSnapshot(collection(db, 'tracking_events'), (snap) => {
             const events = snap.docs.map(d => d.data() as TrackingEvent);
             const uniqueSessions = new Set(events.map(e => e.sessionId)).size;
             
-            const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('status', '==', 'Completed')));
-            const totalPayments = paymentsSnap.size;
-
-            const rate = uniqueSessions > 0 ? (totalPayments / uniqueSessions) * 100 : 0;
-            setStats(prev => ({ ...prev, conversionRate: Number(rate.toFixed(1)) }));
+            setStats(prev => {
+                const totalPayments = (prev as any).totalPaymentsCount || 0;
+                const rate = uniqueSessions > 0 ? (totalPayments / uniqueSessions) * 100 : 0;
+                return { ...prev, conversionRate: Number(rate.toFixed(1)) };
+            });
         });
 
-        // 4. Inscriptions récentes
+        // 4. Inscriptions récentes (Temps Réel)
         const unsubRecent = onSnapshot(
             query(collection(db, 'enrollments'), orderBy('enrollmentDate', 'desc'), limit(5)),
             async (snap) => {
@@ -147,9 +159,12 @@ export default function AdminDashboard() {
         );
 
         return () => { 
-            unsubPayments(); unsubActiveUsers(); unsubConversion(); unsubRecent();
+            unsubPayments(); 
+            unsubUsers(); 
+            unsubTracking(); 
+            unsubRecent();
         };
-    }, [db, currentUser, usersMap]);
+    }, [db, currentUser]);
 
     return (
         <div className="space-y-10 pb-20 animate-in fade-in duration-700 relative">
@@ -170,7 +185,7 @@ export default function AdminDashboard() {
                         title={t('stats.active_users')} 
                         value={(stats.activeUsers || 0).toLocaleString()} 
                         icon={Activity} 
-                        trend={t('stats.last_24h')} 
+                        trend={`${(stats.totalUsers || 0).toLocaleString()} au total`} 
                         trendType="up"
                         sparklineColor="#3B82F6"
                         isLoading={isLoading}
