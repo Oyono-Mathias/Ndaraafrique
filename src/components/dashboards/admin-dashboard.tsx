@@ -18,8 +18,7 @@ import {
   limit,
   getDocs,
   documentId,
-  Timestamp,
-  getCountFromServer
+  Timestamp
 } from 'firebase/firestore';
 import { 
   Users, 
@@ -27,10 +26,8 @@ import {
   Percent, 
   Award,
   Clock,
-  TrendingUp,
   Activity
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -48,6 +45,15 @@ interface AdminStats {
   conversionRate: number;
   successRate: number;
 }
+
+/** Utility to safely convert Firestore date fields to JS Date objects. */
+const safeToDate = (date: any): Date | null => {
+  if (!date) return null;
+  if (typeof date.toDate === 'function') return date.toDate();
+  if (date instanceof Date) return date;
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? null : d;
+};
 
 export default function AdminDashboard() {
     const { currentUser } = useRole();
@@ -80,9 +86,20 @@ export default function AdminDashboard() {
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             const payments = snap.docs.map(d => d.data() as Payment);
             
-            const revToday = payments.filter(p => (p.date as any).toDate() >= today).reduce((acc, p) => acc + p.amount, 0);
-            const revWeek = payments.filter(p => (p.date as any).toDate() >= week).reduce((acc, p) => acc + p.amount, 0);
-            const revMonth = payments.filter(p => (p.date as any).toDate() >= month).reduce((acc, p) => acc + p.amount, 0);
+            const revToday = payments.filter(p => {
+                const d = safeToDate(p.date);
+                return d && d >= today;
+            }).reduce((acc, p) => acc + (p.amount || 0), 0);
+
+            const revWeek = payments.filter(p => {
+                const d = safeToDate(p.date);
+                return d && d >= week;
+            }).reduce((acc, p) => acc + (p.amount || 0), 0);
+
+            const revMonth = payments.filter(p => {
+                const d = safeToDate(p.date);
+                return d && d >= month;
+            }).reduce((acc, p) => acc + (p.amount || 0), 0);
 
             setStats(prev => ({ 
                 ...prev, 
@@ -131,7 +148,7 @@ export default function AdminDashboard() {
         return () => { 
             unsubPayments(); unsubActiveUsers(); unsubConversion(); unsubRecent();
         };
-    }, [db, currentUser]);
+    }, [db, currentUser, usersMap]);
 
     return (
         <div className="space-y-10 pb-20 animate-in fade-in duration-700 relative">
@@ -141,16 +158,16 @@ export default function AdminDashboard() {
                 <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
                         title="Revenu (Mois)" 
-                        value={`${(stats.revenueMonth / 1000).toFixed(0)}K`} 
+                        value={`${((stats.revenueMonth || 0) / 1000).toFixed(0)}K`} 
                         unit="XOF"
                         icon={Wallet} 
-                        trend={`${stats.revenueToday.toLocaleString()} aujourd'hui`} 
+                        trend={`${(stats.revenueToday || 0).toLocaleString()} aujourd'hui`} 
                         trendType="up"
                         isLoading={isLoading}
                     />
                     <StatCard 
                         title="Utilisateurs Actifs" 
-                        value={stats.activeUsers.toLocaleString()} 
+                        value={(stats.activeUsers || 0).toLocaleString()} 
                         icon={Activity} 
                         trend="Dernières 24h" 
                         trendType="up"
@@ -159,7 +176,7 @@ export default function AdminDashboard() {
                     />
                     <StatCard 
                         title="Taux Conversion" 
-                        value={`${stats.conversionRate}%`} 
+                        value={`${stats.conversionRate || 0}%`} 
                         icon={Percent} 
                         trend="Ventes / Sessions" 
                         trendType="neutral"
@@ -168,7 +185,7 @@ export default function AdminDashboard() {
                     />
                     <StatCard 
                         title="Réussite Globale" 
-                        value={`${stats.successRate}%`} 
+                        value={`${stats.successRate || 0}%`} 
                         icon={Award} 
                         trend="Certifications" 
                         sparklineColor="#A855F7"
@@ -189,6 +206,7 @@ export default function AdminDashboard() {
                         ) : recentEnrollments.length > 0 ? (
                             recentEnrollments.map((enroll) => {
                                 const student = usersMap.get(enroll.studentId);
+                                const enrollDate = safeToDate(enroll.enrollmentDate);
                                 return (
                                     <div key={enroll.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5 group hover:border-primary/20 transition-all">
                                         <div className="flex items-center gap-4">
@@ -205,12 +223,12 @@ export default function AdminDashboard() {
                                                 <p className="font-bold text-white text-sm uppercase tracking-tight">{student?.fullName || 'Chargement...'}</p>
                                                 <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
                                                     <Clock size={10} />
-                                                    {enroll.enrollmentDate ? formatDistanceToNow((enroll.enrollmentDate as any).toDate(), { locale: fr, addSuffix: true }) : '---'}
+                                                    {enrollDate ? formatDistanceToNow(enrollDate, { locale: fr, addSuffix: true }) : '---'}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] font-black text-primary uppercase">{enroll.priceAtEnrollment.toLocaleString()} F</p>
+                                            <p className="text-[10px] font-black text-primary uppercase">{(enroll.priceAtEnrollment || 0).toLocaleString()} F</p>
                                             <p className="text-[8px] font-bold text-slate-600 uppercase">Payé</p>
                                         </div>
                                     </div>
