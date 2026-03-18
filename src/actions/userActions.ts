@@ -2,12 +2,13 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de clés de traduction pour les retours serveur.
+ * ✅ RÉSOLU : Ajout des fonctions manquantes rechargeVirtualBalance et approveInstructorApplication.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
+import { sendUserNotification } from './notificationActions';
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
     try {
@@ -73,6 +74,105 @@ export async function rechargeUserWallet({
         await batch.commit();
         return { success: true, message: "success.wallet_recharged" };
     } catch (e: any) {
+        return { success: false, error: "error.generic" };
+    }
+}
+
+/**
+ * RECHARGER LE SOLDE VIRTUEL (Action Admin - Ads Factory)
+ */
+export async function rechargeVirtualBalanceAction({ 
+    userId, 
+    amount, 
+    adminId 
+}: { 
+    userId: string; 
+    amount: number; 
+    adminId: string;
+}) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "error.admin_only" };
+
+    try {
+        const db = getAdminDb();
+        const userRef = db.collection('users').doc(userId);
+        
+        await userRef.update({
+            virtualBalance: FieldValue.increment(amount),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: "error.generic" };
+    }
+}
+
+/**
+ * APPROUVER OU REJETER UNE CANDIDATURE EXPERT
+ */
+export async function approveInstructorApplication({
+    userId,
+    decision,
+    message,
+    adminId,
+}: {
+    userId: string;
+    decision: 'accepted' | 'rejected';
+    message: string;
+    adminId: string;
+}) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "error.admin_only" };
+
+    try {
+        const db = getAdminDb();
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(userId);
+
+        if (decision === 'accepted') {
+            batch.update(userRef, {
+                isInstructorApproved: true,
+                role: 'instructor',
+                'instructorApplication.status': 'accepted',
+                'instructorApplication.decisionDate': FieldValue.serverTimestamp(),
+                'instructorApplication.feedback': message,
+                updatedAt: FieldValue.serverTimestamp()
+            });
+        } else {
+            batch.update(userRef, {
+                isInstructorApproved: false,
+                'instructorApplication.status': 'rejected',
+                'instructorApplication.decisionDate': FieldValue.serverTimestamp(),
+                'instructorApplication.feedback': message,
+                updatedAt: FieldValue.serverTimestamp()
+            });
+        }
+
+        // Journalisation audit
+        const auditRef = db.collection('admin_audit_logs').doc();
+        batch.set(auditRef, {
+            adminId,
+            eventType: 'instructor.application',
+            target: { id: userId, type: 'user' },
+            details: `Candidature instructeur ${decision}. Message: ${message}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+        
+        // Notification utilisateur
+        await sendUserNotification(userId, {
+            text: decision === 'accepted' 
+                ? "Félicitations ! Votre compte Expert Ndara a été approuvé." 
+                : "Votre candidature Expert a été refusée après examen.",
+            link: decision === 'accepted' ? '/instructor/dashboard' : '/student/support',
+            type: decision === 'accepted' ? 'success' : 'alert'
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        console.error("Approve Application Error:", e);
         return { success: false, error: "error.generic" };
     }
 }

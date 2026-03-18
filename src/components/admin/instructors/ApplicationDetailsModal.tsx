@@ -185,13 +185,3 @@ function SocialBtn({ icon: Icon, href, color }: any) {
         </a>
     );
 }
-
-function InstructorProfileSkeleton() {
-    return (
-        <div className="p-6 space-y-8">
-            <Skeleton className="h-32 w-32 rounded-full mx-auto bg-slate-800" />
-            <Skeleton className="h-8 w-3/4 mx-auto bg-slate-800" />
-            <Skeleton className="h-4 w-full rounded-[2rem] bg-slate-800" />
-        </div>
-    );
-}
