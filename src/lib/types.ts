@@ -2,7 +2,27 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
-export type PaymentProvider = 'moneroo' | 'mesomb' | 'virtual' | 'wallet';
+export type PaymentProvider = 'moneroo' | 'mesomb' | 'virtual' | 'wallet' | 'custom';
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  logo: string;
+  active: boolean;
+  provider: PaymentProvider;
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  currency: string;
+  prefix: string;
+  flagEmoji: string;
+  active: boolean;
+  paymentMethods: PaymentMethod[];
+  createdAt?: Timestamp | FieldValue;
+}
 
 export interface NotificationPreferences {
   newPayouts?: boolean;
@@ -26,17 +46,6 @@ export interface FAQ {
   order: number;
   createdAt: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-}
-
-export interface Country {
-  id: string;
-  name: string;
-  code: string;
-  currency: string;
-  prefix: string;
-  flagEmoji: string;
-  active: boolean;
-  createdAt?: Timestamp | FieldValue;
 }
 
 export interface CarouselSlide {
@@ -496,6 +505,14 @@ export interface Settings {
     tiktokUrl?: string;
   };
   platform?: {
+    heroBadge?: string;
+    heroTitle?: string;
+    heroSubtitle?: string;
+    heroImageUrl?: string;
+    finalCtaTitle?: string;
+    finalCtaSubtitle?: string;
+    finalCtaButtonText?: string;
+    showFinalCta?: boolean;
     allowTeacherToTeacherResale?: boolean;
     allowCourseBuyout?: boolean;
     allowResaleRights?: boolean;
@@ -674,10 +691,10 @@ export interface SecurityLog {
 export interface AdminAuditLog {
   id: string;
   adminId: string;
-  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update' | 'settings.update' | 'user.delete' | 'user.import' | 'instructor.application' | 'course.grant' | 'chat.block';
+  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update' | 'settings.update' | 'user.delete' | 'user.import' | 'instructor.application' | 'course.grant' | 'chat.block' | 'country.update';
   target: {
     id: string;
-    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role' | 'settings' | 'enrollment' | 'chat';
+    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role' | 'settings' | 'enrollment' | 'chat' | 'country';
   };
   timestamp: Timestamp | FieldValue;
   details: string;

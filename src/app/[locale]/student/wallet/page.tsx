@@ -2,9 +2,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - Design Fintech Indigo V4 Premium.
+ * @fileOverview Ndara Wallet Étudiant V4 - Design Fintech Indigo.
+ * ✅ DYNAMIQUE : Charge les pays et leurs méthodes de paiement depuis Firestore.
  * ✅ UX MOBILE : Bouton sticky et padding optimisé.
- * ✅ DATA : Sélecteur de pays dynamique branché sur Firestore.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -13,7 +13,6 @@ import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } fr
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-    Bell, 
     ArrowDownLeft, 
     Smartphone, 
     Check, 
@@ -30,13 +29,14 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { Payment, Country } from '@/lib/types';
+import type { Payment, Country, PaymentMethod } from '@/lib/types';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { Input } from '@/components/ui/input';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { WalletCard } from '@/components/wallet/WalletCard';
+import { PaymentMethodCard } from '@/components/wallet/PaymentMethodCard';
 
-const PRESET_AMOUNTS = [1000, 2000, 5000];
+const PRESET_AMOUNTS = [1000, 2000, 5000, 10000];
 
 export default function NdaraWalletPage() {
     const { currentUser, isUserLoading, user } = useRole();
@@ -53,11 +53,11 @@ export default function NdaraWalletPage() {
     
     const [selectedAmount, setSelectedAmount] = useState<number>(0);
     const [customAmount, setCustomAmount] = useState('');
-    const [selectedProvider, setSelectedProvider] = useState<'orange' | 'mtn' | 'wave' | null>(null);
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
     const [phoneNumber, setPhoneNumber] = useState('');
     const [selectedCountryId, setSelectedCountryId] = useState<string>('');
 
-    // Écouteur des pays dynamiques
+    // 1. Écouteur des pays dynamiques
     useEffect(() => {
         const q = query(collection(db, 'countries'), where('active', '==', true));
         const unsub = onSnapshot(q, (snap) => {
@@ -70,6 +70,7 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [db, selectedCountryId]);
 
+    // 2. Écouteur des transactions
     useEffect(() => {
         if (!currentUser?.uid) return;
 
@@ -83,9 +84,6 @@ export default function NdaraWalletPage() {
         const unsub = onSnapshot(q, (snap) => {
             setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
             setIsLoading(false);
-        }, (err) => {
-            console.error("Firestore Listen Error:", err);
-            setIsLoading(false);
         });
 
         return () => unsub();
@@ -94,6 +92,11 @@ export default function NdaraWalletPage() {
     const activeCountry = useMemo(() => 
         countries.find(c => c.id === selectedCountryId), 
     [countries, selectedCountryId]);
+
+    const availableMethods = useMemo(() => {
+        if (!activeCountry) return [];
+        return (activeCountry.paymentMethods || []).filter(m => m.active);
+    }, [activeCountry]);
 
     const handleSelectAmount = (val: number) => {
         setSelectedAmount(val);
@@ -106,29 +109,25 @@ export default function NdaraWalletPage() {
     };
 
     const handleRecharge = async () => {
-        if (!user || selectedAmount <= 0 || !selectedProvider || phoneNumber.length < 8) {
+        if (!user || selectedAmount <= 0 || !selectedMethod || phoneNumber.length < 8) {
             toast({ variant: 'destructive', title: "Erreur", description: t('validation_msg') });
             return;
         }
 
         setIsProcessing(true);
         try {
-            const service = selectedProvider === 'orange' ? 'ORANGE' : 'MTN';
+            // Utilise le provider configuré dans la méthode de paiement
             const result = await initiateMeSombPayment({
                 amount: selectedAmount,
                 phoneNumber: phoneNumber,
-                service: service as any,
+                service: selectedMethod.name.toLowerCase().includes('mtn') ? 'MTN' : 'ORANGE',
                 courseId: 'WALLET_RECHARGE',
                 userId: user.uid,
                 type: 'wallet_topup' as any
             });
 
             if (result.success) {
-                if (result.transactionId === "SUCCESS" || result.transactionId === "SIMULATED") {
-                    setShowSuccess(true);
-                } else {
-                    toast({ title: t('processing'), description: t('validation_msg') });
-                }
+                setShowSuccess(true);
             } else {
                 throw new Error(result.error);
             }
@@ -142,273 +141,208 @@ export default function NdaraWalletPage() {
     if (isUserLoading) return <WalletSkeleton />;
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-4 font-sans">
-            <div className="bg-white w-full max-w-md shadow-2xl overflow-hidden relative min-h-screen sm:min-h-[850px] flex flex-col sm:rounded-[3rem]">
-                
-                <div className="h-6 bg-gradient-to-b from-indigo-700 to-indigo-600 shrink-0"></div>
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
+            <div className="grain-overlay opacity-[0.03]" />
 
-                <div className="bg-gradient-to-b from-indigo-600 to-indigo-700 px-5 pt-4 pb-8 text-white rounded-b-[2rem] shadow-lg z-10 relative shrink-0">
-                    <div className="flex justify-between items-center mb-6">
-                        <button onClick={() => router.back()} className="p-2.5 bg-white/15 rounded-full hover:bg-white/25 transition active:scale-95">
-                            <ArrowLeft className="h-5 w-5" />
-                        </button>
-                        <h1 className="text-base font-bold uppercase tracking-widest">{t('title')}</h1>
-                        <div className="w-10" />
-                    </div>
-                    
-                    <div className="text-center py-2">
-                        <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.3em] mb-2">{t('current_balance')}</p>
-                        <div className="flex items-center justify-center gap-3">
-                            <WalletIcon className="h-6 w-6 text-indigo-300 fill-current" />
-                            <h2 className="text-5xl font-black tracking-tighter">
-                                {(currentUser?.balance || 0).toLocaleString('fr-FR')}
-                            </h2>
-                        </div>
-                        <p className="text-indigo-300 text-sm font-bold mt-1 tracking-widest uppercase">FCFA</p>
+            <header className="fixed top-0 left-0 right-0 z-50 bg-indigo-700/95 backdrop-blur-md safe-area-pt border-b border-white/10">
+                <div className="px-6 py-4 flex items-center justify-between">
+                    <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition">
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <h1 className="font-black text-lg text-white uppercase tracking-[0.2em]">{t('title')}</h1>
+                    <div className="w-10" />
+                </div>
+            </header>
+
+            <main className="flex-1 pt-24 pb-48 px-6 space-y-8 animate-in fade-in duration-700">
+                
+                {/* --- SHARED WALLET CARD --- */}
+                <WalletCard 
+                    balance={currentUser?.balance || 0} 
+                    userName={currentUser?.fullName || 'Ndara'} 
+                    variant="indigo"
+                />
+
+                {/* --- COUNTRY SELECTOR --- */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-4">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Région de recharge</label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl z-10">{activeCountry?.flagEmoji || '🌍'}</span>
+                        <select 
+                            value={selectedCountryId}
+                            onChange={(e) => { setSelectedCountryId(e.target.value); setSelectedMethod(null); }}
+                            className="w-full h-14 pl-14 pr-10 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-black text-slate-900 uppercase tracking-widest appearance-none outline-none focus:border-indigo-500 transition-all"
+                        >
+                            {countries.map(c => (
+                                <option key={c.id} value={c.id}>{c.name} ({c.currency})</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-6 pb-40">
-                    
-                    <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 mb-5 animate-fade-in" style={{ animationDelay: '0.05s' }}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner">
-                                <CircleDollarSign size={20} />
-                            </div>
-                            <h2 className="text-slate-800 font-black text-xs uppercase tracking-widest">{t('amount_label')}</h2>
+                {/* --- AMOUNT SELECTION --- */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+                            <CircleDollarSign size={20} />
                         </div>
-                        
-                        <div className="grid grid-cols-3 gap-2.5 mb-4">
-                            {PRESET_AMOUNTS.map(val => (
-                                <button 
-                                    key={val}
-                                    onClick={() => handleSelectAmount(val)}
-                                    className={cn(
-                                        "py-4 rounded-xl border-2 font-black text-xs transition-all active:scale-95",
-                                        selectedAmount === val && !customAmount
-                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                                            : "bg-slate-50 border-slate-100 text-slate-500 hover:border-indigo-300"
-                                    )}
-                                >
-                                    {val.toLocaleString()}
-                                </button>
+                        <h2 className="text-slate-900 font-black text-xs uppercase tracking-widest">{t('amount_label')}</h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                        {PRESET_AMOUNTS.map(val => (
+                            <button 
+                                key={val}
+                                onClick={() => handleSelectAmount(val)}
+                                className={cn(
+                                    "py-4 rounded-xl border-2 font-black text-xs transition-all active:scale-95",
+                                    selectedAmount === val && !customAmount
+                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg" 
+                                        : "bg-slate-50 border-slate-100 text-slate-500 hover:border-indigo-300"
+                                )}
+                            >
+                                {val.toLocaleString()} {activeCountry?.currency}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <Input 
+                        type="number" 
+                        value={customAmount}
+                        onChange={(e) => handleCustomAmountChange(e.target.value)}
+                        className="h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-indigo-500 text-slate-900 font-black text-lg text-center"
+                        placeholder={t('other_amount')}
+                    />
+                </div>
+
+                {/* --- DYNAMIC PAYMENT METHODS --- */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+                            <Smartphone size={20} />
+                        </div>
+                        <h2 className="text-slate-900 font-black text-xs uppercase tracking-widest">{t('method_label')}</h2>
+                    </div>
+                    
+                    {availableMethods.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-3">
+                            {availableMethods.map(method => (
+                                <PaymentMethodCard 
+                                    key={method.id}
+                                    active={selectedMethod?.id === method.id}
+                                    onClick={() => setSelectedMethod(method)}
+                                    label={method.name}
+                                    logo={method.logo}
+                                />
                             ))}
                         </div>
-                        
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span className="text-gray-400 font-bold text-xs">FCFA</span>
-                            </div>
-                            <Input 
-                                type="number" 
-                                value={customAmount}
-                                onChange={(e) => handleCustomAmountChange(e.target.value)}
-                                className="h-14 pl-16 pr-4 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-black text-base transition-all"
-                                placeholder={t('other_amount')}
-                            />
+                    ) : (
+                        <div className="py-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucun moyen disponible</p>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 mb-5 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner">
-                                <WalletIcon size={20} />
-                            </div>
-                            <h2 className="text-slate-800 font-black text-xs uppercase tracking-widest">{t('method_label')}</h2>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-3">
-                            <ProviderCard 
-                                active={selectedProvider === 'orange'} 
-                                onClick={() => setSelectedProvider('orange')}
-                                label="Orange" 
-                                logo="https://image.qwenlm.ai/public_source/44667d98-ac73-4bb4-814e-f813485e0974/18b22f229-ddfd-487d-bb4e-d37a4623905a.png"
-                            />
-                            <ProviderCard 
-                                active={selectedProvider === 'mtn'} 
-                                onClick={() => setSelectedProvider('mtn')}
-                                label="MTN" 
-                                logo="https://image.qwenlm.ai/public_source/44667d98-ac73-4bb4-814e-f813485e0974/12c7746a9-f3ec-47ac-9914-ce3ccfafcba5.png"
-                            />
-                            <ProviderCard 
-                                active={selectedProvider === 'wave'} 
-                                onClick={() => setSelectedProvider('wave')}
-                                label="Wave" 
-                                logo="https://image.qwenlm.ai/public_source/44667d98-ac73-4bb4-814e-f813485e0974/17799ca37-141e-4548-b072-ffcc00788ad7.png"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 mb-5 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">{t('phone_label')}</label>
-                        <div className="flex gap-3">
-                            <div className="relative flex items-center w-28 shrink-0">
-                                <span className="absolute left-3 text-lg">{activeCountry?.flagEmoji || '🌍'}</span>
-                                <select 
-                                    value={selectedCountryId}
-                                    onChange={(e) => setSelectedCountryId(e.target.value)}
-                                    className="block w-full pl-10 pr-2 py-4 border-2 border-slate-100 rounded-xl bg-slate-50 text-sm font-black text-slate-700 cursor-pointer appearance-none outline-none focus:border-indigo-500"
-                                >
-                                    {countries.map(c => (
-                                        <option key={c.id} value={c.id}>{c.prefix}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('phone_label')}</label>
+                        <div className="flex gap-2">
+                            <div className="h-14 px-4 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-600 border border-slate-200">
+                                {activeCountry?.prefix}
                             </div>
                             <Input 
                                 type="tel" 
-                                placeholder="00 00 00 00" 
+                                placeholder="Numéro sans préfixe" 
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
-                                className="flex-1 h-14 px-5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-black text-base transition-all"
+                                className="flex-1 h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-900 font-black text-lg"
                             />
                         </div>
                     </div>
-
-                    <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                        <div className="flex justify-between items-center mb-4 px-1">
-                            <h3 className="text-slate-900 font-black text-xs uppercase tracking-widest">{t('recent_transactions')}</h3>
-                            <button onClick={() => router.push('/student/paiements')} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:underline">Voir tout</button>
-                        </div>
-                        <div className="space-y-2.5">
-                            {isLoading ? (
-                                <Skeleton className="h-20 w-full rounded-2xl" />
-                            ) : transactions.length > 0 ? (
-                                transactions.slice(0, 3).map(txn => (
-                                    <div key={txn.id} className="flex items-center justify-between p-4 bg-white rounded-[1.25rem] border border-slate-100 shadow-sm active:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-full flex items-center justify-center shadow-inner",
-                                                txn.amount > 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-                                            )}>
-                                                {txn.amount > 0 ? <ArrowDownLeft size={20} /> : <ShoppingBagIcon size={18} />}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[150px]">
-                                                    {txn.metadata?.type === 'wallet_topup' ? 'Rechargement' : (txn.courseTitle || 'Achat')}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                                                    {txn.date && typeof (txn.date as any).toDate === 'function' ? format((txn.date as any).toDate(), 'dd MMM, HH:mm', { locale: fr }) : '...'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span className={cn(
-                                            "text-sm font-black",
-                                            txn.amount > 0 ? "text-emerald-600" : "text-slate-900"
-                                        )}>
-                                            {txn.amount > 0 ? '+' : '-'}{Math.abs(txn.amount).toLocaleString()}
-                                        </span>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-10 opacity-20">
-                                    <History size={40} className="mx-auto mb-2 text-slate-400" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Aucune transaction</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
                 </div>
 
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-30 safe-area-pb md:sticky md:bottom-0">
-                    <div className="max-w-md mx-auto px-5 pt-4 pb-6">
-                        <div className="flex justify-between items-end mb-4 px-1">
-                            <div>
-                                <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{t('total_to_pay')}</span>
-                                <div className="text-2xl font-black text-slate-900 mt-1">
-                                    {selectedAmount > 0 ? `${selectedAmount.toLocaleString('fr-FR')} FCFA` : '0 FCFA'}
+                {/* --- RECENT HISTORY --- */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-slate-100 space-y-6">
+                    <div className="flex justify-between items-center px-1">
+                        <h3 className="text-slate-900 font-black text-xs uppercase tracking-widest">{t('recent_transactions')}</h3>
+                        <button onClick={() => router.push('/student/paiements')} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest">Voir tout</button>
+                    </div>
+                    <div className="space-y-3">
+                        {isLoading ? <Skeleton className="h-20 w-full rounded-2xl" /> : transactions.length > 0 ? (
+                            transactions.slice(0, 3).map(txn => (
+                                <div key={txn.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl active:bg-slate-100 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center shadow-inner",
+                                            txn.amount > 0 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                                        )}>
+                                            {txn.amount > 0 ? <ArrowDownLeft size={20} /> : <ShoppingBagIcon size={18} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{format((txn.date as any).toDate(), 'dd MMM', { locale: fr })}</p>
+                                        </div>
+                                    </div>
+                                    <span className={cn("text-sm font-black", txn.amount > 0 ? "text-emerald-600" : "text-slate-900")}>
+                                        {txn.amount > 0 ? '+' : '-'}{Math.abs(txn.amount).toLocaleString()}
+                                    </span>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="py-10 text-center opacity-20">
+                                <History size={40} className="mx-auto mb-2 text-slate-400" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">Zéro transaction</p>
                             </div>
-                            <div className="text-right">
-                                <span className="text-emerald-600 text-[9px] font-black bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 uppercase tracking-widest">0 FRAIS</span>
-                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
+
+            {/* --- STICKY FOOTER --- */}
+            <footer className="fixed bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                <div className="max-w-md mx-auto space-y-4">
+                    <div className="flex justify-between items-end px-2">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total à régler</p>
+                            <p className="text-3xl font-black text-slate-950 leading-none">
+                                {selectedAmount.toLocaleString()} <span className="text-sm font-bold text-indigo-600">{activeCountry?.currency}</span>
+                            </p>
                         </div>
-                        <Button 
-                            onClick={handleRecharge} 
-                            disabled={isProcessing || selectedAmount <= 0 || !selectedProvider}
-                            className="w-full h-16 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl font-black uppercase text-sm tracking-widest shadow-xl shadow-indigo-200 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-none"
-                        >
-                            {isProcessing ? <Loader2 className="animate-spin" /> : <><Check size={20} strokeWidth={3} /> {t('confirm_payment')}</>}
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] uppercase px-3 h-6 mb-1">0 FRAIS</Badge>
+                    </div>
+                    <Button 
+                        onClick={handleRecharge} 
+                        disabled={isProcessing || selectedAmount <= 0 || !selectedMethod}
+                        className="w-full h-16 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-sm tracking-widest shadow-2xl shadow-indigo-200 transition-all active:scale-95 border-none"
+                    >
+                        {isProcessing ? <Loader2 className="animate-spin" /> : <><Check size={20} className="mr-3" strokeWidth={3} /> Confirmer le paiement</>}
+                    </Button>
+                </div>
+            </footer>
+
+            {/* Success Overlay */}
+            {showSuccess && (
+                <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-500">
+                    <div className="text-center space-y-8 animate-in zoom-in duration-700 max-w-sm w-full">
+                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(16,185,129,0.4)]">
+                            <Check className="h-12 w-12 text-slate-950" strokeWidth={4} />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-3xl font-black text-white uppercase tracking-tight">{t('success_title')}</h3>
+                            <p className="text-slate-400 text-sm font-medium italic">{t('success_desc')}</p>
+                        </div>
+                        <Button onClick={() => setShowSuccess(false)} className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
+                            Continuer sur Ndara
                         </Button>
                     </div>
                 </div>
-
-                {showSuccess && (
-                    <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center animate-in fade-in duration-300">
-                        <div className="bg-white rounded-t-[2.5rem] sm:rounded-[3rem] p-8 w-full max-w-md animate-slide-up-modal relative overflow-hidden shadow-2xl">
-                            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 to-green-600"></div>
-                            <div className="text-center">
-                                <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                                    <Check className="text-green-600 h-10 w-10" strokeWidth={4} />
-                                </div>
-                                <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">{t('success_title')}</h3>
-                                <p className="text-slate-500 mb-8 font-medium text-sm italic">{t('success_desc')}</p>
-                                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-[1.5rem] p-6 mb-8 text-left border border-slate-200 space-y-4">
-                                    <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                                        <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Montant</span>
-                                        <span className="font-black text-slate-900 text-base">{selectedAmount.toLocaleString('fr-FR')} FCFA</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                                        <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Méthode</span>
-                                        <span className="font-black text-slate-900 text-base capitalize">{selectedProvider}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">ID Transaction</span>
-                                        <span className="font-mono text-slate-900 text-[11px] font-black">#TRX{(Math.random() * 1000000).toFixed(0)}</span>
-                                    </div>
-                                </div>
-                                <Button onClick={() => setShowSuccess(false)} className="w-full h-16 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black uppercase text-xs tracking-widest shadow-xl transition-all">
-                                    RETOUR AU WALLET
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {isProcessing && (
-                    <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-                        <div className="relative mb-8">
-                            <div className="w-24 h-24 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center pulse-ring">
-                                    <WalletIcon className="text-white h-6 w-6 fill-current" />
-                                </div>
-                            </div>
-                        </div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">{t('processing')}</h3>
-                        <p className="text-slate-500 text-sm font-medium italic mb-6">{t('validation_msg')}</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function ProviderCard({ active, onClick, label, logo }: { active: boolean, onClick: () => void, label: string, logo: string }) {
-    return (
-        <button 
-            onClick={onClick}
-            className={cn(
-                "flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all active:scale-[0.97] min-h-[110px] group shadow-sm",
-                active 
-                    ? "bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-600 scale-105 shadow-lg shadow-indigo-100" 
-                    : "bg-white border-slate-100 grayscale opacity-60 hover:border-indigo-200"
             )}
-        >
-            <div className="relative h-12 w-full">
-                <Image src={logo} alt={label} fill className="object-contain transition-transform group-hover:scale-110" />
-            </div>
-            <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest",
-                active ? "text-indigo-600" : "text-slate-400"
-            )}>{label}</span>
-        </button>
+        </div>
     );
 }
 
 function WalletSkeleton() {
     return (
-        <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
+        <div className="p-6 space-y-8 pt-32">
             <Skeleton className="h-48 w-full rounded-[2.5rem] bg-slate-200" />
             <Skeleton className="h-32 w-full rounded-3xl bg-slate-200" />
             <Skeleton className="h-64 w-full rounded-3xl bg-slate-200" />

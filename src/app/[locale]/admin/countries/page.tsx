@@ -2,9 +2,9 @@
 'use client';
 
 /**
- * @fileOverview Cockpit Géographique - Gestion des pays et devises.
- * ✅ REAL-TIME : Branché sur Firestore avec onSnapshot.
- * ✅ ADMIN : Contrôle total des régions actives.
+ * @fileOverview Cockpit Géographique & Paiements.
+ * ✅ GESTION : Pays, devises et méthodes de paiement par pays.
+ * ✅ REAL-TIME : Branché sur Firestore.
  */
 
 import { useState, useMemo } from 'react';
@@ -21,7 +21,11 @@ import {
     XCircle, 
     Loader2, 
     ShieldCheck,
-    Coins
+    Coins,
+    Smartphone,
+    CreditCard,
+    MoreVertical,
+    Settings2
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -29,9 +33,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { addCountryAction, updateCountryAction, deleteCountryAction, toggleCountryStatusAction } from '@/actions/countryActions';
+import { addCountryAction, updateCountryAction, deleteCountryAction, toggleCountryStatusAction, updateCountryPaymentMethods } from '@/actions/countryActions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import type { Country } from '@/lib/types';
+import type { Country, PaymentMethod, PaymentProvider } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export default function AdminCountriesPage() {
@@ -40,8 +44,10 @@ export default function AdminCountriesPage() {
     const { currentUser } = useRole();
     
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isMethodsModalOpen, setIsMethodsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -49,6 +55,12 @@ export default function AdminCountriesPage() {
         currency: 'XOF',
         prefix: '+',
         flagEmoji: '🌍'
+    });
+
+    const [newMethod, setNewMethod] = useState({
+        name: '',
+        logo: '',
+        provider: 'mesomb' as PaymentProvider
     });
 
     const countriesQuery = useMemo(() => query(collection(db, 'countries'), orderBy('name')), [db]);
@@ -65,10 +77,10 @@ export default function AdminCountriesPage() {
     const handleAdd = async () => {
         if (!formData.name || !formData.code) return;
         setIsSubmitting(true);
-        const result = await addCountryAction({ ...formData, active: true });
+        const result = await addCountryAction({ ...formData, active: true, paymentMethods: [] });
         if (result.success) {
             toast({ title: "Pays ajouté !" });
-            setIsModalOpen(false);
+            setIsAddModalOpen(false);
             setFormData({ name: '', code: '', currency: 'XOF', prefix: '+', flagEmoji: '🌍' });
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: result.error });
@@ -76,16 +88,29 @@ export default function AdminCountriesPage() {
         setIsSubmitting(false);
     };
 
-    const handleToggle = async (id: string, active: boolean) => {
-        await toggleCountryStatusAction(id, active);
-        toast({ title: active ? "Pays activé" : "Pays suspendu" });
+    const handleToggleMethod = async (countryId: string, methods: PaymentMethod[], methodId: string) => {
+        if (!currentUser) return;
+        const updated = methods.map(m => m.id === methodId ? { ...m, active: !m.active } : m);
+        await updateCountryPaymentMethods(countryId, updated, currentUser.uid);
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm("Supprimer ce pays ?")) {
-            await deleteCountryAction(id);
-            toast({ title: "Pays supprimé" });
+    const handleAddMethod = async () => {
+        if (!selectedCountry || !newMethod.name || !currentUser) return;
+        setIsSubmitting(true);
+        const methods = selectedCountry.paymentMethods || [];
+        const updated = [...methods, { ...newMethod, id: Math.random().toString(36).substring(7), active: true }];
+        const result = await updateCountryPaymentMethods(selectedCountry.id, updated, currentUser.uid);
+        if (result.success) {
+            toast({ title: "Méthode ajoutée !" });
+            setNewMethod({ name: '', logo: '', provider: 'mesomb' });
         }
+        setIsSubmitting(false);
+    };
+
+    const handleRemoveMethod = async (methodId: string) => {
+        if (!selectedCountry || !currentUser) return;
+        const updated = (selectedCountry.paymentMethods || []).filter(m => m.id !== methodId);
+        await updateCountryPaymentMethods(selectedCountry.id, updated, currentUser.uid);
     };
 
     return (
@@ -96,20 +121,18 @@ export default function AdminCountriesPage() {
                         <Globe className="h-4 w-4" />
                         <span className="text-[10px] font-black uppercase tracking-[0.3em]">Expansion Régionale</span>
                     </div>
-                    <h1 className="text-3xl font-black text-white uppercase tracking-tight">Pays & Régions</h1>
-                    <p className="text-slate-400 text-sm font-medium mt-1">Gérez la présence géographique de Ndara Afrique.</p>
+                    <h1 className="text-3xl font-black text-white uppercase tracking-tight">Pays & Paiements</h1>
+                    <p className="text-slate-400 text-sm font-medium mt-1">Gérez la présence et les flux financiers par pays.</p>
                 </div>
 
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                     <DialogTrigger asChild>
                         <Button className="h-12 rounded-2xl bg-primary text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl">
                             <Plus className="mr-2 h-4 w-4" /> Nouveau Pays
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
-                        <DialogHeader>
-                            <DialogTitle className="uppercase font-black tracking-tight">Ajouter une région</DialogTitle>
-                        </DialogHeader>
+                        <DialogHeader><DialogTitle className="uppercase font-black tracking-tight">Ajouter une région</DialogTitle></DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -160,10 +183,10 @@ export default function AdminCountriesPage() {
                     <TableHeader>
                         <TableRow className="border-slate-800 bg-slate-800/30">
                             <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Pays</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Code / Préfixe</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Devise</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Devise / Préfixe</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Paiements</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
-                            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Actions</TableHead>
+                            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Configuration</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -182,25 +205,38 @@ export default function AdminCountriesPage() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-black text-slate-300">{country.code}</span>
+                                            <span className="text-xs font-black text-slate-300">{country.currency}</span>
                                             <span className="text-[9px] font-bold text-slate-500">{country.prefix}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge className="bg-slate-800 text-primary border-none font-black text-[9px] px-2 py-0.5">
-                                            {country.currency}
-                                        </Badge>
+                                        <div className="flex gap-1.5 flex-wrap">
+                                            {country.paymentMethods?.map(m => (
+                                                <Badge key={m.id} className={cn("text-[7px] font-black uppercase border-none h-4", m.active ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-600")}>
+                                                    {m.name}
+                                                </Badge>
+                                            ))}
+                                            {(!country.paymentMethods || country.paymentMethods.length === 0) && <span className="text-[9px] text-slate-600 italic">Aucun moyen</span>}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Switch 
                                             checked={country.active} 
-                                            onCheckedChange={(v) => handleToggle(country.id, v)}
+                                            onCheckedChange={(v) => toggleCountryStatusAction(country.id, v)}
                                             className="data-[state=checked]:bg-primary"
                                         />
                                     </TableCell>
                                     <TableCell className="text-right pr-6">
                                         <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(country.id)} className="h-8 w-8 text-red-500 hover:bg-red-500/10">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                onClick={() => { setSelectedCountry(country); setIsMethodsModalOpen(true); }}
+                                                className="h-8 w-8 text-primary hover:bg-primary/10"
+                                            >
+                                                <Settings2 size={14} />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => deleteCountryAction(country.id)} className="h-8 w-8 text-red-500 hover:bg-red-500/10">
                                                 <Trash2 size={14} />
                                             </Button>
                                         </div>
@@ -214,12 +250,55 @@ export default function AdminCountriesPage() {
                 </Table>
             </div>
 
-            <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-6 flex items-start gap-4 shadow-xl">
-                <ShieldCheck className="h-6 w-6 text-primary shrink-0 mt-1" />
-                <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-widest italic">
-                    "Les pays actifs ici sont les seuls autorisés pour les recharges de wallet et les affiliations. La devise définie s'applique automatiquement aux transactions de la région."
-                </p>
-            </div>
+            {/* --- MODAL GESTION PAIEMENTS PAR PAYS --- */}
+            <Dialog open={isMethodsModalOpen} onOpenChange={setIsMethodsModalOpen}>
+                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle className="uppercase font-black tracking-tight flex items-center gap-3">
+                            <Smartphone className="text-primary"/> Paiements : {selectedCountry?.name}
+                        </DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="space-y-6 py-4">
+                        {/* Méthodes Actives */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Méthodes configurées</label>
+                            <div className="grid gap-2">
+                                {selectedCountry?.paymentMethods?.map(m => (
+                                    <div key={m.id} className="flex items-center justify-between p-3 bg-slate-950 border border-white/5 rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-slate-800 overflow-hidden relative">
+                                                {m.logo ? <img src={m.logo} alt={m.name} className="object-contain" /> : <div className="flex h-full w-full items-center justify-center text-[10px] font-black uppercase">{m.name.charAt(0)}</div>}
+                                            </div>
+                                            <span className="font-bold text-sm">{m.name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Switch 
+                                                checked={m.active} 
+                                                onCheckedChange={() => handleToggleMethod(selectedCountry.id, selectedCountry.paymentMethods, m.id)}
+                                                className="data-[state=checked]:bg-primary"
+                                            />
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveMethod(m.id)} className="h-8 w-8 text-red-500"><Trash2 size={14} /></Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Formulaire ajout méthode */}
+                        <div className="p-5 bg-slate-950/50 border border-dashed border-slate-800 rounded-2xl space-y-4">
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Ajouter une méthode</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800" />
+                                <Input placeholder="URL Logo (Optionnel)" value={newMethod.logo} onChange={e => setNewMethod({...newMethod, logo: e.target.value})} className="bg-slate-950 border-slate-800" />
+                            </div>
+                            <Button onClick={handleAddMethod} disabled={isSubmitting} className="w-full h-12 rounded-xl bg-slate-800 hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all">
+                                {isSubmitting ? <Loader2 className="animate-spin" /> : <><Plus size={14} className="mr-2"/> Ajouter à la liste</>}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
