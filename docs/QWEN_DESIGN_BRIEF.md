@@ -1,20 +1,21 @@
 # 🎯 BRIEF TECHNIQUE : DESIGN SYSTEM & RECHARGE WALLET - NDARA AFRIQUE
 
 ## 📌 Contexte du Projet
-Ndara Afrique est une plateforme EdTech panafricaine avec une esthétique **Fintech Vintage** (Palette : Dark #0f172a, Émeraude #10b981, Ocre #CC7722). L'expérience utilisateur est **Android-first**, privilégiant les interactions tactiles, les cartes aux bords très arrondis (radius-4xl) et les textures grainées.
+Ndara Afrique est une plateforme EdTech panafricaine. L'expérience utilisateur est **Android-first**, privilégiant les interactions tactiles, les cartes aux bords très arrondis (radius-4xl) et les textures grainées. L'esthétique est de type **Fintech Vintage**.
 
 ---
 
 ## 🎯 OBJECTIF 1 : EXTRACTION ET RECONSTRUCTION DU DESIGN SYSTEM
-Analyse la structure actuelle du projet pour extraire et reconstruire un système de design cohérent.
+Analyse scrupuleusement les codes HTML déjà partagés pour en extraire l'ADN visuel et reconstruire un système de design cohérent.
 
 ### 🔍 Analyse requise :
-1. **Composants Clés** : Dashboard (Cards immersives), Profil (Cards d'identité), Messagerie (WhatsApp style), Panier (Ticket de caisse vintage).
-2. **Styles CSS** : Extraire les patterns Tailwind utilisés, notamment les classes personnalisées (`.grain-overlay`, `.virtual-card`, `.vintage-ticket`, `.nav-active-glow`).
-3. **Typographie** : Respecter les contrastes (Extra-bold uppercase pour les labels, serif italique pour les citations).
+1. **Couleurs (CRITIQUE)** : Ne propose pas de nouvelles couleurs. Identifie et utilise les codes **Hex/HSL exacts** que tu as utilisés dans les snippets HTML précédents (le sombre profond, l'émeraude, l'ocre, etc.).
+2. **Composants Clés** : Dashboard (Cards immersives), Profil (Cards d'identité), Messagerie (WhatsApp style), Panier (Ticket de caisse vintage).
+3. **Styles CSS** : Extraire les patterns Tailwind utilisés, notamment les classes personnalisées (`.grain-overlay`, `.virtual-card`, `.vintage-ticket`, `.nav-active-glow`).
+4. **Typographie** : Respecter les contrastes (Extra-bold uppercase pour les labels, serif italique pour les citations).
 
 ### 🛠️ Livrables attendus :
-- **globals.css** : Un fichier consolidé regroupant les variables HSL et les utilitaires personnalisés.
+- **globals.css** : Un fichier consolidé regroupant les variables HSL et les utilitaires personnalisés basés sur tes propres choix de couleurs.
 - **UI Components** : Versions React/Tailwind purifiées des composants : `Card`, `Badge`, `Button`, `StatPill`, et `ActionRow`.
 - **Contrainte** : **AUCUN REDESIGN**. Reproduire fidèlement le rendu visuel actuel en le rendant plus modulaire.
 
