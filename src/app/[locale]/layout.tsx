@@ -11,10 +11,11 @@ import { Loader2 } from "lucide-react";
 /**
  * @fileOverview Layout racine pour les routes internationalisées.
  * Optimisé pour le rendu statique (SSG) sur Vercel.
+ * ✅ RÉSOLU : Support du Français, Anglais et Sango.
  */
 
 export function generateStaticParams() {
-  return [{locale: 'en'}, {locale: 'fr'}];
+  return [{locale: 'en'}, {locale: 'fr'}, {locale: 'sg'}];
 }
 
 export default async function LocaleLayout({

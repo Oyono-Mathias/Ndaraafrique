@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
- * ✅ I18N : Utilisation intégrale des clés de traduction.
- * ✅ RÉACTIF : Switch de langue instantané.
+ * ✅ I18N : Support du Français, Anglais et Sango.
+ * ✅ RÉACTIF : Switch de langue instantané via routage local.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -93,7 +93,9 @@ export default function StudentProfilePage() {
   const handleLanguageChange = (newLocale: string) => {
       if (newLocale === locale) return;
       const segments = pathname.split('/');
-      segments[1] = newLocale; 
+      // Si le premier segment est vide (chemin commence par /), c'est l'index 1
+      const localeIndex = segments[0] === '' ? 1 : 0;
+      segments[localeIndex] = newLocale; 
       const newPath = segments.join('/');
       router.push(newPath);
   };
@@ -249,6 +251,7 @@ export default function StudentProfilePage() {
                         <SelectContent className="bg-slate-900 border-white/10 text-white">
                             <SelectItem value="fr" className="font-bold py-3 uppercase text-[10px]">Français</SelectItem>
                             <SelectItem value="en" className="font-bold py-3 uppercase text-[10px]">English</SelectItem>
+                            <SelectItem value="sg" className="font-bold py-3 uppercase text-[10px]">Sango</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

@@ -1,0 +1,95 @@
+{
+  "Auth": {
+    "loginButton": "Lî na yâ ni",
+    "registerButton": "Sara mbeti",
+    "emailLabel": "Email tî mo",
+    "passwordLabel": "Yemba tî mo",
+    "fullNameLabel": "Îri tî mo",
+    "password_forgot": "Mo girisa yemba?",
+    "create_account": "Sara mbeni compte",
+    "i_agree_to": "Mbi yeda na",
+    "and": "na",
+    "terms_of_use": "Lêge tî kua",
+    "privacy_policy": "Bata tî sango"
+  },
+  "Nav": {
+    "account": "Compte",
+    "courses": "Ambage tî mbi",
+    "dashboard": "Dashboard",
+    "invest": "Zia nginza na Ndara",
+    "home": "KODORO",
+    "my_courses": "KUA TÎ MBI",
+    "devoirs": "DEVOIRS",
+    "alerts": "SANGO",
+    "profile": "PROFIL",
+    "catalogue": "CATALOGUE",
+    "bourse": "BOURSE",
+    "messages": "MESSAGES"
+  },
+  "Common": {
+    "site_name": "Ndara Afrique",
+    "greeting": "Bara ala,",
+    "ndara_term": "Ndara",
+    "ndara_plural": "Ndara",
+    "wisdom": "Ndara",
+    "loading": "Kua ayeke fono...",
+    "certified": "Vérifié",
+    "expert": "Expert",
+    "student": "Ndara",
+    "admin": "Cockpit"
+  },
+  "Landing": {
+    "hero_title": "Ndara Afrique : Nzoni kua na ndara",
+    "hero_subtitle": "Manda kua na ambeni expert tî Afrique na wara mungo maboko tî Mathias IA.",
+    "cta_start": "To nda ni",
+    "course_count": "{count} kua ayeke dä"
+  },
+  "Dashboard": {
+    "quote": "Mango mbeti ayeke kpengba lege tî changé sese.",
+    "resume_study": "Ngô tî manda kua",
+    "tutor_box_title": "Bara, mbi yeke Mathias.",
+    "tutor_box_desc": "Mbeni question na ndö tî kua tî mo? Mbi yeke dä tî mu maboko.",
+    "ask_question": "Hunda mbeni tënë",
+    "recommendations": "Ambeni kua tî mo",
+    "alerts": "Sango tî fafadesi",
+    "view_all": "BA KUE",
+    "certificates": "Certificats"
+  },
+  "Profile": {
+    "title": "Profil tî mbi",
+    "identity_card": "Mbeti tî mbi",
+    "wallet": "Portefeuille",
+    "wallet_desc": "Bata nginza tî mbi",
+    "security": "Bata yemba",
+    "security_desc": "Yemba na 2FA",
+    "support": "Ndokua tî mungo maboko",
+    "support_desc": "FAQ na Support Ndara",
+    "preferences": "Ajustement",
+    "language": "Yangâ",
+    "dark_mode": "Mode Vuko",
+    "logout": "Lungula terê",
+    "logout_confirm": "Lungula terê?",
+    "logout_desc": "Mo ye tî zigui na yâ tî session tî mo?",
+    "cancel": "Zia ni",
+    "confirm": "Yeda",
+    "stats": {
+      "courses": "Ambage",
+      "diplomas": "Diplômes",
+      "reviews": "Avis"
+    }
+  },
+  "Sidebar": {
+    "universe": "UNIVERS TÎ MO",
+    "network": "RÉSEAU",
+    "tracking": "SUIVI",
+    "settings": "RÉGLAGES",
+    "ambassador": "Ambassadeur",
+    "community": "Communauté",
+    "wishlist": "Favoris",
+    "results": "Score tî mbi",
+    "tutor": "Mathias IA",
+    "switch_instructor": "Expert",
+    "switch_student": "Ndara",
+    "switch_admin": "Cockpit"
+  }
+}
