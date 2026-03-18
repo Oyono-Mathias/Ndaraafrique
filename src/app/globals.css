@@ -49,6 +49,12 @@
   .bg-ndara-surface { background-color: #1e293b; }
   .text-ndara-emerald { color: #10b981; }
   
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
   .grain-overlay {
     position: fixed;
     top: 0;
@@ -146,6 +152,15 @@
   @keyframes textReveal {
     0% { opacity: 0; transform: translateY(10px); letter-spacing: 0.2em; }
     100% { opacity: 1; transform: translateY(0); letter-spacing: 0.5em; }
+  }
+
+  @keyframes slide-up {
+    from { transform: translate(-50%, 100%); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out forwards;
   }
 
   /* --- ANIMATIONS --- */
