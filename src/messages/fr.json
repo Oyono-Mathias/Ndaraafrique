@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Se connecter",
@@ -13,18 +14,17 @@
     "privacy_policy": "Politique de Confidentialité"
   },
   "Nav": {
-    "account": "Mon Compte",
-    "courses": "Mes Formations",
-    "dashboard": "Tableau de bord",
-    "invest": "Investir sur Ndara",
     "home": "ACCUEIL",
-    "my_courses": "MES COURS",
-    "devoirs": "DEVOIRS",
-    "alerts": "ALERTES",
-    "profile": "PROFIL",
+    "dashboard": "TABLEAU DE BORD",
     "catalogue": "CATALOGUE",
+    "my_courses": "MES COURS",
     "bourse": "BOURSE",
-    "messages": "MESSAGES"
+    "messages": "MESSAGES",
+    "profile": "PROFIL",
+    "alerts": "ALERTES",
+    "devoirs": "DEVOIRS",
+    "account": "Mon Compte",
+    "invest": "Investir sur Ndara"
   },
   "Common": {
     "site_name": "Ndara Afrique",
@@ -37,12 +37,6 @@
     "expert": "Expert",
     "student": "Étudiant",
     "admin": "Cockpit"
-  },
-  "Landing": {
-    "hero_title": "Ndara Afrique : L'excellence par le savoir",
-    "hero_subtitle": "Apprenez avec des experts africains et bénéficiez de l'aide 24h/24 du Tuteur MATHIAS, votre coach IA personnalisé.",
-    "cta_start": "Commencer la formation",
-    "course_count": "{count} formations disponibles"
   },
   "Dashboard": {
     "quote": "L'éducation est l'arme la plus puissante pour changer le monde.",
@@ -91,5 +85,33 @@
     "switch_instructor": "Formateur",
     "switch_student": "Étudiant",
     "switch_admin": "Cockpit"
+  },
+  "Wallet": {
+    "title": "Recharger Wallet",
+    "current_balance": "Solde Actuel",
+    "amount_label": "Montant à recharger",
+    "other_amount": "Autre montant",
+    "method_label": "Moyen de paiement",
+    "phone_label": "Numéro de téléphone",
+    "recent_transactions": "Transactions récentes",
+    "view_all": "Voir tout",
+    "total_to_pay": "Total à payer",
+    "fees": "Frais: 0 FCFA",
+    "confirm_payment": "Confirmer le paiement",
+    "success_title": "Rechargement réussi !",
+    "success_desc": "Votre wallet a été crédité avec succès.",
+    "ref_label": "Référence",
+    "back_to_wallet": "Retour au portefeuille",
+    "processing": "Traitement en cours...",
+    "validation_msg": "Veuillez valider sur votre téléphone"
+  },
+  "Course": {
+    "free": "Offert",
+    "resume": "Reprendre",
+    "pay": "Payer",
+    "enroll": "S'inscrire",
+    "by": "Par",
+    "lessons": "Leçons",
+    "certified": "Certifiant"
   }
 }

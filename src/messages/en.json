@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Log In",
@@ -13,18 +14,17 @@
     "privacy_policy": "Privacy Policy"
   },
   "Nav": {
-    "account": "Account",
-    "courses": "My Courses",
-    "dashboard": "Dashboard",
-    "invest": "Invest on Ndara",
     "home": "HOME",
-    "my_courses": "MY COURSES",
-    "devoirs": "ASSIGNMENTS",
-    "alerts": "ALERTS",
-    "profile": "PROFILE",
+    "dashboard": "DASHBOARD",
     "catalogue": "CATALOG",
+    "my_courses": "MY COURSES",
     "bourse": "MARKET",
-    "messages": "MESSAGES"
+    "messages": "MESSAGES",
+    "profile": "PROFILE",
+    "alerts": "ALERTS",
+    "devoirs": "ASSIGNMENTS",
+    "account": "Account",
+    "invest": "Invest on Ndara"
   },
   "Common": {
     "site_name": "Ndara Africa",
@@ -37,12 +37,6 @@
     "expert": "Expert",
     "student": "Student",
     "admin": "Cockpit"
-  },
-  "Landing": {
-    "hero_title": "Ndara Africa: Excellence through knowledge",
-    "hero_subtitle": "Learn with African experts and get 24/7 help from MATHIAS Tutor, your personalized AI coach.",
-    "cta_start": "Start learning",
-    "course_count": "{count} available courses"
   },
   "Dashboard": {
     "quote": "Education is the most powerful weapon which you can use to change the world.",
@@ -91,5 +85,33 @@
     "switch_instructor": "Instructor",
     "switch_student": "Student",
     "switch_admin": "Cockpit"
+  },
+  "Wallet": {
+    "title": "Top Up Wallet",
+    "current_balance": "Current Balance",
+    "amount_label": "Amount to recharge",
+    "other_amount": "Other amount",
+    "method_label": "Payment method",
+    "phone_label": "Phone number",
+    "recent_transactions": "Recent transactions",
+    "view_all": "View all",
+    "total_to_pay": "Total to pay",
+    "fees": "Fees: 0 FCFA",
+    "confirm_payment": "Confirm payment",
+    "success_title": "Recharge successful!",
+    "success_desc": "Your wallet has been credited successfully.",
+    "ref_label": "Reference",
+    "back_to_wallet": "Back to wallet",
+    "processing": "Processing...",
+    "validation_msg": "Please validate on your phone"
+  },
+  "Course": {
+    "free": "Free",
+    "resume": "Resume",
+    "pay": "Pay Now",
+    "enroll": "Enroll Now",
+    "by": "By",
+    "lessons": "Lessons",
+    "certified": "Certified"
   }
 }

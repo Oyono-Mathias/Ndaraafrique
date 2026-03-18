@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Lî na yâ ni",
@@ -13,18 +14,17 @@
     "privacy_policy": "Bata tî sango"
   },
   "Nav": {
-    "account": "Compte",
-    "courses": "Ambage tî mbi",
-    "dashboard": "Dashboard",
-    "invest": "Zia nginza na Ndara",
     "home": "KODORO",
-    "my_courses": "KUA TÎ MBI",
-    "devoirs": "DEVOIRS",
-    "alerts": "SANGO",
-    "profile": "PROFIL",
+    "dashboard": "DASHBOARD",
     "catalogue": "CATALOGUE",
+    "my_courses": "KUA TÎ MBI",
     "bourse": "BOURSE",
-    "messages": "MESSAGES"
+    "messages": "MESSAGES",
+    "profile": "PROFIL",
+    "alerts": "SANGO",
+    "devoirs": "DEVOIRS",
+    "account": "Compte",
+    "invest": "Zia nginza na Ndara"
   },
   "Common": {
     "site_name": "Ndara Afrique",
@@ -37,12 +37,6 @@
     "expert": "Expert",
     "student": "Ndara",
     "admin": "Cockpit"
-  },
-  "Landing": {
-    "hero_title": "Ndara Afrique : Nzoni kua na ndara",
-    "hero_subtitle": "Manda kua na ambeni expert tî Afrique na wara mungo maboko tî Mathias IA.",
-    "cta_start": "To nda ni",
-    "course_count": "{count} kua ayeke dä"
   },
   "Dashboard": {
     "quote": "Mango mbeti ayeke kpengba lege tî changé sese.",
@@ -91,5 +85,33 @@
     "switch_instructor": "Expert",
     "switch_student": "Ndara",
     "switch_admin": "Cockpit"
+  },
+  "Wallet": {
+    "title": "Zia nginza na Wallet",
+    "current_balance": "Nginza tî mbi",
+    "amount_label": "Wungo tî nginza",
+    "other_amount": "Mbeni wungo nde",
+    "method_label": "Lêge tî futa nginza",
+    "phone_label": "Numéro tî téléphone",
+    "recent_transactions": "Kua tî nginza tî fafadesi",
+    "view_all": "Ba kue",
+    "total_to_pay": "Wungo tî futa",
+    "fees": "Frais: 0 FCFA",
+    "confirm_payment": "Yeda na futango nginza",
+    "success_title": "Nginza alî awe !",
+    "success_desc": "Wallet tî mo awara nginza nzoni.",
+    "ref_label": "Référence",
+    "back_to_wallet": "Kîri na Wallet",
+    "processing": "Kua ayeke fono...",
+    "validation_msg": "Bata sango na téléphone tî mo"
+  },
+  "Course": {
+    "free": "Offert",
+    "resume": "To nda ni",
+    "pay": "Futa nginza",
+    "enroll": "Sara mbeti",
+    "by": "Na maboko tî",
+    "lessons": "Ambage",
+    "certified": "Certifiant"
   }
 }
