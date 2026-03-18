@@ -9,7 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where, getDocs, documentId } from 'firebase/firestore';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -258,6 +258,7 @@ const UserCard = ({
 
 export function UsersTable() {
     const db = getFirestore();
+    const { toast } = useToast(); // ✅ Ajouté pour corriger l'erreur de build
     const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
