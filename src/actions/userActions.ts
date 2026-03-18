@@ -1,8 +1,9 @@
+
 'use server';
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ RÉSOLU : Ajout des fonctions manquantes rechargeVirtualBalance et approveInstructorApplication.
+ * ✅ RÉSOLU : Ajout des fonctions manquantes rechargeVirtualBalance, approveInstructorApplication et deleteUserAccount.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -173,6 +174,39 @@ export async function approveInstructorApplication({
         return { success: true };
     } catch (e: any) {
         console.error("Approve Application Error:", e);
+        return { success: false, error: "error.generic" };
+    }
+}
+
+/**
+ * SUPPRIMER DÉFINITIVEMENT UN COMPTE (Action Admin)
+ */
+export async function deleteUserAccount({ userId, adminId }: { userId: string, adminId: string }) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "error.admin_only" };
+
+    try {
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+        
+        // 1. Supprimer de Firebase Auth
+        await auth.deleteUser(userId);
+        
+        // 2. Supprimer le document Firestore
+        await db.collection('users').doc(userId).delete();
+
+        // 3. Journalisation
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.delete',
+            target: { id: userId, type: 'user' },
+            details: `Utilisateur ${userId} supprimé par l'admin.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true, message: "success.generic" };
+    } catch (e: any) {
+        console.error("Delete Account Error:", e);
         return { success: false, error: "error.generic" };
     }
 }

@@ -75,7 +75,7 @@ const UserCard = ({
     onGrantRequest: (user: NdaraUser) => void,
     onViewProfile: (user: NdaraUser) => void
 }) => {
-    const { currentUser: adminUser, user: adminAuthUser } = useRole();
+    const { currentUser: adminUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -85,6 +85,15 @@ const UserCard = ({
         setIsActionLoading(true);
         const result = await updateUserStatus({ userId: targetUser.uid, status, adminId: adminUser.uid });
         if (result.success) toast({ title: status === 'active' ? 'Compte réactivé' : 'Compte suspendu' });
+        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        setIsActionLoading(false);
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!adminUser || isActionLoading) return;
+        setIsActionLoading(true);
+        const result = await deleteUserAccount({ userId: targetUser.uid, adminId: adminUser.uid });
+        if (result.success) toast({ title: 'Compte supprimé définitivement' });
         else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         setIsActionLoading(false);
     };
@@ -165,7 +174,7 @@ const UserCard = ({
                                     <MessageSquare size={16} className="text-blue-400" /> Messagerie
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="gap-2 py-3 cursor-pointer">
-                                    <Gift size={16} className="text-primary" /> Offrir un cours
+                                    <Gift size={16} /> Offrir un cours
                                 </DropdownMenuItem>
                                 
                                 <DropdownMenuSeparator className="bg-slate-800" />
@@ -193,6 +202,28 @@ const UserCard = ({
                                         <UserCheck size={16} /> Réactiver
                                     </DropdownMenuItem>
                                 )}
+
+                                <DropdownMenuSeparator className="bg-slate-800" />
+
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 py-3 cursor-pointer text-red-600 font-black">
+                                            <Trash2 size={16} /> Supprimer Définitivement
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-slate-900 border-slate-800 rounded-[2rem]">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="text-white uppercase font-black">Action Irréversible</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-slate-400">
+                                                Voulez-vous vraiment supprimer le compte de <b>{targetUser.fullName}</b> ? Toutes ses données (inscriptions, progrès) seront perdues.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel className="bg-slate-800 border-none rounded-xl">Annuler</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700 rounded-xl">Supprimer</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -227,7 +258,6 @@ const UserCard = ({
 
 export function UsersTable() {
     const db = getFirestore();
-    const { toast } = useToast();
     const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
