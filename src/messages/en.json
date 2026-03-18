@@ -1,4 +1,3 @@
-
 {
   "Auth": {
     "loginButton": "Log In",
@@ -16,26 +15,34 @@
   "Nav": {
     "account": "Account",
     "courses": "My Courses",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "invest": "Invest on Ndara",
+    "home": "HOME",
+    "my_courses": "MY COURSES",
+    "devoirs": "ASSIGNMENTS",
+    "alerts": "ALERTS",
+    "profile": "PROFILE",
+    "catalogue": "CATALOG",
+    "bourse": "MARKET",
+    "messages": "MESSAGES"
   },
   "Common": {
     "site_name": "Ndara Africa",
     "greeting": "Hello,",
     "ndara_term": "Learner",
     "ndara_plural": "Learners",
-    "wisdom": "Wisdom"
+    "wisdom": "Wisdom",
+    "loading": "Loading...",
+    "certified": "Verified",
+    "expert": "Expert",
+    "student": "Student",
+    "admin": "Cockpit"
   },
   "Landing": {
     "hero_title": "Ndara Africa: Excellence through knowledge",
     "hero_subtitle": "Learn with African experts and get 24/7 help from MATHIAS Tutor, your personalized AI coach.",
     "cta_start": "Start learning",
-    "course_count": "{count} available courses",
-    "feature_1_title": "Expert training",
-    "feature_1_desc": "Follow courses designed by industry professionals for immediate career impact.",
-    "feature_2_title": "Official Certificates",
-    "feature_2_desc": "Validate your skills and earn completion certificates for your professional growth.",
-    "feature_3_title": "24/7 AI Tutor",
-    "feature_3_desc": "MATHIAS answers all your course-related questions to ensure total understanding."
+    "course_count": "{count} available courses"
   },
   "Dashboard": {
     "quote": "Education is the most powerful weapon which you can use to change the world.",
@@ -44,10 +51,45 @@
     "tutor_box_desc": "A question about your course? I am here to help.",
     "ask_question": "Ask a question",
     "recommendations": "Recommended for you",
-    "alerts": "Recent Alerts"
+    "alerts": "Recent Alerts",
+    "view_all": "VIEW ALL",
+    "certificates": "Certificates"
   },
-  "all": "All",
-  "in_progress": "In Progress",
-  "completed": "Completed",
-  "browseCourses": "Browse Courses"
+  "Profile": {
+    "title": "My Profile",
+    "identity_card": "Identity & Bio",
+    "wallet": "Wallet",
+    "wallet_desc": "Manage my assets",
+    "security": "Security",
+    "security_desc": "Password and 2FA",
+    "support": "Assistance Center",
+    "support_desc": "FAQ and Ndara Support",
+    "preferences": "Preferences",
+    "language": "Language",
+    "dark_mode": "Dark Mode",
+    "logout": "Log Out",
+    "logout_confirm": "Logout?",
+    "logout_desc": "Are you sure you want to end your session?",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "stats": {
+      "courses": "Courses",
+      "diplomas": "Diplomas",
+      "reviews": "Reviews"
+    }
+  },
+  "Sidebar": {
+    "universe": "YOUR UNIVERSE",
+    "network": "NETWORK",
+    "tracking": "TRACKING",
+    "settings": "SETTINGS",
+    "ambassador": "Ambassador",
+    "community": "Community",
+    "wishlist": "Wishlist",
+    "results": "My Results",
+    "tutor": "Mathias AI",
+    "switch_instructor": "Instructor",
+    "switch_student": "Student",
+    "switch_admin": "Cockpit"
+  }
 }

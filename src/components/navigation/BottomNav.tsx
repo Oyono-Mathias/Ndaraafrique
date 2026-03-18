@@ -2,12 +2,12 @@
 
 /**
  * @fileOverview Bottom Navigation Mobile pour Ndara Afrique.
- * 5 Onglets : Dashboard, Catalogue, Mes Cours, Bourse, Profil.
+ * ✅ I18N : Tous les labels sont traduits dynamiquement.
  */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -21,6 +21,7 @@ import { useMemo } from 'react';
 export function BottomNav() {
   const pathname = usePathname() || '';
   const locale = useLocale();
+  const t = useTranslations('Nav');
 
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
@@ -28,31 +29,31 @@ export function BottomNav() {
 
   const navItems = [
     { 
-      label: 'ACCUEIL', 
+      label: t('home'), 
       icon: LayoutDashboard, 
       href: `/${locale}/student/dashboard`, 
       path: '/student/dashboard' 
     },
     { 
-      label: 'CATALOGUE', 
+      label: t('catalogue'), 
       icon: BookOpen, 
       href: `/${locale}/courses`, 
       path: '/courses' 
     },
     { 
-      label: 'MES COURS', 
+      label: t('my_courses'), 
       icon: GraduationCap, 
       href: `/${locale}/student/courses`, 
       path: '/student/courses' 
     },
     { 
-      label: 'BOURSE', 
+      label: t('bourse'), 
       icon: TrendingUp, 
       href: `/${locale}/bourse`, 
       path: '/bourse' 
     },
     { 
-      label: 'PROFIL', 
+      label: t('profile'), 
       icon: UserCircle, 
       href: `/${locale}/student/profile`, 
       path: '/student/profile' 

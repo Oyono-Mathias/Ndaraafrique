@@ -1,4 +1,3 @@
-
 {
   "Auth": {
     "loginButton": "Se connecter",
@@ -17,26 +16,33 @@
     "account": "Mon Compte",
     "courses": "Mes Formations",
     "dashboard": "Tableau de bord",
-    "invest": "Investir sur Ndara"
+    "invest": "Investir sur Ndara",
+    "home": "ACCUEIL",
+    "my_courses": "MES COURS",
+    "devoirs": "DEVOIRS",
+    "alerts": "ALERTES",
+    "profile": "PROFIL",
+    "catalogue": "CATALOGUE",
+    "bourse": "BOURSE",
+    "messages": "MESSAGES"
   },
   "Common": {
     "site_name": "Ndara Afrique",
     "greeting": "Bara ala,",
     "ndara_term": "Ndara",
     "ndara_plural": "Ndara",
-    "wisdom": "Sagesse"
+    "wisdom": "Sagesse",
+    "loading": "Chargement...",
+    "certified": "Vérifié",
+    "expert": "Expert",
+    "student": "Étudiant",
+    "admin": "Cockpit"
   },
   "Landing": {
     "hero_title": "Ndara Afrique : L'excellence par le savoir",
     "hero_subtitle": "Apprenez avec des experts africains et bénéficiez de l'aide 24h/24 du Tuteur MATHIAS, votre coach IA personnalisé.",
     "cta_start": "Commencer la formation",
-    "course_count": "{count} formations disponibles",
-    "feature_1_title": "Apprentissage d'expert",
-    "feature_1_desc": "Suivez des cours conçus par des professionnels du terrain pour une application immédiate.",
-    "feature_2_title": "Certificats officiels",
-    "feature_2_desc": "Validez vos compétences et obtenez vos certificats de réussite pour votre carrière.",
-    "feature_3_title": "Tuteur IA 24h/24",
-    "feature_3_desc": "MATHIAS répond à toutes vos questions sur les cours pour vous garantir une compréhension totale."
+    "course_count": "{count} formations disponibles"
   },
   "Dashboard": {
     "quote": "L'éducation est l'arme la plus puissante pour changer le monde.",
@@ -45,10 +51,45 @@
     "tutor_box_desc": "Une question sur ton cours ? Je suis là pour t'aider.",
     "ask_question": "Poser une question",
     "recommendations": "Recommandés pour vous",
-    "alerts": "Dernières Alertes"
+    "alerts": "Dernières Alertes",
+    "view_all": "VOIR TOUT",
+    "certificates": "Certificats"
   },
-  "all": "Tous",
-  "in_progress": "En cours",
-  "completed": "Terminés",
-  "browseCourses": "Parcourir les cours"
+  "Profile": {
+    "title": "Mon Profil",
+    "identity_card": "Identité & Bio",
+    "wallet": "Portefeuille",
+    "wallet_desc": "Gérer mes avoirs",
+    "security": "Sécurité",
+    "security_desc": "Mot de passe et 2FA",
+    "support": "Centre d'Assistance",
+    "support_desc": "FAQ et Support Ndara",
+    "preferences": "Préférences",
+    "language": "Langue",
+    "dark_mode": "Mode Sombre",
+    "logout": "Se Déconnecter",
+    "logout_confirm": "Déconnexion ?",
+    "logout_desc": "Voulez-vous vraiment quitter votre session ?",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "stats": {
+      "courses": "Cours",
+      "diplomas": "Diplômes",
+      "reviews": "Avis"
+    }
+  },
+  "Sidebar": {
+    "universe": "VOTRE UNIVERS",
+    "network": "RÉSEAU",
+    "tracking": "SUIVI",
+    "settings": "PARAMÈTRES",
+    "ambassador": "Ambassadeur",
+    "community": "Communauté",
+    "wishlist": "Favoris",
+    "results": "Mes Résultats",
+    "tutor": "Mathias IA",
+    "switch_instructor": "Formateur",
+    "switch_student": "Étudiant",
+    "switch_admin": "Cockpit"
+  }
 }

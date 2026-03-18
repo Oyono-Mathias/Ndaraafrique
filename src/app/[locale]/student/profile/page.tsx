@@ -2,21 +2,20 @@
 
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
- * ✅ WALLET UPDATE : Affichage du solde et lien vers le portefeuille.
- * ✅ I18N : Sélecteur de langue réactif.
+ * ✅ I18N : Utilisation intégrale des clés de traduction.
+ * ✅ RÉACTIF : Switch de langue instantané.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 import { 
     Settings, 
     ShieldCheck, 
-    Rocket, 
     Code, 
     ChevronRight, 
     UserCircle, 
@@ -25,13 +24,9 @@ import {
     LifeBuoy, 
     Languages, 
     Moon, 
-    Bell, 
     LogOut,
     Check,
     Loader2,
-    Trophy,
-    Star,
-    MapPin,
     ArrowUpRight
 } from 'lucide-react';
 
@@ -63,6 +58,8 @@ import { africanCountries } from '@/lib/countries';
 
 export default function StudentProfilePage() {
   const { currentUser, isUserLoading, secureSignOut, user } = useRole();
+  const t = useTranslations('Profile');
+  const common = useTranslations('Common');
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
@@ -95,7 +92,6 @@ export default function StudentProfilePage() {
 
   const handleLanguageChange = (newLocale: string) => {
       if (newLocale === locale) return;
-      // Reconstruit le chemin avec la nouvelle locale
       const segments = pathname.split('/');
       segments[1] = newLocale; 
       const newPath = segments.join('/');
@@ -124,7 +120,7 @@ export default function StudentProfilePage() {
       
       <header className="fixed top-0 w-full max-w-md z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-6 py-4">
-            <h1 className="font-black text-xl text-white uppercase tracking-tight">Mon Profil</h1>
+            <h1 className="font-black text-xl text-white uppercase tracking-tight">{t('title')}</h1>
             <Button variant="ghost" size="icon" className="rounded-full bg-slate-900 text-slate-400" onClick={() => router.push('/account')}>
                 <Settings className="h-5 w-5" />
             </Button>
@@ -159,16 +155,16 @@ export default function StudentProfilePage() {
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 shadow-inner">
                     <span className="text-lg">{countryEmoji}</span>
                     <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
-                        {currentUser.countryName || 'Explorateur Ndara'}
+                        {currentUser.countryName || common('ndara_term')}
                     </span>
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-2">
                     <Badge className="bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
-                        <ShieldCheck className="h-3 w-3 mr-1.5" /> Vérifié
+                        <ShieldCheck className="h-3 w-3 mr-1.5" /> {common('certified')}
                     </Badge>
                     <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
-                        <Code className="h-3 w-3 mr-1.5" /> Apprenant
+                        <Code className="h-3 w-3 mr-1.5" /> {common('student')}
                     </Badge>
                 </div>
             </CardContent>
@@ -183,7 +179,7 @@ export default function StudentProfilePage() {
                         <Wallet size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-0.5">Solde Ndara</p>
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-0.5">Solde {common('ndara_term')}</p>
                         <p className="text-2xl font-black text-white">{(currentUser?.balance || 0).toLocaleString()} <span className="text-xs">XOF</span></p>
                     </div>
                 </div>
@@ -195,42 +191,42 @@ export default function StudentProfilePage() {
 
         {/* --- DYNAMIC STATS --- */}
         <section className="grid grid-cols-3 gap-3">
-            <StatBox label="Cours" value={counters.enrollments.toString()} color="text-primary" />
-            <StatBox label="Diplômes" value={counters.certificates.toString()} color="text-orange-400" />
-            <StatBox label="Avis" value={counters.reviews.toString()} color="text-blue-400" />
+            <StatBox label={t('stats.courses')} value={counters.enrollments.toString()} color="text-primary" />
+            <StatBox label={t('stats.diplomas')} value={counters.certificates.toString()} color="text-orange-400" />
+            <StatBox label={t('stats.reviews')} value={counters.reviews.toString()} color="text-blue-400" />
         </section>
 
         <div className="bg-slate-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
             <div className="px-6 py-4 border-b border-white/5 bg-white/5">
-                <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Gestion du Compte</h3>
+                <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">{t('preferences')}</h3>
             </div>
             
             <div className="divide-y divide-white/5">
                 <MenuLink 
                     icon={UserCircle} 
-                    label="Identité & Bio" 
+                    label={t('identity_card')} 
                     desc="Modifier votre profil" 
                     color="bg-blue-500/10 text-blue-400"
                     href="/account"
                 />
                 <MenuLink 
                     icon={Wallet} 
-                    label="Portefeuille" 
-                    desc="Gérer mes avoirs" 
+                    label={t('wallet')} 
+                    desc={t('wallet_desc')} 
                     color="bg-emerald-500/10 text-emerald-400"
                     href="/student/wallet"
                 />
                 <MenuLink 
                     icon={Lock} 
-                    label="Sécurité" 
-                    desc="Mot de passe et 2FA" 
+                    label={t('security')} 
+                    desc={t('security_desc')} 
                     color="bg-red-500/10 text-red-400"
                     href="/forgot-password"
                 />
                 <MenuLink 
                     icon={LifeBuoy} 
-                    label="Centre d'Assistance" 
-                    desc="FAQ et Support Ndara" 
+                    label={t('support')} 
+                    desc={t('support_desc')} 
                     color="bg-purple-500/10 text-purple-400"
                     href="/student/support"
                 />
@@ -238,17 +234,13 @@ export default function StudentProfilePage() {
         </div>
 
         <div className="bg-slate-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
-            <div className="px-6 py-4 border-b border-white/5 bg-white/5">
-                <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Préférences</h3>
-            </div>
-            
             <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
                             <Languages className="h-5 w-5" />
                         </div>
-                        <span className="font-bold text-white text-sm uppercase tracking-tight">Langue</span>
+                        <span className="font-bold text-white text-sm uppercase tracking-tight">{t('language')}</span>
                     </div>
                     <Select value={locale} onValueChange={handleLanguageChange}>
                         <SelectTrigger className="w-32 h-10 bg-slate-950 border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
@@ -266,7 +258,7 @@ export default function StudentProfilePage() {
                         <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
                             <Moon className="h-5 w-5" />
                         </div>
-                        <span className="font-bold text-white text-sm uppercase tracking-tight">Mode Sombre</span>
+                        <span className="font-bold text-white text-sm uppercase tracking-tight">{t('dark_mode')}</span>
                     </div>
                     <Switch 
                         checked={theme === 'dark'} 
@@ -281,7 +273,7 @@ export default function StudentProfilePage() {
             <AlertDialogTrigger asChild>
                 <Button className="w-full h-16 rounded-[2rem] bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-red-500/20 active:scale-[0.98] transition-all gap-2 mb-12">
                     <LogOut className="h-5 w-5" />
-                    Se Déconnecter
+                    {t('logout')}
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-slate-900 border-white/10 rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md mx-auto">
@@ -289,15 +281,15 @@ export default function StudentProfilePage() {
                     <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
                         <LogOut size={40} />
                     </div>
-                    <AlertDialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Déconnexion ?</AlertDialogTitle>
+                    <AlertDialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">{t('logout_confirm')}</AlertDialogTitle>
                     <AlertDialogDescription className="text-slate-400 text-sm font-medium leading-relaxed italic">
-                        "Mo ye ti sigi na yâ ti compte ti mo ?" <br/>Êtes-vous sûr de vouloir quitter votre session ?
+                        {t('logout_desc')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="mt-8 flex-col sm:flex-row gap-3">
-                    <AlertDialogCancel className="bg-slate-950 border-white/10 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">Annuler</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-slate-950 border-white/10 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">{t('cancel')}</AlertDialogCancel>
                     <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1 shadow-lg shadow-red-600/20">
-                        {isLoggingOut ? <Loader2 className="animate-spin" /> : "Oui, me déconnecter"}
+                        {isLoggingOut ? <Loader2 className="animate-spin" /> : t('confirm')}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

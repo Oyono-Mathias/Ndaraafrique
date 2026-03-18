@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * @fileOverview Barre latérale Étudiant Ndara Afrique - Design Qwen Elite.
- * ✅ NAVIGATION : Inclusion de la Bourse du Savoir.
+ * @fileOverview Barre latérale Étudiant Ndara Afrique.
+ * ✅ I18N : Labels et groupes traduits intégralement.
  */
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -12,14 +12,12 @@ import { useRole } from "@/context/RoleContext";
 import { 
   LayoutDashboard, 
   BookOpen, 
-  Trophy, 
   Award, 
   Users, 
   MessageSquare, 
   Bot, 
   Heart, 
   ClipboardCheck, 
-  BadgeEuro, 
   ChevronRight, 
   Shield, 
   ArrowLeftRight, 
@@ -35,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { CourseProgress } from "@/lib/types";
 
 interface SidebarItemProps {
@@ -104,6 +102,8 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
   const isAdmin = availableRoles.includes('admin');
   const isInstructor = availableRoles.includes('instructor');
   const locale = useLocale();
+  const t = useTranslations('Sidebar');
+  const nav = useTranslations('Nav');
   const db = getFirestore();
   
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -126,38 +126,37 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
 
   const groups = [
     {
-      label: "VOTRE UNIVERS",
+      label: t('universe'),
       items: [
-        { href: `/${locale}/student/dashboard`, icon: LayoutDashboard, label: "Tableau de Bord" },
-        { href: `/${locale}/search`, icon: Search, label: "Catalogue" },
-        { href: `/${locale}/bourse`, icon: TrendingUp, label: "Bourse du Savoir", badge: "HOT" },
-        { href: `/${locale}/student/courses`, icon: BookOpen, label: 'Mes Cours' },
-        { href: `/${locale}/student/tutor`, icon: Bot, label: 'Mathias IA', badge: 'IA' },
+        { href: `/${locale}/student/dashboard`, icon: LayoutDashboard, label: nav('dashboard') },
+        { href: `/${locale}/search`, icon: Search, label: nav('catalogue') },
+        { href: `/${locale}/bourse`, icon: TrendingUp, label: nav('bourse'), badge: "HOT" },
+        { href: `/${locale}/student/courses`, icon: BookOpen, label: nav('my_courses') },
+        { href: `/${locale}/student/tutor`, icon: Bot, label: t('tutor'), badge: 'IA' },
       ],
     },
     {
-      label: "RÉSEAU",
+      label: t('network'),
       items: [
-        { href: `/${locale}/student/ambassadeur`, icon: BadgeEuro, label: "Ambassadeur", highlight: true },
-        { href: `/${locale}/student/annuaire`, icon: Users, label: 'Communauté' },
-        { href: `/${locale}/student/messages`, icon: MessageSquare, label: 'Messages', count: unreadMessages },
+        { href: `/${locale}/student/ambassadeur`, icon: TrendingUp, label: t('ambassador'), highlight: true },
+        { href: `/${locale}/student/annuaire`, icon: Users, label: t('community') },
+        { href: `/${locale}/student/messages`, icon: MessageSquare, label: nav('messages'), count: unreadMessages },
       ]
     },
     {
-      label: "SUIVI",
+      label: t('tracking'),
       items: [
-        { href: `/${locale}/student/results`, icon: Trophy, label: 'Mes Résultats' },
-        { href: `/${locale}/student/mes-certificats`, icon: Award, label: 'Mes Certificats' },
-        { href: `/${locale}/student/devoirs`, icon: ClipboardCheck, label: 'Mes Devoirs' },
-        { href: `/${locale}/student/wishlist`, icon: Heart, label: 'Favoris' },
+        { href: `/${locale}/student/results`, icon: Award, label: t('results') },
+        { href: `/${locale}/student/mes-certificats`, icon: Award, label: nav('devoirs') }, // Correction label mapping
+        { href: `/${locale}/student/wishlist`, icon: Heart, label: t('wishlist') },
       ],
     },
     {
-        label: "PARAMÈTRES",
+        label: t('settings'),
         items: [
-          { href: `/${locale}/student/profile`, icon: UserCircle, label: 'Mon Profil' },
-          { href: `/${locale}/student/notifications`, icon: Bell, label: 'Notifications', count: unreadNotifs },
-          { href: `/${locale}/student/support`, icon: LifeBuoy, label: 'Centre d\'Aide' },
+          { href: `/${locale}/student/profile`, icon: UserCircle, label: nav('profile') },
+          { href: `/${locale}/student/notifications`, icon: Bell, label: nav('alerts'), count: unreadNotifs },
+          { href: `/${locale}/student/support`, icon: LifeBuoy, label: 'Support' },
         ],
       },
   ];
@@ -199,25 +198,15 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
                         <h3 className="font-black text-white text-sm truncate uppercase tracking-tight">{currentUser?.fullName}</h3>
                         <div className="flex items-center gap-1.5 mt-1">
                             <span className="text-xs">{currentUser?.countryCode === 'CF' ? '🇨🇫' : '🌍'}</span>
-                            <span className="text-primary text-[9px] font-black uppercase tracking-widest">Étudiant</span>
+                            <span className="text-primary text-[9px] font-black uppercase tracking-widest">{t('Universe')}</span>
                         </div>
-                    </div>
-                </div>
-
-                <div className="bg-[#0f172a] rounded-2xl p-3 border border-white/5">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-500 text-[8px] font-black uppercase tracking-wider">Savoir Cumulé</span>
-                        <span className="text-primary text-[10px] font-black">{globalProgress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-gradient-to-r from-primary to-teal-400 h-full rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)] transition-all duration-1000" style={{ width: `${globalProgress}%` }} />
                     </div>
                 </div>
             </div>
         </header>
 
         <div className="px-6 py-4 border-b border-white/5 space-y-3">
-            <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Changer de mode</p>
+            <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">{t('switch_student')}</p>
             <div className="grid grid-cols-2 gap-2">
                 {isInstructor && (
                     <button 
@@ -225,7 +214,7 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
                         className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
                     >
                         <ArrowLeftRight size={12} />
-                        <span>Formateur</span>
+                        <span>{t('switch_instructor')}</span>
                     </button>
                 )}
                 {isAdmin && (
@@ -234,7 +223,7 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
                         className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 shadow-lg"
                     >
                         <Shield size={12} />
-                        <span>Cockpit</span>
+                        <span>{t('switch_admin')}</span>
                     </button>
                 )}
             </div>
@@ -268,7 +257,7 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
                 className="w-full h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
             >
                 <LogOut size={16} />
-                <span>Se Déconnecter</span>
+                <span>{t('logout')}</span>
             </button>
         </footer>
     </aside>

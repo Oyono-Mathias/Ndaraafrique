@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign).
- * ✅ I18N : Utilisation des traductions pour le multilingue (Ndara Afrique -> Ndara Africa).
+ * ✅ I18N : Utilisation des traductions pour le multilingue.
+ * ✅ RÉACTIONNEL : Les textes basculent instantanément au switch de langue.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -89,8 +89,8 @@ export default function StudentDashboardAndroid() {
 
       {/* --- STATS ROW (FINTECH) --- */}
       <section className="px-6 grid grid-cols-2 gap-4">
-        <StatCard title="Formations" value={stats.total.toString()} icon={BookOpen} isLoading={loadingData} />
-        <StatCard title="Certificats" value={stats.completed.toString()} icon={Trophy} isLoading={loadingData} />
+        <StatCard title={nav('my_courses')} value={stats.total.toString()} icon={BookOpen} isLoading={loadingData} />
+        <StatCard title={t('certificates')} value={stats.completed.toString()} icon={Trophy} isLoading={loadingData} />
       </section>
 
       {/* --- REPRENDRE L'ÉTUDE (IMMERSIVE) --- */}
@@ -152,4 +152,10 @@ export default function StudentDashboardAndroid() {
 
     </div>
   );
+}
+
+// Helper local pour simplifier le code
+function nav(key: string) {
+    const t = useTranslations('Nav');
+    return t(key);
 }

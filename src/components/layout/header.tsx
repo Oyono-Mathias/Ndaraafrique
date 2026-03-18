@@ -1,13 +1,12 @@
-
 'use client';
 
 /**
  * @fileOverview En-tête global de l'application (Design Android-First Immersif).
- * ✅ I18N : Traduction dynamique du nom du site.
+ * ✅ I18N : Traduction dynamique contextuelle basée sur le rôle.
  */
 
 import React, { useState, useEffect } from 'react';
-import { Search, Menu, PanelLeft, Bell, Loader2 } from 'lucide-react';
+import { PanelLeft, Bell } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,7 +16,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
-import { cn } from '@/lib/utils';
 import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 
 export function Header() {
@@ -26,7 +24,6 @@ export function Header() {
     const { currentUser, role } = useRole();
     const locale = useLocale();
     const t = useTranslations('Common');
-    const nav = useTranslations('Nav');
     
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
@@ -52,9 +49,8 @@ export function Header() {
     }, [currentUser?.uid, db]);
 
     const getPageTitle = () => {
-        if (pathname.includes('/admin')) return "COCKPIT";
-        if (pathname.includes('/instructor/dashboard')) return "EXPERT";
-        if (pathname.includes('/student/dashboard')) return t('site_name').toUpperCase();
+        if (pathname.includes('/admin')) return t('admin').toUpperCase();
+        if (pathname.includes('/instructor/dashboard')) return t('expert').toUpperCase();
         return t('site_name').toUpperCase();
     };
 
@@ -87,7 +83,7 @@ export function Header() {
                 </h1>
             </div>
 
-            {/* Right: Search, Notifications, Profile */}
+            {/* Right: Notifications, Profile */}
             <div className="flex items-center gap-3">
                 <button 
                     onClick={() => router.push(`/${locale}/student/notifications`)}
