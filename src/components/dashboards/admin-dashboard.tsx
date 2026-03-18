@@ -37,6 +37,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { NdaraUser, Payment, TrackingEvent } from '@/lib/types';
+import Link from 'next/link';
 
 interface AdminStats {
   revenueToday: number;
