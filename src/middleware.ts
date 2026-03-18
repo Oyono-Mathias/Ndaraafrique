@@ -2,7 +2,8 @@ import createMiddleware from 'next-intl/middleware';
  
 /**
  * Middleware pour la gestion des locales et du routage.
- * Supporte maintenant le Français, l'Anglais et le Sango.
+ * Supporte Français (fr), Anglais (en) et Sango (sg).
+ * Utilise le cookie NEXT_LOCALE pour la persistance.
  */
 export default createMiddleware({
   locales: ['en', 'fr', 'sg'],

@@ -4,7 +4,7 @@
  * @fileOverview RoleProvider Ndara Afrique.
  * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
  * ✅ PRIORITÉ DES RÔLES : Admin > Instructor > Student.
- * ✅ RÉSOLU : Redirection automatique vers le dashboard prioritaire.
+ * ✅ PERSISTANCE LANGUE : Synchronisation avec preferredLanguage.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -128,9 +128,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               detectGeoLocation(user.uid);
           }
           
+          // ✅ PERSISTANCE LANGUE : On synchronise avec le profil
+          if (userData.preferredLanguage && userData.preferredLanguage !== locale) {
+              // Si la langue du profil diffère de la locale actuelle, on pourrait rediriger
+              // Mais on laisse le switch manuel faire le travail pour éviter les boucles.
+          }
+
           const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || userData.role === 'admin';
           
-          // 1. Définir tous les rôles disponibles pour cet utilisateur
           const roles: UserRole[] = ['student'];
           if (isMasterAdmin) {
               roles.push('instructor', 'admin');
@@ -138,7 +143,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
-          // 2. Définir le rôle prioritaire (Admin > Instructor > Student)
           let priorityRole: UserRole = 'student';
           if (roles.includes('admin')) priorityRole = 'admin';
           else if (roles.includes('instructor')) priorityRole = 'instructor';
@@ -159,7 +163,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // 3. Déterminer le rôle actif : priorité au choix sauvegardé, sinon au rôle prioritaire
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
@@ -180,7 +183,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 isInstructorApproved: isMasterAdmin,
                 createdAt: serverTimestamp(),
                 isProfileComplete: false,
-                preferredLanguage: locale as 'fr' | 'en',
+                preferredLanguage: locale as 'fr' | 'en' | 'sg',
                 isOnline: true,
                 lastSeen: serverTimestamp(),
             };

@@ -3,7 +3,7 @@
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
  * ✅ I18N : Support du Français, Anglais et Sango.
- * ✅ RÉACTIF : Switch de langue instantané via routage local.
+ * ✅ PERSISTANCE : Mémorisation de la langue via cookie et Firestore.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -11,7 +11,7 @@ import { useRole } from '@/context/RoleContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
-import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { 
     Settings, 
@@ -90,14 +90,26 @@ export default function StudentProfilePage() {
     await secureSignOut();
   };
 
-  const handleLanguageChange = (newLocale: string) => {
+  const handleLanguageChange = async (newLocale: string) => {
       if (newLocale === locale) return;
+
+      // 1. Persister dans un cookie pour next-intl
+      document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+
+      // 2. Persister dans Firestore pour le profil utilisateur
+      if (user?.uid) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { preferredLanguage: newLocale }).catch(console.error);
+      }
+
+      // 3. Redirection vers la nouvelle route locale
       const segments = pathname.split('/');
-      // Si le premier segment est vide (chemin commence par /), c'est l'index 1
       const localeIndex = segments[0] === '' ? 1 : 0;
       segments[localeIndex] = newLocale; 
       const newPath = segments.join('/');
-      router.push(newPath);
+      
+      // On utilise window.location pour forcer un rafraîchissement propre du middleware
+      window.location.href = newPath;
   };
 
   const countryEmoji = useMemo(() => {
