@@ -190,4 +190,29 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  @keyframes pulseRing {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  .pulse-ring {
+    animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.35s ease-out forwards;
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  @keyframes slide-up-modal {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .animate-slide-up-modal {
+    animation: slide-up-modal 0.3s ease-out forwards;
+  }
 }
