@@ -99,7 +99,7 @@ export interface NdaraUser {
   availableRoles: UserRole[];
   status?: 'active' | 'suspended';
   bio?: string;
-  preferredLanguage?: 'fr' | 'en';
+  preferredLanguage?: 'fr' | 'en' | 'sg';
   countryCode?: string;
   countryName?: string;
   rating?: number;
@@ -602,6 +602,7 @@ export interface Settings {
   };
   content?: {
     landingPage?: {
+      heroBadge?: string;
       heroTitle?: string;
       heroSubtitle?: string;
       heroImageUrl?: string;
