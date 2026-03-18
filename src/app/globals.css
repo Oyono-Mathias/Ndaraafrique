@@ -181,4 +181,13 @@
   .funnel-bar {
     transition: width 1s ease-out;
   }
+
+  /* Specific styles for the Indigo Wallet design */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
