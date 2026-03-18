@@ -1,9 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Design Android-First V2.
- * ✅ AFFILIATION : Capture de l'affiliateId avec persistence.
- * ✅ FILTRES : Navigation par pilules (chips) horizontales.
+ * ✅ i18n : Internationalisation complète des placeholders et filtres.
  */
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
@@ -16,14 +16,12 @@ import {
     SlidersHorizontal, 
     ShoppingCart, 
     Loader2, 
-    BadgeEuro, 
     Mic,
     Leaf,
     ChartLine,
     Coins,
     Cpu,
-    Code,
-    LayoutGrid
+    Code
 } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,6 +31,7 @@ import { useRole } from '@/context/RoleContext';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 const CATEGORIES = [
     { name: "AgriTech", icon: Leaf },
@@ -54,8 +53,10 @@ function SearchPageContent() {
   const router = useRouter();
   const { user } = useRole();
   const searchParams = useSearchParams();
+  const t = useTranslations('Landing.hero');
+  const tCat = useTranslations('Landing.categories');
+  const tCommon = useTranslations('Common');
 
-  // Attribution Ambassadeur
   useEffect(() => {
       const affId = searchParams.get('aff');
       if (affId && typeof window !== 'undefined') {
@@ -125,13 +126,12 @@ function SearchPageContent() {
       
       <header className="fixed top-0 w-full z-50 bg-ndara-bg/95 backdrop-blur-md safe-area-pt border-b border-white/5">
         <div className="px-4 py-4 space-y-4">
-            {/* Title Bar */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-ndara-surface flex items-center justify-center text-gray-400 hover:text-white transition active:scale-90">
                         <ArrowLeft className="h-5 w-5" />
                     </button>
-                    <h1 className="font-black text-xl text-white uppercase tracking-tight">Recherche</h1>
+                    <h1 className="font-black text-xl text-white uppercase tracking-tight">{tCommon('catalogue')}</h1>
                 </div>
                 {user && (
                     <Link href="/student/cart" className="relative">
@@ -147,13 +147,12 @@ function SearchPageContent() {
                 )}
             </div>
 
-            {/* Search Input */}
             <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <SearchIcon className="h-5 w-5 text-primary" />
                 </div>
                 <Input
-                    placeholder="Rechercher une formation..."
+                    placeholder={t('search_placeholder')}
                     className="h-14 pl-14 pr-12 rounded-[2rem] bg-ndara-surface border-white/5 text-white shadow-xl focus-visible:ring-primary/20"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -164,7 +163,6 @@ function SearchPageContent() {
             </div>
         </div>
 
-        {/* Category Chips */}
         <div className="px-4 pb-4 overflow-hidden">
             <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
                 <button 
@@ -176,7 +174,7 @@ function SearchPageContent() {
                             : "bg-ndara-surface border-white/5 text-gray-400"
                     )}
                 >
-                    Tout
+                    {tCat('all')}
                 </button>
                 {CATEGORIES.map(cat => (
                     <button 
@@ -200,12 +198,8 @@ function SearchPageContent() {
       <main className="px-4 pt-56">
         <div className="flex items-center justify-between mb-6 px-1">
             <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
-                <span className="text-white">{filteredResults.length}</span> formations trouvées
+                <span className="text-white">{filteredResults.length}</span> {tCommon('found_results', { count: filteredResults.length })}
             </p>
-            <button className="flex items-center gap-1.5 text-primary text-[10px] font-black uppercase tracking-widest bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                FILTRES
-            </button>
         </div>
 
         {isLoading ? (
@@ -234,9 +228,11 @@ function SearchPageContent() {
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center opacity-30 animate-in zoom-in duration-500">
             <Frown className="h-16 w-16 mb-4 text-slate-600" />
-            <h3 className="text-xl font-black text-white uppercase tracking-tight">Aucun résultat</h3>
-            <p className="text-sm text-slate-500 mt-2">Essayez d'autres mots-clés ou parcourez les catégories.</p>
-            <Button variant="link" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }} className="text-primary mt-4 font-black uppercase text-[10px] tracking-widest">Réinitialiser</Button>
+            <h3 className="text-xl font-black text-white uppercase tracking-tight">{tCommon('no_results')}</h3>
+            <p className="text-sm text-slate-500 mt-2">{t('subtitle')}</p>
+            <Button variant="link" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }} className="text-primary mt-4 font-black uppercase text-[10px] tracking-widest">
+                {tCommon('reset_filters')}
+            </Button>
           </div>
         )}
       </main>

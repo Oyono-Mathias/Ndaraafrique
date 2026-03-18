@@ -1,9 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ GESTION REDIRECTION : Utilise la priorité de rôle du contexte (Admin > Instructor > Student).
- * ✅ GESTION PARRAINAGE : Attribution persistante via localStorage ou URL.
+ * ✅ i18n : Internationalisation complète du bouton Google, CGU et liens.
  */
 
 import { useState, useEffect } from 'react';
@@ -71,6 +71,7 @@ const PasswordInput = ({ field }: { field: any }) => {
 
 export default function LoginClient() {
   const t = useTranslations('Auth');
+  const tActions = useTranslations('Actions');
   const locale = useLocale();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
@@ -95,7 +96,6 @@ export default function LoginClient() {
     defaultValues: { fullName: '', email: '', password: '', terms: false },
   });
 
-  // ✅ LOGIQUE DE REDIRECTION PRIORITAIRE
   useEffect(() => {
     if (!isUserLoading && !loading && user && role) {
       if (redirectUrl) {
@@ -114,19 +114,14 @@ export default function LoginClient() {
   }, [user, isUserLoading, loading, role, router, locale, redirectUrl]);
 
   const getStoredReferrer = () => {
-      // 1. Priorité au paramètre d'URL
       if (referralId) return referralId;
-      
-      // 2. Fallback sur le cookie local déposé par la page d'invitation
       if (typeof window !== 'undefined') {
           const stored = localStorage.getItem('ndara_referral');
           if (stored) {
               try {
                   const data = JSON.parse(stored);
                   if (data.expiresAt > Date.now()) return data.instructorId;
-              } catch (e) {
-                  console.error("Referral parse error");
-              }
+              } catch (e) { console.error("Referral parse error"); }
           }
       }
       return null;
@@ -136,9 +131,9 @@ export default function LoginClient() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(getAuth(), values.email, values.password);
-      toast({ title: "Connexion réussie !" });
+      toast({ title: tActions('success.generic') });
     } catch (error) { 
-      toast({ variant: 'destructive', title: "Erreur", description: "Email ou mot de passe incorrect." }); 
+      toast({ variant: 'destructive', title: tActions('error.generic'), description: tActions('error.user_not_found') }); 
     } finally { 
       setIsLoading(false); 
     }
@@ -147,13 +142,10 @@ export default function LoginClient() {
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     const auth = getAuth();
-    let authUser: FirebaseUser | null = null;
-
     try {
       const instructorSponsorId = getStoredReferrer();
-
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      authUser = userCredential.user;
+      const authUser = userCredential.user;
       
       await updateProfile(authUser, { displayName: values.fullName });
 
@@ -168,7 +160,7 @@ export default function LoginClient() {
         isInstructorApproved: false,
         createdAt: serverTimestamp(),
         isProfileComplete: false,
-        preferredLanguage: locale as 'fr' | 'en',
+        preferredLanguage: locale as 'fr' | 'en' | 'sg',
         isOnline: true,
         lastSeen: serverTimestamp(),
         referredBy: instructorSponsorId || null,
@@ -181,7 +173,6 @@ export default function LoginClient() {
 
       await setDoc(userRef, userData);
 
-      // Si parrainage, on incrémente le compteur du parrain
       if (instructorSponsorId) {
           const sponsorRef = doc(db, 'users', instructorSponsorId);
           const sponsorDoc = await getDoc(sponsorRef);
@@ -193,14 +184,10 @@ export default function LoginClient() {
           if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
       }
 
-      toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
+      toast({ title: tActions('success.generic') });
 
     } catch (error: any) {
-      let msg = "Une erreur est survenue lors de l'inscription.";
-      if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
-        msg = "Cette adresse email est déjà utilisée.";
-      }
-      toast({ variant: 'destructive', title: "Échec", description: msg });
+      toast({ variant: 'destructive', title: tActions('error.generic') });
     } finally {
       setIsLoading(false);
     }
@@ -212,13 +199,11 @@ export default function LoginClient() {
     try {
       const result = await signInWithPopup(getAuth(), provider);
       const user = result.user;
-      
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
         const instructorSponsorId = getStoredReferrer();
-
         const userData = {
           uid: user.uid,
           email: user.email,
@@ -229,7 +214,7 @@ export default function LoginClient() {
           isInstructorApproved: false,
           createdAt: serverTimestamp(),
           isProfileComplete: false,
-          preferredLanguage: locale as 'fr' | 'en',
+          preferredLanguage: locale as 'fr' | 'en' | 'sg',
           isOnline: true,
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
@@ -246,16 +231,14 @@ export default function LoginClient() {
             const sponsorRef = doc(db, 'users', instructorSponsorId);
             const sponsorDoc = await getDoc(sponsorRef);
             if (sponsorDoc.exists()) {
-                await updateDoc(sponsorRef, {
-                    'affiliateStats.registrations': increment(1)
-                });
+                await updateDoc(sponsorRef, { 'affiliateStats.registrations': increment(1) });
             }
             if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
         }
       }
-      toast({ title: "Connexion Google réussie !" });
+      toast({ title: tActions('success.generic') });
     } catch (err) {
-      toast({ variant: 'destructive', title: "Erreur Google", description: "La connexion a échoué." });
+      toast({ variant: 'destructive', title: tActions('error.generic') });
     } finally {
       setIsLoading(false);
     }
@@ -302,7 +285,7 @@ export default function LoginClient() {
                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
                                  <div className="space-y-1 leading-none">
                                     <FormLabel className="text-[10px] font-medium text-slate-500">
-                                      {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">CGU</Link> et <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">Confidentialité</Link>
+                                      {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">{t('privacy_policy')}</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>
@@ -330,7 +313,7 @@ export default function LoginClient() {
                             <path fill="currentColor" d="M5.87 13.84c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.5H2.18C1.43 8.99 1 10.45 1 12s.43 3.01 1.18 4.5l3.69-2.66z"/>
                             <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 4.47 2.18 8.5l3.69 2.66c.86-2.59 3.28-4.51 6.13-4.51z"/>
                         </svg>
-                        Continuer avec Google
+                        {t('continue_with_google')}
                     </Button>
                 </Tabs>
             </div>

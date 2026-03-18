@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Se connecter",
@@ -10,7 +11,9 @@
     "i_agree_to": "J'accepte les",
     "and": "et la",
     "terms_of_use": "Conditions d'Utilisation",
-    "privacy_policy": "Politique de Confidentialité"
+    "privacy_policy": "Politique de Confidentialité",
+    "continue_with_google": "Continuer avec Google",
+    "already_member": "Déjà membre ? Connexion"
   },
   "Nav": {
     "home": "ACCUEIL",
@@ -35,7 +38,11 @@
     "certified": "Vérifié",
     "expert": "Expert",
     "student": "Étudiant",
-    "admin": "Cockpit"
+    "admin": "Cockpit",
+    "all": "Tous",
+    "found_results": "{count} formations trouvées",
+    "no_results": "Aucun résultat",
+    "reset_filters": "Réinitialiser"
   },
   "Dashboard": {
     "quote": "L'éducation est l'arme la plus puissante pour changer le monde.",

@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Log In",
@@ -10,7 +11,9 @@
     "i_agree_to": "I agree to the",
     "and": "and",
     "terms_of_use": "Terms of Use",
-    "privacy_policy": "Privacy Policy"
+    "privacy_policy": "Privacy Policy",
+    "continue_with_google": "Continue with Google",
+    "already_member": "Already a member? Log In"
   },
   "Nav": {
     "home": "HOME",
@@ -35,7 +38,11 @@
     "certified": "Verified",
     "expert": "Expert",
     "student": "Student",
-    "admin": "Cockpit"
+    "admin": "Cockpit",
+    "all": "All",
+    "found_results": "{count} trainings found",
+    "no_results": "No results",
+    "reset_filters": "Reset"
   },
   "Dashboard": {
     "quote": "Education is the most powerful weapon which you can use to change the world.",
@@ -154,8 +161,7 @@
     },
     "testimonials": {
       "title": "The Wisdom Wall",
-      "subtitle": "Ndara speaks: success is best told by those who live it.",
-      "verified": "VERIFIED"
+      "subtitle": "Ndara speaks: success is best told by those/"
     },
     "fintech": {
       "title": "Payment Liberty",

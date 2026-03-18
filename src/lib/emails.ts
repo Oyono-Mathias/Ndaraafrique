@@ -1,121 +1,117 @@
 
 'use server';
 
-import type { NdaraUser } from "@/lib/types";
-import type { Course } from "./types";
+import type { NdaraUser, Course } from "@/lib/types";
 
-// NOTE: This is a placeholder for a real email sending service (e.g., SendGrid, Mailgun, etc.)
-// In a real application, you would replace `console.log` with an API call to your email provider.
+/**
+ * @fileOverview Système d'emails multilingue Ndara Afrique.
+ * ✅ i18n : Templates adaptatifs en FR, EN et SG.
+ */
+
+const LOCALIZED_STRINGS: Record<string, any> = {
+    fr: {
+        welcome: "Félicitations",
+        enrolled_msg: "Bienvenue ! Vous êtes maintenant inscrit(e) à la formation :",
+        access_btn: "Accéder au cours",
+        quote: "Bara ala, Tonga na ndara.",
+        new_enrollment: "Nouvelle Inscription !",
+        instructor_hi: "Bonjour",
+        instructor_msg: "Bonne nouvelle ! Un nouvel étudiant vient de rejoindre l'une de vos formations.",
+        student_label: "Étudiant",
+        course_label: "Formation"
+    },
+    en: {
+        welcome: "Congratulations",
+        enrolled_msg: "Welcome! You are now enrolled in the following training:",
+        access_btn: "Access Course",
+        quote: "Bara ala, Tonga na ndara.",
+        new_enrollment: "New Enrollment!",
+        instructor_hi: "Hello",
+        instructor_msg: "Good news! A new student has just joined one of your courses.",
+        student_label: "Student",
+        course_label: "Course"
+    },
+    sg: {
+        welcome: "Mo sara kua nzoni",
+        enrolled_msg: "Bara ala! Mo lî nzoni na yâ tî kua so :",
+        access_btn: "To nda tî kua",
+        quote: "Bara ala, Tonga na ndara.",
+        new_enrollment: "Fini Ndara !",
+        instructor_hi: "Bara",
+        instructor_msg: "Nzoni sango! Mbeni fini Ndara alî fafadesi na yâ tî kua tî mo.",
+        student_label: "Ndara",
+        course_label: "Kua"
+    }
+};
 
 const sendEmail = ({ to, subject, html }: { to: string, subject: string, html: string }) => {
-    console.log("--- Sending Email ---");
+    console.log("--- Sending Localized Email ---");
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
-    // In a real scenario, you'd never log the full HTML, but for this simulation it's useful.
-    // console.log(`HTML: ${html}`); 
-    console.log("--------------------");
-    // SIMULATE API CALL
+    console.log("------------------------------");
     return Promise.resolve({ success: true });
 }
 
-const getStudentEmailTemplate = (studentName: string, courseName: string, courseId: string): string => {
-    const courseUrl = `https://ndara-afrique.web.app/courses/${courseId}`;
+const getStudentEmailTemplate = (studentName: string, courseName: string, courseId: string, locale: string = 'fr'): string => {
+    const s = LOCALIZED_STRINGS[locale] || LOCALIZED_STRINGS.fr;
+    const courseUrl = `https://ndara-afrique.web.app/${locale}/courses/${courseId}`;
+    
     return `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #020617; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">Félicitations, ${studentName} !</h1>
+          <h1 style="margin: 0; font-size: 24px;">${s.welcome}, ${studentName} !</h1>
         </div>
         <div style="padding: 30px;">
-          <p>Bienvenue ! Vous êtes maintenant inscrit(e) à la formation :</p>
-          <h2 style="font-size: 20px; margin: 20px 0;">${courseName}</h2>
-          <p>Nous sommes ravis de vous accompagner dans cette nouvelle aventure d'apprentissage.</p>
+          <p>${s.enrolled_msg}</p>
+          <h2 style="font-size: 20px; margin: 20px 0; color: #10b981;">${courseName}</h2>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${courseUrl}" style="background-color: #2563eb; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accéder au cours</a>
+            <a href="${courseUrl}" style="background-color: #10b981; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; text-transform: uppercase;">${s.access_btn}</a>
           </div>
           <hr style="border: none; border-top: 1px solid #eee;" />
-          <p style="font-style: italic; color: #555; margin-top: 20px;">
-            "Bara ala, Tonga na ndara." (Bonjour, bienvenue dans le savoir) - Sango<br />
-            "Mbote, boyeyi malamu na boyekoli." (Bonjour, bienvenue dans l'apprentissage) - Lingala
+          <p style="font-style: italic; color: #555; margin-top: 20px; text-align: center;">
+            "${s.quote}"
           </p>
-        </div>
-        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888;">
-          <p>&copy; ${new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
         </div>
       </div>
     `;
 };
 
-const getInstructorEmailTemplate = (instructorName: string, studentName: string, courseName: string): string => {
+const getInstructorEmailTemplate = (instructorName: string, studentName: string, courseName: string, locale: string = 'fr'): string => {
+    const s = LOCALIZED_STRINGS[locale] || LOCALIZED_STRINGS.fr;
     return `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #10b981; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">Nouvelle Inscription !</h1>
+          <h1 style="margin: 0; font-size: 24px;">${s.new_enrollment}</h1>
         </div>
         <div style="padding: 30px;">
-          <p>Bonjour ${instructorName},</p>
-          <p>Bonne nouvelle ! Un nouvel étudiant vient de rejoindre l'une de vos formations.</p>
-          <p style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
-            <strong>Étudiant :</strong> ${studentName}<br>
-            <strong>Formation :</strong> ${courseName}
+          <p>${s.instructor_hi} ${instructorName},</p>
+          <p>${s.instructor_msg}</p>
+          <p style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #10b981;">
+            <strong>${s.student_label} :</strong> ${studentName}<br>
+            <strong>${s.course_label} :</strong> ${courseName}
           </p>
-          <p>C'est une excellente occasion d'accueillir ce nouvel apprenant dans votre communauté.</p>
-        </div>
-        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888;">
-          <p>&copy; ${new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
         </div>
       </div>
     `;
 };
 
 export const sendEnrollmentEmails = async (student: NdaraUser, course: Course, instructor: NdaraUser) => {
-    if (!student.email || !instructor.email) {
-        console.error("Missing email for student or instructor.");
-        return;
-    }
+    if (!student.email || !instructor.email) return;
 
-    // --- Email to Student ---
-    const studentHtml = getStudentEmailTemplate(student.fullName, course.title, course.id);
+    const studentLocale = student.preferredLanguage || 'fr';
+    const instructorLocale = instructor.preferredLanguage || 'fr';
+
+    // 1. Email to Student
     await sendEmail({
         to: student.email,
-        subject: `Bienvenue à la formation : ${course.title}`,
-        html: studentHtml,
+        subject: `[Ndara Afrique] ${course.title}`,
+        html: getStudentEmailTemplate(student.fullName, course.title, course.id, studentLocale),
     });
 
-    // --- Email to Instructor ---
-    const instructorHtml = getInstructorEmailTemplate(instructor.fullName, student.fullName, course.title);
+    // 2. Email to Instructor
     await sendEmail({
         to: instructor.email,
-        subject: `Nouvel étudiant inscrit à votre cours : ${course.title}`,
-        html: instructorHtml,
-    });
-};
-
-const getNewInstructorApplicationEmailTemplate = ({ applicantName, applicantEmail, specialty }: { applicantName: string; applicantEmail: string; specialty: string }): string => {
-    const adminUrl = 'https://ndara-afrique.web.app/admin/instructors';
-    return `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <h1 style="color: #2563eb;">Nouvelle Candidature d'Instructeur</h1>
-            <p>Une nouvelle personne a postulé pour devenir instructeur sur Ndara Afrique.</p>
-            <ul>
-                <li><strong>Nom :</strong> ${applicantName}</li>
-                <li><strong>Email :</strong> ${applicantEmail}</li>
-                <li><strong>Spécialité :</strong> ${specialty}</li>
-            </ul>
-            <p>Veuillez examiner la candidature dès que possible dans votre panneau d'administration.</p>
-            <a href="${adminUrl}" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voir les candidatures</a>
-        </div>
-    `;
-}
-
-export const sendNewInstructorApplicationEmail = async ({ applicantName, applicantEmail, specialty }: { applicantName: string; applicantEmail: string; specialty: string }) => {
-    // In a real app, this would be a specific admin email from environment variables
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'oyonomathias@gmail.com';
-
-    const html = getNewInstructorApplicationEmailTemplate({ applicantName, applicantEmail, specialty });
-
-    await sendEmail({
-        to: adminEmail,
-        subject: `[Ndara Afrique] Nouvelle Candidature d'Instructeur : ${applicantName}`,
-        html,
+        subject: `[Ndara Afrique] ${LOCALIZED_STRINGS[instructorLocale]?.new_enrollment || 'New Student'}`,
+        html: getInstructorEmailTemplate(instructor.fullName, student.fullName, course.title, instructorLocale),
     });
 };

@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Lî na yâ ni",
@@ -10,7 +11,9 @@
     "i_agree_to": "Mbi yeda na",
     "and": "na",
     "terms_of_use": "Lêge tî kua",
-    "privacy_policy": "Bata tî sango"
+    "privacy_policy": "Bata tî sango",
+    "continue_with_google": "Gue na Google",
+    "already_member": "Mo yeke na mbeni compte awe? Lî na yâ ni"
   },
   "Nav": {
     "home": "KODORO",
@@ -35,7 +38,11 @@
     "certified": "Vérifié",
     "expert": "Expert",
     "student": "Ndara",
-    "admin": "Cockpit"
+    "admin": "Cockpit",
+    "all": "Kue",
+    "found_results": "{count} ambage tî manda kua awara",
+    "no_results": "Mbeni ye ayeke pëpe",
+    "reset_filters": "Zia ni kîri"
   },
   "Dashboard": {
     "quote": "Mango mbeti ayeke kpengba lege tî changé sese.",
