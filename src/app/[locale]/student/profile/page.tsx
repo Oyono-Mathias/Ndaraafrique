@@ -3,11 +3,12 @@
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
  * ✅ WALLET UPDATE : Affichage du solde et lien vers le portefeuille.
+ * ✅ I18N : Sélecteur de langue réactif.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -63,6 +64,7 @@ import { africanCountries } from '@/lib/countries';
 export default function StudentProfilePage() {
   const { currentUser, isUserLoading, secureSignOut, user } = useRole();
   const router = useRouter();
+  const pathname = usePathname();
   const locale = useLocale();
   const { theme, setTheme } = useTheme();
   const db = getFirestore();
@@ -89,6 +91,15 @@ export default function StudentProfilePage() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await secureSignOut();
+  };
+
+  const handleLanguageChange = (newLocale: string) => {
+      if (newLocale === locale) return;
+      // Reconstruit le chemin avec la nouvelle locale
+      const segments = pathname.split('/');
+      segments[1] = newLocale; 
+      const newPath = segments.join('/');
+      router.push(newPath);
   };
 
   const countryEmoji = useMemo(() => {
@@ -239,7 +250,7 @@ export default function StudentProfilePage() {
                         </div>
                         <span className="font-bold text-white text-sm uppercase tracking-tight">Langue</span>
                     </div>
-                    <Select defaultValue={locale}>
+                    <Select value={locale} onValueChange={handleLanguageChange}>
                         <SelectTrigger className="w-32 h-10 bg-slate-950 border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
                             <SelectValue />
                         </SelectTrigger>

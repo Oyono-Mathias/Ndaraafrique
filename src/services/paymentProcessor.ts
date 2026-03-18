@@ -8,12 +8,12 @@ import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/typ
 /**
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
  * ✅ SÉCURISÉ : Ne crash pas l'application si l'admin n'est pas prêt.
+ * ✅ PARRAINAGE : Gère l'attribution des commissions aux parrains enregistrés.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
   
-  // getAdminDb() va jeter "ADMIN_NOT_CONFIGURED" si la clé est mal lue
   const db = getAdminDb();
 
   try {
@@ -69,9 +69,14 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         const courseData = courseDoc.data() as Course;
 
         const instructorSharePercent = settings.commercial?.instructorShare || 80;
-        const affiliateSharePercent = metadata.affiliateId ? (settings.commercial?.affiliatePercentage || 10) : 0;
+        const affiliateSharePercent = settings.commercial?.affiliatePercentage || 10;
         
-        const affiliateCommission = (amount * affiliateSharePercent) / 100;
+        // --- LOGIQUE DE PARRAINAGE ---
+        // On vérifie d'abord l'ID d'affiliation dans les métadonnées, sinon le parrain enregistré à l'inscription
+        const effectiveAffiliateId = metadata.affiliateId || userData.referredBy;
+        const hasAffiliate = !!effectiveAffiliateId && effectiveAffiliateId !== metadata.userId;
+
+        const affiliateCommission = hasAffiliate ? (amount * affiliateSharePercent) / 100 : 0;
         const instructorRevenue = (amount * instructorSharePercent) / 100;
         const platformFee = amount - instructorRevenue - affiliateCommission;
 
@@ -81,6 +86,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         paymentData.platformFee = platformFee;
         paymentData.instructorRevenue = instructorRevenue;
         paymentData.affiliateCommission = affiliateCommission;
+        paymentData.affiliateId = hasAffiliate ? effectiveAffiliateId : null;
 
         // Inscription
         const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
@@ -109,9 +115,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             });
         }
 
-        // Affiliation
-        if (metadata.affiliateId && metadata.affiliateId !== metadata.userId) {
-            const affiliateId = metadata.affiliateId;
+        // --- ENREGISTREMENT COMMISSION AMBASSADEUR ---
+        if (hasAffiliate) {
+            const affiliateId = effectiveAffiliateId!;
             const affTransRef = db.collection('affiliate_transactions').doc();
             const unlockDate = new Date();
             unlockDate.setDate(unlockDate.getDate() + (settings.commercial?.payoutDelayDays || 14));
@@ -130,6 +136,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                 unlockDate: Timestamp.fromDate(unlockDate)
             });
 
+            // On crédite le solde "en attente" de l'ambassadeur
             const affiliateRef = db.collection('users').doc(affiliateId);
             batch.update(affiliateRef, {
                 pendingAffiliateBalance: FieldValue.increment(affiliateCommission),

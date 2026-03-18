@@ -103,8 +103,6 @@ export default function LoginClient() {
           return;
       }
       
-      // On redirige vers le dashboard correspondant au rôle actif résolu par le contexte
-      // Le contexte a déjà calculé la priorité (Admin > Instructor > Student)
       const target = role === 'admin' 
         ? '/admin' 
         : role === 'instructor' 
@@ -116,16 +114,19 @@ export default function LoginClient() {
   }, [user, isUserLoading, loading, role, router, locale, redirectUrl]);
 
   const getStoredReferrer = () => {
+      // 1. Priorité au paramètre d'URL
       if (referralId) return referralId;
-      if (typeof window === 'undefined') return null;
       
-      const stored = localStorage.getItem('ndara_referral');
-      if (stored) {
-          try {
-              const data = JSON.parse(stored);
-              if (data.expiresAt > Date.now()) return data.instructorId;
-          } catch (e) {
-              console.error("Referral parse error");
+      // 2. Fallback sur le cookie local déposé par la page d'invitation
+      if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('ndara_referral');
+          if (stored) {
+              try {
+                  const data = JSON.parse(stored);
+                  if (data.expiresAt > Date.now()) return data.instructorId;
+              } catch (e) {
+                  console.error("Referral parse error");
+              }
           }
       }
       return null;
@@ -174,16 +175,21 @@ export default function LoginClient() {
         referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
         affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
         affiliateBalance: 0,
-        referralBalance: 0
+        pendingAffiliateBalance: 0,
+        balance: 0
       };
 
       await setDoc(userRef, userData);
 
+      // Si parrainage, on incrémente le compteur du parrain
       if (instructorSponsorId) {
           const sponsorRef = doc(db, 'users', instructorSponsorId);
-          await updateDoc(sponsorRef, {
-              'affiliateStats.registrations': increment(1)
-          }).catch(() => {});
+          const sponsorDoc = await getDoc(sponsorRef);
+          if (sponsorDoc.exists()) {
+              await updateDoc(sponsorRef, {
+                  'affiliateStats.registrations': increment(1)
+              });
+          }
           if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
       }
 
@@ -231,15 +237,19 @@ export default function LoginClient() {
           referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
           affiliateBalance: 0,
-          referralBalance: 0
+          pendingAffiliateBalance: 0,
+          balance: 0
         };
         await setDoc(userRef, userData);
 
         if (instructorSponsorId) {
             const sponsorRef = doc(db, 'users', instructorSponsorId);
-            await updateDoc(sponsorRef, {
-                'affiliateStats.registrations': increment(1)
-            }).catch(() => {});
+            const sponsorDoc = await getDoc(sponsorRef);
+            if (sponsorDoc.exists()) {
+                await updateDoc(sponsorRef, {
+                    'affiliateStats.registrations': increment(1)
+                });
+            }
             if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
         }
       }
