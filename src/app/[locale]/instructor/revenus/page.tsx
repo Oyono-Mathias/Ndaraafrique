@@ -2,9 +2,7 @@
 
 /**
  * @fileOverview Dashboard Financier de l'Instructeur V3 (Design Qwen Fintech Elite).
- * ✅ CALCULS : (Ventes Cours + Commissions Ambassadeur) - Retraits Approuvés.
- * ✅ FONCTIONNEL : Retraits Mobile Money avec sélecteur d'opérateur.
- * ✅ HISTORIQUE : Fusion des ventes et des demandes de retrait (payout_requests).
+ * ✅ I18N : Traduction dynamique des retours serveur.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -39,11 +37,13 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useTranslations } from 'next-intl';
 
 export default function InstructorRevenuePage() {
     const { currentUser: instructor, isUserLoading } = useRole();
     const db = getFirestore();
     const { toast } = useToast();
+    const tActions = useTranslations('Actions');
 
     const [payments, setPayments] = useState<Payment[]>([]);
     const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
@@ -53,17 +53,12 @@ export default function InstructorRevenuePage() {
     const [phoneValue, setPhoneValue] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const [loadingStates, setLoadingStates] = useState({
-        payments: true,
-        payouts: true
-    });
+    const [loadingStates, setLoadingStates] = useState({ payments: true, payouts: true });
 
     useEffect(() => {
         if (!instructor?.uid) return;
-
         const instructorId = instructor.uid;
 
-        // 1. Écouter les ventes de cours
         const unsubPayments = onSnapshot(
             query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'Completed')),
             (snap) => {
@@ -72,7 +67,6 @@ export default function InstructorRevenuePage() {
             }
         );
 
-        // 2. Écouter les demandes de retrait (Payouts)
         const unsubPayouts = onSnapshot(
             query(collection(db, 'payout_requests'), where('instructorId', '==', instructorId), orderBy('createdAt', 'desc'), limit(50)),
             (snap) => {
@@ -81,29 +75,15 @@ export default function InstructorRevenuePage() {
             }
         );
 
-        return () => {
-            unsubPayments();
-            unsubPayouts();
-        };
+        return () => { unsubPayments(); unsubPayouts(); };
     }, [instructor?.uid, db]);
 
-    // ✅ CALCUL DU SOLDE RÉEL
     const stats = useMemo(() => {
         const totalSalesEarned = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
         const ambassadorAvailable = instructor?.affiliateBalance || 0;
-        
-        // Total des retraits déjà payés ou en attente (bloque le solde)
-        const totalPayouts = payoutRequests
-            .filter(p => p.status !== 'rejected')
-            .reduce((acc, p) => acc + (p.amount || 0), 0);
-        
+        const totalPayouts = payoutRequests.filter(p => p.status !== 'rejected').reduce((acc, p) => acc + (p.amount || 0), 0);
         const availableBalance = (totalSalesEarned + ambassadorAvailable) - totalPayouts;
-
-        return {
-            totalSalesEarned,
-            ambassadorAvailable,
-            availableBalance: Math.max(0, availableBalance)
-        };
+        return { totalSalesEarned, ambassadorAvailable, availableBalance: Math.max(0, availableBalance) };
     }, [payments, payoutRequests, instructor]);
 
     const handleRequestWithdrawal = async () => {
@@ -111,12 +91,12 @@ export default function InstructorRevenuePage() {
         const amountNum = parseFloat(withdrawAmount);
         
         if (isNaN(amountNum) || amountNum < 5000) {
-            toast({ variant: 'destructive', title: "Montant invalide", description: "Le retrait minimum est de 5 000 XOF." });
+            toast({ variant: 'destructive', title: tActions('error.payout_min_amount') });
             return;
         }
         
         if (amountNum > stats.availableBalance) {
-            toast({ variant: 'destructive', title: "Solde insuffisant", description: "Le montant dépasse votre solde disponible." });
+            toast({ variant: 'destructive', title: tActions('error.insufficient_balance') });
             return;
         }
 
@@ -129,42 +109,32 @@ export default function InstructorRevenuePage() {
             });
 
             if (result.success) {
-                toast({ title: "Demande envoyée !", description: "Votre retrait sera traité sous 48h." });
+                toast({ title: tActions('success.payout_requested') });
                 setIsWithdrawModalOpen(false);
                 setWithdrawAmount('');
             } else {
-                toast({ variant: 'destructive', title: "Erreur", description: result.error });
+                toast({ 
+                    variant: 'destructive', 
+                    title: tActions('error.generic'), 
+                    description: result.error ? tActions(result.error as any) : undefined 
+                });
             }
         } catch (e) {
-            toast({ variant: 'destructive', title: "Erreur technique" });
+            toast({ variant: 'destructive', title: tActions('error.generic') });
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const historyItems = useMemo(() => {
-        const p = payments.map(item => {
-            const date = (item.date as any)?.toDate ? (item.date as any).toDate() : new Date();
-            return { 
-                id: item.id, 
-                type: 'sale', 
-                title: `Vente: ${item.courseTitle || 'Formation'}`, 
-                amount: item.amount, 
-                date,
-                status: 'Completed' 
-            };
-        });
-        const pr = payoutRequests.map(item => {
-            const date = (item.createdAt as any)?.toDate ? (item.createdAt as any).toDate() : new Date();
-            return { 
-                id: item.id, 
-                type: 'payout', 
-                title: `Retrait Mobile Money`, 
-                amount: -item.amount, 
-                date,
-                status: item.status 
-            };
-        });
+        const p = payments.map(item => ({ 
+            id: item.id, type: 'sale', title: `Vente: ${item.courseTitle || 'Formation'}`, 
+            amount: item.amount, date: (item.date as any)?.toDate ? (item.date as any).toDate() : new Date(), status: 'Completed' 
+        }));
+        const pr = payoutRequests.map(item => ({ 
+            id: item.id, type: 'payout', title: `Retrait Mobile Money`, 
+            amount: -item.amount, date: (item.createdAt as any)?.toDate ? (item.createdAt as any).toDate() : new Date(), status: item.status 
+        }));
         return [...p, ...pr].sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [payments, payoutRequests]);
 
@@ -177,15 +147,13 @@ export default function InstructorRevenuePage() {
             <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md safe-area-pt border-b border-white/5">
                 <div className="px-6 py-6 flex items-center justify-between">
                     <h1 className="font-black text-2xl text-white tracking-wide uppercase">Trésorerie</h1>
-                    <button className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-gray-400 hover:text-white transition shadow-xl" onClick={() => toast({ title: "Génération du relevé..." })}>
+                    <button className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-gray-400 hover:text-white transition shadow-xl">
                         <Download size={18} />
                     </button>
                 </div>
             </header>
 
             <main className="flex-1 px-6 pt-32 space-y-8 animate-in fade-in duration-700">
-                
-                {/* --- ELITE VIRTUAL CARD --- */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Mon Portefeuille</h2>
@@ -211,15 +179,12 @@ export default function InstructorRevenuePage() {
                                     <Wifi className="text-white/70 h-8 w-8 mt-2 rotate-90" />
                                 </div>
                             </div>
-                            
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-emerald-200 text-[9px] font-bold uppercase mb-1 tracking-wider">Expert Titulaire</p>
                                     <p className="text-white font-black text-sm uppercase tracking-widest">{instructor?.fullName || '---'}</p>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <CreditCard className="text-white h-8 w-8 opacity-90" />
-                                </div>
+                                <div className="flex items-center gap-3"><CreditCard className="text-white h-8 w-8 opacity-90" /></div>
                             </div>
                         </div>
                     </div>
@@ -230,15 +195,11 @@ export default function InstructorRevenuePage() {
                     </Button>
                 </div>
 
-                {/* --- TRANSACTION HISTORY --- */}
                 <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-6 shadow-2xl">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Journal des flux</h3>
-                        <div className="p-2 bg-slate-950 rounded-lg">
-                            <History size={14} className="text-slate-600" />
-                        </div>
+                        <History size={14} className="text-slate-600" />
                     </div>
-                    
                     <div className="space-y-4">
                         {loadingStates.payments || loadingStates.payouts ? (
                             [...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl bg-slate-800" />)
@@ -253,21 +214,17 @@ export default function InstructorRevenuePage() {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="font-bold text-white text-sm truncate uppercase tracking-tight">{item.title}</p>
-                                        <p className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">{format(item.date, 'dd MMM yyyy • HH:mm', { locale: fr })}</p>
+                                        <p className="text-gray-500 text-[10px] font-bold uppercase mt-0.5">{format(item.date, 'dd MMM yyyy', { locale: fr })}</p>
                                     </div>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <p className={cn(
-                                        "font-black text-sm mb-1",
-                                        item.amount > 0 ? `+${item.amount.toLocaleString()}` : item.amount.toLocaleString()
-                                    )}>
+                                    <p className={cn("font-black text-sm mb-1", item.amount > 0 ? `+${item.amount.toLocaleString()}` : item.amount.toLocaleString())}>
                                         {Math.abs(item.amount).toLocaleString()} F
                                     </p>
                                     <Badge className={cn(
                                         "text-[8px] font-black uppercase border-none px-2 py-0.5 h-4 rounded-full",
                                         item.status === 'Completed' || item.status === 'paid' ? "bg-emerald-500/10 text-emerald-500" :
-                                        item.status === 'pending' || item.status === 'approved' ? "bg-amber-500/10 text-amber-400" :
-                                        "bg-red-500/10 text-red-500"
+                                        item.status === 'pending' || item.status === 'approved' ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-500"
                                     )}>
                                         {item.status === 'Completed' || item.status === 'paid' ? 'Succès' : item.status === 'pending' ? 'Audit' : item.status === 'approved' ? 'Prêt' : 'Rejeté'}
                                     </Badge>
@@ -281,10 +238,8 @@ export default function InstructorRevenuePage() {
                         )}
                     </div>
                 </div>
-
             </main>
 
-            {/* --- WITHDRAWAL DIALOG --- */}
             <Dialog open={isWithdrawModalOpen} onOpenChange={setIsWithdrawModalOpen}>
                 <DialogContent className="bg-slate-900 border-white/5 rounded-t-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
                     <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -292,13 +247,11 @@ export default function InstructorRevenuePage() {
                         <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Retrait Mobile Money</DialogTitle>
                         <DialogDescription className="text-gray-400 font-medium italic">Retirez vos gains vers votre compte personnel.</DialogDescription>
                     </DialogHeader>
-                    
                     <div className="p-8 space-y-6">
                         <div className="bg-slate-950 rounded-3xl p-5 border border-white/5 text-center">
                             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Disponible pour virement</p>
                             <p className="text-3xl font-black text-[#10b981]">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</p>
                         </div>
-
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Fournisseur</label>
                             <div className="grid grid-cols-3 gap-2">
@@ -307,41 +260,19 @@ export default function InstructorRevenuePage() {
                                 <ProviderBtn active={withdrawMethod === 'wave'} onClick={() => setWithdrawMethod('wave')} label="Wave" color="bg-blue-500" />
                             </div>
                         </div>
-
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Numéro de téléphone</label>
-                            <Input 
-                                type="tel" 
-                                placeholder="+236 ..." 
-                                value={phoneValue}
-                                onChange={(e) => setPhoneValue(e.target.value)}
-                                className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-mono text-lg" 
-                            />
+                            <Input type="tel" placeholder="+236 ..." value={phoneValue} onChange={(e) => setPhoneValue(e.target.value)} className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-mono text-lg" />
                         </div>
-
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Montant à retirer</label>
-                            <Input 
-                                type="number" 
-                                placeholder="5000" 
-                                value={withdrawAmount}
-                                onChange={(e) => setWithdrawAmount(e.target.value)}
-                                className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-black text-xl" 
-                            />
+                            <Input type="number" placeholder="5000" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-black text-xl" />
                         </div>
                     </div>
-
                     <DialogFooter className="p-8 bg-slate-950/50 border-t border-white/5 flex gap-3">
-                        <DialogClose asChild>
-                            <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
-                        </DialogClose>
-                        <Button 
-                            onClick={handleRequestWithdrawal}
-                            disabled={isSubmitting || !phoneValue || !withdrawAmount || stats.availableBalance < 5000}
-                            className="flex-1 h-14 rounded-2xl bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] font-black uppercase text-[10px] tracking-widest shadow-xl transition-all"
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Check size={16} className="mr-2" />}
-                            Confirmer
+                        <DialogClose asChild><Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button></DialogClose>
+                        <Button onClick={handleRequestWithdrawal} disabled={isSubmitting || !phoneValue || !withdrawAmount || stats.availableBalance < 5000} className="flex-1 h-14 rounded-2xl bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] font-black uppercase text-[10px] tracking-widest shadow-xl transition-all">
+                            {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Check size={16} className="mr-2" />} Confirmer
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -352,16 +283,8 @@ export default function InstructorRevenuePage() {
 
 function ProviderBtn({ active, onClick, label, color }: any) {
     return (
-        <button 
-            onClick={onClick}
-            className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95 gap-1",
-                active ? "border-[#10b981] bg-[#10b981]/5" : "border-transparent bg-slate-950 grayscale opacity-50"
-            )}
-        >
-            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-[10px]", color)}>
-                {label.charAt(0)}
-            </div>
+        <button onClick={onClick} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95 gap-1", active ? "border-[#10b981] bg-[#10b981]/5" : "border-transparent bg-slate-950 grayscale opacity-50")}>
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-[10px]", color)}>{label.charAt(0)}</div>
             <span className="text-[8px] font-black text-white uppercase">{label}</span>
         </button>
     );

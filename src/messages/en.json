@@ -1,4 +1,3 @@
-
 {
   "Auth": {
     "loginButton": "Log In",
@@ -180,6 +179,35 @@
       "new_badge": "NEW",
       "experts_label": "Ndara",
       "courses_label": "Courses"
+    }
+  },
+  "Actions": {
+    "success": {
+      "generic": "Success!",
+      "wallet_recharged": "Balance successfully credited!",
+      "payout_requested": "Withdrawal request submitted. Processed within 48h.",
+      "payout_updated": "Withdrawal status updated.",
+      "course_created": "Course initialized. Add your lessons now!",
+      "course_updated": "Changes saved successfully.",
+      "course_published": "Your course is now live!",
+      "course_granted": "Course access has been granted.",
+      "license_purchased": "Congratulations! You are the new owner of this license.",
+      "ticket_created": "Ticket sent! We will reply shortly.",
+      "refund_processed": "Refund processed and access revoked.",
+      "profile_updated": "Profile updated successfully."
+    },
+    "error": {
+      "generic": "Something went wrong. Please try again.",
+      "admin_only": "This action is reserved for administrators.",
+      "amount_positive": "Amount must be strictly positive.",
+      "course_not_found": "Course not found.",
+      "user_not_found": "User not found.",
+      "payout_info_missing": "Please enter your Mobile Money info in settings.",
+      "payout_min_amount": "Minimum withdrawal amount is 5,000 XOF.",
+      "insufficient_balance": "Insufficient balance for this operation.",
+      "buyout_unauthorized": "Only the owner can sell this course.",
+      "license_unavailable": "This license is no longer available for sale.",
+      "not_authorized": "You do not have the required permissions."
     }
   }
 }

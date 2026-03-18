@@ -1,4 +1,3 @@
-
 {
   "Auth": {
     "loginButton": "Lî na yâ ni",
@@ -180,6 +179,35 @@
       "new_badge": "FINI",
       "experts_label": "Ndara",
       "courses_label": "Ambage"
+    }
+  },
+  "Actions": {
+    "success": {
+      "generic": "Kua ni asara nzoni",
+      "wallet_recharged": "Nginza tî mo alî awe !",
+      "payout_requested": "Hundango nginza tî mo gue awe.",
+      "payout_updated": "Sango tî nginza achangé awe.",
+      "course_created": "Kua tî fa mbeti tî mo ato nda ni.",
+      "course_updated": "Achangement abata terê ni awe.",
+      "course_published": "Kua tî mo alî na sese awe !",
+      "course_granted": "Lêge tî manda kua ni amû awe.",
+      "license_purchased": "Nzoni ! Mo ga wa tî licence so fafadesi.",
+      "ticket_created": "Mbeti tî hunda maboko gue awe.",
+      "refund_processed": "Kiri tî nginza asara awe.",
+      "profile_updated": "Profil tî mo asara nzoni awe."
+    },
+    "error": {
+      "generic": "Mbeni kpale alî. Kîri mo tara.",
+      "admin_only": "Gi a-admin la alî ti sara kua so.",
+      "amount_positive": "Wungo tî nginza adu tî duti na ndö tî zérô.",
+      "course_not_found": "E wara kua ni pëpe.",
+      "user_not_found": "E wara zo ni pëpe.",
+      "payout_info_missing": "Zia sango tî Mobile Money tî mo na yâ tî réglages.",
+      "payout_min_amount": "Wungo tî nginza tî zigui adu tî duti 5 000 XOF.",
+      "insufficient_balance": "Nginza tî mo alingbi pëpe.",
+      "buyout_unauthorized": "Gi wa ni la alî ti kä mbeti so.",
+      "license_unavailable": "Licence so ayeke na lêge tî kä pëpe.",
+      "not_authorized": "Mo yeke na permission pëpe."
     }
   }
 }
