@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Se connecter",
@@ -18,6 +19,13 @@
     "dashboard": "Tableau de bord",
     "invest": "Investir sur Ndara"
   },
+  "Common": {
+    "site_name": "Ndara Afrique",
+    "greeting": "Bara ala,",
+    "ndara_term": "Ndara",
+    "ndara_plural": "Ndara",
+    "wisdom": "Sagesse"
+  },
   "Landing": {
     "hero_title": "Ndara Afrique : L'excellence par le savoir",
     "hero_subtitle": "Apprenez avec des experts africains et bénéficiez de l'aide 24h/24 du Tuteur MATHIAS, votre coach IA personnalisé.",
@@ -29,6 +37,15 @@
     "feature_2_desc": "Validez vos compétences et obtenez vos certificats de réussite pour votre carrière.",
     "feature_3_title": "Tuteur IA 24h/24",
     "feature_3_desc": "MATHIAS répond à toutes vos questions sur les cours pour vous garantir une compréhension totale."
+  },
+  "Dashboard": {
+    "quote": "L'éducation est l'arme la plus puissante pour changer le monde.",
+    "resume_study": "Continuer l'étude",
+    "tutor_box_title": "Salut, je suis Mathias.",
+    "tutor_box_desc": "Une question sur ton cours ? Je suis là pour t'aider.",
+    "ask_question": "Poser une question",
+    "recommendations": "Recommandés pour vous",
+    "alerts": "Dernières Alertes"
   },
   "all": "Tous",
   "in_progress": "En cours",

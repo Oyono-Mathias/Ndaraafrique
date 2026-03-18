@@ -18,6 +18,13 @@
     "courses": "My Courses",
     "dashboard": "Dashboard"
   },
+  "Common": {
+    "site_name": "Ndara Africa",
+    "greeting": "Hello,",
+    "ndara_term": "Learner",
+    "ndara_plural": "Learners",
+    "wisdom": "Wisdom"
+  },
   "Landing": {
     "hero_title": "Ndara Africa: Excellence through knowledge",
     "hero_subtitle": "Learn with African experts and get 24/7 help from MATHIAS Tutor, your personalized AI coach.",
@@ -29,6 +36,15 @@
     "feature_2_desc": "Validate your skills and earn completion certificates for your professional growth.",
     "feature_3_title": "24/7 AI Tutor",
     "feature_3_desc": "MATHIAS answers all your course-related questions to ensure total understanding."
+  },
+  "Dashboard": {
+    "quote": "Education is the most powerful weapon which you can use to change the world.",
+    "resume_study": "Continue study",
+    "tutor_box_title": "Hi, I am Mathias.",
+    "tutor_box_desc": "A question about your course? I am here to help.",
+    "ask_question": "Ask a question",
+    "recommendations": "Recommended for you",
+    "alerts": "Recent Alerts"
   },
   "all": "All",
   "in_progress": "In Progress",

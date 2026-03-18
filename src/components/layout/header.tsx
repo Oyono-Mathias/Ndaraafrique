@@ -1,10 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview En-tête global de l'application (Design Android-First Immersif).
- * ✅ MENU : Déclencheur du menu latéral pour mobile (Hamburger).
- * ✅ NOTIFICATIONS : Cloche connectée à Firestore avec badge d'invisibilité.
- * ✅ TITRE : Dynamique selon le contexte.
+ * ✅ I18N : Traduction dynamique du nom du site.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +12,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
@@ -26,6 +25,9 @@ export function Header() {
     const pathname = usePathname();
     const { currentUser, role } = useRole();
     const locale = useLocale();
+    const t = useTranslations('Common');
+    const nav = useTranslations('Nav');
+    
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
     const db = getFirestore();
@@ -33,7 +35,6 @@ export function Header() {
     const handleSidebarLinkClick = () => setIsSheetOpen(false);
     const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
-    // Écouteur temps réel pour les notifications non lues
     useEffect(() => {
         if (!currentUser?.uid) return;
 
@@ -51,10 +52,10 @@ export function Header() {
     }, [currentUser?.uid, db]);
 
     const getPageTitle = () => {
-        if (pathname.includes('/admin')) return "TABLEAU DE BORD";
-        if (pathname.includes('/instructor/dashboard')) return "ESPACE FORMATEUR";
-        if (pathname.includes('/student/dashboard')) return "NDARA AFRIQUE";
-        return "NDARA";
+        if (pathname.includes('/admin')) return "COCKPIT";
+        if (pathname.includes('/instructor/dashboard')) return "EXPERT";
+        if (pathname.includes('/student/dashboard')) return t('site_name').toUpperCase();
+        return t('site_name').toUpperCase();
     };
 
     return (
@@ -88,16 +89,6 @@ export function Header() {
 
             {/* Right: Search, Notifications, Profile */}
             <div className="flex items-center gap-3">
-                {/* Search Pill - Visible on MD+ */}
-                <div className="hidden md:flex items-center bg-black/20 rounded-full px-4 py-2 border border-white/5 focus-within:border-primary/50 transition">
-                    <Search className="w-4 h-4 text-gray-500 mr-2" />
-                    <input 
-                        type="text" 
-                        placeholder="Rechercher..." 
-                        className="bg-transparent border-none focus:outline-none text-sm text-white placeholder-gray-500 w-32 lg:w-48"
-                    />
-                </div>
-
                 <button 
                     onClick={() => router.push(`/${locale}/student/notifications`)}
                     className="relative w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90"

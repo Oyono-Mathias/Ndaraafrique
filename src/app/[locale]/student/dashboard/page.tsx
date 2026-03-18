@@ -1,10 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign).
- * ✅ VINTAGE : Salutation extra-grasse et italique.
- * ✅ FINTECH : Stats cards et dégradés ocre.
- * ✅ IA : Accès direct à Mathias.
+ * ✅ I18N : Utilisation des traductions pour le multilingue (Ndara Afrique -> Ndara Africa).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -13,8 +12,7 @@ import {
   query, 
   where, 
   getFirestore, 
-  onSnapshot, 
-  getCountFromServer 
+  onSnapshot 
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,7 +21,6 @@ import {
   Trophy, 
   Bot, 
   Sparkles, 
-  ChevronRight,
   Search
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -32,12 +29,14 @@ import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 export default function StudentDashboardAndroid() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const locale = useLocale();
+  const t = useTranslations('Dashboard');
+  const common = useTranslations('Common');
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [loadingData, setLoadingData] = useState(true);
@@ -46,7 +45,6 @@ export default function StudentDashboardAndroid() {
     if (!currentUser?.uid) return;
 
     setLoadingData(true);
-    // Inscriptions personnelles
     const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), (snap) => {
       setStats({ 
         total: snap.size, 
@@ -73,19 +71,19 @@ export default function StudentDashboardAndroid() {
     );
   }
 
-  const firstName = currentUser?.fullName?.split(' ')[0] || 'Ndara';
+  const firstName = currentUser?.fullName?.split(' ')[0] || common('ndara_term');
 
   return (
     <div className="flex flex-col gap-10 pb-24 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
       
-      {/* --- HEADER SALUTATION (VINTAGE) --- */}
+      {/* --- HEADER SALUTATION (VINTAGE I18N) --- */}
       <header className="px-6 pt-12 animate-in fade-in slide-in-from-top-4 duration-700">
         <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight">
-          Bara ala,<br/>
+          {common('greeting')}<br/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-400">{firstName} !</span>
         </h1>
         <p className="font-sans italic text-slate-500 text-sm font-light mt-3 max-w-[280px]">
-          "L'éducation est l'arme la plus puissante pour changer le monde."
+          "{t('quote')}"
         </p>
       </header>
 
@@ -104,7 +102,6 @@ export default function StudentDashboardAndroid() {
       <section className="px-6">
         <Link href={`/${locale}/student/tutor`} className="block group active:scale-[0.98] transition-all">
             <div className="bg-gradient-to-br from-[#CC7722] to-[#9a5a1a] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
-                {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10" />
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-xl -ml-5 -mb-5" />
                 
@@ -114,16 +111,16 @@ export default function StudentDashboardAndroid() {
                             <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
                                 <Bot size={14} />
                             </div>
-                            <span className="text-white/90 text-[10px] font-black uppercase tracking-[0.2em]">Tuteur IA</span>
+                            <span className="text-white/90 text-[10px] font-black uppercase tracking-[0.2em]">MATHIAS IA</span>
                         </div>
                         <h3 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
-                            Salut, je suis <br/>Mathias.
+                            {t('tutor_box_title')}
                         </h3>
                         <p className="text-white/80 text-xs font-medium italic">
-                            "Une question sur ton cours ? Je suis là pour t'aider."
+                            "{t('tutor_box_desc')}"
                         </p>
                         <Button className="bg-white text-[#CC7722] hover:bg-slate-100 rounded-full text-[10px] font-black uppercase h-9 px-6 transition shadow-lg border-none">
-                            Poser une question
+                            {t('ask_question')}
                         </Button>
                     </div>
                     <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20">
@@ -136,12 +133,13 @@ export default function StudentDashboardAndroid() {
 
       {/* --- RECOMMANDATIONS (CAROUSEL) --- */}
       <div className="px-6">
+        <h2 className="text-sm font-black text-white uppercase tracking-widest px-1 mb-4">{t('recommendations')}</h2>
         <RecommendedCourses />
       </div>
 
       {/* --- ACTIVITÉ RÉCENTE --- */}
       <div className="px-6 space-y-4">
-        <h2 className="text-sm font-black text-white uppercase tracking-widest px-1">Dernières Alertes</h2>
+        <h2 className="text-sm font-black text-white uppercase tracking-widest px-1">{t('alerts')}</h2>
         <RecentActivity />
       </div>
 
