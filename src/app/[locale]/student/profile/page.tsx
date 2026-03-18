@@ -2,8 +2,9 @@
 
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
- * ✅ I18N : Support du Français, Anglais et Sango.
+ * ✅ I18N : Support du Français, Anglais et Sango avec drapeaux visuels.
  * ✅ PERSISTANCE : Mémorisation de la langue via cookie et Firestore.
+ * ✅ DESIGN : Sélecteur de langue enrichi avec 🇨🇲, 🇿🇦, 🇨🇫.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -117,6 +118,12 @@ export default function StudentProfilePage() {
       const country = africanCountries.find(c => c.code === currentUser.countryCode);
       return country?.emoji || "🌍";
   }, [currentUser?.countryCode]);
+
+  const currentFlag = useMemo(() => {
+      if (locale === 'fr') return "🇨🇲";
+      if (locale === 'en') return "🇿🇦";
+      return "🇨🇫";
+  }, [locale]);
 
   if (isUserLoading) {
     return (
@@ -257,13 +264,31 @@ export default function StudentProfilePage() {
                         <span className="font-bold text-white text-sm uppercase tracking-tight">{t('language')}</span>
                     </div>
                     <Select value={locale} onValueChange={handleLanguageChange}>
-                        <SelectTrigger className="w-32 h-10 bg-slate-950 border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
-                            <SelectValue />
+                        <SelectTrigger className="w-40 h-12 bg-slate-950 border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary shadow-2xl">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base">{currentFlag}</span>
+                                <SelectValue />
+                            </div>
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-white/10 text-white">
-                            <SelectItem value="fr" className="font-bold py-3 uppercase text-[10px]">Français</SelectItem>
-                            <SelectItem value="en" className="font-bold py-3 uppercase text-[10px]">English</SelectItem>
-                            <SelectItem value="sg" className="font-bold py-3 uppercase text-[10px]">Sango</SelectItem>
+                        <SelectContent className="bg-slate-900 border-white/10 text-white min-w-[160px]">
+                            <SelectItem value="fr" className="font-bold py-4 uppercase text-[10px] focus:bg-primary/10">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-base">🇨🇲</span>
+                                    <span>Français</span>
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="en" className="font-bold py-4 uppercase text-[10px] focus:bg-primary/10">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-base">🇿🇦</span>
+                                    <span>English</span>
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="sg" className="font-bold py-4 uppercase text-[10px] focus:bg-primary/10">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-base">🇨🇫</span>
+                                    <span>Sango</span>
+                                </div>
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
