@@ -1,4 +1,3 @@
-
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
@@ -36,6 +35,7 @@ export interface NdaraUser {
   fullName: string;
   phoneNumber?: string;
   role: UserRole;
+  availableRoles: UserRole[];
   isInstructorApproved: boolean;
   status?: 'active' | 'suspended';
   balance?: number; 
@@ -44,6 +44,7 @@ export interface NdaraUser {
   countryName?: string;
   profilePictureURL?: string;
   createdAt?: Timestamp | FieldValue;
+  lastLogin?: Timestamp | FieldValue;
   isProfileComplete?: boolean;
   preferredLanguage?: string;
   isOnline?: boolean;
@@ -93,6 +94,24 @@ export interface NdaraUser {
       earnings: number;
   };
   permissions?: Record<string, boolean>;
+  notificationPreferences?: {
+    newPayouts?: boolean;
+    newApplications?: boolean;
+    newSupportTickets?: boolean;
+    financialAnomalies?: boolean;
+  };
+  instructorNotificationPreferences?: {
+    newEnrollment?: boolean;
+    newMessage?: boolean;
+    newAssignmentSubmission?: boolean;
+    courseStatusUpdate?: boolean;
+    payoutUpdate?: boolean;
+  };
+  pedagogicalPreferences?: {
+    aiAssistanceEnabled?: boolean;
+    aiInterventionLevel?: 'low' | 'medium' | 'high';
+  };
+  badges?: string[];
 };
 
 export interface Course {
@@ -230,6 +249,20 @@ export interface Review {
   instructorId: string;
   rating: number;
   comment: string;
+  createdAt: Timestamp | FieldValue;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  courseId: string;
+  courseTitle: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: Timestamp | FieldValue | Date;
+  instructorId: string;
   createdAt: Timestamp | FieldValue;
 }
 
@@ -395,6 +428,7 @@ export interface Payment {
   courseTitle?: string;
   courseId?: string;
   instructorId?: string;
+  platformFee?: number;
   metadata?: NdaraPaymentMetadata;
   fraudReview?: {
     isSuspicious: boolean;
