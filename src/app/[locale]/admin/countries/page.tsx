@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -275,7 +274,7 @@ export default function AdminCountriesPage() {
                                         <div className="flex items-center gap-3">
                                             <Switch 
                                                 checked={m.active} 
-                                                onCheckedChange={() => handleToggleMethod(selectedCountry.id, selectedCountry.paymentMethods, m.id)}
+                                                onCheckedChange={() => handleToggleMethod(selectedCountry!.id, selectedCountry!.paymentMethods, m.id)}
                                                 className="data-[state=checked]:bg-primary"
                                             />
                                             <Button variant="ghost" size="icon" onClick={() => handleRemoveMethod(m.id)} className="h-8 w-8 text-red-500"><Trash2 size={14} /></Button>
