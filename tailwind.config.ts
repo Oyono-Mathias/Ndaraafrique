@@ -19,6 +19,7 @@ export default {
         sans: ["Inter", "var(--font-sans)", ...fontFamily.sans],
         heading: ["Poppins", "sans-serif"],
         serif: ["Playfair Display", "serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -26,6 +27,16 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        student: {
+          bg: '#F5F5F5',
+          surface: '#FFFFFF',
+          primary: '#3F51B5',
+          primaryDark: '#303F9F',
+          accent: '#00BCD4',
+          accentLight: '#4DD0E1',
+          text: '#212121',
+          textMuted: '#757575'
+        },
         ndara: {
           orange: '#F97316',
           dark: '#1E293B',
@@ -35,6 +46,8 @@ export default {
           surface: '#1e293b',
           gold: '#F59E0B',
           goldLight: '#FCD34D',
+          amber: '#F59E0B',
+          ochre: '#CC7722',
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -100,8 +113,8 @@ export default {
           '100%': { transform: 'skewX(-20deg) translateX(150%)' },
         },
         pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 15px rgba(16, 185, 129, 0.3)' },
-          '50%': { boxShadow: '0 0 30px rgba(16, 185, 129, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 15px rgba(63, 81, 181, 0.3)' },
+          '50%': { boxShadow: '0 0 25px rgba(63, 81, 181, 0.5)' },
         },
       },
       animation: {
