@@ -28,6 +28,18 @@ export interface Country {
   createdAt?: Timestamp | FieldValue;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isActive: boolean;
+  targetRole: UserRole;
+  createdAt: Timestamp | FieldValue;
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
