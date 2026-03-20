@@ -40,6 +40,21 @@ export interface SubscriptionPlan {
   createdAt: Timestamp | FieldValue;
 }
 
+export interface InstructorApplication {
+  specialty: string;
+  professionalExperience: string;
+  firstCourseTitle: string;
+  firstCourseDescription: string;
+  whatsappNumber: string;
+  portfolioUrl?: string;
+  linkedinUrl?: string;
+  youtubeUrl?: string;
+  submittedAt?: Timestamp | FieldValue;
+  status?: 'pending' | 'accepted' | 'rejected';
+  decisionDate?: Timestamp | FieldValue;
+  feedback?: string;
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
@@ -84,19 +99,7 @@ export interface NdaraUser {
     interestDomain?: string;
     mainGoal?: string;
   };
-  instructorApplication?: {
-    specialty: string;
-    professionalExperience: string;
-    firstCourseTitle: string;
-    firstCourseDescription: string;
-    whatsappNumber: string;
-    portfolioUrl?: string;
-    linkedinUrl?: string;
-    submittedAt?: Timestamp | FieldValue;
-    status?: 'pending' | 'accepted' | 'rejected';
-    decisionDate?: Timestamp | FieldValue;
-    feedback?: string;
-  };
+  instructorApplication?: InstructorApplication;
   buyoutSanctions?: {
     isSanctioned: boolean;
     reason: string;

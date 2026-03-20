@@ -40,7 +40,8 @@ import {
   Send,
   Zap,
   Coins,
-  ArrowLeft
+  ArrowLeft,
+  Youtube
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,7 @@ const applicationSchema = z.object({
   whatsappNumber: z.string().min(8, "Numéro requis."),
   portfolioUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   linkedinUrl: z.string().url("URL LinkedIn invalide").or(z.literal('')).optional(),
+  youtubeUrl: z.string().url("URL YouTube invalide").or(z.literal('')).optional(),
 });
 
 type ApplicationValues = z.infer<typeof applicationSchema>;
@@ -74,6 +76,7 @@ export default function DevenirInstructeurPage() {
       whatsappNumber: '',
       portfolioUrl: '',
       linkedinUrl: '',
+      youtubeUrl: '',
     }
   });
 
@@ -292,7 +295,7 @@ export default function DevenirInstructeurPage() {
                     </div>
 
                     <div className="pt-4 border-t border-white/5 space-y-6">
-                        <h4 className="text-xs font-black text-white uppercase tracking-[0.3em]">COORDONNÉES</h4>
+                        <h4 className="text-xs font-black text-white uppercase tracking-[0.3em]">COORDONNÉES & RÉSEAUX</h4>
                         <div className="space-y-4">
                             <FormField control={form.control} name="whatsappNumber" render={({ field }) => (
                                 <FormItem>
@@ -307,7 +310,15 @@ export default function DevenirInstructeurPage() {
                                 <FormItem>
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500"><Linkedin size={18}/></div>
-                                        <FormControl><Input placeholder="Lien LinkedIn" {...field} className="h-14 pl-12 bg-slate-950 border-white/5 rounded-2xl text-white" /></FormControl>
+                                        <FormControl><Input placeholder="Lien LinkedIn (Optionnel)" {...field} className="h-14 pl-12 bg-slate-950 border-white/5 rounded-2xl text-white" /></FormControl>
+                                    </div>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="youtubeUrl" render={({ field }) => (
+                                <FormItem>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500"><Youtube size={18}/></div>
+                                        <FormControl><Input placeholder="Lien Démo YouTube (Optionnel)" {...field} className="h-14 pl-12 bg-slate-950 border-white/5 rounded-2xl text-white" /></FormControl>
                                     </div>
                                 </FormItem>
                             )}/>
