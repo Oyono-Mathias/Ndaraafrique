@@ -46,21 +46,21 @@ export default function LeaderboardPage() {
 
     const topRecruiters = useMemo(() => {
         return [...instructors]
-            .filter(u => (u.affiliateStats?.registrations || 0) > 0)
+            .filter((u: NdaraUser) => (u.affiliateStats?.registrations || 0) > 0)
             .sort((a, b) => (b.affiliateStats?.registrations || 0) - (a.affiliateStats?.registrations || 0))
             .slice(0, 10);
     }, [instructors]);
 
     const topSellers = useMemo(() => {
         return [...instructors]
-            .filter(u => (u.affiliateStats?.sales || 0) > 0)
+            .filter((u: NdaraUser) => (u.affiliateStats?.sales || 0) > 0)
             .sort((a, b) => (b.affiliateStats?.sales || 0) - (a.affiliateStats?.sales || 0))
             .slice(0, 10);
     }, [instructors]);
 
     const topRated = useMemo(() => {
         return [...instructors]
-            .filter(u => (u.rating || 0) > 0)
+            .filter((u: NdaraUser) => (u.rating || 0) > 0)
             .sort((a, b) => (b.rating || 0) - (a.rating || 0))
             .slice(0, 10);
     }, [instructors]);
