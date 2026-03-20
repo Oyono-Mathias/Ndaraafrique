@@ -541,6 +541,16 @@ export interface LandingPageContent {
   securitySection_imageUrl?: string;
 }
 
+export interface CartItem {
+  id: string;
+  courseId: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+  instructorId?: string;
+  addedAt?: Timestamp | FieldValue;
+}
+
 export interface Settings {
   general: {
     siteName: string;
