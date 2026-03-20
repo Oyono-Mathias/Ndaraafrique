@@ -55,7 +55,8 @@ import {
   Zap,
   Server,
   Key,
-  Shield
+  Shield,
+  Type
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -124,6 +125,7 @@ const settingsSchema = z.object({
   // 10. Appearance
   primaryColor: z.string(),
   borderRadius: z.enum(['none', 'md', 'lg', 'xl']),
+  fontScale: z.enum(['small', 'medium', 'large']),
   // 11. Analytics
   googleAnalyticsId: z.string().optional(),
   facebookPixelId: z.string().optional(),
@@ -168,6 +170,7 @@ export default function AdminSettingsPage() {
         affiliateEnabled: true,
         primaryColor: '#10b981',
         borderRadius: 'lg',
+        fontScale: 'medium',
         maxFileSizeMb: 50,
         allowTeacherToTeacherResale: false,
         allowCourseBuyout: true,
@@ -233,6 +236,7 @@ export default function AdminSettingsPage() {
           maxLoginAttempts: d.security?.maxLoginAttempts || 5,
           primaryColor: d.appearance?.primaryColor || '#10b981',
           borderRadius: d.appearance?.borderRadius || 'lg',
+          fontScale: d.appearance?.fontScale || 'medium',
           googleAnalyticsId: d.analytics?.googleAnalyticsId || '',
           facebookPixelId: d.analytics?.facebookPixelId || '',
           conversionTracking: d.analytics?.conversionTracking ?? true,
@@ -347,7 +351,7 @@ export default function AdminSettingsPage() {
         appearance: {
             primaryColor: values.primaryColor,
             borderRadius: values.borderRadius,
-            fontScale: 'medium'
+            fontScale: values.fontScale
         },
         analytics: {
             googleAnalyticsId: values.googleAnalyticsId,
@@ -640,7 +644,7 @@ export default function AdminSettingsPage() {
                             )}/>
                             <FormField control={form.control} name="maxCoursesPerUser" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Limite de cours par expert</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                            )}/>
+                                )}/>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -739,27 +743,46 @@ export default function AdminSettingsPage() {
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Identité Visuelle</CardTitle></CardHeader>
                         <CardContent className="p-8 space-y-8">
-                            <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Couleur Primaire (Hex)</FormLabel>
+                                        <div className="flex gap-4">
+                                            <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 flex-1 font-mono" /></FormControl>
+                                            <div className="w-12 h-12 rounded-xl shadow-inner border border-white/10" style={{ backgroundColor: field.value }} />
+                                        </div>
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="borderRadius" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Style des cartes (Arrondis)</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <FormControl><SelectTrigger className="bg-slate-950 border-slate-800 h-12"><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                                <SelectItem value="none">Carré (0px)</SelectItem>
+                                                <SelectItem value="md">Modéré (12px)</SelectItem>
+                                                <SelectItem value="lg">Large (24px)</SelectItem>
+                                                <SelectItem value="xl">Extra (40px)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )}/>
+                            </div>
+                            
+                            <FormField control={form.control} name="fontScale" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Couleur Primaire (Hex)</FormLabel>
-                                    <div className="flex gap-4">
-                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 flex-1 font-mono" /></FormControl>
-                                        <div className="w-12 h-12 rounded-xl shadow-inner border border-white/10" style={{ backgroundColor: field.value }} />
-                                    </div>
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="borderRadius" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Style des cartes (Arrondis)</FormLabel>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                                        <Type size={14} /> Taille de police globale
+                                    </FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                        <FormControl><SelectTrigger className="bg-slate-950 border-slate-800 h-12"><SelectValue /></SelectTrigger></FormControl>
+                                        <FormControl><SelectTrigger className="bg-slate-950 border-slate-800 h-12 text-white font-bold"><SelectValue /></SelectTrigger></FormControl>
                                         <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                            <SelectItem value="none">Carré (0px)</SelectItem>
-                                            <SelectItem value="md">Modéré (12px)</SelectItem>
-                                            <SelectItem value="lg">Large (24px)</SelectItem>
-                                            <SelectItem value="xl">Extra (40px)</SelectItem>
+                                            <SelectItem value="small">Petite (Dense)</SelectItem>
+                                            <SelectItem value="medium">Moyenne (Standard)</SelectItem>
+                                            <SelectItem value="large">Grande (Confort)</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    <FormDescription className="text-[9px] italic">Ajuste la lisibilité sur les terminaux Android.</FormDescription>
                                 </FormItem>
                             )}/>
                         </CardContent>
