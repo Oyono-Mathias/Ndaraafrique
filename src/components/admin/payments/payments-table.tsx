@@ -131,8 +131,10 @@ export function PaymentsTable() {
         
         const fetchRelatedData = async () => {
             setRelatedDataLoading(true);
-            const userIds = [...new Set(payments.map(p => p.userId).filter(Boolean))];
-            const courseIds = [...new Set(payments.map(p => p.courseId).filter(Boolean))];
+            
+            // ✅ Correction : Utilisation de type guards pour garantir que les IDs sont des strings
+            const userIds = [...new Set(payments.map(p => p.userId).filter((id): id is string => !!id))];
+            const courseIds = [...new Set(payments.map(p => p.courseId).filter((id): id is string => !!id))];
             
             const newUsersMap = new Map(usersMap);
             const newCoursesMap = new Map(coursesMap);
@@ -157,7 +159,7 @@ export function PaymentsTable() {
         };
         fetchRelatedData();
 
-    }, [payments, paymentsLoading, db, usersMap, coursesMap]);
+    }, [payments, paymentsLoading, db]);
 
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
