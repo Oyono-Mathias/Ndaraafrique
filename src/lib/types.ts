@@ -68,6 +68,7 @@ export interface NdaraUser {
   bio?: string;
   isDemoAccount?: boolean;
   virtualBalance?: number;
+  rating?: number;
   socialLinks?: {
     website?: string;
     twitter?: string;
