@@ -66,6 +66,9 @@ export interface NdaraUser {
   referredBy?: string | null;
   referralCode?: string;
   bio?: string;
+  isDemoAccount?: boolean;
+  virtualBalance?: number;
+  isDemoAccount_legacy?: boolean; // Support for legacy check if needed
   socialLinks?: {
     website?: string;
     twitter?: string;
