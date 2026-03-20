@@ -231,6 +231,21 @@ export interface AssignmentSubmission {
   gradedAt?: Timestamp | FieldValue;
 }
 
+export interface CourseQuestion {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl?: string;
+  instructorId: string;
+  questionText: string;
+  answerText?: string;
+  status: 'pending' | 'answered';
+  createdAt: Timestamp | FieldValue;
+  answeredAt?: Timestamp | FieldValue;
+}
+
 export interface UserActivity {
   id: string;
   userId: string;
