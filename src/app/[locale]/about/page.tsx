@@ -8,7 +8,7 @@ import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { Settings } from '@/lib/types';
+import type { Settings, TeamMember } from '@/lib/types';
 
 const SangoQuote = ({ children }: { children: React.ReactNode }) => (
     <blockquote className="relative text-center my-12 md:my-16">
@@ -37,7 +37,7 @@ export default function AboutPage() {
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
 
   const content = settings?.content?.aboutPage;
-  const team = content?.teamMembers || [];
+  const team = (content?.teamMembers as TeamMember[]) || [];
   
   if (isLoading) {
     return <div className="min-h-screen bg-slate-950 p-16 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -77,7 +77,7 @@ export default function AboutPage() {
                             <h2 className="text-3xl font-black text-white uppercase tracking-tighter">L'Équipe de Direction</h2>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                            {team.map((member, i) => (
+                            {team.map((member: TeamMember, i: number) => (
                                 <div key={i} className="bg-slate-900/40 border border-white/5 p-8 rounded-[3rem] shadow-2xl group transition-all hover:border-primary/30">
                                     <div className="flex items-center gap-6 mb-6">
                                         <Avatar className="h-20 w-20 border-2 border-slate-800">

@@ -68,7 +68,6 @@ export interface NdaraUser {
   bio?: string;
   isDemoAccount?: boolean;
   virtualBalance?: number;
-  isDemoAccount_legacy?: boolean; // Support for legacy check if needed
   socialLinks?: {
     website?: string;
     twitter?: string;
@@ -506,6 +505,40 @@ export interface InvestorLead {
   updatedAt?: Timestamp | FieldValue;
 }
 
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio: string;
+  imageUrl: string;
+}
+
+export interface AboutPageContent {
+  mainTitle?: string;
+  mainSubtitle?: string;
+  historyTitle?: string;
+  historyFrench?: string;
+  historySango?: string;
+  visionTitle?: string;
+  visionFrench?: string;
+  visionSango?: string;
+  ctaTitle?: string;
+  teamMembers?: TeamMember[];
+}
+
+export interface LandingPageContent {
+  heroBadge?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  heroCtaText?: string;
+  showHeroCta?: boolean;
+  finalCtaTitle?: string;
+  finalCtaSubtitle?: string;
+  finalCtaButtonText?: string;
+  showFinalCta?: boolean;
+  securitySection_imageUrl?: string;
+}
+
 export interface Settings {
   general: {
     siteName: string;
@@ -524,16 +557,6 @@ export interface Settings {
     youtubeUrl?: string;
     telegramUrl?: string;
     tiktokUrl?: string;
-    heroBadge?: string;
-    heroTitle?: string;
-    heroSubtitle?: string;
-    heroImageUrl?: string;
-    heroCtaText?: string;
-    showHeroCta?: boolean;
-    finalCtaTitle?: string;
-    finalCtaSubtitle?: string;
-    finalCtaButtonText?: string;
-    showFinalCta?: boolean;
   };
   payments: {
     mesombEnabled: boolean;
@@ -633,7 +656,7 @@ export interface Settings {
     templates?: Record<string, string>;
   };
   content?: {
-    landingPage?: any;
-    aboutPage?: any;
+    landingPage?: LandingPageContent;
+    aboutPage?: AboutPageContent;
   }
 }
