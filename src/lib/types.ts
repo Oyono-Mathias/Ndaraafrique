@@ -473,6 +473,7 @@ export interface TrackingEvent {
 export interface DesignSettings {
   primaryColor?: string;
   borderRadius?: string;
+  fontScale?: 'small' | 'medium' | 'large';
 }
 
 export interface SecurityLog {
