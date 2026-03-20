@@ -551,6 +551,8 @@ export interface Settings {
     defaultCountry?: string;
     maintenanceMode?: boolean;
     announcementMessage?: string;
+  };
+  social?: {
     facebookUrl?: string;
     instagramUrl?: string;
     twitterUrl?: string;
