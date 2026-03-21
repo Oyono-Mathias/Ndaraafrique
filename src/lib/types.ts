@@ -8,6 +8,12 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 export type UserRole = 'student' | 'instructor' | 'admin';
 export type PaymentProvider = 'moneroo' | 'mesomb' | 'virtual' | 'wallet' | 'admin_recharge' | 'custom';
 
+export interface Role {
+  id: string;
+  name: string;
+  permissions: Record<string, boolean>;
+}
+
 export interface PaymentMethod {
   id: string;
   name: string;
