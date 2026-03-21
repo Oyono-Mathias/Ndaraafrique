@@ -70,7 +70,69 @@ export interface Settings {
         minimumLicensePrice?: number;
       }
   };
+  courses?: {
+    autoApproval: boolean;
+    minPrice: number;
+    maxPrice: number;
+    allowFree: boolean;
+    maxLessons: number;
+    maxVideoDuration: number;
+  };
+  instructors?: {
+    verificationRequired: boolean;
+    autoApproval: boolean;
+    maxCoursesPerUser: number;
+    expertBadgeEnabled: boolean;
+  };
+  students?: {
+    allowRegistration: boolean;
+    emailVerification: boolean;
+    phoneVerification: boolean;
+    dailyDownloadLimit: number;
+  };
+  affiliate?: {
+    enabled: boolean;
+    commissionRate: number;
+    cookieDurationDays: number;
+    payoutThreshold: number;
+  };
+  notifications?: {
+    enableEmail: boolean;
+    enableInApp: boolean;
+    notifySales: boolean;
+    notifyEnrollments: boolean;
+    notifyMessages: boolean;
+  };
+  security?: {
+    enable2fa: boolean;
+    maxLoginAttempts: number;
+    ipBlacklist: string[];
+    accountProtectionRules: string;
+  };
   appearance?: DesignSettings;
+  analytics?: {
+    googleAnalyticsId: string;
+    facebookPixelId: string;
+    conversionTracking: boolean;
+    internalAnalytics: boolean;
+  };
+  storage?: {
+    useBunnyCdn: boolean;
+    maxFileSizeMb: number;
+    maxVideoSizeMb: number;
+  };
+  legal?: {
+    termsOfService: string;
+    privacyPolicy: string;
+    refundPolicy: string;
+    legalNotices: string;
+  };
+  email?: {
+    smtpHost: string;
+    senderName: string;
+    senderEmail: string;
+    templates: Record<string, string>;
+  };
   content?: {
     landingPage?: LandingPageContent;
     aboutPage?: AboutPageContent;
@@ -131,6 +193,23 @@ export interface NdaraUser {
   payoutInfo?: {
     mobileMoneyNumber?: string;
     bankInfo?: string;
+  };
+  instructorNotificationPreferences?: {
+    newEnrollment: boolean;
+    newMessage: boolean;
+    newAssignmentSubmission: boolean;
+    courseStatusUpdate: boolean;
+    payoutUpdate: boolean;
+  };
+  pedagogicalPreferences?: {
+    aiAssistanceEnabled: boolean;
+    aiInterventionLevel: 'low' | 'medium' | 'high';
+  };
+  notificationPreferences?: {
+    newPayouts: boolean;
+    newApplications: boolean;
+    newSupportTickets: boolean;
+    financialAnomalies: boolean;
   };
   buyoutSanctions?: {
     isSanctioned: boolean;
@@ -592,4 +671,15 @@ export interface RecommendedCourseItem {
   instructorId: string;
   price: number;
   score: number;
+}
+
+export interface UserActivity {
+  id: string;
+  userId: string;
+  type: 'enrollment' | 'certificate' | 'review' | 'assignment' | 'system';
+  title: string;
+  description?: string;
+  link?: string;
+  read: boolean;
+  createdAt: Timestamp | FieldValue;
 }
