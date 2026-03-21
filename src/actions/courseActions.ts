@@ -85,7 +85,7 @@ export async function toggleResaleRightsAction({
         if (available) {
             const settingsSnap = await db.collection('settings').doc('global').get();
             const settings = settingsSnap.data() as Settings;
-            const minPrice = settings.platform?.market?.minimumLicensePrice || 10000;
+            const minPrice = (settings as any).platform?.market?.minimumLicensePrice || 10000;
             if (price < minPrice) {
                 return { success: false, error: `Le prix minimum de revente est de ${minPrice.toLocaleString()} XOF.` };
             }
