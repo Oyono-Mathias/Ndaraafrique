@@ -1,31 +1,23 @@
-
 'use client';
 
 /**
  * @fileOverview Cockpit Trésorerie & Audit Financier.
- * ✅ RÉEL : Affiche l'intégralité des transactions (recharges et achats).
- * ✅ ACTIONS : Permet la validation manuelle ou l'audit détaillé.
+ * ✅ STANDARD : Statuts en minuscules.
  */
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, limit, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, limit, doc, updateDoc, increment, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Search, 
-    Filter, 
     Download, 
     Landmark, 
-    CheckCircle2, 
-    XCircle, 
-    Clock, 
     Smartphone, 
-    CreditCard,
     User,
     ArrowUpRight,
     Loader2
@@ -69,11 +61,10 @@ export default function AdminPaymentsPage() {
             const paymentRef = doc(db, 'payments', payment.id);
             const userRef = doc(db, 'users', payment.userId);
 
-            // Transaction atomique pour sécuriser le solde
             const userSnap = await getDoc(userRef);
             if (!userSnap.exists()) throw new Error("Utilisateur introuvable");
 
-            await updateDoc(paymentRef, { status: 'Completed', updatedAt: serverTimestamp() });
+            await updateDoc(paymentRef, { status: 'completed', updatedAt: serverTimestamp() });
             
             if (payment.metadata?.type === 'wallet_topup') {
                 await updateDoc(userRef, { balance: increment(payment.amount) });
@@ -133,7 +124,7 @@ export default function AdminPaymentsPage() {
                         ) : filtered.length > 0 ? (
                             filtered.map(payment => {
                                 const date = (payment.date as any)?.toDate?.() || new Date();
-                                const isPending = payment.status === 'Pending';
+                                const isPending = payment.status === 'pending';
                                 
                                 return (
                                     <TableRow key={payment.id} className="group border-slate-800 hover:bg-slate-800/20">
@@ -161,10 +152,10 @@ export default function AdminPaymentsPage() {
                                         <TableCell>
                                             <Badge className={cn(
                                                 "font-black text-[8px] uppercase border-none px-2",
-                                                payment.status === 'Completed' ? "bg-emerald-500/10 text-emerald-500" :
-                                                payment.status === 'Pending' ? "bg-amber-500/10 text-amber-500 animate-pulse" : "bg-red-500/10 text-red-500"
+                                                payment.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" :
+                                                payment.status === 'pending' ? "bg-amber-500/10 text-amber-500 animate-pulse" : "bg-red-500/10 text-red-500"
                                             )}>
-                                                {payment.status === 'Completed' ? 'Réussi' : isPending ? 'Audit' : 'Échec'}
+                                                {payment.status === 'completed' ? 'Réussi' : isPending ? 'Audit' : 'Échec'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right pr-6">
@@ -191,5 +182,3 @@ export default function AdminPaymentsPage() {
         </div>
     );
 }
-
-import { serverTimestamp } from 'firebase/firestore';

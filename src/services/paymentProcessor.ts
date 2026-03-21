@@ -7,8 +7,7 @@ import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/typ
 
 /**
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
- * ✅ SÉCURISÉ : Ne crash pas l'application si l'admin n'est pas prêt.
- * ✅ PARRAINAGE : Gère l'attribution des commissions aux parrains enregistrés.
+ * ✅ STANDARD : Statuts en minuscules.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -17,15 +16,13 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const db = getAdminDb();
 
   try {
-    // 1. VÉRIFICATION IDEMPOTENCE
     const existingPayment = await db.collection('payments').doc(String(transactionId)).get();
-    if (existingPayment.exists && existingPayment.data()?.status === 'Completed') {
+    if (existingPayment.exists && existingPayment.data()?.status === 'completed') {
       return { success: true };
     }
 
     const isTopup = metadata.type === 'wallet_topup';
 
-    // 2. RÉCUPÉRATION DES DONNÉES CONTEXTUELLES
     const promises: any[] = [
       db.collection('settings').doc('global').get(),
       db.collection('users').doc(metadata.userId).get()
@@ -46,7 +43,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     
     const batch = db.batch();
 
-    // 3. ENREGISTREMENT TRANSACTION FINANCIÈRE
     const paymentRef = db.collection('payments').doc(String(transactionId));
     const paymentData: any = {
       id: transactionId,
@@ -56,7 +52,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       currency,
       provider,
       date: FieldValue.serverTimestamp(),
-      status: 'Completed',
+      status: 'completed', // ✅ STANDARD
       metadata
     };
 
@@ -71,8 +67,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         const instructorSharePercent = settings.commercial?.instructorShare || 80;
         const affiliateSharePercent = settings.commercial?.affiliatePercentage || 10;
         
-        // --- LOGIQUE DE PARRAINAGE ---
-        // On vérifie d'abord l'ID d'affiliation dans les métadonnées, sinon le parrain enregistré à l'inscription
         const effectiveAffiliateId = metadata.affiliateId || userData.referredBy;
         const hasAffiliate = !!effectiveAffiliateId && effectiveAffiliateId !== metadata.userId;
 
@@ -88,7 +82,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         paymentData.affiliateCommission = affiliateCommission;
         paymentData.affiliateId = hasAffiliate ? effectiveAffiliateId : null;
 
-        // Inscription
         const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
         const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
         batch.set(enrollmentRef, {
@@ -105,7 +98,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           enrollmentType: 'paid'
         }, { merge: true });
 
-        // Crédit Vendeur
         const sellerId = courseData.ownerId || courseData.instructorId;
         if (sellerId && sellerId !== 'NDARA_OFFICIAL') {
             const sellerRef = db.collection('users').doc(sellerId);
@@ -115,7 +107,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             });
         }
 
-        // --- ENREGISTREMENT COMMISSION AMBASSADEUR ---
         if (hasAffiliate) {
             const affiliateId = effectiveAffiliateId!;
             const affTransRef = db.collection('affiliate_transactions').doc();
@@ -136,7 +127,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                 unlockDate: Timestamp.fromDate(unlockDate)
             });
 
-            // On crédite le solde "en attente" de l'ambassadeur
             const affiliateRef = db.collection('users').doc(affiliateId);
             batch.update(affiliateRef, {
                 pendingAffiliateBalance: FieldValue.increment(affiliateCommission),

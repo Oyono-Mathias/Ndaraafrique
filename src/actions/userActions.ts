@@ -1,9 +1,8 @@
-
 'use server';
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ RÉSOLU : Ajout des fonctions manquantes rechargeVirtualBalance, approveInstructorApplication et deleteUserAccount.
+ * ✅ STANDARD : Statuts en minuscules.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -58,7 +57,7 @@ export async function rechargeUserWallet({
             amount,
             currency: 'XOF',
             provider: 'admin_recharge',
-            status: 'Completed',
+            status: 'completed', // ✅ STANDARD
             date: FieldValue.serverTimestamp(),
             courseTitle: `Recharge Admin: ${reason}`,
             metadata: { type: 'wallet_topup', adminId, reason }
@@ -150,7 +149,6 @@ export async function approveInstructorApplication({
             });
         }
 
-        // Journalisation audit
         const auditRef = db.collection('admin_audit_logs').doc();
         batch.set(auditRef, {
             adminId,
@@ -162,7 +160,6 @@ export async function approveInstructorApplication({
 
         await batch.commit();
         
-        // Notification utilisateur
         await sendUserNotification(userId, {
             text: decision === 'accepted' 
                 ? "Félicitations ! Votre compte Expert Ndara a été approuvé." 
@@ -189,13 +186,9 @@ export async function deleteUserAccount({ userId, adminId }: { userId: string, a
         const auth = getAdminAuth();
         const db = getAdminDb();
         
-        // 1. Supprimer de Firebase Auth
         await auth.deleteUser(userId);
-        
-        // 2. Supprimer le document Firestore
         await db.collection('users').doc(userId).delete();
 
-        // 3. Journalisation
         await db.collection('admin_audit_logs').add({
             adminId,
             eventType: 'user.delete',

@@ -3,6 +3,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 /**
  * @fileOverview Source de vérité unique pour les types Ndara Afrique.
  * ✅ ALIGNÉ : Aligne Frontend, Backend et Firestore.
+ * ✅ STANDARD : Statuts de paiement en minuscules.
  */
 
 // --- CORE & INFRASTRUCTURE ---
@@ -427,7 +428,7 @@ export interface Payment {
   amount: number;
   currency: string;
   provider: PaymentProvider;
-  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded' | 'completed' | 'pending' | 'failed';
+  status: 'completed' | 'pending' | 'failed' | 'refunded';
   date: Timestamp | FieldValue | Date;
   createdAt?: Timestamp | Date; // Alias compatibilité
   platformFee?: number;

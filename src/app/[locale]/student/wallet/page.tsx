@@ -1,10 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant V5 - Design Fintech Elite (Qwen Redesign).
- * ✅ DESIGN : Indigo Fintech (#3F51B5), Puce Holo, Reçus Vintage.
- * ✅ DYNAMIQUE : Chargement des pays et modes de paiement depuis Firestore.
- * ✅ RÉEL : Solde et transactions synchronisés en onSnapshot.
+ * @fileOverview Ndara Wallet Étudiant V5 - Design Fintech Elite.
+ * ✅ STANDARD : Statuts en minuscules pour la cohérence des badges.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -63,7 +61,6 @@ export default function NdaraWalletPage() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [selectedCountryId, setSelectedCountryId] = useState<string>('');
 
-    // 1. Écouteur des pays et de leurs modes de paiement (Temps Réel)
     useEffect(() => {
         const q = query(collection(db, 'countries'), where('active', '==', true), orderBy('name'));
         const unsub = onSnapshot(q, (snap) => {
@@ -77,7 +74,6 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [db, selectedCountryId]);
 
-    // 2. Écouteur des transactions de l'utilisateur
     useEffect(() => {
         if (!user?.uid) return;
 
@@ -144,10 +140,8 @@ export default function NdaraWalletPage() {
 
     return (
         <div className="min-h-screen bg-student-bg flex flex-col font-sans relative">
-            {/* Grain Texture Overlay */}
             <div className="grain-overlay opacity-[0.03]" />
 
-            {/* --- IMMERSIVE HEADER --- */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-student-bg/95 backdrop-blur-md safe-area-pt border-b border-gray-200">
                 <div className="px-6 py-4 flex items-center justify-between">
                     <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-student-text-muted hover:bg-gray-100 transition active:scale-90">
@@ -162,7 +156,6 @@ export default function NdaraWalletPage() {
 
             <main className="flex-1 pt-24 pb-48 px-6 space-y-8 animate-in fade-in duration-700">
                 
-                {/* --- NEO BANK CARD --- */}
                 <div className="neo-card rounded-4xl p-8 shadow-2xl relative overflow-hidden group active:scale-[0.98] transition-all duration-700">
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-10">
@@ -191,11 +184,9 @@ export default function NdaraWalletPage() {
                             </div>
                         </div>
                     </div>
-                    {/* Inner decorative light */}
                     <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
                 </div>
 
-                {/* --- COUNTRY SELECTOR --- */}
                 <div className="space-y-2">
                     <label className="block text-student-text-muted text-[10px] font-black uppercase tracking-widest ml-1">Région de recharge</label>
                     <div className="relative">
@@ -215,7 +206,6 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                {/* --- PAYMENT METHODS --- */}
                 <div className="space-y-4">
                     <label className="block text-student-text-muted text-[10px] font-black uppercase tracking-widest ml-1">Mode de Paiement</label>
                     {availableMethods.length > 0 ? (
@@ -252,7 +242,6 @@ export default function NdaraWalletPage() {
                     )}
                 </div>
 
-                {/* --- AMOUNT SELECTION --- */}
                 <div className="space-y-4">
                     <label className="block text-student-text-muted text-[10px] font-black uppercase tracking-widest ml-1">Wungo tî nginza (Montant)</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -285,7 +274,6 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                {/* --- PHONE INPUT --- */}
                 <div className="space-y-2">
                     <label className="block text-student-text-muted text-[10px] font-black uppercase tracking-widest ml-1">Compte à débiter</label>
                     <div className="relative">
@@ -302,7 +290,6 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                {/* --- VINTAGE HISTORY --- */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-student-text text-sm uppercase tracking-wide flex items-center gap-2">
@@ -339,9 +326,9 @@ export default function NdaraWalletPage() {
                                             </p>
                                             <span className={cn(
                                                 "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
-                                                txn.status === 'Completed' ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600 animate-pulse"
+                                                txn.status === 'completed' ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600 animate-pulse"
                                             )}>
-                                                {txn.status === 'Completed' ? 'Succès' : 'Audit'}
+                                                {txn.status === 'completed' ? 'Succès' : 'Audit'}
                                             </span>
                                         </div>
                                     </div>
@@ -361,7 +348,6 @@ export default function NdaraWalletPage() {
                 </div>
             </main>
 
-            {/* --- STICKY ACTION FOOTER --- */}
             <footer className="fixed bottom-0 left-0 right-0 p-6 bg-student-bg/95 backdrop-blur-xl border-t border-gray-200 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
                 <div className="max-w-md mx-auto space-y-4">
                     <div className="flex justify-between items-end px-2">

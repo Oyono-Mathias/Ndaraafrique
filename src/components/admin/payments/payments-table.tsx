@@ -22,10 +22,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const getStatusVariant = (status: Payment['status']) => {
   switch (status) {
-    case 'Completed': return 'success';
-    case 'Pending': return 'secondary';
-    case 'Failed': return 'destructive';
-    case 'Refunded': return 'outline';
+    case 'completed': return 'success';
+    case 'pending': return 'secondary';
+    case 'failed': return 'destructive';
+    case 'refunded': return 'outline';
     default: return 'default';
   }
 };
@@ -132,7 +132,6 @@ export function PaymentsTable() {
         const fetchRelatedData = async () => {
             setRelatedDataLoading(true);
             
-            // ✅ Correction : Utilisation de type guards pour garantir que les IDs sont des strings
             const userIds = [...new Set(payments.map(p => p.userId).filter((id): id is string => !!id))];
             const courseIds = [...new Set(payments.map(p => p.courseId).filter((id): id is string => !!id))];
             

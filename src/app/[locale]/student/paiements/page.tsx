@@ -3,7 +3,7 @@
 /**
  * @fileOverview Historique financier complet de l'étudiant.
  * ✅ HYBRIDE : Investissements (Achats) & Commissions (Gains Ambassadeur).
- * Design Android-First & Vintage.
+ * ✅ STANDARD : Statuts en minuscules.
  */
 
 import { useMemo, useState } from 'react';
@@ -94,12 +94,16 @@ export default function StudentPaymentsPage() {
 
 function PaymentItem({ payment }: { payment: Payment }) {
   const date = (payment.date as any)?.toDate?.() || new Date();
-  const config = {
-    Completed: { label: 'Réussi', class: 'bg-green-500/10 text-green-400' },
-    Pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-400' },
-    Failed: { label: 'Échoué', class: 'bg-red-500/10 text-red-400' },
-    Refunded: { label: 'Remboursé', class: 'bg-slate-500/10 text-slate-400' },
-  }[payment.status] || { label: payment.status, class: 'bg-slate-800' };
+  
+  // ✅ STANDARD : Utilisation de Record avec statuts en minuscules pour la cohérence
+  const config: Record<Payment['status'], { label: string; class: string }> = {
+    completed: { label: 'Réussi', class: 'bg-green-500/10 text-green-400' },
+    pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-400' },
+    failed: { label: 'Échoué', class: 'bg-red-500/10 text-red-400' },
+    refunded: { label: 'Remboursé', class: 'bg-slate-500/10 text-slate-400' },
+  };
+
+  const statusInfo = config[payment.status] || { label: payment.status, class: 'bg-slate-800' };
 
   return (
     <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-xl">
@@ -107,7 +111,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
         <div>
             <h3 className="text-sm font-bold text-white line-clamp-1 uppercase tracking-tight">{payment.courseTitle || 'Formation Ndara'}</h3>
             <div className="flex items-center gap-2 mt-1">
-                <Badge className={cn("text-[8px] font-black uppercase border-none px-2", config.class)}>{config.label}</Badge>
+                <Badge className={cn("text-[8px] font-black uppercase border-none px-2", statusInfo.class)}>{statusInfo.label}</Badge>
                 <span className="text-[10px] text-slate-600 font-bold">{format(date, 'dd MMM yyyy', { locale: fr })}</span>
             </div>
         </div>
