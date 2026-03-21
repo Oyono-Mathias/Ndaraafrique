@@ -4,6 +4,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
  * @fileOverview Source de vérité unique pour les types Ndara Afrique.
  * ✅ ALIGNÉ : Aligne Frontend, Backend et Firestore.
  * ✅ STANDARD : Statuts de paiement en minuscules.
+ * ✅ RIGUEUR : studentId obligatoire pour les questions.
  */
 
 // --- CORE & INFRASTRUCTURE ---
@@ -393,15 +394,12 @@ export interface CourseQuestion {
   id: string;
   courseId: string;
   courseTitle?: string;
-  studentId?: string;
-  userId?: string; // Alias compatibilité
+  studentId: string; // ✅ OBLIGATOIRE
   studentName: string;
   studentAvatarUrl?: string;
   instructorId: string;
-  questionText?: string;
-  question?: string; // Alias compatibilité
+  questionText: string; // ✅ OBLIGATOIRE
   answerText?: string;
-  answer?: string; // Alias compatibilité
   status: 'pending' | 'answered';
   createdAt: Timestamp | FieldValue | Date;
 }
@@ -410,11 +408,9 @@ export interface Announcement {
   id: string;
   courseId: string;
   courseTitle?: string;
-  instructorId?: string;
-  authorId?: string; // Alias compatibilité
+  instructorId: string;
   title: string;
-  message?: string;
-  content?: string; // Alias compatibilité
+  message: string;
   createdAt: Timestamp | FieldValue | Date;
 }
 
