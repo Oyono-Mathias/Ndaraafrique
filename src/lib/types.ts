@@ -620,6 +620,7 @@ export interface LandingPageContent {
   finalCtaSubtitle?: string;
   finalCtaButtonText?: string;
   showFinalCta?: boolean;
+  securitySection_imageUrl?: string;
 }
 
 export interface Country {
