@@ -2,7 +2,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
  * @fileOverview Source de vérité unique pour les types Ndara Afrique.
- * Organisé par domaines : Core, Utilisateurs, Pédagogie, Finances, Support, Marketing.
+ * ✅ ALIGNÉ : Aligne Frontend, Backend et Firestore.
  */
 
 // --- CORE & INFRASTRUCTURE ---
@@ -145,30 +145,46 @@ export interface DesignSettings {
   fontScale?: 'small' | 'medium' | 'large';
 }
 
+export interface LandingPageContent {
+  heroBadge?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  finalCtaTitle?: string;
+  finalCtaSubtitle?: string;
+  finalCtaButtonText?: string;
+  showFinalCta?: boolean;
+  securitySection_imageUrl?: string;
+  [key: string]: any;
+}
+
 // --- UTILISATEURS & PROFILS ---
 export interface NdaraUser {
   uid: string;
   email: string;
   username: string;
   fullName: string;
+  displayName?: string; // Compatibilité Firebase Auth
   phoneNumber?: string;
   role: UserRole;
   isInstructorApproved: boolean;
   status?: 'active' | 'suspended';
   balance?: number; 
+  walletBalance?: number; // Alias pour compatibilité
   virtualBalance?: number;
   currency?: string;
   countryCode?: string;
   countryName?: string;
   profilePictureURL?: string;
+  photoURL?: string; // Alias pour compatibilité
   bio?: string;
   rating?: number;
   isDemoAccount?: boolean;
   isProfileComplete?: boolean;
   preferredLanguage?: string;
   isOnline?: boolean;
-  lastSeen?: Timestamp | FieldValue;
-  createdAt?: Timestamp | FieldValue;
+  lastSeen?: Timestamp | FieldValue | Date;
+  createdAt?: Timestamp | FieldValue | Date;
   referralCode?: string;
   referredBy?: string | null;
   affiliateBalance?: number;
@@ -214,7 +230,7 @@ export interface NdaraUser {
   buyoutSanctions?: {
     isSanctioned: boolean;
     reason: string;
-    date: Timestamp | FieldValue;
+    date: Timestamp | FieldValue | Date;
   };
   permissions?: Record<string, boolean>;
   instructorApplication?: InstructorApplication;
@@ -229,9 +245,9 @@ export interface InstructorApplication {
   portfolioUrl?: string;
   linkedinUrl?: string;
   youtubeUrl?: string;
-  submittedAt?: Timestamp | FieldValue;
-  status?: 'pending' | 'accepted' | 'rejected';
-  decisionDate?: Timestamp | FieldValue;
+  submittedAt?: Timestamp | FieldValue | Date;
+  status?: 'pending' | 'accepted' | 'rejected' | 'approved';
+  decisionDate?: Timestamp | FieldValue | Date;
   feedback?: string;
 }
 
@@ -248,8 +264,8 @@ export interface Course {
   rating?: number;
   participantsCount?: number;
   imageUrl?: string;
-  createdAt?: Timestamp | FieldValue;
-  updatedAt?: Timestamp | FieldValue;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
   learningObjectives?: string[];
   ownerId?: string;
   creatorId?: string;
@@ -265,7 +281,7 @@ export interface Section {
   id: string;
   title: string;
   order: number;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface Lecture {
@@ -277,7 +293,7 @@ export interface Lecture {
   duration?: number;
   order: number;
   isFreePreview?: boolean;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
   description?: string;
 }
 
@@ -288,7 +304,7 @@ export interface Resource {
   url: string;
   type: 'pdf' | 'video' | 'image' | 'link' | 'file';
   instructorId: string;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface Quiz {
@@ -299,8 +315,8 @@ export interface Quiz {
   title: string;
   description?: string;
   questionsCount: number;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
 }
 
 export interface Question {
@@ -320,8 +336,8 @@ export interface Enrollment {
   instructorId: string;
   status: 'active' | 'completed' | 'suspended';
   progress: number;
-  enrollmentDate: Timestamp | FieldValue;
-  lastAccessedAt: Timestamp | FieldValue;
+  enrollmentDate: Timestamp | FieldValue | Date;
+  lastAccessedAt: Timestamp | FieldValue | Date;
   priceAtEnrollment?: number;
   transactionId?: string;
   enrollmentType?: 'free' | 'paid';
@@ -336,7 +352,7 @@ export interface CourseProgress {
   completedLessons: string[];
   lastLessonId: string;
   lastLessonTitle: string;
-  updatedAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue | Date;
 }
 
 // --- EXERCICES & INTERACTIONS ---
@@ -349,9 +365,9 @@ export interface Assignment {
   title: string;
   description?: string;
   correctionGuide?: string;
-  dueDate?: Timestamp | FieldValue;
+  dueDate?: Timestamp | FieldValue | Date;
   attachments?: { name: string; url: string }[];
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface AssignmentSubmission {
@@ -367,7 +383,7 @@ export interface AssignmentSubmission {
   submissionContent?: string;
   submissionUrl?: string;
   status: 'submitted' | 'graded';
-  submittedAt: Timestamp | FieldValue;
+  submittedAt: Timestamp | FieldValue | Date;
   grade?: number;
   feedback?: string;
 }
@@ -375,25 +391,30 @@ export interface AssignmentSubmission {
 export interface CourseQuestion {
   id: string;
   courseId: string;
-  courseTitle: string;
-  studentId: string;
+  courseTitle?: string;
+  studentId?: string;
+  userId?: string; // Alias compatibilité
   studentName: string;
   studentAvatarUrl?: string;
   instructorId: string;
-  questionText: string;
+  questionText?: string;
+  question?: string; // Alias compatibilité
   answerText?: string;
+  answer?: string; // Alias compatibilité
   status: 'pending' | 'answered';
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface Announcement {
   id: string;
   courseId: string;
-  courseTitle: string;
-  instructorId: string;
+  courseTitle?: string;
+  instructorId?: string;
+  authorId?: string; // Alias compatibilité
   title: string;
-  message: string;
-  createdAt: Timestamp | FieldValue;
+  message?: string;
+  content?: string; // Alias compatibilité
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 // --- FINANCES & TRANSACTIONS ---
@@ -406,8 +427,9 @@ export interface Payment {
   amount: number;
   currency: string;
   provider: PaymentProvider;
-  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
-  date: Timestamp | FieldValue;
+  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded' | 'completed' | 'pending' | 'failed';
+  date: Timestamp | FieldValue | Date;
+  createdAt?: Timestamp | Date; // Alias compatibilité
   platformFee?: number;
   metadata?: NdaraPaymentMetadata;
   fraudReview?: {
@@ -442,8 +464,8 @@ export interface PayoutRequest {
   amount: number;
   method: 'mobile_money' | 'bank_transfer';
   status: 'pending' | 'approved' | 'paid' | 'rejected';
-  createdAt: Timestamp | FieldValue;
-  updatedAt?: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
 }
 
 export interface Payout {
@@ -452,7 +474,7 @@ export interface Payout {
   amount: number;
   status: 'valide' | 'rejete' | 'en_attente';
   method: string;
-  date: Timestamp | FieldValue;
+  date: Timestamp | FieldValue | Date;
 }
 
 export interface AffiliateTransaction {
@@ -465,8 +487,8 @@ export interface AffiliateTransaction {
   amount: number;
   commissionAmount: number;
   status: 'pending' | 'approved' | 'paid' | 'cancelled';
-  createdAt: Timestamp | FieldValue;
-  unlockDate: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
+  unlockDate: Timestamp | FieldValue | Date;
 }
 
 // --- MARKETING & CRM ---
@@ -481,7 +503,7 @@ export interface Coupon {
   usedCount: number;
   expiresAt: Timestamp | FieldValue | Date;
   instructorId: string;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface CartItem {
@@ -499,7 +521,7 @@ export interface Notification {
   type: 'success' | 'info' | 'reminder' | 'alert';
   read: boolean;
   link?: string;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface PushCampaign {
@@ -507,9 +529,9 @@ export interface PushCampaign {
   message: string;
   target: 'all' | 'instructor' | 'student';
   status: 'sent' | 'scheduled';
-  scheduledFor: Timestamp | FieldValue;
-  sentAt?: Timestamp | FieldValue;
-  createdAt: Timestamp | FieldValue;
+  scheduledFor: Timestamp | FieldValue | Date;
+  sentAt?: Timestamp | FieldValue | Date;
+  createdAt: Timestamp | FieldValue | Date;
   stats?: {
     delivered: number;
     clicked: number;
@@ -526,15 +548,15 @@ export interface SupportTicket {
   instructorId: string;
   status: 'ouvert' | 'fermé';
   lastMessage: string;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
 }
 
 export interface Message {
   id: string;
   senderId: string;
   text: string;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
   status?: 'sent' | 'read';
 }
 
@@ -543,8 +565,8 @@ export interface Chat {
   participants: string[];
   lastMessage: string;
   lastSenderId: string;
-  updatedAt: Timestamp | FieldValue;
-  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue | Date;
+  createdAt: Timestamp | FieldValue | Date;
   status?: 'active' | 'blocked';
   unreadBy?: string[];
 }
@@ -555,7 +577,7 @@ export interface SecurityLog {
   userId: string;
   targetId: string;
   details: string;
-  timestamp: Timestamp | FieldValue;
+  timestamp: Timestamp | FieldValue | Date;
   status?: 'open' | 'resolved';
 }
 
@@ -565,7 +587,7 @@ export interface AdminAuditLog {
   eventType: string;
   target: { id: string; type: string };
   details: string;
-  timestamp: Timestamp | FieldValue;
+  timestamp: Timestamp | FieldValue | Date;
 }
 
 // --- GESTION DE CONTENU ---
@@ -611,18 +633,6 @@ export interface AboutPageContent {
   teamMembers?: TeamMember[];
 }
 
-export interface LandingPageContent {
-  heroBadge?: string;
-  heroTitle?: string;
-  heroSubtitle?: string;
-  heroImageUrl?: string;
-  finalCtaTitle?: string;
-  finalCtaSubtitle?: string;
-  finalCtaButtonText?: string;
-  showFinalCta?: boolean;
-  securitySection_imageUrl?: string;
-}
-
 export interface Country {
   id: string;
   name: string;
@@ -657,7 +667,7 @@ export interface TrackingEvent {
   eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
   sessionId: string;
   pageUrl: string;
-  timestamp: Timestamp | FieldValue;
+  timestamp: Timestamp | FieldValue | Date;
   metadata?: Record<string, any>;
 }
 
@@ -668,7 +678,7 @@ export interface InvestorLead {
   organization?: string;
   message?: string;
   status: 'new' | 'contacted' | 'interested';
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface Review {
@@ -678,7 +688,7 @@ export interface Review {
   instructorId: string;
   rating: number;
   comment: string;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface UserRecommendations {
@@ -703,5 +713,5 @@ export interface UserActivity {
   description?: string;
   link?: string;
   read: boolean;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue | Date;
 }
