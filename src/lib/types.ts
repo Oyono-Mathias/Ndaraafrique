@@ -281,6 +281,16 @@ export interface Lecture {
   description?: string;
 }
 
+export interface Resource {
+  id: string;
+  title: string;
+  courseId: string;
+  url: string;
+  type: 'pdf' | 'video' | 'image' | 'link' | 'file';
+  instructorId: string;
+  createdAt: Timestamp | FieldValue;
+}
+
 export interface Quiz {
   id: string;
   courseId: string;
