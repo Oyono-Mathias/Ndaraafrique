@@ -483,6 +483,15 @@ export interface CartItem {
   instructorId?: string;
 }
 
+export interface Notification {
+  id: string;
+  text: string;
+  type: 'success' | 'info' | 'reminder' | 'alert';
+  read: boolean;
+  link?: string;
+  createdAt: Timestamp | FieldValue;
+}
+
 export interface PushCampaign {
   id: string;
   message: string;
