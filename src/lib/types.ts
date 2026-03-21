@@ -38,6 +38,7 @@ export interface NdaraUser {
   email: string;
   username: string;
   fullName: string;
+  displayName?: string; // Alias pour compatibilité Firebase Auth
   profilePictureURL?: string;
   photoURL?: string; // Alias pour compatibilité Firebase Auth
   phoneNumber?: string;
@@ -548,6 +549,9 @@ export interface Settings {
       autoCorrection: boolean;
       autonomousTutor: boolean;
       fraudDetection: boolean;
+    };
+    market?: {
+      minimumLicensePrice?: number;
     };
   };
   commercial?: {
