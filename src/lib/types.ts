@@ -39,6 +39,7 @@ export interface NdaraUser {
   username: string;
   fullName: string;
   profilePictureURL?: string;
+  photoURL?: string; // Alias pour compatibilité Firebase Auth
   phoneNumber?: string;
   countryCode?: string;
   countryName?: string;
@@ -47,6 +48,7 @@ export interface NdaraUser {
   
   // -- Finance & Wallet --
   balance: number; // Solde réel (XOF)
+  walletBalance?: number; // Alias pour compatibilité
   virtualBalance?: number; // Solde pour les tests/pubs
   isDemoAccount?: boolean;
   currency?: string;
@@ -90,6 +92,7 @@ export interface NdaraUser {
   isProfileComplete: boolean;
   isOnline?: boolean;
   lastSeen?: Timestamp | FieldValue | Date;
+  lastLogin?: Timestamp | FieldValue | Date;
   createdAt?: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
   
@@ -105,6 +108,13 @@ export interface NdaraUser {
     payoutUpdate: boolean;
   };
   
+  notificationPreferences?: {
+    newPayouts: boolean;
+    newApplications: boolean;
+    newSupportTickets: boolean;
+    financialAnomalies: boolean;
+  };
+
   pedagogicalPreferences?: {
     aiAssistanceEnabled: boolean;
     aiInterventionLevel: 'low' | 'medium' | 'high';
