@@ -217,6 +217,7 @@ export interface NdaraUser {
     date: Timestamp | FieldValue;
   };
   permissions?: Record<string, boolean>;
+  instructorApplication?: InstructorApplication;
 }
 
 export interface InstructorApplication {
@@ -313,6 +314,7 @@ export interface Enrollment {
   lastAccessedAt: Timestamp | FieldValue;
   priceAtEnrollment?: number;
   transactionId?: string;
+  enrollmentType?: 'free' | 'paid';
 }
 
 export interface CourseProgress {
