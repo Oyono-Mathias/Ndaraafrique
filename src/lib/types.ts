@@ -571,6 +571,51 @@ export interface Settings {
     paymentMode: 'test' | 'live';
   };
   appearance?: DesignSettings;
+  courses?: {
+    autoApproval: boolean;
+    minPrice: number;
+    maxPrice: number;
+    allowFree: boolean;
+    maxLessons: number;
+    maxVideoDuration: number;
+  };
+  instructors?: {
+    verificationRequired: boolean;
+    autoApproval: boolean;
+    maxCoursesPerUser: number;
+    expertBadgeEnabled: boolean;
+  };
+  students?: {
+    allowRegistration: boolean;
+    emailVerification: boolean;
+    phoneVerification: boolean;
+    dailyDownloadLimit: number;
+  };
+  affiliate?: {
+    enabled: boolean;
+    commissionRate: number;
+    cookieDurationDays: number;
+    payoutThreshold: number;
+  };
+  notifications?: {
+    enableEmail: boolean;
+    enableInApp: boolean;
+    notifySales: boolean;
+    notifyEnrollments: boolean;
+    notifyMessages: boolean;
+  };
+  security?: {
+    enable2fa: boolean;
+    maxLoginAttempts: number;
+    ipBlacklist: string[];
+    accountProtectionRules: string;
+  };
+  analytics?: {
+    googleAnalyticsId: string;
+    facebookPixelId: string;
+    conversionTracking: boolean;
+    internalAnalytics: boolean;
+  };
   content?: {
     landingPage?: LandingPageContent;
   };
@@ -583,6 +628,12 @@ export interface Settings {
     privacyPolicy: string;
     refundPolicy: string;
     legalNotices: string;
+  };
+  email?: {
+    smtpHost: string;
+    senderName: string;
+    senderEmail: string;
+    templates: Record<string, string>;
   };
 }
 
