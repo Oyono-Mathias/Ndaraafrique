@@ -174,7 +174,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               finalPermissions = { ...finalPermissions, ...userData.permissions };
           }
 
-          const ndaraUser: any = {
+          const ndaraUser: NdaraUser = {
             ...userData,
             uid: user.uid,
             email: user.email || '',
@@ -205,7 +205,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             console.warn("User document not found in Firestore for UID:", user.uid);
             const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
             
-            const newUserDoc: any = {
+            const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
                 uid: user.uid,
                 email: user.email || '',
                 username: defaultUsername,

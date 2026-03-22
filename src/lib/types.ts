@@ -45,6 +45,7 @@ export interface NdaraUser {
   countryCode?: string;
   countryName?: string;
   role: UserRole;
+  availableRoles: UserRole[]; // Définit les modes accessibles (ex: [student, instructor])
   status: 'active' | 'suspended';
   
   // -- Finance & Wallet --

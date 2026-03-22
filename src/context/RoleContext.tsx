@@ -141,7 +141,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (roles.includes('admin')) priorityRole = 'admin';
           else if (roles.includes('instructor')) priorityRole = 'instructor';
 
-          const ndaraUser: any = {
+          const ndaraUser: NdaraUser = {
             ...userData,
             uid: user.uid,
             email: user.email || '',
@@ -166,7 +166,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
         } else {
             const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
-            const newUserDoc = {
+            const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
                 uid: user.uid,
                 email: user.email || '',
                 username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + user.uid.substring(0, 5),
