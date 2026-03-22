@@ -267,9 +267,9 @@ export default function AdminSettingsPage() {
       const payload: Partial<Settings> = {
         general: { 
             siteName: values.siteName, 
-            siteDescription: values.siteDescription, 
-            contactEmail: values.contactEmail, 
-            supportPhone: values.supportPhone, 
+            siteDescription: values.siteDescription || '',
+            contactEmail: values.contactEmail || '',
+            supportPhone: values.supportPhone || '',
             defaultLanguage: values.defaultLanguage, 
             defaultCountry: values.defaultCountry, 
             maintenanceMode: values.maintenanceMode 
