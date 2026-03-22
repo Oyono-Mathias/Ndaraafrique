@@ -170,20 +170,19 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               finalPermissions = { ...finalPermissions, ...userData.permissions };
           }
 
-          const resolvedUser: NdaraUser = {
-              ...userData,
-              uid: user.uid,
-              email: user.email || '',
-              username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
-              fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
-              availableRoles: roles,
-              profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
-              status: userData.status || 'active',
-              isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
-              permissions: finalPermissions,
+          const ndaraUser: any = {
+            ...userData,
+            uid: user.uid,
+            email: user.email || '',
+            username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
+            fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
+            availableRoles: roles,
+            profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
+            status: userData.status || 'active',
+            isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
           };
           
-          setCurrentUser(resolvedUser);
+          setCurrentUser(ndaraUser);
           setAvailableRoles(roles);
           
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
