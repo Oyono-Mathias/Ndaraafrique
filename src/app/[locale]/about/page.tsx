@@ -36,7 +36,7 @@ export default function AboutPage() {
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
 
-  const content = settings?.content?.aboutPage;
+  const content = (settings?.content as any)?.aboutPage;
   const team = (content?.teamMembers as TeamMember[]) || [];
   
   if (isLoading) {
