@@ -272,7 +272,7 @@ export default function AdminSettingsPage() {
             supportPhone: values.supportPhone || '',
             defaultLanguage: values.defaultLanguage, 
             defaultCountry: values.defaultCountry, 
-            maintenanceMode: values.maintenanceMode 
+            // maintenanceMode: values.maintenanceMode 
         },
         social: {
             facebookUrl: values.facebookUrl,
