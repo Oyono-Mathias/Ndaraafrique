@@ -179,6 +179,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 preferredLanguage: locale as 'fr' | 'en' | 'sg',
                 isOnline: true,
                 lastSeen: serverTimestamp(),
+                balance: 0,
+                affiliateBalance: 0,
+                pendingAffiliateBalance: 0,
+                affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
             };
             await setDoc(userDocRef, newUserDoc).catch(() => {});
             detectGeoLocation(user.uid);

@@ -107,6 +107,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             permissions: {},
             status: 'active',
             isInstructorApproved: false,
+            balance: 0,
+            affiliateBalance: 0,
+            pendingAffiliateBalance: 0,
+            affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
           };
           
           const updatePayload: DocumentData = {};
@@ -201,7 +205,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             console.warn("User document not found in Firestore for UID:", user.uid);
             const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
             
-            const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
+            const newUserDoc: any = {
                 uid: user.uid,
                 email: user.email || '',
                 username: defaultUsername,
@@ -225,6 +229,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
                 badges: [],
                 permissions: {},
+                balance: 0,
+                affiliateBalance: 0,
+                pendingAffiliateBalance: 0,
+                affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
             };
             
             setDoc(userDocRef, newUserDoc);
