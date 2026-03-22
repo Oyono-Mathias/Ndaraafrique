@@ -362,7 +362,7 @@ export default function AdminSettingsPage() {
         storage: {
             useBunnyCdn: values.useBunnyCdn,
             maxFileSizeMb: values.maxFileSizeMb,
-            maxVideoSizeMb: 500
+            // maxVideoSizeMb: 500
         },
         legal: {
             termsOfService: values.termsOfService,
