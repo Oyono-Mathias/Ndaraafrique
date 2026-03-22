@@ -128,12 +128,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               detectGeoLocation(user.uid);
           }
           
-          // ✅ PERSISTANCE LANGUE : On synchronise avec le profil
-          if (userData.preferredLanguage && userData.preferredLanguage !== locale) {
-              // Si la langue du profil diffère de la locale actuelle, on pourrait rediriger
-              // Mais on laisse le switch manuel faire le travail pour éviter les boucles.
-          }
-
           const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || userData.role === 'admin';
           
           const roles: UserRole[] = ['student'];
@@ -147,20 +141,19 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (roles.includes('admin')) priorityRole = 'admin';
           else if (roles.includes('instructor')) priorityRole = 'instructor';
 
-          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain);
-
-          const resolvedUser: NdaraUser = {
-              ...userData,
-              uid: user.uid,
-              email: user.email || '',
-              username: userData.username || 'user_' + user.uid.substring(0, 5),
-              fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
-              role: isMasterAdmin ? 'admin' : (userData.role || 'student'),
-              isProfileComplete: isComplete,
-              isOnline: userData.isOnline ?? true
-          } as any;
+          const ndaraUser: any = {
+            ...userData,
+            uid: user.uid,
+            email: user.email || '',
+            username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
+            fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
+            availableRoles: roles,
+            profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
+            status: userData.status || 'active',
+            isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
+          };
           
-          setCurrentUser(resolvedUser);
+          setCurrentUser(ndaraUser);
           setAvailableRoles(roles);
           
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
