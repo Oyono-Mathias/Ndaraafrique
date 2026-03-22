@@ -98,7 +98,7 @@ export default function AdminCountriesPage() {
         setIsSubmitting(true);
         const methods = selectedCountry.paymentMethods || [];
         const updated = [...methods, { ...newMethod, id: Math.random().toString(36).substring(7), active: true }];
-        const result = await updateCountryPaymentMethods(selectedCountry.id, updated, currentUser.uid);
+        const result = await updateCountryPaymentMethods(selectedCountry.id, updated as any, currentUser.uid);
         if (result.success) {
             toast({ title: "Méthode ajoutée !" });
             setNewMethod({ name: '', logo: '', provider: 'mesomb' });
