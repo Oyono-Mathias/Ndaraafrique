@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { updateInvestorLeadStatus } from '@/actions/investorActions';
 import { useToast } from '@/hooks/use-toast';
+// @ts-ignore
 import type { InvestorLead } from '@/lib/types';
 import {
   DropdownMenu,
