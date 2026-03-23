@@ -2,11 +2,11 @@
 
 /**
  * @fileOverview Formulaire de recharge sécurisé (Design Fintech Android).
- * ✅ I18N : Traduction dynamique des retours serveur.
+ * ✅ REAL-TIME : Listener direct sur le bénéficiaire pour voir le crédit lander en direct.
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { getFirestore, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, limit, onSnapshot, doc } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { rechargeUserWallet } from '@/actions/userActions';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,8 @@ import {
     Loader2, 
     ArrowRight, 
     CheckCircle2, 
-    X
+    X,
+    Activity
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,8 @@ export function RechargeForm() {
     const [searchTerm, setSearchTerm] = useState('');
     const [foundUsers, setFoundUsers] = useState<NdaraUser[]>([]);
     const [selectedUser, setSelectedUser] = useState<NdaraUser | null>(null);
+    const [liveBalance, setLiveBalance] = useState<number | null>(null);
+    
     const [amount, setAmount] = useState<number>(0);
     const [reason, setReason] = useState('Recharge manuelle (Audit Admin)');
     
@@ -44,6 +47,7 @@ export function RechargeForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    // Recherche d'utilisateur
     useEffect(() => {
         if (searchTerm.length < 3 || selectedUser) return;
         
@@ -67,6 +71,20 @@ export function RechargeForm() {
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, db, selectedUser]);
+
+    // Écouteur direct sur le bénéficiaire sélectionné (Real-Time)
+    useEffect(() => {
+        if (!selectedUser?.uid) {
+            setLiveBalance(null);
+            return;
+        }
+        const unsub = onSnapshot(doc(db, 'users', selectedUser.uid), (snap) => {
+            if (snap.exists()) {
+                setLiveBalance(snap.data().balance || 0);
+            }
+        });
+        return () => unsub();
+    }, [selectedUser?.uid, db]);
 
     const handleRecharge = async () => {
         if (!admin || !selectedUser || amount <= 0) return;
@@ -142,7 +160,10 @@ export function RechargeForm() {
                                 </Avatar>
                                 <div className="min-w-0">
                                     <p className="font-bold text-white text-sm truncate uppercase">{selectedUser.fullName}</p>
-                                    <p className="text-[10px] text-primary font-black truncate uppercase">Solde: {(selectedUser.balance || 0).toLocaleString()} F</p>
+                                    <p className="text-[10px] text-primary font-black flex items-center gap-1.5 uppercase">
+                                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                                        LIVE: {(liveBalance ?? selectedUser.balance ?? 0).toLocaleString()} F
+                                    </p>
                                 </div>
                             </div>
                             <button onClick={() => setSelectedUser(null)} className="p-2 text-slate-500 hover:text-white transition">
