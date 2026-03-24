@@ -3,7 +3,7 @@
 /**
  * @fileOverview Ndara Wallet Étudiant V5 - Design Fintech Elite.
  * ✅ REAL-TIME : Connecté à Firestore (Balance & Transactions).
- * ✅ DESIGN : Template HTML Fintech Android-First intégré.
+ * ✅ INTERACTION : Sélecteur de pays optimisé via ShadCN pour mobile.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -13,26 +13,28 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { 
-    ArrowLeft, 
     Smartphone, 
     Loader2, 
     History, 
-    ChevronDown, 
     ArrowDownLeft, 
     ShoppingBag as ShoppingBagIcon,
-    ShieldCheck,
     Wifi,
-    Receipt,
     CreditCard,
     HelpCircle,
-    Activity,
     Plus,
-    Search
+    Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { 
+    Select, 
+    SelectContent, 
+    SelectItem, 
+    SelectTrigger, 
+    SelectValue 
+} from '@/components/ui/select';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -89,32 +91,37 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
-    // 3. Charger les configurations pays
+    // 3. Charger les configurations pays (Liste stable)
     useEffect(() => {
         const q = query(collection(db, 'countries'), where('active', '==', true), orderBy('name'));
         const unsub = onSnapshot(q, (snap) => {
             const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Country));
             setCountries(list);
-            if (list.length > 0 && !selectedCountryId) {
-                // On essaie de pré-sélectionner le pays de l'utilisateur ou le premier de la liste
-                const userCountry = list.find(c => c.code === currentUser?.countryCode);
-                setSelectedCountryId(userCountry?.id || list[0].id);
-            }
         });
         return () => unsub();
-    }, [db, selectedCountryId, currentUser?.countryCode]);
+    }, [db]);
+
+    // 4. Initialisation de la sélection par défaut (Une seule fois au chargement)
+    useEffect(() => {
+        if (countries.length > 0 && !selectedCountryId) {
+            const userCountry = countries.find(c => c.code === currentUser?.countryCode);
+            setSelectedCountryId(userCountry?.id || countries[0].id);
+        }
+    }, [countries, currentUser?.countryCode, selectedCountryId]);
 
     const activeCountry = useMemo(() => countries.find(c => c.id === selectedCountryId), [countries, selectedCountryId]);
     const availableMethods = useMemo(() => (activeCountry?.paymentMethods || []).filter(m => m.active), [activeCountry]);
     
+    // Auto-sélection de la première méthode si le pays change
     useEffect(() => {
-        if (availableMethods.length > 0 && !selectedMethodId) {
+        if (availableMethods.length > 0) {
             setSelectedMethodId(availableMethods[0].id);
+        } else {
+            setSelectedMethodId(null);
         }
-    }, [availableMethods, selectedMethodId]);
+    }, [availableMethods]);
 
     const selectedMethod = useMemo(() => availableMethods.find(m => m.id === selectedMethodId), [availableMethods, selectedMethodId]);
-    
     const hasPendingTx = useMemo(() => transactions.some(t => t.status === 'pending'), [transactions]);
 
     const handleRecharge = async () => {
@@ -135,7 +142,7 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
-                toast({ title: "Demande envoyée !", description: "Veuillez valider sur votre mobile. Le solde s'actualisera en direct." });
+                toast({ title: "Demande envoyée !", description: "Veuillez valider sur votre mobile." });
                 setCustomAmount('');
                 setPhoneNumber('');
             } else {
@@ -197,25 +204,26 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
 
-                {/* --- SELECTION PAYS --- */}
-                <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.1s' }}>
+                {/* --- SELECTION PAYS (OPTIMISÉ SHADCN) --- */}
+                <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-500">
                     <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Pays de Résidence</label>
-                    <div className="relative">
-                        <select 
-                            value={selectedCountryId}
-                            onChange={(e) => { setSelectedCountryId(e.target.value); setSelectedMethodId(null); }}
-                            className="w-full h-16 pl-4 pr-12 bg-white border-2 border-gray-200 rounded-4xl text-sm font-bold text-[#212121] appearance-none focus:outline-none focus:border-[#3F51B5] transition-all shadow-sm"
-                        >
+                    <Select value={selectedCountryId} onValueChange={setSelectedCountryId}>
+                        <SelectTrigger className="w-full h-16 bg-white border-2 border-gray-200 rounded-4xl px-4 text-sm font-bold text-[#212121] shadow-sm focus:ring-0 focus:border-[#3F51B5]">
+                            <SelectValue placeholder="Sélectionnez votre pays" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-200 rounded-2xl shadow-2xl z-[100]">
                             {countries.map(c => (
-                                <option key={c.id} value={c.id}>{c.flagEmoji} {c.name} ({c.currency})</option>
+                                <SelectItem key={c.id} value={c.id} className="py-4 font-bold text-sm">
+                                    <span className="mr-3">{c.flagEmoji}</span>
+                                    {c.name} ({c.currency})
+                                </SelectItem>
                             ))}
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#757575] pointer-events-none" />
-                    </div>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* --- MODES DE PAIEMENT --- */}
-                <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.2s' }}>
+                <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.1s' }}>
                     <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Mode de Paiement</label>
                     <div className="grid grid-cols-3 gap-3">
                         {availableMethods.map(method => (
@@ -241,7 +249,7 @@ export default function NdaraWalletPage() {
                                 <span className="text-[#212121] text-[10px] font-bold">{method.name}</span>
                             </button>
                         ))}
-                        <button className="flex flex-col items-center justify-center gap-2 p-4 bg-white rounded-3xl border-2 border-gray-200 grayscale opacity-60 touch-btn">
+                        <button className="flex flex-col items-center justify-center gap-2 p-4 bg-white rounded-3xl border-2 border-gray-200 grayscale opacity-60">
                             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                                 <Plus className="w-5 h-5 text-gray-400" />
                             </div>
@@ -251,9 +259,9 @@ export default function NdaraWalletPage() {
                 </div>
 
                 {/* --- MONTANT --- */}
-                <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.3s' }}>
+                <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.2s' }}>
                     <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Montant à Recharger</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
                         {PRESET_AMOUNTS.map(val => (
                             <button 
                                 key={val}
@@ -268,10 +276,10 @@ export default function NdaraWalletPage() {
                         ))}
                     </div>
                     <div className="relative">
-                        <input 
+                        <Input 
                             type="number" 
                             placeholder="Autre montant"
-                            className="w-full bg-white border-2 border-gray-200 rounded-4xl px-4 py-4 text-[#212121] font-bold text-sm focus:outline-none focus:border-[#3F51B5] transition-all shadow-sm"
+                            className="w-full h-16 bg-white border-2 border-gray-200 rounded-4xl px-4 text-[#212121] font-bold text-sm focus:ring-0 focus:border-[#3F51B5] shadow-sm"
                             value={customAmount}
                             onChange={(e) => {
                                 setCustomAmount(e.target.value);
@@ -283,7 +291,7 @@ export default function NdaraWalletPage() {
                 </div>
 
                 {/* --- NUMERO --- */}
-                <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.35s' }}>
+                <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.25s' }}>
                     <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money</label>
                     <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-[#3F51B5] border border-gray-100">
@@ -300,7 +308,7 @@ export default function NdaraWalletPage() {
                 </div>
 
                 {/* --- HISTORIQUE (VINTAGE RECEIPTS) --- */}
-                <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.4s' }}>
+                <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '0.3s' }}>
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-[#212121] text-sm uppercase tracking-wide flex items-center gap-2">
                             <Receipt className="w-4 h-4 text-[#3F51B5]" />
@@ -311,9 +319,7 @@ export default function NdaraWalletPage() {
 
                     <div className="space-y-4">
                         {transactions.map(txn => {
-                            const isDeposit = txn.metadata?.type === 'wallet_topup';
                             const date = txn.date && (txn.date as any).toDate ? (txn.date as any).toDate() : new Date();
-                            
                             return (
                                 <div key={txn.id} className="vintage-receipt rounded-3xl p-5 shadow-sm active:scale-[0.98] transition-all">
                                     <div className="flex items-center justify-between mb-3">
@@ -370,7 +376,7 @@ export default function NdaraWalletPage() {
                     <Button 
                         onClick={handleRecharge}
                         disabled={isProcessing || selectedAmount <= 0 || !selectedMethodId || phoneNumber.length < 8}
-                        className="w-full h-16 rounded-4xl bg-[#3F51B5] hover:bg-[#303F9F] text-white font-black uppercase text-sm tracking-widest shadow-2xl shadow-[#3F51B5]/30 transition-all active:scale-95 border-none animate-pulse-glow"
+                        className="w-full h-16 rounded-4xl bg-[#3F51B5] hover:bg-[#303F9F] text-white font-black uppercase text-sm tracking-widest shadow-2xl shadow-[#3F51B5]/30 transition-all active:scale-95 border-none"
                     >
                         {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><CreditCard size={20} className="mr-3" /> Lancer la Transaction</>}
                     </Button>
