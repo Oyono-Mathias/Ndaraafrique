@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -30,6 +29,8 @@ import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, Country } from '@/lib/types';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
 
@@ -170,7 +171,7 @@ export default function NdaraWalletPage() {
                     content: '';
                     position: absolute;
                     inset: 0;
-                    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+                    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
                     animation: shimmer 3s infinite;
                 }
                 @keyframes shimmer {
@@ -212,7 +213,7 @@ export default function NdaraWalletPage() {
                 {/* Header */}
                 <header className="fixed top-0 w-full max-w-md z-40 bg-[#F5F5F5]/95 backdrop-blur-md safe-top border-b border-gray-200">
                     <div className="px-6 py-4 flex items-center justify-between">
-                        <h1 className="font-black text-xl text-[#212121] tracking-wide">MON PORTEFEUILLE</h1>
+                        <h1 className="font-black text-xl text-[#212121] tracking-wide uppercase">MON PORTEFEUILLE</h1>
                         <button className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#757575] hover:bg-gray-100 transition shadow-sm active:scale-90">
                             <HelpCircle className="w-5 h-5" />
                         </button>
@@ -250,7 +251,7 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Country Selector (Native Select Connected) */}
+                    {/* Country Selector */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-100">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Pays de Résidence</label>
                         <div className="relative">
@@ -336,7 +337,7 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Phone Number Input (Required for Transaction) */}
+                    {/* Phone Number Input */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-350">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro de téléphone</label>
                         <div className="relative">
@@ -411,20 +412,6 @@ export default function NdaraWalletPage() {
                         <span>Lancer la Transaction</span>
                     </Button>
                 </div>
-            </div>
-        </div>
-    );
-}
-
-function WalletSkeleton() {
-    return (
-        <div className="p-6 space-y-8 pt-32 bg-[#F5F5F5] min-h-screen">
-            <Skeleton className="h-56 w-full rounded-4xl bg-slate-200" />
-            <Skeleton className="h-16 w-full rounded-4xl bg-slate-200" />
-            <div className="grid grid-cols-3 gap-3">
-                <Skeleton className="h-20 bg-slate-200 rounded-3xl" />
-                <Skeleton className="h-20 bg-slate-200 rounded-3xl" />
-                <Skeleton className="h-20 bg-slate-200 rounded-3xl" />
             </div>
         </div>
     );
