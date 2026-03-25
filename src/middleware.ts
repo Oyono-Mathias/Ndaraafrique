@@ -1,17 +1,21 @@
 import createMiddleware from 'next-intl/middleware';
  
 /**
- * Middleware pour la gestion des locales et du routage.
- * Supporte Français (fr), Anglais (en) et Sango (sg).
- * Utilise le cookie NEXT_LOCALE pour la persistance.
+ * Gestionnaire de routage internationalisé.
+ * Définit les langues supportées et la locale par défaut.
  */
 export default createMiddleware({
-  locales: ['en', 'fr', 'sg'],
+  // Langues supportées par Ndara Afrique
+  locales: ['fr', 'en', 'sg'],
+ 
+  // Langue utilisée si aucune n'est détectée
   defaultLocale: 'fr',
+
+  // N'affiche le préfixe dans l'URL que si nécessaire
   localePrefix: 'as-needed'
 });
  
 export const config = {
-  // Matcher pour exclure les fichiers statiques et les API
+  // Matcher pour exclure les fichiers statiques, les API et les ressources internes
   matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
 };
