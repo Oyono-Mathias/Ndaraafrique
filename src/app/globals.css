@@ -4,40 +4,60 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%; /* #0f172a */
-    --foreground: 210 40% 98%;
+    /* ==================== COULEURS PRINCIPALES ==================== */
+    --background: 222 47% 11%;     /* #0f172a - Fond principal très sombre */
+    --foreground: 210 40% 98%;     /* Texte principal clair */
+
+    /* Cards, surfaces et popovers */
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
+    --popover: 222 47% 16%;        /* Légèrement plus clair pour popovers */
     --popover-foreground: 210 40% 98%;
-    --primary: 161 72% 40%; /* #10b981 */
+
+    /* Couleurs d'accent */
+    --primary: 161 72% 40%;        /* #10b981 - Émeraude Ndara (vert principal) */
     --primary-foreground: 210 40% 98%;
-    --secondary: 217 91% 60%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 217.2 32.6% 17.5%;
+
+    --secondary: 217 91% 60%;      /* Bleu-violet accent */
+    --secondary-foreground: 222 47% 11%;
+
+    /* Surfaces secondaires / muted */
+    --muted: 217.2 32.6% 17.5%;    /* #1e293b */
     --muted-foreground: 215 20.2% 65.1%;
+
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+
+    /* Destructive / Erreur */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Bordures et inputs */
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
+
+    /* Ring (focus) - lié au primary */
     --ring: 161 72% 40%;
-    --radius: 2rem;
+
+    /* Radius global */
+    --radius: 2rem;                /* Style très arrondi moderne */
+
+    /* ==================== COULEURS NDARA PERSONNALISÉES ==================== */
+    --ndara-bg: 222 47% 11%;       /* #0f172a */
+    --ndara-surface: 217 32% 17%;  /* #1e293b */
+    --ndara-emerald: 161 72% 40%;  /* #10b981 */
   }
 
+  /* Mode Dark simplifié (l'app est full dark) */
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --primary: 161 72% 40%;
-    --ring: 161 72% 40%;
+    /* Hérite tout de :root - prêt pour un futur mode light */
   }
-}
 
-@layer base {
+  /* Styles de base */
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "alt" 1;
@@ -45,16 +65,27 @@
 }
 
 @layer utilities {
-  .bg-ndara-bg { background-color: #0f172a; }
-  .bg-ndara-surface { background-color: #1e293b; }
-  .text-ndara-emerald { color: #10b981; }
+  /* ==================== UTILITAIRES NDARA ==================== */
+  .bg-ndara-bg { 
+    background-color: hsl(var(--ndara-bg)); 
+  }
   
+  .bg-ndara-surface { 
+    background-color: hsl(var(--ndara-surface)); 
+  }
+  
+  .text-ndara-emerald { 
+    color: hsl(var(--ndara-emerald)); 
+  }
+
+  /* Effet verre dépoli premium */
   .glass-dark {
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  /* Grain subtil sur toute l'interface */
   .grain-overlay {
     position: fixed;
     top: 0;
@@ -62,22 +93,30 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 10;                    /* Réduit de 9999 → évite les conflits avec modals */
     opacity: 0.04;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
-  .hide-scrollbar::-webkit-scrollbar {
+  /* Scrollbar cachée */
+  .hide-scrollbar::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  .hide-scrollbar {
+  .hide-scrollbar,
+  .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
+  /* Glow sur éléments actifs (navigation) */
   .nav-active-glow {
     text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
   }
+}
+
+@layer utilities {
+  /* ==================== COMPOSANTS SPÉCIAUX ==================== */
 
   /* --- FINTECH VIRTUAL CARD --- */
   .virtual-card {
@@ -85,6 +124,7 @@
     position: relative;
     overflow: hidden;
   }
+  
   .virtual-card::before {
     content: '';
     position: absolute;
@@ -94,8 +134,9 @@
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     pointer-events: none;
-    animation: shimmer 4s infinite;
+    animation: shimmer 4s infinite linear;
   }
+  
   .virtual-card::after {
     content: '';
     position: absolute;
@@ -108,16 +149,18 @@
   /* --- VINTAGE TICKET --- */
   .vintage-ticket {
     background: repeating-linear-gradient(
-        45deg,
-        rgba(245, 158, 11, 0.05),
-        rgba(245, 158, 11, 0.05) 10px,
-        rgba(245, 158, 11, 0.1) 10px,
-        rgba(245, 158, 11, 0.1) 20px
+      45deg,
+      rgba(245, 158, 11, 0.05),
+      rgba(245, 158, 11, 0.05) 10px,
+      rgba(245, 158, 11, 0.1) 10px,
+      rgba(245, 158, 11, 0.1) 20px
     );
     border: 1px dashed rgba(245, 158, 11, 0.4);
     position: relative;
   }
-  .vintage-ticket::before, .vintage-ticket::after {
+  
+  .vintage-ticket::before,
+  .vintage-ticket::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -130,8 +173,11 @@
   }
   .vintage-ticket::before { left: -11px; }
   .vintage-ticket::after { right: -11px; }
+}
 
-  /* --- SPLASH SCREEN ANIMATIONS --- */
+/* ==================== ANIMATIONS ==================== */
+@layer utilities {
+  /* Animations Splash / Reveal */
   @keyframes glowReveal {
     0% { transform: scale(0); opacity: 0; filter: blur(20px); }
     100% { transform: scale(1); opacity: 1; filter: blur(80px); }
@@ -154,23 +200,15 @@
     100% { opacity: 1; transform: translateY(0); letter-spacing: 0.5em; }
   }
 
+  /* Animations générales */
   @keyframes slide-up {
     from { transform: translate(-50%, 100%); opacity: 0; }
     to { transform: translate(-50%, 0); opacity: 1; }
   }
 
-  .animate-slide-up {
-    animation: slide-up 0.3s ease-out forwards;
-  }
-
-  /* --- ANIMATIONS --- */
   @keyframes pulseGlow {
     0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
     50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
-  }
-
-  .animate-pulse-glow {
-    animation: pulseGlow 2s infinite;
   }
 
   @keyframes shimmer {
@@ -178,41 +216,35 @@
     100% { transform: skewX(-20deg) translateX(150%); }
   }
 
-  .funnel-bar {
-    transition: width 1s ease-out;
-  }
-
-  /* Specific styles for the Indigo Wallet design */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
   @keyframes pulseRing {
     0% { transform: scale(0.8); opacity: 1; }
     100% { transform: scale(1.5); opacity: 0; }
   }
-  .pulse-ring {
-    animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
 
   @keyframes fadeIn {
     to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fade-in {
-    animation: fadeIn 0.35s ease-out forwards;
-    opacity: 0;
-    transform: translateY(12px);
   }
 
   @keyframes slide-up-modal {
     from { transform: translateY(100%); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
-  .animate-slide-up-modal {
-    animation: slide-up-modal 0.3s ease-out forwards;
+
+  /* Classes d'animations */
+  .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+  .animate-pulse-glow { animation: pulseGlow 2s infinite; }
+  .pulse-ring { animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  .animate-fade-in { 
+    animation: fadeIn 0.35s ease-out forwards; 
+    opacity: 0; 
+    transform: translateY(12px); 
+  }
+  .animate-slide-up-modal { 
+    animation: slide-up-modal 0.3s ease-out forwards; 
+  }
+
+  /* Utilitaire transition */
+  .funnel-bar {
+    transition: width 1s ease-out;
   }
 }
