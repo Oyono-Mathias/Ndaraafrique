@@ -4,56 +4,67 @@
 
 @layer base {
   :root {
-    /* ==================== COULEURS PRINCIPALES ==================== */
-    --background: 222 47% 11%;     /* #0f172a - Fond principal très sombre */
-    --foreground: 210 40% 98%;     /* Texte principal clair */
+    /* ==================== COULEURS PRINCIPALES (Ndara Dark) ==================== */
+    --background: 222 47% 11%;     /* #0f172a */
+    --foreground: 210 40% 98%;
 
-    /* Cards, surfaces et popovers */
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 16%;        /* Légèrement plus clair pour popovers */
+    --popover: 222 47% 16%;
     --popover-foreground: 210 40% 98%;
 
-    /* Couleurs d'accent */
-    --primary: 161 72% 40%;        /* #10b981 - Émeraude Ndara (vert principal) */
+    --primary: 161 72% 40%;        /* #10b981 - Émeraude signature */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217 91% 60%;      /* Bleu-violet accent */
+    --secondary: 217 91% 60%;
     --secondary-foreground: 222 47% 11%;
 
-    /* Surfaces secondaires / muted */
     --muted: 217.2 32.6% 17.5%;    /* #1e293b */
     --muted-foreground: 215 20.2% 65.1%;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    /* Destructive / Erreur */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Bordures et inputs */
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-
-    /* Ring (focus) - lié au primary */
     --ring: 161 72% 40%;
 
-    /* Radius global */
-    --radius: 2rem;                /* Style très arrondi moderne */
+    /* ==================== TYPOGRAPHIE & SPACING (Fintech Pro) ==================== */
+    --radius: 1.25rem;             /* 20px - Plus professionnel que 32px */
 
-    /* ==================== COULEURS NDARA PERSONNALISÉES ==================== */
-    --ndara-bg: 222 47% 11%;       /* #0f172a */
-    --ndara-surface: 217 32% 17%;  /* #1e293b */
-    --ndara-emerald: 161 72% 40%;  /* #10b981 */
+    /* Typographic scale (base 16px) */
+    --text-xs: 0.75rem;     /* 12px - Captions */
+    --text-sm: 0.875rem;    /* 14px - Labels secondaires */
+    --text-base: 1rem;      /* 16px - Body principal (lisibilité fintech) */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.25rem;     /* 20px */
+    --text-2xl: 1.5rem;     /* 24px - Titres moyens */
+    --text-3xl: 1.875rem;   /* 30px - Soldes / montants importants */
+    --text-4xl: 2.25rem;    /* 36px - Grands montants hero */
+
+    /* Line heights pour meilleure lisibilité */
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+
+    /* Spacing pour cartes et composants */
+    --spacing-card: 1.5rem;   /* Padding interne cartes (24px) */
+    --gap-section: 1.5rem;    /* Espacement entre sections */
+
+    /* Couleurs Ndara dédiées */
+    --ndara-bg: 222 47% 11%;
+    --ndara-surface: 217 32% 17%;
+    --ndara-emerald: 161 72% 40%;
   }
 
-  /* Mode Dark simplifié (l'app est full dark) */
   .dark {
-    /* Hérite tout de :root - prêt pour un futur mode light */
+    /* App full dark → hérite tout de :root */
   }
 
-  /* Styles de base */
   * {
     @apply border-border;
   }
@@ -61,112 +72,101 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "alt" 1;
+    font-size: 1rem;                    /* Base 16px */
+    line-height: var(--leading-normal);
   }
+
+  /* Hiérarchie typographique fintech */
+  h1, .text-4xl { font-size: var(--text-4xl); line-height: var(--leading-tight); font-weight: 700; }
+  h2, .text-3xl { font-size: var(--text-3xl); line-height: var(--leading-tight); font-weight: 700; }
+  h3, .text-2xl { font-size: var(--text-2xl); line-height: var(--leading-snug); font-weight: 600; }
 }
 
 @layer utilities {
   /* ==================== UTILITAIRES NDARA ==================== */
-  .bg-ndara-bg { 
-    background-color: hsl(var(--ndara-bg)); 
-  }
-  
-  .bg-ndara-surface { 
-    background-color: hsl(var(--ndara-surface)); 
-  }
-  
-  .text-ndara-emerald { 
-    color: hsl(var(--ndara-emerald)); 
-  }
+  .bg-ndara-bg { background-color: hsl(var(--ndara-bg)); }
+  .bg-ndara-surface { background-color: hsl(var(--ndara-surface)); }
+  .text-ndara-emerald { color: hsl(var(--ndara-emerald)); }
 
-  /* Effet verre dépoli premium */
   .glass-dark {
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Grain subtil sur toute l'interface */
   .grain-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     pointer-events: none;
-    z-index: 10;                    /* Réduit de 9999 → évite les conflits avec modals */
-    opacity: 0.04;
+    z-index: 10;
+    opacity: 0.035;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
-  /* Scrollbar cachée */
   .hide-scrollbar::-webkit-scrollbar,
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
   .hide-scrollbar,
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
-  /* Glow sur éléments actifs (navigation) */
   .nav-active-glow {
-    text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    text-shadow: 0 0 15px rgba(16, 185, 129, 0.45);
+  }
+
+  /* Padding cartes cohérent */
+  .card-padding {
+    padding: var(--spacing-card);
   }
 }
 
 @layer utilities {
   /* ==================== COMPOSANTS SPÉCIAUX ==================== */
 
-  /* --- FINTECH VIRTUAL CARD --- */
+  /* Virtual Card - gardée premium mais mieux intégrée */
   .virtual-card {
     background: linear-gradient(135deg, #10b981 0%, #047857 60%, #064e3b 100%);
+    border-radius: var(--radius);
     position: relative;
     overflow: hidden;
+    padding: 1.75rem;
   }
-  
+
   .virtual-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    pointer-events: none;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
     animation: shimmer 4s infinite linear;
+    pointer-events: none;
   }
-  
+
   .virtual-card::after {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.55;
     pointer-events: none;
-    opacity: 0.6;
   }
 
-  /* --- VINTAGE TICKET --- */
+  /* Vintage Ticket - inchangé */
   .vintage-ticket {
-    background: repeating-linear-gradient(
-      45deg,
-      rgba(245, 158, 11, 0.05),
-      rgba(245, 158, 11, 0.05) 10px,
-      rgba(245, 158, 11, 0.1) 10px,
-      rgba(245, 158, 11, 0.1) 20px
-    );
+    background: repeating-linear-gradient(45deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.05) 10px, rgba(245, 158, 11, 0.1) 10px, rgba(245, 158, 11, 0.1) 20px);
     border: 1px dashed rgba(245, 158, 11, 0.4);
+    border-radius: var(--radius);
     position: relative;
   }
-  
+
   .vintage-ticket::before,
   .vintage-ticket::after {
     content: '';
     position: absolute;
     top: 50%;
-    width: 20px;
-    height: 20px;
-    background: #0f172a;
+    width: 22px;
+    height: 22px;
+    background: hsl(var(--background));
     border-radius: 50%;
     transform: translateY(-50%);
     z-index: 10;
@@ -177,48 +177,14 @@
 
 /* ==================== ANIMATIONS ==================== */
 @layer utilities {
-  /* Animations Splash / Reveal */
-  @keyframes glowReveal {
-    0% { transform: scale(0); opacity: 0; filter: blur(20px); }
-    100% { transform: scale(1); opacity: 1; filter: blur(80px); }
-  }
-
-  @keyframes cinematicReveal {
-    0% { opacity: 0; transform: scale(0.85) translateY(20px); filter: blur(15px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-  }
-
-  @keyframes splashSheen {
-    0% { left: -100%; opacity: 0; }
-    30% { opacity: 1; }
-    70% { opacity: 1; }
-    100% { left: 200%; opacity: 0; }
-  }
-
-  @keyframes textReveal {
-    0% { opacity: 0; transform: translateY(10px); letter-spacing: 0.2em; }
-    100% { opacity: 1; transform: translateY(0); letter-spacing: 0.5em; }
-  }
-
-  /* Animations générales */
-  @keyframes slide-up {
-    from { transform: translate(-50%, 100%); opacity: 0; }
-    to { transform: translate(-50%, 0); opacity: 1; }
-  }
-
-  @keyframes pulseGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
-    50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
-  }
-
   @keyframes shimmer {
     0% { transform: skewX(-20deg) translateX(-150%); }
     100% { transform: skewX(-20deg) translateX(150%); }
   }
 
-  @keyframes pulseRing {
-    0% { transform: scale(0.8); opacity: 1; }
-    100% { transform: scale(1.5); opacity: 0; }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+    50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
   }
 
   @keyframes fadeIn {
@@ -230,21 +196,15 @@
     to { transform: translateY(0); opacity: 1; }
   }
 
-  /* Classes d'animations */
-  .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
-  .animate-pulse-glow { animation: pulseGlow 2s infinite; }
-  .pulse-ring { animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  .animate-pulse-glow { animation: pulseGlow 2.5s infinite; }
   .animate-fade-in { 
-    animation: fadeIn 0.35s ease-out forwards; 
+    animation: fadeIn 0.4s ease-out forwards; 
     opacity: 0; 
     transform: translateY(12px); 
   }
   .animate-slide-up-modal { 
-    animation: slide-up-modal 0.3s ease-out forwards; 
+    animation: slide-up-modal 0.35s ease-out forwards; 
   }
 
-  /* Utilitaire transition */
-  .funnel-bar {
-    transition: width 1s ease-out;
-  }
+  .funnel-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
 }
