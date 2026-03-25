@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -5,13 +6,14 @@
  * ✅ DESIGN : Intégralité du template HTML/CSS fourni par l'utilisateur.
  * ✅ REAL-TIME : Listeners onSnapshot pour le solde et les reçus vintage.
  * ✅ FONCTIONNEL : Sélecteur natif et paiement MeSomb opérationnels.
+ * ✅ I18N : Test du système de traduction sur les éléments clés.
  */
 
 import { useRole } from '@/context/RoleContext';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { 
     HelpCircle, 
@@ -40,6 +42,7 @@ export default function NdaraWalletPage() {
     const router = useRouter();
     const locale = useLocale();
     const { toast } = useToast();
+    const t = useTranslations('Wallet');
     
     // --- ÉTATS RÉELS ---
     const [liveBalance, setLiveBalance] = useState<number | null>(null);
@@ -213,7 +216,7 @@ export default function NdaraWalletPage() {
                 {/* Header */}
                 <header className="fixed top-0 w-full max-w-md z-40 bg-[#F5F5F5]/95 backdrop-blur-md safe-top border-b border-gray-200">
                     <div className="px-6 py-4 flex items-center justify-between">
-                        <h1 className="font-black text-xl text-[#212121] tracking-wide uppercase">MON PORTEFEUILLE</h1>
+                        <h1 className="font-black text-xl text-[#212121] tracking-wide uppercase">{t('title')}</h1>
                         <button className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#757575] hover:bg-gray-100 transition shadow-sm active:scale-90">
                             <HelpCircle className="w-5 h-5" />
                         </button>
@@ -228,7 +231,7 @@ export default function NdaraWalletPage() {
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-8">
                                 <div>
-                                    <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Disponible</p>
+                                    <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-1">{t('available_balance')}</p>
                                     <h2 className="text-white font-black text-4xl tracking-tight">
                                         {(liveBalance ?? 0).toLocaleString('fr-FR')} <span className="text-lg font-bold">FCFA</span>
                                     </h2>
@@ -409,7 +412,7 @@ export default function NdaraWalletPage() {
                         className="w-full bg-[#3F51B5] hover:bg-[#303F9F] text-white py-7 rounded-4xl font-black text-sm uppercase tracking-wide transition shadow-2xl flex items-center justify-center gap-3 active:scale-95 animate-pulse-glow border-none"
                     >
                         {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
-                        <span>Lancer la Transaction</span>
+                        <span>{t('action_button')}</span>
                     </Button>
                 </div>
             </div>

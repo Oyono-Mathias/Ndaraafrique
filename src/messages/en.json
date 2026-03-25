@@ -1,3 +1,4 @@
+
 {
   "Common": {
     "site_name": "Ndara Africa",
@@ -15,6 +16,11 @@
     "resume_study": "Continue study",
     "tutor_box_title": "Need help, dear Learner?",
     "tutor_box_desc": "Mathias answers your questions about courses 24/7."
+  },
+  "Wallet": {
+    "title": "MY WALLET",
+    "available_balance": "Available Balance",
+    "action_button": "Launch Transaction"
   },
   "Actions": {
     "success": {

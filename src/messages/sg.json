@@ -1,3 +1,4 @@
+
 {
   "Common": {
     "site_name": "Ndara Afrique",
@@ -15,6 +16,11 @@
     "resume_study": "Ngô tî manda kua",
     "tutor_box_title": "Mo ye tî hunda sango, Ndara?",
     "tutor_box_desc": "Mathias ayeke kiri tiri na a-questions tî mo tî na bï."
+  },
+  "Wallet": {
+    "title": "PORTEFEUILLE TÎ MÔ",
+    "available_balance": "Nginza so ayeke na yâ ni",
+    "action_button": "Lancer la Transaction"
   },
   "Actions": {
     "success": {

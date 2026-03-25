@@ -1,3 +1,4 @@
+
 {
   "Common": {
     "site_name": "Ndara Afrique",
@@ -16,13 +17,18 @@
     "tutor_box_title": "Besoin d'aide, cher Ndara ?",
     "tutor_box_desc": "Mathias répond à vos questions sur les cours 24h/24."
   },
+  "Wallet": {
+    "title": "MON PORTEFEUILLE",
+    "available_balance": "Solde Disponible",
+    "action_button": "Lancer la Transaction"
+  },
   "Actions": {
-    "success": {
-      "wallet_recharged": "Solde crédité avec succès !"
-    },
     "error": {
       "course_not_found": "La formation est introuvable.",
       "insufficient_balance": "Votre solde est insuffisant."
+    },
+    "success": {
+      "wallet_recharged": "Solde crédité avec succès !"
     }
   }
 }
