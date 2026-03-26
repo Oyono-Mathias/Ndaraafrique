@@ -118,9 +118,10 @@
     "my_courses": "Manda ti mbi",
     "bourse": "Sendo",
     "profile": "Iri ti mbi",
-    "dashboard": "Dashboard",
+    "dashboard": "Gbia-ndo",
     "alerts": "Tënë ti hio",
-    "messages": "Ambeti"
+    "messages": "Ambeti",
+    "devoirs": "Kua ti ekole"
   },
   "Sidebar": {
     "universe": "DUNIA TÔ MO",
@@ -136,6 +137,25 @@
     "switch_student": "KUA TI WAMANDARA",
     "switch_instructor": "KUA TI WA-NDARA",
     "switch_admin": "KUA TI GBIA"
+  },
+  "Profile": {
+    "title": "IRI TI MBI",
+    "preferences": "AYE SO MBI YE",
+    "identity_card": "Mbeti ti mbi",
+    "wallet": "Boursin ti mbi",
+    "wallet_desc": "Bâ nginza ti mo",
+    "security": "Batango place",
+    "security_desc": "Tënë ti lî na yâ ni",
+    "support": "Mungö maboko",
+    "support_desc": "Hunda mungö maboko",
+    "language": "Yângâ ti kodoro",
+    "dark_mode": "Vulu na vungun",
+    "logout": "Sigigo",
+    "stats": {
+      "courses": "Manda",
+      "diplomas": "Ambeti",
+      "reviews": "Wango"
+    }
   },
   "Admin": {
     "groups": {
@@ -191,19 +211,6 @@
     "pay": "Futa",
     "resume": "Kiri manda ni",
     "enroll": "Sû iri ti mo"
-  },
-"Profile": {
-    "title": "IRI TI MBI",
-    "preferences": "AYE SO MBI YE",
-    "identity_card": "Mbeti ti mbi",
-    "wallet": "Boursin ti mbi",
-    "wallet_desc": "Bâ nginza ti mo",
-    "security": "Batango place",
-    "security_desc": "Tënë ti lî na yâ ni",
-    "support": "Mungö maboko",
-    "support_desc": "Hunda mungö maboko",
-    "language": "Yângâ ti kodoro",
-    "dark_mode": "Vulu na vungun"
   },
   "Actions": {
     "error": {
