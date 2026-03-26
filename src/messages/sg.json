@@ -4,14 +4,15 @@
     "greeting": "Bara ala,",
     "ndara_term": "Ndara",
     "loading": "Kua ayeke fono...",
-    "admin": "Kkota",
+    "admin": "Kota Kapa",
     "expert": "Expert",
     "student": "Ndara",
     "certified": "Certifié",
-    "catalogue": "Kua",
+    "catalogue": "Kapa tî Kua",
     "found_results": "E wara {count} sango",
     "no_results": "E wara sango pëpe",
-    "reset_filters": "Kiri na pe"
+    "reset_filters": "Kiri na pe",
+    "my_courses": "A-kua tî mbï"
   },
   "Auth": {
     "login_title": "Lî na yâ ni",
@@ -20,14 +21,24 @@
     "forgot_password": "Mo girisa yemba?",
     "continue_with_google": "Lî na Google",
     "registerButton": "Mo lî fini",
-    "loginButton": "Lî na yâ ni"
+    "loginButton": "Lî na yâ ni",
+    "fullNameLabel": "Irî tî mo mobimba",
+    "password_forgot": "Yemba agirisa?",
+    "create_account": "Leké fini compte",
+    "i_agree_to": "Mbï yeda na",
+    "terms_of_use": "Ndîa tî kua",
+    "and": "na",
+    "privacy_policy": "Ndîa tî sango"
   },
   "Dashboard": {
     "resume_study": "Ngô tî manda kua",
     "tutor_box_title": "Mo ye tî hunda sango, Ndara?",
     "tutor_box_desc": "Mathias ayeke kiri tiri na a-questions tî mo tî na bï.",
     "ask_question": "Hunda sango",
-    "quote": "Ndara ayeke kpengba lege ti changement."
+    "quote": "Ndara ayeke kpengba lege ti changement.",
+    "certificates": "A-Diplôme",
+    "recommendations": "Kua so alingbi na mo",
+    "alerts": "Sango"
   },
   "Wallet": {
     "title": "PORTEFEUILLE TÎ MÔ",
@@ -35,13 +46,115 @@
     "action_button": "Lancer la Transaction",
     "history": "Sango tî nginza"
   },
+  "Nav": {
+    "home": "Gbegbe",
+    "catalogue": "Kapa",
+    "my_courses": "Kua tî mbï",
+    "bourse": "Bourse",
+    "profile": "Profil",
+    "dashboard": "Tableau",
+    "alerts": "Sango",
+    "messages": "Atoli"
+  },
+  "Sidebar": {
+    "universe": "UNIVERS TÔ MO",
+    "network": "COMMUNAUTÉ",
+    "tracking": "SUIVI TÎ MO",
+    "settings": "RÉGLAGES",
+    "tutor": "Tuteur Mathias",
+    "ambassador": "Ambassadeur",
+    "community": "Annuaire",
+    "results": "A-Scores",
+    "wishlist": "A-Favoris",
+    "logout": "Sigui na yâ ni",
+    "switch_student": "Kiri na Ndara",
+    "switch_instructor": "Gue na Expert",
+    "switch_admin": "Gue na Cockpit"
+  },
+  "Admin": {
+    "groups": {
+      "cockpit": "COCKPIT CEO",
+      "operations": "OPÉRATIONS",
+      "finances": "FINANCES",
+      "support": "SUPPORT",
+      "interface": "INTERFACE",
+      "security": "SÉCURITÉ"
+    },
+    "labels": {
+      "super_admin": "Super Administrateur",
+      "exit": "Quitter le mode Admin"
+    },
+    "stats": {
+      "revenue": "Chiffre d'Affaires",
+      "today": "aujourd'hui",
+      "active_users": "Ndara Actifs",
+      "conversion": "Taux Conversion",
+      "success": "Réussite"
+    },
+    "real_enrollments": "Inscriptions en Direct",
+    "view_catalog": "Voir Catalogue",
+    "no_recent_activity": "Aucune activité"
+  },
+  "Instructor": {
+    "groups": {
+      "management": "GESTION",
+      "growth": "CROISSANCE",
+      "pedagogy": "PÉDAGOGIE",
+      "results": "RÉSULTATS"
+    },
+    "labels": {
+      "expert": "Expert Ndara",
+      "switch_mode": "CHANGER DE MODE",
+      "logout": "Déconnexion"
+    },
+    "stats": {
+      "available_balance": "Solde Disponible",
+      "payout_request": "Retrait",
+      "active_students": "élèves actifs",
+      "completion_rate": "taux de réussite",
+      "treasury": "Trésorerie"
+    },
+    "to_correct": "À Corriger",
+    "revenue_by_course": "VOIR TOUT",
+    "all_corrected": "Tout est corrigé !",
+    "manage_catalog": "Nouveau Cours"
+  },
   "Actions": {
     "success": {
-      "wallet_recharged": "Nginza alî awe!"
+      "wallet_recharged": "Nginza alî awe!",
+      "generic": "Opération réussie !",
+      "payout_requested": "Demande enregistrée."
     },
     "error": {
       "course_not_found": "E wara kua ni pëpe.",
-      "insufficient_balance": "Nginza tî mo alingbi pëpe."
+      "insufficient_balance": "Nginza tî mo alingbi pëpe.",
+      "generic": "Kua ni abungbi pëpe.",
+      "admin_only": "Accès réservé.",
+      "amount_positive": "Montant doit être positif.",
+      "payout_min_amount": "Minimum 5 000 XOF."
+    }
+  },
+  "Profile": {
+    "title": "Profil tî mbï",
+    "preferences": "Préférences",
+    "identity_card": "Carte d'identité",
+    "wallet": "Portefeuille",
+    "wallet_desc": "Gérer mes fonds",
+    "security": "Sécurité",
+    "security_desc": "Accès",
+    "support": "Support",
+    "support_desc": "Aide",
+    "language": "Yangâ",
+    "dark_mode": "Mode Sombre",
+    "logout": "Sigui",
+    "logout_confirm": "Mo ye ti sigui ?",
+    "logout_desc": "Votre session sera fermée.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "stats": {
+      "courses": "Kua",
+      "diplomas": "Diplômes",
+      "reviews": "Avis"
     }
   }
 }

@@ -24,7 +24,7 @@ export function BottomNav() {
   const t = useTranslations('Nav');
 
   const cleanPath = useMemo(() => {
-    return pathname.replace(/^\/(en|fr)/, '') || '/';
+    return pathname.replace(/^\/(en|fr|sg)/, '') || '/';
   }, [pathname]);
 
   const navItems = [

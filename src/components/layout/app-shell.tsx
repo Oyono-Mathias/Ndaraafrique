@@ -77,7 +77,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   }, [db]);
 
   const cleanPath = useMemo(() => {
-    return pathname.replace(/^\/(en|fr)/, '') || '/';
+    return pathname.replace(/^\/(en|fr|sg)/, '') || '/';
   }, [pathname]);
 
   // BottomNav Étudiant

@@ -25,7 +25,7 @@ export function InstructorBottomNav() {
   const locale = useLocale();
 
   const cleanPath = useMemo(() => {
-    return pathname.replace(/^\/(en|fr)/, '') || '/';
+    return pathname.replace(/^\/(en|fr|sg)/, '') || '/';
   }, [pathname]);
 
   const navItems = [
