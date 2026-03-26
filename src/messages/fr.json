@@ -192,6 +192,19 @@
     "resume": "Reprendre",
     "enroll": "S'inscrire"
   },
+"Profile": {
+    "title": "MON PROFIL",
+    "preferences": "PRÉFÉRENCES",
+    "identity_card": "Ma carte d'identité",
+    "wallet": "Mon portefeuille",
+    "wallet_desc": "Gérer vos fonds",
+    "security": "Sécurité",
+    "security_desc": "Mot de passe et accès",
+    "support": "Support technique",
+    "support_desc": "Obtenir de l'aide",
+    "language": "Langue de l'application",
+    "dark_mode": "Mode sombre"
+  },
   "Actions": {
     "error": {
       "course_not_found": "La formation est introuvable.",
