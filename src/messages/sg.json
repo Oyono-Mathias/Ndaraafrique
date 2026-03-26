@@ -3,170 +3,208 @@
     "site_name": "Ndara Afrique",
     "greeting": "Bara ala,",
     "ndara_term": "Ndara",
-    "loading": "Kua ayeke fono...",
-    "admin": "Kota Kapa",
-    "expert": "Expert",
-    "student": "Ndara",
-    "certified": "Certifié",
-    "catalogue": "Kapa tî Kua",
-    "found_results": "E wara {count} sango",
-    "no_results": "E wara sango pëpe",
-    "reset_filters": "Kiri na pe",
-    "my_courses": "A-kua tî mbï"
+    "loading": "Kua ayeke fano...",
+    "admin": "Gbia ti place",
+    "expert": "Wandara",
+    "student": "Wamandara",
+    "certified": "Wawango",
+    "catalogue": "Molongo ti manda",
+    "found_results": "{count} ye ayeke da",
+    "no_results": "Mbeni ye ayeke da pëpe",
+    "reset_filters": "Kiri na peko"
   },
   "Auth": {
     "login_title": "Lî na yâ ni",
-    "email_label": "Email tî mo",
-    "password_label": "Yemba tî mo",
-    "forgot_password": "Mo girisa yemba?",
-    "continue_with_google": "Lî na Google",
-    "registerButton": "Mo lî fini",
+    "email_label": "Mbeti ti e-mail",
+    "password_label": "Ténë ti lî na ni",
+    "forgot_password": "Mo girisa ténë ti lî ni ?",
+    "continue_with_google": "Tambula na Google",
+    "registerButton": "Sû niri",
     "loginButton": "Lî na yâ ni",
-    "fullNameLabel": "Irî tî mo mobimba",
-    "password_forgot": "Yemba agirisa?",
-    "create_account": "Leké fini compte",
-    "i_agree_to": "Mbï yeda na",
-    "terms_of_use": "Ndîa tî kua",
+    "fullNameLabel": "Iri ti mo kue",
+    "password_forgot": "Mo girisa ténë ti lî ni ?",
+    "create_account": "Leké compte ti mo",
+    "i_agree_to": "Mbi yeda na",
+    "terms_of_use": "Lêge ti kua ni",
     "and": "na",
-    "privacy_policy": "Ndîa tî sango"
+    "privacy_policy": "Bata tënë ti londo"
   },
   "Landing": {
     "hero": {
-      "badge": "L'excellence panafricaine",
-      "title": "MANDA. SI NA LI.<br /><span class='text-primary'>TO NDA.</span>",
-      "subtitle": "Kapa tî elite tî manda a-technologies na kapa tî nginza tî futur.",
-      "search_placeholder": "Mo ye ti manda nyen?",
-      "cta_explore": "Ba kapa tî kua",
-      "cta_instructor": "Ga mbeni Expert",
-      "badge_card_title": "A-Certificats HD",
-      "badge_card_subtitle": "Ndîa tî sese mobimba"
+      "badge": "Ndara ti londo na Afrique",
+      "title": "MANDA. WARA. <br /><span class='text-primary'>MU LÊGE.</span>",
+      "subtitle": "Place ti ndara ti hinga kua ti technologie na ti nginza ti kekereke ti Afrique.",
+      "search_placeholder": "Mo ye ti manda nyen ?",
+      "cta_explore": "Bâ Molongo ti manda",
+      "cta_instructor": "Ga Wa-ndara",
+      "badge_card_title": "Mbeti ti ndara (HD)",
+      "badge_card_subtitle": "A hinga na yâ ti dunia"
+    },
+    "stats": {
+      "students": "Wamandara",
+      "courses": "Manda",
+      "success": "Wara lêge",
+      "countries": "Kodoro"
+    },
+    "categories": {
+      "all": "Aye kue"
+    },
+    "sections": {
+      "popular_title": "Aye so azo aye mingi",
+      "popular_desc": "Manda so ayeke changé Afrique",
+      "new_title": "Fini fini aye",
+      "new_desc": "Fini manda so alondo ti sigigo",
+      "new_badge": "FINI",
+      "experts_title": "A-wa-ndara",
+      "experts_desc": "Manda na mbage ti a-wa-ndara ti Afrique",
+      "experts_label": "Ndara so a leké",
+      "courses_label": "Manda so ayeke tambula"
+    },
+    "bourse": {
+      "badge": "Lêge ti fini nginza",
+      "title": "Sendo ti Ndara",
+      "subtitle": "Vo lêge ti kä manda ni na kiri mo wara faïda na ndö ti fini wamandara kue.",
+      "item1": "Ndara so a kangbi na popo ti azo",
+      "item2": "Nginza so ayeke lî gba",
+      "item3": "Sendo so ayeke tambula nzoni",
+      "cta": "Lî na yâ ti Sendo",
+      "card_roi": "Faïda so a ku ni",
+      "card_val": "Nginza ti mbeti ni",
+      "card_security": "Mbeti ti kua so a bata nzoni"
+    },
+    "how_it_works": {
+      "badge": "Tambula ti mo",
+      "title": "A yeke tambula tongana nyen ?",
+      "step1": { "title": "Gi", "desc": "Wara manda so mo ye ti ga kota na yâ ni." },
+      "step2": { "title": "Manda", "desc": "Manda na kamba ti mo na mbeti ti Mathias IA." },
+      "step3": { "title": "Wara", "desc": "Wara mbeti ti ndara na londo mo wara nginza." }
+    },
+    "fintech": {
+      "title": "Lêge ti futa nginza",
+      "subtitle": "Futa na nginza ti kodoro ti mo na lêge ti service so mo ye.",
+      "secure_title": "Kua ti nginza so a bata nzoni",
+      "secure_desc": "Bâ tambula ti nginza na l'heure ni"
+    },
+    "testimonials": {
+      "title": "Gbagba ti Ndara",
+      "subtitle": "Tënë so a-Ndara ti e atene na yâ ti Afrique kue.",
+      "verified": "Compte so a hinga ni"
+    },
+    "cta_instructor": {
+      "title": "Mo yeda ti mu lêge na Afrique ?",
+      "subtitle": "Kangbi ndara ti mo na wara nginza ti kpengba.",
+      "button": "Lî na popo ti a-wa-ndara"
     }
   },
   "Dashboard": {
-    "resume_study": "Ngô tî manda kua",
-    "tutor_box_title": "Mo ye tî hunda sango, Ndara?",
-    "tutor_box_desc": "Mathias ayeke kiri tiri na a-questions tî mo tî na bï.",
-    "ask_question": "Hunda sango",
-    "quote": "Ndara ayeke kpengba lege ti changement.",
-    "certificates": "A-Diplôme",
-    "recommendations": "Kua so alingbi na mo",
-    "alerts": "Sango"
+    "resume_study": "Kiri mo manda",
+    "tutor_box_title": "Mo ye mbeni mungo maboko, Ndara ?",
+    "tutor_box_desc": "Mathias ayeke kiri tënë na hunda ti mo na ndö ti manda l'heure kue.",
+    "ask_question": "Hunda mbeni tënë",
+    "quote": "Ndara ayeke lêge ti maïngo ti kodoro.",
+    "certificates": "Ambeti ti ndara",
+    "recommendations": "Wango ti e",
+    "alerts": "Tënë ti hio"
   },
   "Wallet": {
-    "title": "PORTEFEUILLE TÎ MÔ",
-    "available_balance": "Nginza so ayeke na yâ ni",
-    "action_button": "Lancer la Transaction",
-    "history": "Sango tî nginza"
+    "title": "BOURSIN TI MBI",
+    "available_balance": "Nginza so ayeke da",
+    "action_button": "Tambula na nginza ni",
+    "history": "Mbeti ti nginza"
   },
   "Nav": {
-    "home": "Gbegbe",
-    "catalogue": "Kapa",
-    "my_courses": "Kua tî mbï",
-    "bourse": "Bourse",
-    "profile": "Profil",
-    "dashboard": "Tableau",
-    "alerts": "Sango",
-    "messages": "Atoli"
+    "home": "Nda-da",
+    "catalogue": "Molongo",
+    "my_courses": "Manda ti mbi",
+    "bourse": "Sendo",
+    "profile": "Iri ti mbi",
+    "dashboard": "Dashboard",
+    "alerts": "Tënë ti hio",
+    "messages": "Ambeti"
   },
   "Sidebar": {
-    "universe": "UNIVERS TÔ MO",
-    "network": "COMMUNAUTÉ",
-    "tracking": "SUIVI TÎ MO",
-    "settings": "RÉGLAGES",
-    "tutor": "Tuteur Mathias",
+    "universe": "DUNIA TÔ MO",
+    "network": "BUNGA TI AZO",
+    "tracking": "BÂ TAMBULA TI MBI",
+    "settings": "COMPTE TI MBI",
+    "tutor": "Wa-wango MATHIAS",
     "ambassador": "Ambassadeur",
-    "community": "Annuaire",
-    "results": "A-Scores",
-    "wishlist": "A-Favoris",
-    "logout": "Sigui na yâ ni",
-    "switch_student": "Kiri na Ndara",
-    "switch_instructor": "Gue na Expert",
-    "switch_admin": "Gue na Cockpit"
+    "community": "Molongo ti a-Ndara",
+    "results": "Note ti mbi",
+    "wishlist": "Aye so mbi ye",
+    "logout": "Sigigo",
+    "switch_student": "KUA TI WAMANDARA",
+    "switch_instructor": "KUA TI WA-NDARA",
+    "switch_admin": "KUA TI GBIA"
   },
   "Admin": {
     "groups": {
-      "cockpit": "COCKPIT CEO",
-      "operations": "OPÉRATIONS",
-      "finances": "FINANCES",
-      "support": "SUPPORT",
-      "interface": "INTERFACE",
-      "security": "SÉCURITÉ"
+      "cockpit": "NDO TI GBIA (CEO)",
+      "operations": "KUA TI PLACE",
+      "finances": "NGINZA",
+      "support": "MUNGÖ MABOKO",
+      "interface": "LÊ TI APP",
+      "security": "BATANGO PLACE"
     },
     "labels": {
-      "super_admin": "Super Administrateur",
-      "exit": "Quitter le mode Admin"
+      "super_admin": "Kota Gbia",
+      "exit": "Sigigo na kua ti Gbia"
     },
     "stats": {
-      "revenue": "Chiffre d'Affaires",
-      "today": "aujourd'hui",
-      "active_users": "Ndara Actifs",
-      "conversion": "Taux Conversion",
-      "success": "Réussite"
+      "revenue": "Nginza so alî",
+      "today": "lasô",
+      "active_users": "Ndara so ayeke kua",
+      "conversion": "Wara lêge",
+      "success": "Wara"
     },
-    "real_enrollments": "Inscriptions en Direct",
-    "view_catalog": "Voir Catalogue",
-    "no_recent_activity": "Aucune activité"
+    "real_enrollments": "Azo so asû iri hio",
+    "view_catalog": "Bâ Molongo",
+    "no_recent_activity": "Mbeni fini ye ayeke da pëpe"
   },
   "Instructor": {
     "groups": {
-      "management": "GESTION",
-      "growth": "CROISSANCE",
-      "pedagogy": "PÉDAGOGIE",
-      "results": "RÉSULTATS"
+      "management": "KUA TI LEKÉ",
+      "growth": "MAÏNGO",
+      "pedagogy": "NDARA TI FA MANDA",
+      "results": "YÂ NI"
     },
     "labels": {
-      "expert": "Expert Ndara",
-      "switch_mode": "CHANGER DE MODE",
-      "logout": "Déconnexion"
+      "expert": "Wa-ndara ti Ndara",
+      "switch_mode": "CHANGÉ KUA",
+      "logout": "Sigigo"
     },
     "stats": {
-      "available_balance": "Solde Disponible",
-      "payout_request": "Retrait",
-      "active_students": "élèves actifs",
-      "completion_rate": "taux de réussite",
-      "treasury": "Trésorerie"
+      "available_balance": "Nginza so ayeke da",
+      "payout_request": "Mungo nginza",
+      "active_students": "wamandara so ayeke da",
+      "completion_rate": "wora lêge",
+      "treasury": "Ndako ti nginza"
     },
-    "to_correct": "À Corriger",
-    "revenue_by_course": "VOIR TOUT",
-    "all_corrected": "Tout est corrigé !",
-    "manage_catalog": "Nouveau Cours"
+    "to_correct": "Ti leké",
+    "revenue_by_course": "BÂ KUE",
+    "all_corrected": "A leké aye kue awe !",
+    "manage_catalog": "Fini Manda"
+  },
+  "Course": {
+    "by": "Na mbage ti",
+    "free": "Senyé",
+    "pay": "Futa",
+    "resume": "Kiri manda ni",
+    "enroll": "Sû iri ti mo"
   },
   "Actions": {
-    "success": {
-      "wallet_recharged": "Nginza alî awe!",
-      "generic": "Opération réussie !",
-      "payout_requested": "Demande enregistrée."
-    },
     "error": {
-      "course_not_found": "E wara kua ni pëpe.",
-      "insufficient_balance": "Nginza tî mo alingbi pëpe.",
-      "generic": "Kua ni abungbi pëpe.",
-      "admin_only": "Accès réservé.",
-      "amount_positive": "Montant doit être positif.",
-      "payout_min_amount": "Minimum 5 000 XOF."
-    }
-  },
-  "Profile": {
-    "title": "Profil tî mbï",
-    "preferences": "Préférences",
-    "identity_card": "Carte d'identité",
-    "wallet": "Portefeuille",
-    "wallet_desc": "Gérer mes fonds",
-    "security": "Sécurité",
-    "security_desc": "Accès",
-    "support": "Support",
-    "support_desc": "Aide",
-    "language": "Yangâ",
-    "dark_mode": "Mode Sombre",
-    "logout": "Sigui",
-    "logout_confirm": "Mo ye ti sigui ?",
-    "logout_desc": "Votre session sera fermée.",
-    "cancel": "Annuler",
-    "confirm": "Confirmer",
-    "stats": {
-      "courses": "Kua",
-      "diplomas": "Diplômes",
-      "reviews": "Avis"
+      "course_not_found": "Manda ni ayeke da pëpe.",
+      "insufficient_balance": "Nginza ti mo alingbi pëpe.",
+      "generic": "Kua ni abâ mbeni kpale.",
+      "admin_only": "Gbia la alingbi ti lî da.",
+      "amount_positive": "Nginza ni adu ti duti na ndö ni.",
+      "payout_min_amount": "Mo lingbi ti mu nginza tongana alingbi 5 000 XOF."
+    },
+    "success": {
+      "wallet_recharged": "A zia nginza nzoni !",
+      "generic": "Kua ni atambula nzoni !",
+      "payout_requested": "Mungo nginza ti mo asû awe."
     }
   }
 }
