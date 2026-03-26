@@ -192,6 +192,19 @@
     "resume": "Kiri manda ni",
     "enroll": "Sû iri ti mo"
   },
+"Profile": {
+    "title": "IRI TI MBI",
+    "preferences": "AYE SO MBI YE",
+    "identity_card": "Mbeti ti mbi",
+    "wallet": "Boursin ti mbi",
+    "wallet_desc": "Bâ nginza ti mo",
+    "security": "Batango place",
+    "security_desc": "Tënë ti lî na yâ ni",
+    "support": "Mungö maboko",
+    "support_desc": "Hunda mungö maboko",
+    "language": "Yângâ ti kodoro",
+    "dark_mode": "Vulu na vungun"
+  },
   "Actions": {
     "error": {
       "course_not_found": "Manda ni ayeke da pëpe.",
