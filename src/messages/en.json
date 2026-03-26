@@ -1,29 +1,29 @@
 {
   "Common": {
-    "site_name": "Ndara Africa",
+    "site_name": "Ndara Afrique",
     "greeting": "Hello,",
-    "ndara_term": "Learner",
+    "ndara_term": "Ndara",
     "loading": "Loading...",
-    "admin": "Admin",
+    "admin": "Administrator",
     "expert": "Expert",
     "student": "Student",
     "certified": "Certified",
-    "catalogue": "Catalog",
+    "catalogue": "Course Catalog",
     "found_results": "{count} results found",
-    "no_results": "No results",
+    "no_results": "No results found",
     "reset_filters": "Reset"
   },
   "Auth": {
-    "login_title": "Log In",
-    "email_label": "Email address",
+    "login_title": "Sign In",
+    "email_label": "Email Address",
     "password_label": "Password",
     "forgot_password": "Forgot password?",
     "continue_with_google": "Continue with Google",
-    "registerButton": "Register",
-    "loginButton": "Log In",
+    "registerButton": "Sign Up",
+    "loginButton": "Login",
     "fullNameLabel": "Full Name",
     "password_forgot": "Forgot password?",
-    "create_account": "Create Account",
+    "create_account": "Create an account",
     "i_agree_to": "I agree to the",
     "terms_of_use": "Terms of Use",
     "and": "and",
@@ -43,63 +43,63 @@
     "stats": {
       "students": "Learners",
       "courses": "Courses",
-      "success": "Success",
+      "success": "Success Rate",
       "countries": "Countries"
     },
     "categories": {
-      "all": "All categories"
+      "all": "All Categories"
     },
     "sections": {
       "popular_title": "Most Popular",
-      "popular_desc": "Training that transforms the continent",
+      "popular_desc": "Courses transforming the continent",
       "new_title": "New Horizons",
       "new_desc": "Latest educational gems",
       "new_badge": "NEW",
       "experts_title": "Masters of Knowledge",
       "experts_desc": "Learn from the best African experts",
-      "experts_label": "Ndara trained",
-      "courses_label": "Active courses"
+      "experts_label": "Trained Ndara",
+      "courses_label": "Active Courses"
     },
     "bourse": {
       "badge": "Financial Innovation",
       "title": "The Knowledge Exchange",
-      "subtitle": "Acquire resale licenses and receive dividends on each new enrollment.",
+      "subtitle": "Acquire resale licenses and earn dividends on every new enrollee.",
       "item1": "Shared intellectual property",
       "item2": "Guaranteed passive income",
       "item3": "Dynamic secondary market",
       "cta": "Access Exchange",
       "card_roi": "Projected ROI",
       "card_val": "License Value",
-      "card_security": "Secure transfer contract"
+      "card_security": "Secured transfer contract"
     },
     "how_it_works": {
       "badge": "Your Journey",
       "title": "How it works?",
       "step1": { "title": "Explore", "desc": "Find the training that matches your ambitions." },
-      "step2": { "title": "Learn", "desc": "Study at your own pace with Mathias AI assistance." },
+      "step2": { "title": "Learn", "desc": "Study at your own pace with Mathias AI's help." },
       "step3": { "title": "Succeed", "desc": "Get your certificate and monetize your skills." }
     },
     "fintech": {
       "title": "Payment Freedom",
-      "subtitle": "Pay in local currency through your favorite services.",
+      "subtitle": "Pay in local currency via your favorite services.",
       "secure_title": "Secure Transactions",
       "secure_desc": "Real-time financial audit"
     },
     "testimonials": {
-      "title": "Wall of Wisdom",
+      "title": "The Wall of Wisdom",
       "subtitle": "What our Ndara across Africa are saying.",
       "verified": "Verified Account"
     },
     "cta_instructor": {
       "title": "Ready to inspire Africa?",
       "subtitle": "Share your expertise and generate sustainable income.",
-      "button": "Join the elite trainers"
+      "button": "Join the elite instructors"
     }
   },
   "Dashboard": {
-    "resume_study": "Continue study",
-    "tutor_box_title": "Need help, dear Learner?",
-    "tutor_box_desc": "Mathias answers your questions about courses 24/7.",
+    "resume_study": "Continue Studying",
+    "tutor_box_title": "Need help, dear Ndara?",
+    "tutor_box_desc": "Mathias answers your course questions 24/7.",
     "ask_question": "Ask a question",
     "quote": "Knowledge is the lever of emergence.",
     "certificates": "Certificates",
@@ -109,25 +109,26 @@
   "Wallet": {
     "title": "MY WALLET",
     "available_balance": "Available Balance",
-    "action_button": "Launch Transaction",
-    "history": "History"
+    "action_button": "Start Transaction",
+    "history": "Transaction History"
   },
   "Nav": {
     "home": "Home",
     "catalogue": "Catalog",
     "my_courses": "My Courses",
-    "bourse": "Market",
-    "profile": "Profile",
+    "bourse": "Exchange",
+    "profile": "My Profile",
     "dashboard": "Dashboard",
     "alerts": "Alerts",
-    "messages": "Messages"
+    "messages": "Messages",
+    "devoirs": "Assignments"
   },
   "Sidebar": {
     "universe": "YOUR UNIVERSE",
     "network": "COMMUNITY NETWORK",
     "tracking": "MY TRACKING",
     "settings": "MY ACCOUNT",
-    "tutor": "MATHIAS AI Tutor",
+    "tutor": "Tutor MATHIAS",
     "ambassador": "Ambassador",
     "community": "Ndara Directory",
     "results": "My Scores",
@@ -136,6 +137,25 @@
     "switch_student": "STUDENT MODE",
     "switch_instructor": "EXPERT MODE",
     "switch_admin": "ADMIN MODE"
+  },
+  "Profile": {
+    "title": "MY PROFILE",
+    "preferences": "PREFERENCES",
+    "identity_card": "My ID Card",
+    "wallet": "My Wallet",
+    "wallet_desc": "Manage your funds",
+    "security": "Security",
+    "security_desc": "Password & Access",
+    "support": "Support",
+    "support_desc": "Get technical help",
+    "language": "App Language",
+    "dark_mode": "Dark Mode",
+    "logout": "Logout",
+    "stats": {
+      "courses": "Courses",
+      "diplomas": "Certificates",
+      "reviews": "Reviews"
+    }
   },
   "Admin": {
     "groups": {
@@ -147,7 +167,7 @@
       "security": "SECURITY"
     },
     "labels": {
-      "super_admin": "Super Administrator",
+      "super_admin": "Super Admin",
       "exit": "Exit Admin Mode"
     },
     "stats": {
@@ -175,14 +195,14 @@
     },
     "stats": {
       "available_balance": "Available Balance",
-      "payout_request": "Withdraw",
+      "payout_request": "Withdrawal",
       "active_students": "active students",
-      "completion_rate": "completion rate",
+      "completion_rate": "success rate",
       "treasury": "Treasury"
     },
     "to_correct": "To Correct",
     "revenue_by_course": "VIEW ALL",
-    "all_corrected": "All corrected!",
+    "all_corrected": "Everything is corrected!",
     "manage_catalog": "New Course"
   },
   "Course": {
@@ -190,7 +210,7 @@
     "free": "Free",
     "pay": "Pay",
     "resume": "Resume",
-    "enroll": "Enroll"
+    "enroll": "Enroll Now"
   },
   "Actions": {
     "error": {
@@ -202,8 +222,8 @@
       "payout_min_amount": "Minimum withdrawal is 5,000 XOF."
     },
     "success": {
-      "wallet_recharged": "Balance successfully credited!",
-      "generic": "Success!",
+      "wallet_recharged": "Wallet successfully credited!",
+      "generic": "Operation successful!",
       "payout_requested": "Withdrawal request recorded."
     }
   }
