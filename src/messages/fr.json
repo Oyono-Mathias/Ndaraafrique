@@ -1,34 +1,96 @@
-
 {
   "Common": {
     "site_name": "Ndara Afrique",
     "greeting": "Bara ala,",
     "ndara_term": "Ndara",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "admin": "Administration",
+    "expert": "Expert",
+    "student": "Étudiant",
+    "certified": "Certifié",
+    "catalogue": "Catalogue",
+    "found_results": "{count} résultats trouvés",
+    "no_results": "Aucun résultat",
+    "reset_filters": "Réinitialiser"
   },
   "Auth": {
     "login_title": "Se connecter",
     "email_label": "Adresse e-mail",
     "password_label": "Mot de passe",
-    "forgot_password": "Mot de passe oublié ?"
+    "forgot_password": "Mot de passe oublié ?",
+    "continue_with_google": "Continuer avec Google",
+    "registerButton": "S'inscrire",
+    "loginButton": "Connexion",
+    "fullNameLabel": "Nom complet",
+    "password_forgot": "Mot de passe oublié ?",
+    "create_account": "Créer un compte",
+    "i_agree_to": "J'accepte les",
+    "terms_of_use": "Conditions d'Utilisation",
+    "and": "et la",
+    "privacy_policy": "Politique de Confidentialité"
   },
   "Dashboard": {
     "resume_study": "Continuer l'étude",
     "tutor_box_title": "Besoin d'aide, cher Ndara ?",
-    "tutor_box_desc": "Mathias répond à vos questions sur les cours 24h/24."
+    "tutor_box_desc": "Mathias répond à vos questions sur les cours 24h/24.",
+    "ask_question": "Poser une question",
+    "quote": "Le savoir est le levier de l'émergence.",
+    "certificates": "Certificats",
+    "recommendations": "Recommandations",
+    "alerts": "Alertes"
   },
   "Wallet": {
     "title": "MON PORTEFEUILLE",
     "available_balance": "Solde Disponible",
-    "action_button": "Lancer la Transaction"
+    "action_button": "Lancer la Transaction",
+    "history": "Historique"
+  },
+  "Nav": {
+    "home": "Accueil",
+    "catalogue": "Catalogue",
+    "my_courses": "Mes Cours",
+    "bourse": "Bourse",
+    "profile": "Profil",
+    "dashboard": "Dashboard",
+    "alerts": "Alertes",
+    "messages": "Messages"
   },
   "Actions": {
     "error": {
       "course_not_found": "La formation est introuvable.",
-      "insufficient_balance": "Votre solde est insuffisant."
+      "insufficient_balance": "Votre solde est insuffisant.",
+      "generic": "Une erreur est survenue.",
+      "admin_only": "Accès réservé aux administrateurs.",
+      "amount_positive": "Le montant doit être positif.",
+      "payout_min_amount": "Le retrait minimum est de 5 000 XOF."
     },
     "success": {
-      "wallet_recharged": "Solde crédité avec succès !"
+      "wallet_recharged": "Solde crédité avec succès !",
+      "generic": "Opération réussie !",
+      "payout_requested": "Demande de retrait enregistrée."
+    }
+  },
+  "Profile": {
+    "title": "Mon Profil",
+    "preferences": "Préférences",
+    "identity_card": "Carte d'identité",
+    "wallet": "Portefeuille",
+    "wallet_desc": "Gérer mes fonds",
+    "security": "Sécurité",
+    "security_desc": "Mot de passe et accès",
+    "support": "Support",
+    "support_desc": "Aide et assistance",
+    "language": "Langue",
+    "dark_mode": "Mode Sombre",
+    "logout": "Déconnexion",
+    "logout_confirm": "Voulez-vous vous déconnecter ?",
+    "logout_desc": "Votre session sera fermée sur cet appareil.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "stats": {
+      "courses": "Cours",
+      "diplomas": "Diplômes",
+      "reviews": "Avis"
     }
   }
 }

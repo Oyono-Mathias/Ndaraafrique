@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -6,7 +5,8 @@
  * ✅ DESIGN : Intégralité du template HTML/CSS fourni par l'utilisateur.
  * ✅ REAL-TIME : Listeners onSnapshot pour le solde et les reçus vintage.
  * ✅ FONCTIONNEL : Sélecteur natif et paiement MeSomb opérationnels.
- * ✅ I18N : Test du système de traduction sur les éléments clés.
+ * ✅ I18N : Utilisation des traductions dynamiques.
+ * ✅ FIX : Correction de l'erreur de build (Import Input & Button).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -210,10 +210,8 @@ export default function NdaraWalletPage() {
                 }
             `}</style>
 
-            {/* Mobile Container */}
             <div className="w-full max-w-md min-h-screen bg-[#F5F5F5] relative flex flex-col shadow-2xl overflow-hidden">
 
-                {/* Header */}
                 <header className="fixed top-0 w-full max-w-md z-40 bg-[#F5F5F5]/95 backdrop-blur-md safe-top border-b border-gray-200">
                     <div className="px-6 py-4 flex items-center justify-between">
                         <h1 className="font-black text-xl text-[#212121] tracking-wide uppercase">{t('title')}</h1>
@@ -223,10 +221,8 @@ export default function NdaraWalletPage() {
                     </div>
                 </header>
 
-                {/* Main Content */}
                 <main className="flex-1 overflow-y-auto hide-scrollbar pt-24 pb-48 px-6 relative">
                     
-                    {/* Neo Bank Card */}
                     <div className="neo-card rounded-4xl p-6 mb-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-500 active:scale-95 transition-all">
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-8">
@@ -254,7 +250,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Country Selector */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-100">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Pays de Résidence</label>
                         <div className="relative">
@@ -274,7 +269,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Payment Methods */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-200">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Mode de Paiement</label>
                         <div className="grid grid-cols-3 gap-3">
@@ -308,7 +302,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Amount Selection */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-300">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Montant à Recharger</label>
                         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -340,7 +333,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Phone Number Input */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-350">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro de téléphone</label>
                         <div className="relative">
@@ -357,12 +349,11 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Transaction History */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-400">
                         <div className="flex items-center justify-between mb-4 px-1">
                             <h2 className="font-black text-[#212121] text-sm uppercase tracking-wide flex items-center gap-2">
                                 <Receipt className="w-4 h-4 text-[#3F51B5]" />
-                                Historique
+                                {t('history')}
                             </h2>
                             <button className="text-[#3F51B5] text-[10px] font-bold hover:underline transition">VOIR TOUT</button>
                         </div>
@@ -404,7 +395,6 @@ export default function NdaraWalletPage() {
 
                 </main>
 
-                {/* Sticky Action Button */}
                 <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-[#F5F5F5] via-[#F5F5F5] to-transparent pt-6 pb-6 px-6 safe-bottom z-40">
                     <Button 
                         onClick={handleRecharge}

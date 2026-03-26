@@ -1,34 +1,73 @@
-
 {
   "Common": {
     "site_name": "Ndara Africa",
     "greeting": "Hello,",
     "ndara_term": "Learner",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "admin": "Admin",
+    "expert": "Expert",
+    "student": "Student",
+    "certified": "Certified",
+    "catalogue": "Catalog",
+    "found_results": "{count} results found",
+    "no_results": "No results",
+    "reset_filters": "Reset"
   },
   "Auth": {
     "login_title": "Log In",
     "email_label": "Email address",
     "password_label": "Password",
-    "forgot_password": "Forgot password?"
+    "forgot_password": "Forgot password?",
+    "continue_with_google": "Continue with Google",
+    "registerButton": "Register",
+    "loginButton": "Log In",
+    "fullNameLabel": "Full Name",
+    "password_forgot": "Forgot password?",
+    "create_account": "Create Account",
+    "i_agree_to": "I agree to the",
+    "terms_of_use": "Terms of Use",
+    "and": "and",
+    "privacy_policy": "Privacy Policy"
   },
   "Dashboard": {
     "resume_study": "Continue study",
     "tutor_box_title": "Need help, dear Learner?",
-    "tutor_box_desc": "Mathias answers your questions about courses 24/7."
+    "tutor_box_desc": "Mathias answers your questions about courses 24/7.",
+    "ask_question": "Ask a question",
+    "quote": "Knowledge is the lever of emergence.",
+    "certificates": "Certificates",
+    "recommendations": "Recommendations",
+    "alerts": "Alerts"
   },
   "Wallet": {
     "title": "MY WALLET",
     "available_balance": "Available Balance",
-    "action_button": "Launch Transaction"
+    "action_button": "Launch Transaction",
+    "history": "History"
+  },
+  "Nav": {
+    "home": "Home",
+    "catalogue": "Catalog",
+    "my_courses": "My Courses",
+    "bourse": "Market",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "alerts": "Alerts",
+    "messages": "Messages"
   },
   "Actions": {
-    "success": {
-      "wallet_recharged": "Balance successfully credited!"
-    },
     "error": {
       "course_not_found": "Course not found.",
-      "insufficient_balance": "Insufficient balance."
+      "insufficient_balance": "Insufficient balance.",
+      "generic": "An error occurred.",
+      "admin_only": "Admin access only.",
+      "amount_positive": "Amount must be positive.",
+      "payout_min_amount": "Minimum withdrawal is 5,000 XOF."
+    },
+    "success": {
+      "wallet_recharged": "Balance successfully credited!",
+      "generic": "Success!",
+      "payout_requested": "Withdrawal request recorded."
     }
   }
 }

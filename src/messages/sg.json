@@ -1,26 +1,39 @@
-
 {
   "Common": {
     "site_name": "Ndara Afrique",
     "greeting": "Bara ala,",
     "ndara_term": "Ndara",
-    "loading": "Kua ayeke fono..."
+    "loading": "Kua ayeke fono...",
+    "admin": "Kkota",
+    "expert": "Expert",
+    "student": "Ndara",
+    "certified": "Certifié",
+    "catalogue": "Kua",
+    "found_results": "E wara {count} sango",
+    "no_results": "E wara sango pëpe",
+    "reset_filters": "Kiri na pe"
   },
   "Auth": {
     "login_title": "Lî na yâ ni",
     "email_label": "Email tî mo",
     "password_label": "Yemba tî mo",
-    "forgot_password": "Mo girisa yemba?"
+    "forgot_password": "Mo girisa yemba?",
+    "continue_with_google": "Lî na Google",
+    "registerButton": "Mo lî fini",
+    "loginButton": "Lî na yâ ni"
   },
   "Dashboard": {
     "resume_study": "Ngô tî manda kua",
     "tutor_box_title": "Mo ye tî hunda sango, Ndara?",
-    "tutor_box_desc": "Mathias ayeke kiri tiri na a-questions tî mo tî na bï."
+    "tutor_box_desc": "Mathias ayeke kiri tiri na a-questions tî mo tî na bï.",
+    "ask_question": "Hunda sango",
+    "quote": "Ndara ayeke kpengba lege ti changement."
   },
   "Wallet": {
     "title": "PORTEFEUILLE TÎ MÔ",
     "available_balance": "Nginza so ayeke na yâ ni",
-    "action_button": "Lancer la Transaction"
+    "action_button": "Lancer la Transaction",
+    "history": "Sango tî nginza"
   },
   "Actions": {
     "success": {

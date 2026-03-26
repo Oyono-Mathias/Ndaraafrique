@@ -2,8 +2,8 @@ import createMiddleware from 'next-intl/middleware';
  
 /**
  * Gestionnaire de routage internationalisé.
- * Définit les langues supportées et la locale par défaut.
  * ✅ Persistance : Détecte la locale via le cookie NEXT_LOCALE.
+ * ✅ Configuration : localePrefix as-needed pour des URLs propres.
  */
 export default createMiddleware({
   // Langues supportées par Ndara Afrique
