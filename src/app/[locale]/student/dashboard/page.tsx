@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign).
+ * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign 2026).
  * ✅ I18N : Utilisation des traductions pour le multilingue.
  * ✅ RÉACTIONNEL : Les textes basculent instantanément au switch de langue.
+ * ✅ Amélioré : Typographie pro, espacement cohérent, radius mature, hiérarchie claire.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -45,117 +46,158 @@ export default function StudentDashboardAndroid() {
     if (!currentUser?.uid) return;
 
     setLoadingData(true);
-    const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), (snap) => {
-      setStats({ 
-        total: snap.size, 
-        completed: snap.docs.filter(d => d.data().progress === 100).length 
-      });
-      setLoadingData(false);
-    });
+    const unsubEnroll = onSnapshot(
+      query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), 
+      (snap) => {
+        setStats({ 
+          total: snap.size, 
+          completed: snap.docs.filter(d => d.data().progress === 100).length 
+        });
+        setLoadingData(false);
+      }
+    );
 
     return () => unsubEnroll();
   }, [currentUser?.uid, db]);
   
   if (isUserLoading) {
     return (
-        <div className="p-6 space-y-8 bg-slate-950 min-h-screen">
-            <div className="space-y-2">
-                <Skeleton className="h-10 w-2/3 bg-slate-900 rounded-xl" />
-                <Skeleton className="h-4 w-1/2 bg-slate-900 rounded-lg" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <Skeleton className="h-32 rounded-[2rem] bg-slate-900" />
-                <Skeleton className="h-32 rounded-[2rem] bg-slate-900" />
-            </div>
+      <div className="min-h-screen bg-background pb-24">
+        <div className="dashboard-container px-6 pt-12 space-y-8">
+          <div className="space-y-3">
+            <Skeleton className="h-11 w-3/4 rounded-2xl bg-muted" />
+            <Skeleton className="h-4 w-2/3 rounded-lg bg-muted" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-36 rounded-3xl bg-muted" />
+            <Skeleton className="h-36 rounded-3xl bg-muted" />
+          </div>
         </div>
+      </div>
     );
   }
 
   const firstName = currentUser?.fullName?.split(' ')[0] || common('ndara_term');
 
   return (
-    <div className="flex flex-col gap-10 pb-24 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
-      
-      {/* --- HEADER SALUTATION (VINTAGE I18N) --- */}
-      <header className="px-6 pt-12 animate-in fade-in slide-in-from-top-4 duration-700">
-        <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight">
-          {common('greeting')}<br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-400">{firstName} !</span>
-        </h1>
-        <p className="font-sans italic text-slate-500 text-sm font-light mt-3 max-w-[280px]">
-          "{t('quote')}"
-        </p>
-      </header>
+    <div className="min-h-screen bg-background pb-24 relative overflow-hidden">
+      {/* Grain overlay global */}
+      <div className="grain-overlay" />
 
-      {/* --- STATS ROW (FINTECH) --- */}
-      <section className="px-6 grid grid-cols-2 gap-4">
-        <StatCard title={nav('my_courses')} value={stats.total.toString()} icon={BookOpen} isLoading={loadingData} />
-        <StatCard title={t('certificates')} value={stats.completed.toString()} icon={Trophy} isLoading={loadingData} />
-      </section>
+      {/* Conteneur principal avec largeur contrôlée */}
+      <div className="dashboard-container px-6 pt-12 space-y-10">
 
-      {/* --- REPRENDRE L'ÉTUDE (IMMERSIVE) --- */}
-      <div className="px-6">
-        <ContinueLearning />
-      </div>
+        {/* --- HEADER SALUTATION --- */}
+        <header className="animate-in fade-in slide-in-from-top-4 duration-700">
+          <h1 className="text-3xl font-black text-foreground leading-tight tracking-tight">
+            {common('greeting')}<br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--primary))] to-teal-400">
+              {firstName} !
+            </span>
+          </h1>
+          <p className="mt-4 text-muted-foreground text-base font-light max-w-[300px]">
+            "{t('quote')}"
+          </p>
+        </header>
 
-      {/* --- IA MATHIAS (MAGIC BOX) --- */}
-      <section className="px-6">
-        <Link href={`/${locale}/student/tutor`} className="block group active:scale-[0.98] transition-all">
-            <div className="bg-gradient-to-br from-[#CC7722] to-[#9a5a1a] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-xl -ml-5 -mb-5" />
-                
-                <div className="relative z-10 flex items-start justify-between">
-                    <div className="max-w-[70%] space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
-                                <Bot size={14} />
-                            </div>
-                            <span className="text-white/90 text-[10px] font-black uppercase tracking-[0.2em]">MATHIAS IA</span>
-                        </div>
-                        <h3 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
-                            {t('tutor_box_title')}
-                        </h3>
-                        <p className="text-white/80 text-xs font-medium italic">
-                            "{t('tutor_box_desc')}"
-                        </p>
-                        <Button className="bg-white text-[#CC7722] hover:bg-slate-100 rounded-full text-[10px] font-black uppercase h-9 px-6 transition shadow-lg border-none">
-                            {t('ask_question')}
-                        </Button>
+        {/* --- STATS ROW --- */}
+        <section className="grid grid-cols-2 gap-4">
+          <StatCard 
+            title={nav('my_courses')} 
+            value={stats.total.toString()} 
+            icon={BookOpen} 
+            isLoading={loadingData} 
+          />
+          <StatCard 
+            title={t('certificates')} 
+            value={stats.completed.toString()} 
+            icon={Trophy} 
+            isLoading={loadingData} 
+          />
+        </section>
+
+        {/* --- REPRENDRE L'ÉTUDE --- */}
+        <div>
+          <ContinueLearning />
+        </div>
+
+        {/* --- IA MATHIAS (version plus mature) --- */}
+        <section>
+          <Link 
+            href={`/${locale}/student/tutor`} 
+            className="block group active:scale-[0.985] transition-all duration-200"
+          >
+            <div className="dashboard-card bg-gradient-to-br from-[#CC7722] to-[#9a5a1a] p-7 rounded-3xl shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-12 -mt-12" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/15 rounded-full blur-2xl -ml-8 -mb-10" />
+
+              <div className="relative z-10 flex items-start justify-between">
+                <div className="max-w-[68%] space-y-5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                      <Bot size={16} className="text-white" />
                     </div>
-                    <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20">
-                        <Sparkles className="h-10 w-10 text-white animate-pulse" />
-                    </div>
+                    <span className="text-white/90 text-xs font-black uppercase tracking-[0.15em]">
+                      MATHIAS IA
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white leading-tight tracking-tight">
+                    {t('tutor_box_title')}
+                  </h3>
+
+                  <p className="text-white/75 text-[15px] leading-relaxed">
+                    "{t('tutor_box_desc')}"
+                  </p>
+
+                  <Button 
+                    className="bg-white text-[#CC7722] hover:bg-white/95 rounded-2xl text-sm font-semibold h-11 px-7 shadow-md"
+                  >
+                    {t('ask_question')}
+                  </Button>
                 </div>
+
+                <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-md border border-white/25 flex-shrink-0">
+                  <Sparkles className="h-12 w-12 text-white animate-pulse" />
+                </div>
+              </div>
             </div>
-        </Link>
-      </section>
+          </Link>
+        </section>
 
-      {/* --- RECOMMANDATIONS (CAROUSEL) --- */}
-      <div className="px-6">
-        <h2 className="text-sm font-black text-white uppercase tracking-widest px-1 mb-4">{t('recommendations')}</h2>
-        <RecommendedCourses />
-      </div>
+        {/* --- RECOMMANDATIONS --- */}
+        <div className="space-y-5">
+          <h2 className="text-sm font-black text-muted-foreground uppercase tracking-[0.125em] px-1">
+            {t('recommendations')}
+          </h2>
+          <RecommendedCourses />
+        </div>
 
-      {/* --- ACTIVITÉ RÉCENTE --- */}
-      <div className="px-6 space-y-4">
-        <h2 className="text-sm font-black text-white uppercase tracking-widest px-1">{t('alerts')}</h2>
-        <RecentActivity />
+        {/* --- ACTIVITÉ RÉCENTE --- */}
+        <div className="space-y-5">
+          <h2 className="text-sm font-black text-muted-foreground uppercase tracking-[0.125em] px-1">
+            {t('alerts')}
+          </h2>
+          <RecentActivity />
+        </div>
+
       </div>
 
       {/* --- ANDROID FAB --- */}
-      <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 border-none">
+      <Button 
+        asChild 
+        className="fixed bottom-8 right-6 h-16 w-16 rounded-3xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/50 z-50 active:scale-95 transition-all border-none"
+      >
         <Link href={`/${locale}/search`}>
-          <Search className="h-6 w-6 text-white" />
+          <Search className="h-7 w-7 text-white" />
         </Link>
       </Button>
-
     </div>
   );
 }
 
-// Helper local pour simplifier le code
+// Helper local
 function nav(key: string) {
-    const t = useTranslations('Nav');
-    return t(key);
+  const t = useTranslations('Nav');
+  return t(key);
 }
