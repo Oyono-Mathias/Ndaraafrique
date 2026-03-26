@@ -1,7 +1,7 @@
 {
   "Common": {
     "site_name": "Ndara Afrique",
-    "greeting": "Bara ala,",
+    "greeting": "Bienvenue,",
     "ndara_term": "Ndara",
     "loading": "Chargement...",
     "admin": "Administration",
@@ -118,12 +118,13 @@
     "my_courses": "Mes Cours",
     "bourse": "Bourse",
     "profile": "Profil",
-    "dashboard": "Dashboard",
+    "dashboard": "Tableau de Bord",
     "alerts": "Alertes",
-    "messages": "Messages"
+    "messages": "Messages",
+    "devoirs": "Devoirs"
   },
   "Sidebar": {
-    "universe": "UNIVERS TÔ MO",
+    "universe": "VOTRE UNIVERS",
     "network": "RÉSEAU COMMUNAUTAIRE",
     "tracking": "MON SUIVI",
     "settings": "MON COMPTE",
@@ -136,6 +137,25 @@
     "switch_student": "MODE ÉTUDIANT",
     "switch_instructor": "MODE EXPERT",
     "switch_admin": "MODE ADMIN"
+  },
+  "Profile": {
+    "title": "MON PROFIL",
+    "preferences": "PRÉFÉRENCES",
+    "identity_card": "Ma carte d'identité",
+    "wallet": "Mon portefeuille",
+    "wallet_desc": "Gérer vos fonds",
+    "security": "Sécurité",
+    "security_desc": "Mot de passe et accès",
+    "support": "Support technique",
+    "support_desc": "Obtenir de l'aide",
+    "language": "Langue de l'application",
+    "dark_mode": "Mode sombre",
+    "logout": "Déconnexion",
+    "stats": {
+      "courses": "Formations",
+      "diplomas": "Certificats",
+      "reviews": "Avis"
+    }
   },
   "Admin": {
     "groups": {
@@ -191,19 +211,6 @@
     "pay": "Payer",
     "resume": "Reprendre",
     "enroll": "S'inscrire"
-  },
-"Profile": {
-    "title": "MON PROFIL",
-    "preferences": "PRÉFÉRENCES",
-    "identity_card": "Ma carte d'identité",
-    "wallet": "Mon portefeuille",
-    "wallet_desc": "Gérer vos fonds",
-    "security": "Sécurité",
-    "security_desc": "Mot de passe et accès",
-    "support": "Support technique",
-    "support_desc": "Obtenir de l'aide",
-    "language": "Langue de l'application",
-    "dark_mode": "Mode sombre"
   },
   "Actions": {
     "error": {
