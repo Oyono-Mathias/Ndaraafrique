@@ -4,11 +4,6 @@ import { useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-/**
- * @fileOverview Composant de changement de langue avec persistance par cookie.
- * ✅ Persistance : NEXT_LOCALE cookie (standard next-intl).
- * ✅ Navigation : Redirection vers l'URL localisée.
- */
 export function LanguageSwitcher() {
   const locale = useLocale();
   const pathname = usePathname();
@@ -16,31 +11,26 @@ export function LanguageSwitcher() {
   const handleLanguageChange = (newLocale: string) => {
     if (newLocale === locale) return;
 
-    // 1. Sauvegarde dans le cookie pour le middleware next-intl
+    // 1. Sauvegarde dans le cookie pour le middleware
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
 
-    // 2. Calcul du nouveau chemin
+    // 2. Calcul du nouveau chemin (Plus simple avec localePrefix: 'always')
     const segments = pathname.split('/');
     const supportedLocales = ['fr', 'en', 'sg'];
     
-    const currentPrefixInPath = supportedLocales.includes(segments[1]) ? segments[1] : null;
-    
-    if (currentPrefixInPath) {
-      if (newLocale === 'fr') {
-        segments.splice(1, 1);
-      } else {
-        segments[1] = newLocale;
-      }
+    // On remplace simplement le premier segment (la langue) par la nouvelle
+    if (supportedLocales.includes(segments[1])) {
+      segments[1] = newLocale;
     } else {
-      if (newLocale !== 'fr') {
-        segments.splice(1, 0, newLocale);
-      }
+      // Cas rare où le préfixe manquerait : on l'ajoute
+      segments.splice(1, 0, newLocale);
     }
 
-    const newPath = segments.join('/') || '/';
+    const newPath = segments.join('/') || `/${newLocale}`;
     
-    // 3. Navigation forcée pour recharger le contexte de langue
-    window.location.href = newPath;
+    // 3. NAVIGATION "REPLACE" : Remplace l'entrée actuelle dans l'historique
+    // Au lieu d'ajouter une étape, on écrase l'actuelle avec la nouvelle langue.
+    window.location.replace(newPath);
   };
 
   return (
