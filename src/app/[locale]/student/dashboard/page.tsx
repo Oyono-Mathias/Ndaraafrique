@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign 2026).
- * ✅ Carte Mathias IA réduite comme demandé.
+ * ✅ Carte Mathias IA ajustée pour avoir presque la même taille que les Stat Cards.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -96,7 +96,7 @@ export default function StudentDashboardAndroid() {
           </p>
         </header>
 
-        {/* STATS ROW */}
+        {/* STATS ROW - Référence de taille */}
         <section className="grid grid-cols-2 gap-5">
           <StatCard 
             title={nav('my_courses')} 
@@ -112,23 +112,22 @@ export default function StudentDashboardAndroid() {
           />
         </section>
 
-        {/* CONTINUE LEARNING */}
+        {/* REPRENDRE L'ÉTUDE */}
         <div className="pt-2">
           <ContinueLearning />
         </div>
 
-        {/* MATHIAS IA - VERSION RÉDUITE */}
+        {/* MATHIAS IA - TAILLE PRESQUE IDENTIQUE AUX STAT CARDS */}
         <section>
           <Link 
             href={`/${locale}/student/tutor`} 
             className="block group active:scale-[0.985] transition-all duration-200"
           >
-            <div className="dashboard-card bg-gradient-to-br from-orange-600 to-amber-700 p-6 rounded-3xl shadow-lg relative overflow-hidden border border-white/10">
-              {/* Effets de lumière légers */}
+            <div className="dashboard-card bg-gradient-to-br from-orange-600 to-amber-700 p-6 rounded-3xl shadow-lg relative overflow-hidden border border-white/10 h-[172px] flex flex-col">
               <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
 
-              <div className="relative z-10 flex items-start justify-between gap-5">
-                <div className="flex-1 space-y-4">
+              <div className="relative z-10 flex items-start justify-between flex-1">
+                <div className="flex-1 space-y-3 pr-4">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
                       <Bot size={15} className="text-white" />
@@ -138,26 +137,27 @@ export default function StudentDashboardAndroid() {
                     </span>
                   </div>
 
-                  <h3 className="text-xl font-black text-white leading-tight tracking-tight">
+                  <h3 className="text-lg font-black text-white leading-tight tracking-tight">
                     {t('tutor_box_title')}
                   </h3>
 
                   <p className="text-white/75 text-sm leading-snug line-clamp-2">
                     "{t('tutor_box_desc')}"
                   </p>
-
-                  <Button 
-                    size="sm"
-                    className="bg-white hover:bg-white/95 text-orange-700 font-semibold rounded-2xl h-9 px-5 text-xs shadow-md mt-1"
-                  >
-                    {t('ask_question')}
-                  </Button>
                 </div>
 
                 <div className="flex-shrink-0 w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 mt-1">
                   <Sparkles className="h-9 w-9 text-white animate-pulse" />
                 </div>
               </div>
+
+              {/* Bouton en bas pour uniformiser la hauteur */}
+              <Button 
+                size="sm"
+                className="bg-white hover:bg-white/95 text-orange-700 font-semibold rounded-2xl h-9 px-5 text-xs shadow-md w-full mt-3"
+              >
+                {t('ask_question')}
+              </Button>
             </div>
           </Link>
         </section>
