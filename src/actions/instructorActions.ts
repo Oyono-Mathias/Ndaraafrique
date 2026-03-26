@@ -24,7 +24,7 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     return {
       success: false,
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Certains champs sont invalides ou manquants.',
+      message: 'error.invalid_fields',
     };
   }
   
@@ -61,7 +61,7 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   } catch (error: any) {
     return { 
       success: false, 
-      message: `Erreur lors de l'enregistrement : ${error.message}` 
+      message: 'error.save_failed' 
     };
   }
 }
@@ -74,7 +74,7 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
         return {
             success: false,
             errors: validatedFields.error.flatten().fieldErrors,
-            message: 'Données invalides.',
+            message: 'error.invalid_fields',
         };
     }
 
@@ -95,6 +95,6 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
         
         return { success: true };
     } catch (error: any) {
-        return { success: false, message: `Erreur lors de la mise à jour : ${error.message}` };
+        return { success: false, message: 'error.save_failed' };
     }
 }

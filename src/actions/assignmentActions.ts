@@ -57,14 +57,14 @@ export async function gradeSubmissionAction({
     return { success: true };
   } catch (error: any) {
     console.error('Error grading submission:', error);
-    return { success: false, error: 'Une erreur est survenue lors de la notation.' };
+    return { success: false, error: 'error.generic' };
   }
 }
 
 export async function createAssignment({ courseId, sectionId, formData }: { courseId: string; sectionId: string; formData: any }) {
     const validatedFields = assignmentSchema.safeParse(formData);
     if (!validatedFields.success) {
-      return { success: false, error: validatedFields.error.flatten().fieldErrors };
+      return { success: false, error: 'error.invalid_fields' };
     }
     try {
       const db = getAdminDb();
@@ -76,14 +76,14 @@ export async function createAssignment({ courseId, sectionId, formData }: { cour
       return { success: true, assignmentId: newAssignmentRef.id };
     } catch (error: any) {
       console.error("Error creating assignment:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: 'error.save_failed' };
     }
 }
 
 export async function updateAssignment({ courseId, sectionId, assignmentId, formData }: { courseId: string; sectionId: string; assignmentId: string; formData: any }) {
     const validatedFields = assignmentSchema.safeParse(formData);
     if (!validatedFields.success) {
-        return { success: false, error: validatedFields.error.flatten().fieldErrors };
+        return { success: false, error: 'error.invalid_fields' };
     }
     try {
         const db = getAdminDb();
@@ -95,7 +95,7 @@ export async function updateAssignment({ courseId, sectionId, assignmentId, form
         return { success: true };
     } catch (error: any) {
         console.error("Error updating assignment:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: 'error.save_failed' };
     }
 }
 
@@ -107,6 +107,6 @@ export async function deleteAssignment({ courseId, sectionId, assignmentId }: { 
         return { success: true };
     } catch (error: any) {
         console.error("Error deleting assignment:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: 'error.delete_failed' };
     }
 }

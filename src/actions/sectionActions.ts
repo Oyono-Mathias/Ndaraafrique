@@ -5,25 +5,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * @fileOverview Actions pour la gestion des sections de cours.
- * Fournit des messages d'erreur détaillés pour le diagnostic.
  */
-
-function handleServerError(error: any) {
-    console.error("SERVER_ACTION_ERROR:", error);
-    
-    const msg = error.message || "";
-    
-    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE")) {
-        return "Erreur d'authentification serveur. Votre clé FIREBASE_SERVICE_ACCOUNT_KEY est absente ou mal configurée dans les variables d'environnement de votre hébergeur.";
-    }
-    if (msg.includes("refresh access token") || msg.includes("invalid_grant")) {
-        return "Clé de compte de service invalide ou expirée. Veuillez générer une nouvelle clé JSON dans la console Firebase.";
-    }
-    if (msg.includes("permission-denied")) {
-        return "Accès refusé. Le compte de service n'a pas les droits nécessaires (Rôle 'Éditeur' ou 'Propriétaire' requis sur GCP).";
-    }
-    return "Une erreur est survenue : " + msg;
-}
 
 export async function createSection({ courseId, title }: { courseId: string; title: string }) {
     try {
@@ -41,7 +23,7 @@ export async function createSection({ courseId, title }: { courseId: string; tit
 
         return { success: true, sectionId: newSectionRef.id };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.save_failed' };
     }
 }
 
@@ -52,7 +34,7 @@ export async function updateSectionTitle({ courseId, sectionId, title }: { cours
         await sectionRef.update({ title: title });
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.save_failed' };
     }
 }
 
@@ -72,7 +54,7 @@ export async function deleteSection({ courseId, sectionId }: { courseId: string;
 
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.delete_failed' };
     }
 }
 
@@ -90,6 +72,6 @@ export async function reorderSections({ courseId, orderedSections }: { courseId:
         await batch.commit();
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.generic' };
     }
 }

@@ -20,7 +20,7 @@ export async function createResourceAction({ formData, instructorId }: { formDat
   const validatedFields = resourceSchema.safeParse(formData);
 
   if (!validatedFields.success) {
-    return { success: false, error: validatedFields.error.flatten().fieldErrors };
+    return { success: false, error: 'error.invalid_fields' };
   }
   
   try {
@@ -34,7 +34,7 @@ export async function createResourceAction({ formData, instructorId }: { formDat
     
     return { success: true, resourceId: newResourceRef.id };
   } catch (error: any) {
-    return { success: false, error: 'Une erreur est survenue lors de l\'ajout de la ressource.' };
+    return { success: false, error: 'error.save_failed' };
   }
 }
 
@@ -45,7 +45,7 @@ export async function deleteResourceAction({ resourceId, instructorId }: { resou
     const resourceDoc = await resourceRef.get();
 
     if (!resourceDoc.exists || resourceDoc.data()?.instructorId !== instructorId) {
-      return { success: false, error: 'Permission refusée ou ressource introuvable.' };
+      return { success: false, error: 'error.not_authorized' };
     }
     
     const resourceData = resourceDoc.data();
@@ -71,6 +71,6 @@ export async function deleteResourceAction({ resourceId, instructorId }: { resou
     
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: 'Une erreur est survenue lors de la suppression.' };
+    return { success: false, error: 'error.delete_failed' };
   }
 }

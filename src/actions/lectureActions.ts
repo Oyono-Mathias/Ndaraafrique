@@ -10,11 +10,6 @@ import { deleteBunnyVideo } from './bunnyActions';
  * @fileOverview Actions pour la gestion des leçons avec suppression synchronisée Bunny Stream.
  */
 
-function handleServerError(error: any) {
-    console.error("Server Action Error (Lecture):", error);
-    return "Erreur lors de la gestion de la leçon : " + (error.message || "");
-}
-
 const lectureSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
   type: z.enum(['video', 'youtube', 'text', 'pdf']),
@@ -26,8 +21,7 @@ const lectureSchema = z.object({
 export async function createLecture({ courseId, sectionId, formData }: { courseId: string; sectionId: string; formData: any }) {
   const validatedFields = lectureSchema.safeParse(formData);
   if (!validatedFields.success) {
-    const firstError = Object.values(validatedFields.error.flatten().fieldErrors)[0]?.[0];
-    return { success: false, error: firstError || "Données invalides" };
+    return { success: false, error: "error.invalid_fields" };
   }
   
   try {
@@ -44,15 +38,14 @@ export async function createLecture({ courseId, sectionId, formData }: { courseI
     });
     return { success: true, lectureId: newLectureRef.id };
   } catch (error: any) {
-    return { success: false, error: handleServerError(error) };
+    return { success: false, error: 'error.save_failed' };
   }
 }
 
 export async function updateLecture({ courseId, sectionId, lectureId, formData }: { courseId: string; sectionId: string; lectureId: string; formData: any }) {
     const validatedFields = lectureSchema.safeParse(formData);
     if (!validatedFields.success) {
-        const firstError = Object.values(validatedFields.error.flatten().fieldErrors)[0]?.[0];
-        return { success: false, error: firstError || "Données invalides" };
+        return { success: false, error: 'error.invalid_fields' };
     }
     
     try {
@@ -64,7 +57,7 @@ export async function updateLecture({ courseId, sectionId, lectureId, formData }
         });
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.save_failed' };
     }
 }
 
@@ -74,7 +67,7 @@ export async function deleteLecture({ courseId, sectionId, lectureId }: { course
         const lectureRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures').doc(lectureId);
         const lectureDoc = await lectureRef.get();
         
-        if (!lectureDoc.exists) return { success: false, error: "Leçon introuvable" };
+        if (!lectureDoc.exists) return { success: false, error: "error.not_found" };
         
         const lectureData = lectureDoc.data() as Lecture;
 
@@ -91,7 +84,7 @@ export async function deleteLecture({ courseId, sectionId, lectureId }: { course
         
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.delete_failed' };
     }
 }
 
@@ -107,6 +100,6 @@ export async function reorderLectures({ courseId, sectionId, orderedLectures }: 
         await batch.commit();
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: handleServerError(error) };
+        return { success: false, error: 'error.generic' };
     }
 }

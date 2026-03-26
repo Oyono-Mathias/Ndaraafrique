@@ -56,6 +56,6 @@ export async function sendCourseAnnouncement({ courseId, courseTitle, instructor
 
   } catch (error: any) {
     console.error("Error sending course announcement:", error);
-    return { success: false, error: 'Une erreur est survenue lors de l\'envoi.' };
+    return { success: false, error: 'error.generic' };
   }
 }

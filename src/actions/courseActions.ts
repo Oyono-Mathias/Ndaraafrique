@@ -23,7 +23,7 @@ export async function assignInstructorToCourseAction({
         const courseRef = db.collection('courses').doc(courseId);
         const courseDoc = await courseRef.get();
 
-        if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+        if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
         
         const oldInstructorId = courseDoc.data()?.instructorId;
 
@@ -46,7 +46,7 @@ export async function assignInstructorToCourseAction({
         return { success: true };
     } catch (e: any) {
         console.error("ASSIGN_INSTRUCTOR_ERROR:", e);
-        return { success: false, error: e.message };
+        return { success: false, error: 'error.generic' };
     }
 }
 
@@ -70,7 +70,7 @@ export async function toggleResaleRightsAction({
         const courseRef = db.collection('courses').doc(courseId);
         const courseDoc = await courseRef.get();
 
-        if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+        if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
         const data = courseDoc.data() as Course;
 
         // ✅ SÉCURISATION : Vérification des nouveaux rôles (Owner)
@@ -78,7 +78,7 @@ export async function toggleResaleRightsAction({
         const isAdmin = userId === 'SYSTEM' || (await db.collection('users').doc(userId).get()).data()?.role === 'admin';
         
         if (currentOwner !== userId && !isAdmin) {
-            return { success: false, error: 'Seul le propriétaire de la licence peut modifier les droits.' };
+            return { success: false, error: 'error.not_authorized' };
         }
 
         // Vérification du prix minimum si en vente
@@ -87,7 +87,7 @@ export async function toggleResaleRightsAction({
             const settings = settingsSnap.data() as Settings;
             const minPrice = (settings as any).platform?.market?.minimumLicensePrice || 10000;
             if (price < minPrice) {
-                return { success: false, error: `Le prix minimum de revente est de ${minPrice.toLocaleString()} XOF.` };
+                return { success: false, error: 'error.resale_min_price' };
             }
         }
 
@@ -102,7 +102,7 @@ export async function toggleResaleRightsAction({
 
         return { success: true };
     } catch (e: any) {
-        return { success: false, error: e.message };
+        return { success: false, error: 'error.generic' };
     }
 }
 
@@ -126,10 +126,10 @@ export async function purchaseResaleRightsAction({
             const courseRef = db.collection('courses').doc(courseId);
             const courseDoc = await transaction.get(courseRef);
             
-            if (!courseDoc.exists) throw new Error("Cours introuvable.");
+            if (!courseDoc.exists) throw new Error("error.course_not_found");
             
             const courseData = courseDoc.data() as Course;
-            if (!courseData.resaleRightsAvailable) throw new Error("Cette licence n'est plus disponible.");
+            if (!courseData.resaleRightsAvailable) throw new Error("error.license_not_available");
 
             const previousOwner = courseData.ownerId || courseData.instructorId;
             const price = courseData.resaleRightsPrice || 0;
@@ -170,7 +170,7 @@ export async function purchaseResaleRightsAction({
         return { success: true };
     } catch (e: any) {
         console.error("TRANSACTION_FAILED:", e.message);
-        return { success: false, error: e.message };
+        return { success: false, error: e.message || 'error.generic' };
     }
 }
 
@@ -193,18 +193,18 @@ export async function requestCourseBuyoutAction({
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settingsData = settingsSnap.data() as Settings;
     if (settingsData?.platform?.allowCourseBuyout === false) {
-        return { success: false, error: 'Le programme de rachat est actuellement suspendu.' };
+        return { success: false, error: 'error.buyout_suspended' };
     }
 
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
-    if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+    if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
     
     const courseData = courseDoc.data() as Course;
     const currentOwner = courseData.ownerId || courseData.instructorId;
 
-    if (currentOwner !== instructorId) return { success: false, error: 'Seul le propriétaire peut vendre ce cours.' };
-    if (courseData.status !== 'Published') return { success: false, error: 'Seule une formation publiée peut être rachetée.' };
+    if (currentOwner !== instructorId) return { success: false, error: 'error.not_authorized' };
+    if (courseData.status !== 'Published') return { success: false, error: 'error.only_published_can_be_bought' };
 
     await courseRef.update({
       buyoutStatus: 'requested',
@@ -214,7 +214,7 @@ export async function requestCourseBuyoutAction({
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'error.generic' };
   }
 }
 
@@ -233,7 +233,7 @@ export async function approveCourseBuyoutAction({
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
 
-    if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+    if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
     const data = courseDoc.data();
     
     const originalOwner = data?.ownerId || data?.instructorId;
@@ -258,7 +258,7 @@ export async function approveCourseBuyoutAction({
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'error.generic' };
   }
 }
 
@@ -287,7 +287,7 @@ export async function sanctionInstructorForBuyoutViolation({
 
         return { success: true };
     } catch (e: any) {
-        return { success: false, error: e.message };
+        return { success: false, error: 'error.generic' };
     }
 }
 
@@ -303,12 +303,12 @@ export async function submitCourseForReviewAction({
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
 
-    if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+    if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
     
     // On vérifie le créateur ou l'instructeur actuel
     const canSubmit = courseDoc.data()?.creatorId === instructorId || courseDoc.data()?.instructorId === instructorId;
     if (!canSubmit) {
-      return { success: false, error: 'Vous n\'êtes pas autorisé à modifier ce cours.' };
+      return { success: false, error: 'error.not_authorized' };
     }
 
     await courseRef.update({
@@ -318,7 +318,7 @@ export async function submitCourseForReviewAction({
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'error.generic' };
   }
 }
 
@@ -337,7 +337,7 @@ export async function updateCourseStatusByAdmin({
     await courseRef.update({ status });
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'error.generic' };
   }
 }
 
@@ -354,6 +354,6 @@ export async function deleteCourseByAdmin({
     await courseRef.delete();
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: 'Une erreur est survenue lors de la suppression.' };
+    return { success: false, error: 'error.generic' };
   }
 }
