@@ -13,6 +13,7 @@ import { InstructorCTASection } from '@/components/landing/InstructorCTASection'
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { unstable_setRequestLocale } from 'next-intl/server';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 /**
  * @fileOverview Landing Page Ndara Afrique V4 - Structure EdTech Haute Performance.
@@ -31,6 +32,11 @@ export default function LandingPage({ params: { locale } }: Props) {
     <div className="min-h-screen bg-[#0f172a] text-white selection:bg-primary/30">
       <Navbar />
       
+      {/* Sélecteur de langue flottant - Spécifique à la Landing */}
+      <div className="fixed top-24 left-6 z-[60] hidden lg:block">
+        <LanguageSwitcher />
+      </div>
+
       <main className="smooth-scroll relative">
         <div className="grain-overlay opacity-[0.04]" />
         
