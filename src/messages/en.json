@@ -29,6 +29,73 @@
     "and": "and",
     "privacy_policy": "Privacy Policy"
   },
+  "Landing": {
+    "hero": {
+      "badge": "Pan-African Excellence",
+      "title": "LEARN. SUCCEED.<br /><span class='text-primary'>INSPIRE.</span>",
+      "subtitle": "The elite platform to master the technological and financial skills of the continental future.",
+      "search_placeholder": "What do you want to learn?",
+      "cta_explore": "Explore Catalog",
+      "cta_instructor": "Become an Instructor",
+      "badge_card_title": "HD Certifications",
+      "badge_card_subtitle": "Industry recognized"
+    },
+    "stats": {
+      "students": "Learners",
+      "courses": "Courses",
+      "success": "Success",
+      "countries": "Countries"
+    },
+    "categories": {
+      "all": "All categories"
+    },
+    "sections": {
+      "popular_title": "Most Popular",
+      "popular_desc": "Training that transforms the continent",
+      "new_title": "New Horizons",
+      "new_desc": "Latest educational gems",
+      "new_badge": "NEW",
+      "experts_title": "Masters of Knowledge",
+      "experts_desc": "Learn from the best African experts",
+      "experts_label": "Ndara trained",
+      "courses_label": "Active courses"
+    },
+    "bourse": {
+      "badge": "Financial Innovation",
+      "title": "The Knowledge Exchange",
+      "subtitle": "Acquire resale licenses and receive dividends on each new enrollment.",
+      "item1": "Shared intellectual property",
+      "item2": "Guaranteed passive income",
+      "item3": "Dynamic secondary market",
+      "cta": "Access Exchange",
+      "card_roi": "Projected ROI",
+      "card_val": "License Value",
+      "card_security": "Secure transfer contract"
+    },
+    "how_it_works": {
+      "badge": "Your Journey",
+      "title": "How it works?",
+      "step1": { "title": "Explore", "desc": "Find the training that matches your ambitions." },
+      "step2": { "title": "Learn", "desc": "Study at your own pace with Mathias AI assistance." },
+      "step3": { "title": "Succeed", "desc": "Get your certificate and monetize your skills." }
+    },
+    "fintech": {
+      "title": "Payment Freedom",
+      "subtitle": "Pay in local currency through your favorite services.",
+      "secure_title": "Secure Transactions",
+      "secure_desc": "Real-time financial audit"
+    },
+    "testimonials": {
+      "title": "Wall of Wisdom",
+      "subtitle": "What our Ndara across Africa are saying.",
+      "verified": "Verified Account"
+    },
+    "cta_instructor": {
+      "title": "Ready to inspire Africa?",
+      "subtitle": "Share your expertise and generate sustainable income.",
+      "button": "Join the elite trainers"
+    }
+  },
   "Dashboard": {
     "resume_study": "Continue study",
     "tutor_box_title": "Need help, dear Learner?",
@@ -54,6 +121,76 @@
     "dashboard": "Dashboard",
     "alerts": "Alerts",
     "messages": "Messages"
+  },
+  "Sidebar": {
+    "universe": "YOUR UNIVERSE",
+    "network": "COMMUNITY NETWORK",
+    "tracking": "MY TRACKING",
+    "settings": "MY ACCOUNT",
+    "tutor": "MATHIAS AI Tutor",
+    "ambassador": "Ambassador",
+    "community": "Ndara Directory",
+    "results": "My Scores",
+    "wishlist": "My Favorites",
+    "logout": "Logout",
+    "switch_student": "STUDENT MODE",
+    "switch_instructor": "EXPERT MODE",
+    "switch_admin": "ADMIN MODE"
+  },
+  "Admin": {
+    "groups": {
+      "cockpit": "CEO COCKPIT",
+      "operations": "OPERATIONS",
+      "finances": "FINANCES",
+      "support": "SUPPORT",
+      "interface": "INTERFACE",
+      "security": "SECURITY"
+    },
+    "labels": {
+      "super_admin": "Super Administrator",
+      "exit": "Exit Admin Mode"
+    },
+    "stats": {
+      "revenue": "Revenue",
+      "today": "today",
+      "active_users": "Active Ndara",
+      "conversion": "Conversion Rate",
+      "success": "Success"
+    },
+    "real_enrollments": "Live Enrollments",
+    "view_catalog": "View Catalog",
+    "no_recent_activity": "No recent activity"
+  },
+  "Instructor": {
+    "groups": {
+      "management": "MANAGEMENT",
+      "growth": "GROWTH",
+      "pedagogy": "PEDAGOGY",
+      "results": "RESULTS"
+    },
+    "labels": {
+      "expert": "Ndara Expert",
+      "switch_mode": "SWITCH MODE",
+      "logout": "Logout"
+    },
+    "stats": {
+      "available_balance": "Available Balance",
+      "payout_request": "Withdraw",
+      "active_students": "active students",
+      "completion_rate": "completion rate",
+      "treasury": "Treasury"
+    },
+    "to_correct": "To Correct",
+    "revenue_by_course": "VIEW ALL",
+    "all_corrected": "All corrected!",
+    "manage_catalog": "New Course"
+  },
+  "Course": {
+    "by": "By",
+    "free": "Free",
+    "pay": "Pay",
+    "resume": "Resume",
+    "enroll": "Enroll"
   },
   "Actions": {
     "error": {

@@ -1,4 +1,3 @@
-
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
@@ -13,6 +12,7 @@ import { Metadata } from 'next';
 /**
  * @fileOverview Layout racine pour les routes internationalisées.
  * ✅ i18n : Métadonnées dynamiques en FR, EN et SG.
+ * ✅ SSG : Activation du setRequestLocale pour le rendu statique.
  */
 
 export function generateStaticParams() {
@@ -46,6 +46,7 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: {locale: string};
 }) {
+  // ✅ Requis pour le rendu statique avec next-intl
   unstable_setRequestLocale(locale);
   
   const messages = await getMessages();

@@ -30,6 +30,18 @@
     "and": "na",
     "privacy_policy": "Ndîa tî sango"
   },
+  "Landing": {
+    "hero": {
+      "badge": "L'excellence panafricaine",
+      "title": "MANDA. SI NA LI.<br /><span class='text-primary'>TO NDA.</span>",
+      "subtitle": "Kapa tî elite tî manda a-technologies na kapa tî nginza tî futur.",
+      "search_placeholder": "Mo ye ti manda nyen?",
+      "cta_explore": "Ba kapa tî kua",
+      "cta_instructor": "Ga mbeni Expert",
+      "badge_card_title": "A-Certificats HD",
+      "badge_card_subtitle": "Ndîa tî sese mobimba"
+    }
+  },
   "Dashboard": {
     "resume_study": "Ngô tî manda kua",
     "tutor_box_title": "Mo ye tî hunda sango, Ndara?",

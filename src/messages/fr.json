@@ -29,6 +29,73 @@
     "and": "et la",
     "privacy_policy": "Politique de Confidentialité"
   },
+  "Landing": {
+    "hero": {
+      "badge": "L'excellence panafricaine",
+      "title": "APPRENEZ. RÉUSSISSEZ.<br /><span class='text-primary'>INSPIREZ.</span>",
+      "subtitle": "La plateforme d'élite pour maîtriser les compétences technologiques et financières du futur continental.",
+      "search_placeholder": "Que voulez-vous apprendre ?",
+      "cta_explore": "Explorer le Catalogue",
+      "cta_instructor": "Devenir Formateur",
+      "badge_card_title": "Certifications HD",
+      "badge_card_subtitle": "Reconnues par l'industrie"
+    },
+    "stats": {
+      "students": "Apprenants",
+      "courses": "Formations",
+      "success": "Réussite",
+      "countries": "Pays"
+    },
+    "categories": {
+      "all": "Toutes les catégories"
+    },
+    "sections": {
+      "popular_title": "Les plus prisés",
+      "popular_desc": "Les formations qui transforment le continent",
+      "new_title": "Nouveaux Horizons",
+      "new_desc": "Dernières pépites pédagogiques",
+      "new_badge": "NOUVEAU",
+      "experts_title": "Maîtres du Savoir",
+      "experts_desc": "Apprenez avec les meilleurs experts africains",
+      "experts_label": "Ndara formés",
+      "courses_label": "Cours actifs"
+    },
+    "bourse": {
+      "badge": "Innovation Financière",
+      "title": "La Bourse du Savoir",
+      "subtitle": "Acquérez des licences de revente et percevez des dividendes sur chaque nouvel inscrit.",
+      "item1": "Propriété intellectuelle partagée",
+      "item2": "Revenus passifs garantis",
+      "item3": "Marché secondaire dynamique",
+      "cta": "Accéder à la Bourse",
+      "card_roi": "ROI Projeté",
+      "card_val": "Valeur Licence",
+      "card_security": "Contrat de cession sécurisé"
+    },
+    "how_it_works": {
+      "badge": "Votre Parcours",
+      "title": "Comment ça marche ?",
+      "step1": { "title": "Explorez", "desc": "Trouvez la formation qui correspond à vos ambitions." },
+      "step2": { "title": "Apprenez", "desc": "Étudiez à votre rythme avec l'aide de Mathias IA." },
+      "step3": { "title": "Réussissez", "desc": "Obtenez votre certificat et monétisez vos acquis." }
+    },
+    "fintech": {
+      "title": "Liberté de Paiement",
+      "subtitle": "Payez en monnaie locale via vos services préférés.",
+      "secure_title": "Transactions Sécurisées",
+      "secure_desc": "Audit financier en temps réel"
+    },
+    "testimonials": {
+      "title": "Le Mur de la Sagesse",
+      "subtitle": "Ce que disent nos Ndara à travers l'Afrique.",
+      "verified": "Compte Vérifié"
+    },
+    "cta_instructor": {
+      "title": "Prêt à inspirer l'Afrique ?",
+      "subtitle": "Partagez votre expertise et générez des revenus durables.",
+      "button": "Rejoindre l'élite des formateurs"
+    }
+  },
   "Dashboard": {
     "resume_study": "Continuer l'étude",
     "tutor_box_title": "Besoin d'aide, cher Ndara ?",
@@ -55,6 +122,76 @@
     "alerts": "Alertes",
     "messages": "Messages"
   },
+  "Sidebar": {
+    "universe": "UNIVERS TÔ MO",
+    "network": "RÉSEAU COMMUNAUTAIRE",
+    "tracking": "MON SUIVI",
+    "settings": "MON COMPTE",
+    "tutor": "Tuteur MATHIAS",
+    "ambassador": "Ambassadeur",
+    "community": "Annuaire Ndara",
+    "results": "Mes Scores",
+    "wishlist": "Mes Favoris",
+    "logout": "Déconnexion",
+    "switch_student": "MODE ÉTUDIANT",
+    "switch_instructor": "MODE EXPERT",
+    "switch_admin": "MODE ADMIN"
+  },
+  "Admin": {
+    "groups": {
+      "cockpit": "COCKPIT CEO",
+      "operations": "OPÉRATIONS",
+      "finances": "FINANCES",
+      "support": "SUPPORT",
+      "interface": "INTERFACE",
+      "security": "SÉCURITÉ"
+    },
+    "labels": {
+      "super_admin": "Super Administrateur",
+      "exit": "Quitter le mode Admin"
+    },
+    "stats": {
+      "revenue": "Chiffre d'Affaires",
+      "today": "aujourd'hui",
+      "active_users": "Ndara Actifs",
+      "conversion": "Taux Conversion",
+      "success": "Réussite"
+    },
+    "real_enrollments": "Inscriptions en Direct",
+    "view_catalog": "Voir Catalogue",
+    "no_recent_activity": "Aucune activité récente"
+  },
+  "Instructor": {
+    "groups": {
+      "management": "GESTION",
+      "growth": "CROISSANCE",
+      "pedagogy": "PÉDAGOGIE",
+      "results": "RÉSULTATS"
+    },
+    "labels": {
+      "expert": "Expert Ndara",
+      "switch_mode": "CHANGER DE MODE",
+      "logout": "Déconnexion"
+    },
+    "stats": {
+      "available_balance": "Solde Disponible",
+      "payout_request": "Retrait",
+      "active_students": "élèves actifs",
+      "completion_rate": "taux de réussite",
+      "treasury": "Trésorerie"
+    },
+    "to_correct": "À Corriger",
+    "revenue_by_course": "VOIR TOUT",
+    "all_corrected": "Tout est corrigé !",
+    "manage_catalog": "Nouveau Cours"
+  },
+  "Course": {
+    "by": "Par",
+    "free": "Offert",
+    "pay": "Payer",
+    "resume": "Reprendre",
+    "enroll": "S'inscrire"
+  },
   "Actions": {
     "error": {
       "course_not_found": "La formation est introuvable.",
@@ -68,29 +205,6 @@
       "wallet_recharged": "Solde crédité avec succès !",
       "generic": "Opération réussie !",
       "payout_requested": "Demande de retrait enregistrée."
-    }
-  },
-  "Profile": {
-    "title": "Mon Profil",
-    "preferences": "Préférences",
-    "identity_card": "Carte d'identité",
-    "wallet": "Portefeuille",
-    "wallet_desc": "Gérer mes fonds",
-    "security": "Sécurité",
-    "security_desc": "Mot de passe et accès",
-    "support": "Support",
-    "support_desc": "Aide et assistance",
-    "language": "Langue",
-    "dark_mode": "Mode Sombre",
-    "logout": "Déconnexion",
-    "logout_confirm": "Voulez-vous vous déconnecter ?",
-    "logout_desc": "Votre session sera fermée sur cet appareil.",
-    "cancel": "Annuler",
-    "confirm": "Confirmer",
-    "stats": {
-      "courses": "Cours",
-      "diplomas": "Diplômes",
-      "reviews": "Avis"
     }
   }
 }

@@ -16,7 +16,7 @@ import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
  * @fileOverview Landing Page Ndara Afrique V4 - Structure EdTech Haute Performance.
- * Reorganisée pour maximiser la conversion et la mise en valeur des experts.
+ * ✅ SSG : Activation du setRequestLocale pour le rendu statique.
  */
 
 interface Props {
@@ -24,6 +24,7 @@ interface Props {
 }
 
 export default function LandingPage({ params: { locale } }: Props) {
+  // ✅ Requis pour le rendu statique avec next-intl
   unstable_setRequestLocale(locale);
 
   return (
