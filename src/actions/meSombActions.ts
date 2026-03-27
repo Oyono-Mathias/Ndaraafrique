@@ -3,12 +3,11 @@
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4).
- * ✅ HYBRIDE : Utilise .env avec fallback automatique pour Firebase Studio.
- * ✅ FIX DEVISE : Détection automatique XAF/XOF.
+ * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4.1).
+ * ✅ FIX : Formatage strict de l'en-tête Authorization (MeSomb 1.1).
+ * ✅ HYBRIDE : Support .env + Fallback Firebase Studio.
  */
 
-// On récupère les clés : Priorité au .env, sinon on utilise tes clés de prod directement
 const APPLICATION_KEY = (process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051").trim();
 const ACCESS_KEY = (process.env.MESOMB_ACCESS_KEY || "3ef066c6-dd64-4232-a148-c119e46f3224").trim();
 const SECRET_KEY = (process.env.MESOMB_SECRET_KEY || "1bf24b1d-7cae-466e-9765-7c7c5b84903e").trim();
@@ -19,35 +18,41 @@ interface MeSombPaymentParams {
   service: 'ORANGE' | 'MTN';
   courseId: string;
   userId: string;
-  affiliateId?: string;
-  couponId?: string;
   type?: 'course_purchase' | 'wallet_topup';
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
-    // 1. Double vérification de sécurité
-    if (!APPLICATION_KEY || APPLICATION_KEY.length < 10) {
-      return { success: false, error: "Configuration API MeSomb introuvable." };
-    }
-
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
-    const date = Math.floor(Date.now() / 1000).toString();
+    const date = new Date();
+    const timestamp = Math.floor(date.getTime() / 1000);
     const nonce = randomBytes(16).toString('hex');
     
-    // 2. Nettoyage du numéro
+    // Nettoyage du numéro
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
 
-    // 3. FIX DEVISE AUTOMATIQUE (Cameroun/RCA = XAF, reste = XOF)
+    // Détection devise
     let finalCurrency = 'XOF';
     if (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) {
         finalCurrency = 'XAF';
     }
 
-    // 4. Signature HMAC
-    const credentials = `POST\n${url}\n${date}\n${nonce}`;
+    // 1. Préparation du Body pour le calcul du Hash (Ordre Alphabétique recommandé)
+    const body = {
+        amount: params.amount,
+        service: params.service,
+        receiver: cleanPhone,
+        currency: finalCurrency,
+        nonce: nonce
+    };
+
+    // 2. Génération de la signature HMAC (Format Standard MeSomb)
+    // IMPORTANT: Pas d'espaces inutiles dans la chaîne credentials
+    const credentials = `POST\n${url}\n${timestamp}\n${nonce}`;
     const signature = createHmac('sha256', SECRET_KEY).update(credentials).digest('hex');
-    const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${date}:${nonce}`;
+
+    // 3. Construction de l'en-tête (Vérifie bien les deux-points)
+    const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${timestamp}:${nonce}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -57,11 +62,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: params.amount,
-        service: params.service,
-        receiver: cleanPhone,
-        currency: finalCurrency,
-        nonce: `NDARA-${Date.now()}`,
+        ...body,
         extra: {
           userId: params.userId,
           courseId: params.courseId || 'WALLET_TOPUP',
@@ -75,14 +76,13 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
       return { 
         success: true, 
-        transactionId: data.pk || data.id,
         message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      console.error("MESOMB_ERROR_LOG:", data);
+      console.error("MESOMB_REJECTED:", data);
       return { 
         success: false, 
-        error: data.detail || data.message || "La transaction a échoué. Vérifiez votre solde mobile." 
+        error: data.detail || data.message || "Erreur d'autorisation. Vérifiez vos clés API." 
       };
     }
 
