@@ -1,22 +1,18 @@
-
 'use server';
 
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour MeSomb.
- * Correction : URL sans slash final et nettoyage strict des entrées.
+ * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4).
+ * ✅ SÉCURITÉ : Utilise uniquement les variables d'environnement.
+ * ✅ FIX DEVISE : Détection automatique XAF/XOF selon le code pays.
+ * ✅ ROBUSTESSE : Signature HMAC conforme aux specs MeSomb 1.1.
  */
 
-// Clés de production fournies par l'utilisateur
-const APPLICATION_KEY = (process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051").trim();
-const ACCESS_KEY = (process.env.MESOMB_ACCESS_KEY || "3ef066c6-dd64-4232-a148-c119e46f3224").trim();
-const SECRET_KEY = (process.env.MESOMB_SECRET_KEY || "1bf24b1d-7cae-466e-9765-7c7c5b84903e").trim();
-
-function generateMeSombSignature(method: string, url: string, date: string, nonce: string, secretKey: string): string {
-    const credentials = `${method}\n${url}\n${date}\n${nonce}`;
-    return createHmac('sha256', secretKey).update(credentials).digest('hex');
-}
+// On récupère les clés depuis le fichier .env (Plus rien n'est écrit en dur ici)
+const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
+const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
+const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
 
 interface MeSombPaymentParams {
   amount: number;
@@ -31,18 +27,30 @@ interface MeSombPaymentParams {
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
-    // Utilisation de l'URL sans slash final pour la compatibilité maximale
+    // 1. Vérification des clés API
+    if (!APPLICATION_KEY || !ACCESS_KEY || !SECRET_KEY) {
+      console.error("ERREUR CRITIQUE : Clés MeSomb manquantes dans .env");
+      return { success: false, error: "Configuration serveur incomplète (API Keys)." };
+    }
+
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
     const date = Math.floor(Date.now() / 1000).toString();
     const nonce = randomBytes(16).toString('hex');
     
-    // Nettoyage du numéro de téléphone (MeSomb n'aime pas le + ou les espaces)
+    // 2. Nettoyage strict du numéro (Retrait du +, des espaces, etc.)
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
 
-    // Génération de la signature HMAC
-    const signature = generateMeSombSignature('POST', url, date, nonce, SECRET_KEY);
+    // 3. FIX DEVISE : Détection dynamique (Cameroun/RCA = XAF, Autres = XOF)
+    let finalCurrency = 'XOF';
+    if (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) {
+        finalCurrency = 'XAF';
+    }
 
-    // Format d'en-tête Authorization (SANS espace après les deux-points)
+    // 4. Génération de la signature HMAC
+    const credentials = `POST\n${url}\n${date}\n${nonce}`;
+    const signature = createHmac('sha256', SECRET_KEY).update(credentials).digest('hex');
+
+    // 5. Formatage de l'en-tête Authorization
     const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${date}:${nonce}`;
 
     const response = await fetch(url, {
@@ -56,14 +64,12 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         amount: params.amount,
         service: params.service,
         receiver: cleanPhone,
-        currency: 'XOF',
+        currency: finalCurrency,
         nonce: `NDARA-${Date.now()}`,
         extra: {
           userId: params.userId,
-          courseId: params.courseId,
-          affiliateId: params.affiliateId || '',
-          couponId: params.couponId || '',
-          type: params.type || 'course_purchase'
+          courseId: params.courseId || 'WALLET_TOPUP',
+          type: params.type || 'wallet_topup'
         }
       }),
     });
@@ -73,22 +79,21 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
       return { 
         success: true, 
-        transactionId: data.pk || data.id || "SUCCESS",
-        message: "Demande envoyée. Validez sur votre téléphone." 
+        transactionId: data.pk || data.id,
+        message: "Demande de paiement envoyée. Vérifiez votre téléphone." 
       };
     } else {
       console.error("MESOMB_API_ERROR:", data);
-      return { 
-        success: false, 
-        error: data.detail || data.message || "La passerelle MeSomb a refusé la requête (Vérifiez vos clés)." 
-      };
+      // Message d'erreur plus utile pour l'étudiant
+      const errorMsg = data.detail || data.message || "La transaction a été refusée. Vérifiez votre solde mobile ou incluez le code pays (ex: 237...).";
+      return { success: false, error: errorMsg };
     }
 
   } catch (error: any) {
     console.error("INITIATE_PAYMENT_FATAL:", error.message);
     return { 
         success: false, 
-        error: "Le service de paiement est indisponible. Vérifiez votre connexion." 
+        error: "Le service de paiement est momentanément indisponible." 
     };
   }
 }
