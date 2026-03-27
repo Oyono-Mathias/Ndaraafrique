@@ -4,15 +4,14 @@ import { createHmac, randomBytes } from 'crypto';
 
 /**
  * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4).
- * ✅ SÉCURITÉ : Utilise uniquement les variables d'environnement.
- * ✅ FIX DEVISE : Détection automatique XAF/XOF selon le code pays.
- * ✅ ROBUSTESSE : Signature HMAC conforme aux specs MeSomb 1.1.
+ * ✅ HYBRIDE : Utilise .env avec fallback automatique pour Firebase Studio.
+ * ✅ FIX DEVISE : Détection automatique XAF/XOF.
  */
 
-// On récupère les clés depuis le fichier .env (Plus rien n'est écrit en dur ici)
-const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
-const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
-const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
+// On récupère les clés : Priorité au .env, sinon on utilise tes clés de prod directement
+const APPLICATION_KEY = (process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051").trim();
+const ACCESS_KEY = (process.env.MESOMB_ACCESS_KEY || "3ef066c6-dd64-4232-a148-c119e46f3224").trim();
+const SECRET_KEY = (process.env.MESOMB_SECRET_KEY || "1bf24b1d-7cae-466e-9765-7c7c5b84903e").trim();
 
 interface MeSombPaymentParams {
   amount: number;
@@ -27,30 +26,27 @@ interface MeSombPaymentParams {
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
-    // 1. Vérification des clés API
-    if (!APPLICATION_KEY || !ACCESS_KEY || !SECRET_KEY) {
-      console.error("ERREUR CRITIQUE : Clés MeSomb manquantes dans .env");
-      return { success: false, error: "Configuration serveur incomplète (API Keys)." };
+    // 1. Double vérification de sécurité
+    if (!APPLICATION_KEY || APPLICATION_KEY.length < 10) {
+      return { success: false, error: "Configuration API MeSomb introuvable." };
     }
 
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
     const date = Math.floor(Date.now() / 1000).toString();
     const nonce = randomBytes(16).toString('hex');
     
-    // 2. Nettoyage strict du numéro (Retrait du +, des espaces, etc.)
+    // 2. Nettoyage du numéro
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
 
-    // 3. FIX DEVISE : Détection dynamique (Cameroun/RCA = XAF, Autres = XOF)
+    // 3. FIX DEVISE AUTOMATIQUE (Cameroun/RCA = XAF, reste = XOF)
     let finalCurrency = 'XOF';
     if (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) {
         finalCurrency = 'XAF';
     }
 
-    // 4. Génération de la signature HMAC
+    // 4. Signature HMAC
     const credentials = `POST\n${url}\n${date}\n${nonce}`;
     const signature = createHmac('sha256', SECRET_KEY).update(credentials).digest('hex');
-
-    // 5. Formatage de l'en-tête Authorization
     const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${date}:${nonce}`;
 
     const response = await fetch(url, {
@@ -80,20 +76,17 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
       return { 
         success: true, 
         transactionId: data.pk || data.id,
-        message: "Demande de paiement envoyée. Vérifiez votre téléphone." 
+        message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      console.error("MESOMB_API_ERROR:", data);
-      // Message d'erreur plus utile pour l'étudiant
-      const errorMsg = data.detail || data.message || "La transaction a été refusée. Vérifiez votre solde mobile ou incluez le code pays (ex: 237...).";
-      return { success: false, error: errorMsg };
+      console.error("MESOMB_ERROR_LOG:", data);
+      return { 
+        success: false, 
+        error: data.detail || data.message || "La transaction a échoué. Vérifiez votre solde mobile." 
+      };
     }
 
   } catch (error: any) {
-    console.error("INITIATE_PAYMENT_FATAL:", error.message);
-    return { 
-        success: false, 
-        error: "Le service de paiement est momentanément indisponible." 
-    };
+    return { success: false, error: "Le service de paiement est indisponible." };
   }
 }
