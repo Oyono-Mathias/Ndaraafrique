@@ -3,9 +3,8 @@
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4.3).
- * ✅ FIX : Interface complète (affiliateId, couponId) pour corriger le build Vercel.
- * ✅ FIX : Retour explicite de transactionId pour TypeScript.
+ * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4.4).
+ * ✅ FIX : Signature simplifiée pour éviter le "Invalid Format".
  */
 
 const APPLICATION_KEY = (process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051").trim();
@@ -19,36 +18,31 @@ interface MeSombPaymentParams {
   courseId: string;
   userId: string;
   type?: 'course_purchase' | 'wallet_topup';
-  affiliateId?: string; // Ajouté pour le build
-  couponId?: string;    // Ajouté pour le build
+  affiliateId?: string;
+  couponId?: string;
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
+    // 1. Paramètres de base
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
-    const date = new Date();
-    const timestamp = Math.floor(date.getTime() / 1000);
+    const timestamp = Math.floor(Date.now() / 1000);
     const nonce = randomBytes(16).toString('hex');
     
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
+    let finalCurrency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
 
-    // Détection devise (Cameroun/RCA = XAF)
-    let finalCurrency = 'XOF';
-    if (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) {
-        finalCurrency = 'XAF';
-    }
+    // 2. Création de la signature HMAC (Format STRICT MeSomb)
+    // IMPORTANT : Pas de caractères spéciaux en dehors de \n
+    const method = "POST";
+    const credentials = `${method}\n${url}\n${timestamp}\n${nonce}`;
+    
+    const signature = createHmac('sha256', SECRET_KEY)
+      .update(credentials)
+      .digest('hex');
 
-    const bodyData = {
-        amount: params.amount,
-        service: params.service,
-        receiver: cleanPhone,
-        currency: finalCurrency,
-        nonce: nonce
-    };
-
-    // Signature HMAC conforme MeSomb 1.1
-    const credentials = `POST\n${url}\n${timestamp}\n${nonce}`;
-    const signature = createHmac('sha256', SECRET_KEY).update(credentials).digest('hex');
+    // 3. Construction de l'en-tête Authorization
+    // Format : MeSomb <AccessKey>:<Signature>:<Timestamp>:<Nonce>
     const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${timestamp}:${nonce}`;
 
     const response = await fetch(url, {
@@ -59,13 +53,17 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ...bodyData,
+        amount: params.amount,
+        service: params.service,
+        receiver: cleanPhone,
+        currency: finalCurrency,
+        nonce: nonce,
         extra: {
           userId: params.userId,
           courseId: params.courseId || 'WALLET_TOPUP',
           type: params.type || 'wallet_topup',
-          affiliateId: params.affiliateId || undefined,
-          couponId: params.couponId || undefined
+          affiliateId: params.affiliateId || "",
+          couponId: params.couponId || ""
         }
       }),
     });
@@ -79,16 +77,16 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      console.error("MESOMB_REJECTED:", data);
+      console.error("DEBUG MeSomb Response:", data);
       return { 
         success: false, 
         transactionId: null,
-        error: data.detail || data.message || "Erreur d'autorisation MeSomb." 
+        error: data.detail || data.message || "Erreur de validation (Authorization Header)." 
       };
     }
 
   } catch (error: any) {
-    console.error("MESOMB_FATAL_ERROR:", error.message);
-    return { success: false, transactionId: null, error: "Service indisponible." };
+    console.error("FATAL ERROR:", error.message);
+    return { success: false, transactionId: null, error: "Connexion au service de paiement impossible." };
   }
 }
