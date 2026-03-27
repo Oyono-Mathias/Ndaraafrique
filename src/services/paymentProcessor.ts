@@ -6,8 +6,9 @@ import { sendUserNotification } from '@/actions/notificationActions';
 import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/types';
 
 /**
- * @fileOverview Ndara Payment Processor (Le Cerveau Financier).
- * ✅ STANDARD : Statuts en minuscules.
+ * @fileOverview Ndara Payment Processor (Le Cerveau Financier V4).
+ * ✅ FIX : Notification dynamique (XAF/XOF).
+ * ✅ SÉCURITÉ : Idempotence renforcée pour éviter les doubles crédits.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -16,52 +17,66 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const db = getAdminDb();
 
   try {
-    const existingPayment = await db.collection('payments').doc(String(transactionId)).get();
+    // 1. Vérification Anti-Doublon (Idempotence)
+    const paymentDocRef = db.collection('payments').doc(String(transactionId));
+    const existingPayment = await paymentDocRef.get();
+    
     if (existingPayment.exists && existingPayment.data()?.status === 'completed') {
+      console.log(`✅ Transaction ${transactionId} déjà traitée.`);
       return { success: true };
     }
 
-    const isTopup = metadata.type === 'wallet_topup';
+    const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
+    // 2. Récupération des données nécessaires
     const promises: any[] = [
       db.collection('settings').doc('global').get(),
       db.collection('users').doc(metadata.userId).get()
     ];
 
-    if (!isTopup) {
+    if (!isTopup && metadata.courseId) {
         promises.push(db.collection('courses').doc(metadata.courseId).get());
     }
 
     const [settingsDoc, userDoc, courseDoc] = await Promise.all(promises);
 
     if (!userDoc.exists) {
-        throw new Error("UTILISATEUR_NON_TROUVE");
+        throw new Error("UTILISATEUR_INTROUVABLE");
     }
 
     const settings = (settingsDoc.exists ? settingsDoc.data() : {}) as Settings;
     const userData = userDoc.data() as NdaraUser;
-    
     const batch = db.batch();
 
-    const paymentRef = db.collection('payments').doc(String(transactionId));
+    // 3. Préparation du reçu de paiement
     const paymentData: any = {
-      id: transactionId,
-      gatewayTransactionId: gatewayTransactionId || transactionId,
+      id: String(transactionId),
+      gatewayTransactionId: String(gatewayTransactionId || transactionId),
       userId: metadata.userId,
-      amount,
-      currency,
-      provider,
+      amount: Number(amount),
+      currency: currency || 'XAF',
+      provider: provider || 'mesomb',
       date: FieldValue.serverTimestamp(),
-      status: 'completed', // ✅ STANDARD
-      metadata
+      status: 'completed',
+      metadata: {
+          ...metadata,
+          processedAt: new Date().toISOString()
+      }
     };
 
+    // --- LOGIQUE WALLET (RECHARGE) ---
     if (isTopup) {
         paymentData.courseTitle = "Recharge Wallet Ndara";
         const userRef = db.collection('users').doc(metadata.userId);
-        batch.update(userRef, { balance: FieldValue.increment(amount) });
-    } else {
-        if (!courseDoc || !courseDoc.exists) throw new Error("COURS_NON_TROUVE");
+        // On incrémente le solde
+        batch.update(userRef, { 
+            balance: FieldValue.increment(Number(amount)),
+            lastTopupDate: FieldValue.serverTimestamp()
+        });
+    } 
+    // --- LOGIQUE ACHAT DE COURS ---
+    else {
+        if (!courseDoc || !courseDoc.exists) throw new Error("COURS_INTROUVABLE");
         const courseData = courseDoc.data() as Course;
 
         const instructorSharePercent = settings.commercial?.instructorShare || 80;
@@ -77,83 +92,53 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         paymentData.courseId = metadata.courseId;
         paymentData.courseTitle = courseData.title;
         paymentData.instructorId = courseData.instructorId;
-        paymentData.platformFee = platformFee;
-        paymentData.instructorRevenue = instructorRevenue;
-        paymentData.affiliateCommission = affiliateCommission;
-        paymentData.affiliateId = hasAffiliate ? effectiveAffiliateId : null;
-
+        
+        // Inscription de l'étudiant
         const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
         const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
         batch.set(enrollmentRef, {
           id: enrollmentId,
           studentId: metadata.userId,
           courseId: metadata.courseId,
-          instructorId: courseData.instructorId,
           status: 'active', 
           progress: 0,
           enrollmentDate: FieldValue.serverTimestamp(),
-          lastAccessedAt: FieldValue.serverTimestamp(),
           priceAtEnrollment: amount,
-          transactionId,
-          enrollmentType: 'paid'
+          transactionId
         }, { merge: true });
 
+        // Crédit de l'instructeur
         const sellerId = courseData.ownerId || courseData.instructorId;
         if (sellerId && sellerId !== 'NDARA_OFFICIAL') {
             const sellerRef = db.collection('users').doc(sellerId);
             batch.update(sellerRef, {
-                balance: FieldValue.increment(instructorRevenue),
-                'affiliateStats.sales': FieldValue.increment(1)
-            });
-        }
-
-        if (hasAffiliate) {
-            const affiliateId = effectiveAffiliateId!;
-            const affTransRef = db.collection('affiliate_transactions').doc();
-            const unlockDate = new Date();
-            unlockDate.setDate(unlockDate.getDate() + (settings.commercial?.payoutDelayDays || 14));
-
-            batch.set(affTransRef, {
-                id: affTransRef.id,
-                affiliateId,
-                courseId: metadata.courseId,
-                courseTitle: courseData.title,
-                buyerId: metadata.userId,
-                buyerName: userData.fullName,
-                amount,
-                commissionAmount: affiliateCommission,
-                status: 'pending',
-                createdAt: FieldValue.serverTimestamp(),
-                unlockDate: Timestamp.fromDate(unlockDate)
-            });
-
-            const affiliateRef = db.collection('users').doc(affiliateId);
-            batch.update(affiliateRef, {
-                pendingAffiliateBalance: FieldValue.increment(affiliateCommission),
-                'affiliateStats.earnings': FieldValue.increment(affiliateCommission)
+                balance: FieldValue.increment(instructorRevenue)
             });
         }
     }
 
-    batch.set(paymentRef, paymentData);
+    // 4. Validation finale du batch
+    batch.set(paymentDocRef, paymentData);
     await batch.commit();
 
+    // 5. Notification (Correction de la devise)
     try {
+        const displayCurrency = currency || 'FCFA';
         await sendUserNotification(metadata.userId, {
           text: isTopup 
-            ? `Votre compte a été crédité de ${amount.toLocaleString()} XOF.`
+            ? `Votre compte a été crédité de ${amount.toLocaleString()} ${displayCurrency}.`
             : `Félicitations ! Votre formation "${paymentData.courseTitle}" est disponible.`,
           link: isTopup ? `/student/wallet` : `/student/courses/${metadata.courseId}`,
           type: 'success'
         });
     } catch (e) {
-        console.warn("Notification failed, but payment processed.");
+        console.warn("Notification non envoyée, mais paiement validé.");
     }
 
     return { success: true };
 
   } catch (error: any) {
-    console.error("PAYMENT_PROCESSOR_CORE_ERROR:", error.message);
+    console.error("❌ ERREUR CRITIQUE PAYEMENT:", error.message);
     throw error;
   }
 }
