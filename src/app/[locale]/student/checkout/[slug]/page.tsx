@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V4.
+ * @fileOverview Tunnel de paiement Ndara Afrique V4.1.
  * ✅ DESIGN : Choix direct de l'opérateur (Orange, MTN, Wave).
- * ✅ LOGIQUE : Pilotage dynamique des passerelles (Moneroo/MeSomb) via Admin.
+ * ✅ VALIDATION : Support étendu des préfixes Orange Cameroun.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -102,6 +102,15 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user || !course || !settings) return;
     
+    // Validation du numéro si MeSomb est utilisé
+    if (provider === 'orange' && !settings.monerooEnabled) {
+        const clean = phoneNumber.replace(/\D/g, '');
+        if (!clean.match(/^(237)?6(9|5[5-9]|8[6-9]|40)/)) {
+            toast({ variant: 'destructive', title: "Numéro Orange invalide", description: "Utilisez un numéro Orange valide (69, 655-659, 686-689, 640)." });
+            return;
+        }
+    }
+
     setIsProcessing(true);
 
     try {
@@ -133,8 +142,6 @@ function CheckoutContent() {
           await new Promise(resolve => setTimeout(resolve, 2000));
           setIsSuccess(true);
       } else {
-          // --- LOGIQUE MULTI-GATEWAY DYNAMIQUE ---
-          // On priorise Moneroo si activé en admin, sinon MeSomb
           const useMoneroo = settings.monerooEnabled;
 
           if (useMoneroo) {
@@ -156,7 +163,6 @@ function CheckoutContent() {
                   throw new Error(result.error);
               }
           } else {
-              // 💳 UTILISATION DE MESOMB
               if (!settings.mesombEnabled) throw new Error("Toutes les passerelles de paiement sont actuellement suspendues.");
 
               const result = await initiateMeSombPayment({

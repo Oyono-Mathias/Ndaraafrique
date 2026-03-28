@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V5.1 avec Logos Opérateurs.
+ * @fileOverview Ndara Wallet Étudiant - V5.2 avec validation Orange étendue.
  * ✅ UI : Intégration de OperatorLogo dans l'historique.
+ * ✅ VALIDATION : Support des préfixes Orange 69, 655-659, 686-689, 640.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -81,8 +82,8 @@ export default function NdaraWalletPage() {
             toast({ variant: 'destructive', title: "Numéro MTN invalide", description: "Un numéro MTN doit commencer par 67 ou 68." });
             return;
         }
-        if (selectedMethod === 'orange' && !cleanPhone.match(/^(237)?69/)) {
-            toast({ variant: 'destructive', title: "Numéro Orange invalide", description: "Un numéro Orange doit commencer par 69." });
+        if (selectedMethod === 'orange' && !cleanPhone.match(/^(237)?6(9|5[5-9]|8[6-9]|40)/)) {
+            toast({ variant: 'destructive', title: "Numéro Orange invalide", description: "Veuillez utiliser un numéro Orange valide (69, 655-659, 686-689, 640)." });
             return;
         }
 

@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 
 /**
  * @fileOverview Actions serveur pour MeSomb (Ndara Afrique).
- * ✅ SÉCURITÉ : Validation stricte des préfixes MTN (67, 68) et Orange (69).
+ * ✅ SÉCURITÉ : Validation étendue des préfixes Orange Cameroun (69, 655-659, 686-689, 640).
  * ✅ INTÉGRITÉ : Suppression de la simulation de succès interne.
  */
 
@@ -33,13 +33,13 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
           return { success: false, error: "Le numéro ne correspond pas à l'opérateur MTN (doit commencer par 67 ou 68)." };
       }
   } else if (params.service === 'ORANGE') {
-      // Un numéro Orange valide doit commencer par 69
-      if (!cleanPhone.match(/^(237)?69/)) {
-          return { success: false, error: "Le numéro ne correspond pas à l'opérateur Orange (doit commencer par 69)." };
+      // Orange Cameroun : 69x, 655-659, 686-689, 640
+      if (!cleanPhone.match(/^(237)?6(9|5[5-9]|8[6-9]|40)/)) {
+          return { success: false, error: "Le numéro ne correspond pas à l'opérateur Orange (préfixes valides: 69, 655-659, 686-689, 640)." };
       }
   }
 
-  // 🛡️ VÉRIFICATION CONFIGURATION (Pas de simulation ici)
+  // 🛡️ VÉRIFICATION CONFIGURATION
   if (!SECRET_KEY || !APPLICATION_KEY) {
     console.error(`[MeSomb] ❌ CLÉS MANQUANTES : La passerelle n'est pas configurée sur le serveur.`);
     return { 
