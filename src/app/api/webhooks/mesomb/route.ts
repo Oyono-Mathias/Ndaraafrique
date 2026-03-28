@@ -1,60 +1,66 @@
+
 import { NextResponse } from 'next/server';
+import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
- * @fileOverview Webhook MeSomb Ndara V4.
- * ✅ FIX : Gestion dynamique XAF/XOF.
- * ✅ ROBUSTESSE : Mapping flexible des données MeSomb.
- * ✅ SÉCURITÉ : Logs d'erreurs enrichis pour le débogage.
+ * @fileOverview Webhook MeSomb Sécurisé.
+ * ✅ ANTI-SPOOFING : Vérification de l'existence de la transaction dans Firestore.
+ * ✅ INTÉGRITÉ : Comparaison des montants attendus vs reçus.
  */
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("🔔 WEBHOOK RECEIVE:", JSON.stringify(body));
+    console.log("🔔 Webhook MeSomb Reçu");
 
-    // 1. Détection du succès (MeSomb envoie SUCCESS ou success: true)
     const isSuccess = body.status === 'SUCCESS' || body.success === true;
+    if (!isSuccess) return NextResponse.json({ status: 'ignored' });
 
-    if (isSuccess) {
-      // MeSomb peut mettre les infos à la racine ou dans un objet transaction
-      const txnData = body.transaction || body;
-      
-      // Extraction des métadonnées (ce qu'on a envoyé lors de l'initiation)
-      const metadata = txnData.metadata || txnData.extra || body.extra;
+    const txnData = body.transaction || body;
+    const metadata = txnData.metadata || txnData.extra || body.extra;
+    const internalRef = metadata?.internalReference;
 
-      if (!metadata?.userId) {
-          console.error("❌ WEBHOOK ERROR: userId manquant dans les métadonnées", metadata);
-          return NextResponse.json({ error: 'User ID missing' }, { status: 400 });
-      }
-
-      // 2. Traitement du paiement vers Firestore
-      // On s'assure que le montant et la devise sont bien captés
-      await processNdaraPayment({
-        transactionId: String(txnData.pk || txnData.id || `MS-${Date.now()}`),
-        gatewayTransactionId: String(txnData.pk || txnData.id),
-        provider: 'mesomb',
-        amount: Number(txnData.amount),
-        currency: txnData.currency || 'XAF', // Par défaut XAF pour le Cameroun
-        metadata: {
-          userId: metadata.userId,
-          courseId: metadata.courseId || 'WALLET_TOPUP',
-          affiliateId: metadata.affiliateId || undefined,
-          couponId: metadata.couponId || undefined,
-          type: metadata.type || 'wallet_topup'
-        }
-      });
-
-      console.log(`✅ PAIEMENT VALIDÉ : ${txnData.amount} ${txnData.currency} pour l'user ${metadata.userId}`);
-      return NextResponse.json({ processed: true, status: 'success' });
+    if (!internalRef) {
+        console.error("❌ Erreur: Référence interne manquante dans le webhook");
+        return NextResponse.json({ error: 'No reference' }, { status: 400 });
     }
 
-    // Si le statut n'est pas SUCCESS, on ne crédite pas mais on répond 200 pour dire qu'on a reçu l'info
-    console.warn("⚠️ WEBHOOK: Statut non géré ou échec", body.status);
-    return NextResponse.json({ received: true, status: body.status });
+    const db = getAdminDb();
+    const paymentDoc = await db.collection('payments').doc(internalRef).get();
+
+    // 🛡️ DOUBLE VÉRIFICATION CRITIQUE
+    if (!paymentDoc.exists) {
+        console.error(`❌ ALERTE SÉCURITÉ : Tentative de validation d'une transaction inconnue : ${internalRef}`);
+        return NextResponse.json({ error: 'Fraud detected' }, { status: 403 });
+    }
+
+    const expectedData = paymentDoc.data();
+    
+    // Vérifier que le montant payé correspond au montant enregistré
+    if (Number(txnData.amount) < Number(expectedData?.amount)) {
+        console.error(`❌ ALERTE SÉCURITÉ : Montant incohérent pour ${internalRef}. Reçu: ${txnData.amount}, Attendu: ${expectedData?.amount}`);
+        return NextResponse.json({ error: 'Amount mismatch' }, { status: 403 });
+    }
+
+    // Si tout est OK, on traite via le processeur central
+    await processNdaraPayment({
+      transactionId: internalRef, // On garde notre ID interne comme clé unique
+      gatewayTransactionId: String(txnData.pk || txnData.id),
+      provider: 'mesomb',
+      amount: Number(txnData.amount),
+      currency: txnData.currency || 'XAF',
+      metadata: {
+        userId: expectedData?.userId,
+        courseId: expectedData?.courseId,
+        type: expectedData?.type
+      }
+    });
+
+    return NextResponse.json({ processed: true });
 
   } catch (error: any) {
-    console.error('❌ WEBHOOK FATAL ERROR:', error.message);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('❌ WEBHOOK ERROR:', error.message);
+    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
   }
 }

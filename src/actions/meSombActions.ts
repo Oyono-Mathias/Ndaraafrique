@@ -1,11 +1,13 @@
-'use server';
+
+'use client';
 
 import { randomBytes } from 'crypto';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Actions serveur pour MeSomb (Ndara Afrique).
- * ✅ SÉCURITÉ : Validation exhaustive des préfixes Cameroun (Orange & MTN).
- * ✅ INTÉGRITÉ : Mapping dynamique des devises XAF/XOF.
+ * ✅ SÉCURITÉ : Pré-enregistrement de la transaction pour validation croisée.
  */
 
 interface MeSombPaymentParams {
@@ -23,41 +25,35 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
 
-  // 1. Nettoyage du numéro
+  // 1. Nettoyage et validation
   const cleanPhone = params.phoneNumber.replace(/\D/g, '');
   
-  // 🛡️ VALIDATION STRICTE DES PRÉFIXES (CAMEROUN)
-  if (params.service === 'MTN') {
-      // MTN Cameroun : 650-654, 67x, 680-683
-      if (!cleanPhone.match(/^(237)?6(5[0-4]|7\d|8[0-3])/)) {
-          return { 
-            success: false, 
-            error: "Numéro invalide pour MTN (préfixes valides: 650-654, 67x, 680-683)." 
-          };
-      }
-  } else if (params.service === 'ORANGE') {
-      // Orange Cameroun : 69x, 655-659, 686-689, 640
-      if (!cleanPhone.match(/^(237)?6(9\d|5[5-9]|8[6-9]|40)/)) {
-          return { 
-            success: false, 
-            error: "Numéro invalide pour Orange (préfixes valides: 69x, 655-659, 686-689, 640)." 
-          };
-      }
+  if (!SECRET_KEY || !APPLICATION_KEY) {
+    console.error(`[MeSomb] ❌ CONFIG_MISSING`);
+    return { success: false, error: "Configuration serveur incomplète." };
   }
 
-  if (!SECRET_KEY || !APPLICATION_KEY) {
-    console.error(`[MeSomb] ❌ CONFIG_MISSING : Clés API introuvables.`);
-    return { 
-        success: false, 
-        error: "Le service de paiement Mobile Money n'est pas encore configuré sur ce serveur." 
-    };
-  }
+  const db = getFirestore();
+  const internalRef = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   try {
+    // 🛡️ SÉCURITÉ FINTECH : On enregistre l'intention de paiement AVANT l'appel API
+    // Cela permet de vérifier le montant lors du retour du Webhook.
+    await setDoc(doc(db, 'payments', internalRef), {
+        id: internalRef,
+        userId: params.userId,
+        amount: params.amount,
+        currency: (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF',
+        status: 'pending',
+        provider: 'mesomb',
+        type: params.type || 'wallet_topup',
+        courseId: params.courseId,
+        createdAt: serverTimestamp()
+    });
+
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
     const nonce = randomBytes(16).toString('hex');
     
-    // Mapping Géo : Cameroun (237) et Centrafrique (236) utilisent XAF. Le reste XOF.
     let finalCurrency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
 
     const bodyObj = {
@@ -67,15 +63,12 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         currency: finalCurrency,
         nonce: nonce,
         extra: {
+          internalReference: internalRef, // On passe notre ID interne
           userId: params.userId,
           courseId: params.courseId || 'WALLET_TOPUP',
-          type: params.type || 'wallet_topup',
-          affiliateId: params.affiliateId || "",
-          couponId: params.couponId || ""
+          type: params.type || 'wallet_topup'
         }
     };
-
-    console.log(`[MeSomb] Requête : ${params.service} | ${cleanPhone} | ${params.amount} ${finalCurrency}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -92,17 +85,14 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
       return { 
         success: true, 
-        transactionId: String(data.pk || data.id || "PENDING"), 
-        message: "Demande envoyée. Saisissez votre code PIN sur votre téléphone." 
+        transactionId: internalRef, 
+        message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      const errorDetail = data.detail || data.message || "La passerelle a refusé la transaction.";
-      console.error(`[MeSomb API Rejet] : ${errorDetail}`);
-      return { success: false, error: `Échec : ${errorDetail}` };
+      return { success: false, error: data.detail || "Refus de la passerelle." };
     }
 
   } catch (error: any) {
-    console.error("[MeSomb Fatal]", error.message);
-    return { success: false, error: "Impossible de joindre la passerelle de paiement." };
+    return { success: false, error: "Erreur de connexion à la passerelle." };
   }
 }
