@@ -5,8 +5,8 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Actions serveur pour MeSomb (Ndara Afrique).
- * ✅ DEBUG : Mode simulation automatique si les clés API sont absentes.
- * ✅ LOGGING : Traces détaillées pour le diagnostic backend.
+ * ✅ DEBUG : Traces détaillées des requêtes et réponses API.
+ * ✅ SIMULATION : Remontée des erreurs réelles du processeur interne.
  */
 
 interface MeSombPaymentParams {
@@ -21,23 +21,19 @@ interface MeSombPaymentParams {
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
-  // Récupération et nettoyage des clés
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
 
-  // 🛠️ LOG DE DIAGNOSTIC (Côté Serveur uniquement)
-  console.log(`[MeSomb Debug] Init: ${params.service} | Amount: ${params.amount} | User: ${params.userId}`);
-  if (!SECRET_KEY) console.warn("[MeSomb Debug] MESOMB_SECRET_KEY est manquant.");
-  if (!APPLICATION_KEY) console.warn("[MeSomb Debug] MESOMB_APP_KEY est manquant.");
+  // 🛠️ LOG DE DIAGNOSTIC INITIAL
+  console.log(`[MeSomb API] Démarrage transaction pour l'utilisateur: ${params.userId}`);
+  console.log(`[MeSomb API] Paramètres: Service=${params.service}, Montant=${params.amount}`);
 
   // 🛡️ FALLBACK SIMULATION (Mode Prototype / Développement)
   if (!SECRET_KEY || !APPLICATION_KEY) {
-    console.warn(`[MeSomb] ⚠️ MODE SIMULATION ACTIVÉ pour l'utilisateur ${params.userId}`);
+    console.warn(`[MeSomb] ⚠️ CLÉS MANQUANTES : Bascule en mode SIMULATION`);
     
-    // Pour que l'expérience utilisateur soit complète, on déclenche le traitement interne
-    // Cela simule le retour positif du Webhook GSM
     try {
-        await processNdaraPayment({
+        const result = await processNdaraPayment({
             transactionId: `SIM-${Math.random().toString(36).substring(7).toUpperCase()}`,
             gatewayTransactionId: "SIMULATED_BY_SYSTEM",
             provider: 'mesomb',
@@ -55,18 +51,18 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         return { 
             success: true, 
             transactionId: "SIMULATED", 
-            message: "Mode Test : Votre opération a été validée avec succès (Simulation)." 
+            message: "Mode Test : Opération validée avec succès par le simulateur." 
         };
     } catch (e: any) {
         console.error("[MeSomb Simulation] Échec du processeur interne:", e.message);
-        return { success: false, error: "Erreur lors de la simulation du paiement." };
+        // On renvoie l'erreur réelle (ex: UTILISATEUR_INTROUVABLE) pour le debug frontend
+        return { success: false, error: `Erreur Simulateur: ${e.message}` };
     }
   }
 
   try {
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
     const nonce = randomBytes(16).toString('hex');
-    
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
     
     // Mapping Géo : Cameroun (237) et Centrafrique (236) utilisent XAF. Le reste XOF.
@@ -87,6 +83,11 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         }
     };
 
+    // 🚀 LOG DE LA REQUÊTE API
+    console.log(`[MeSomb Request] URL: ${url}`);
+    console.log(`[MeSomb Request] App-Key: ${APPLICATION_KEY.substring(0, 8)}...`);
+    console.log(`[MeSomb Request] Body:`, JSON.stringify(bodyObj));
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -99,23 +100,28 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
 
     const data = await response.json();
 
+    // 📥 LOG DE LA RÉPONSE API
+    console.log(`[MeSomb Response] Status: ${response.status}`);
+    console.log(`[MeSomb Response] Data:`, JSON.stringify(data));
+
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
       return { 
         success: true, 
         transactionId: String(data.pk || data.id || "PENDING"), 
-        message: "Demande envoyée. Validez sur votre téléphone." 
+        message: "Demande de débit envoyée. Veuillez valider sur votre téléphone." 
       };
     } else {
-      console.error("[MeSomb API Error]", JSON.stringify(data));
+      const errorDetail = data.detail || data.message || "Refus de la passerelle.";
+      console.error(`[MeSomb API Rejet] Cause: ${errorDetail}`);
       return { 
         success: false, 
         transactionId: null,
-        error: data.detail || data.message || "La passerelle de paiement a rejeté la demande." 
+        error: `Erreur API MeSomb (${response.status}): ${errorDetail}` 
       };
     }
 
   } catch (error: any) {
-    console.error("[MeSomb Fatal Error]", error.message);
-    return { success: false, transactionId: null, error: "Impossible de joindre le service de paiement." };
+    console.error("[MeSomb Fatal Error] Connexion impossible:", error.message);
+    return { success: false, transactionId: null, error: "Impossible de joindre le serveur MeSomb. Vérifiez votre connexion." };
   }
 }
