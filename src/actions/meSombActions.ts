@@ -1,12 +1,11 @@
 'use server';
 
 import { randomBytes } from 'crypto';
-import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Actions serveur pour MeSomb (Ndara Afrique).
- * ✅ DEBUG : Traces détaillées des requêtes et réponses API.
- * ✅ SIMULATION : Remontée des erreurs réelles du processeur interne.
+ * ✅ SÉCURITÉ : Validation stricte des préfixes MTN (67, 68) et Orange (69).
+ * ✅ INTÉGRITÉ : Suppression de la simulation de succès interne.
  */
 
 interface MeSombPaymentParams {
@@ -24,46 +23,34 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
 
-  // 🛠️ LOG DE DIAGNOSTIC INITIAL
-  console.log(`[MeSomb API] Démarrage transaction pour l'utilisateur: ${params.userId}`);
-  console.log(`[MeSomb API] Paramètres: Service=${params.service}, Montant=${params.amount}`);
+  // 1. Nettoyage et Validation du numéro
+  const cleanPhone = params.phoneNumber.replace(/\D/g, '');
+  
+  // Validation des préfixes selon l'opérateur (Standards Cameroun)
+  if (params.service === 'MTN') {
+      // Un numéro MTN valide doit commencer par 67 ou 68 (après le code pays éventuel)
+      if (!cleanPhone.match(/^(237)?6(7|8)/)) {
+          return { success: false, error: "Le numéro ne correspond pas à l'opérateur MTN (doit commencer par 67 ou 68)." };
+      }
+  } else if (params.service === 'ORANGE') {
+      // Un numéro Orange valide doit commencer par 69
+      if (!cleanPhone.match(/^(237)?69/)) {
+          return { success: false, error: "Le numéro ne correspond pas à l'opérateur Orange (doit commencer par 69)." };
+      }
+  }
 
-  // 🛡️ FALLBACK SIMULATION (Mode Prototype / Développement)
+  // 🛡️ VÉRIFICATION CONFIGURATION (Pas de simulation ici)
   if (!SECRET_KEY || !APPLICATION_KEY) {
-    console.warn(`[MeSomb] ⚠️ CLÉS MANQUANTES : Bascule en mode SIMULATION`);
-    
-    try {
-        const result = await processNdaraPayment({
-            transactionId: `SIM-${Math.random().toString(36).substring(7).toUpperCase()}`,
-            gatewayTransactionId: "SIMULATED_BY_SYSTEM",
-            provider: 'mesomb',
-            amount: params.amount,
-            currency: 'XAF',
-            metadata: {
-                userId: params.userId,
-                courseId: params.courseId || 'WALLET_TOPUP',
-                type: params.type || 'wallet_topup',
-                affiliateId: params.affiliateId,
-                couponId: params.couponId
-            }
-        });
-
-        return { 
-            success: true, 
-            transactionId: "SIMULATED", 
-            message: "Mode Test : Opération validée avec succès par le simulateur." 
-        };
-    } catch (e: any) {
-        console.error("[MeSomb Simulation] Échec du processeur interne:", e.message);
-        // On renvoie l'erreur réelle (ex: UTILISATEUR_INTROUVABLE) pour le debug frontend
-        return { success: false, error: `Erreur Simulateur: ${e.message}` };
-    }
+    console.error(`[MeSomb] ❌ CLÉS MANQUANTES : La passerelle n'est pas configurée sur le serveur.`);
+    return { 
+        success: false, 
+        error: "Le service de paiement Mobile Money n'est pas encore configuré par l'administrateur." 
+    };
   }
 
   try {
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
     const nonce = randomBytes(16).toString('hex');
-    const cleanPhone = params.phoneNumber.replace(/\D/g, '');
     
     // Mapping Géo : Cameroun (237) et Centrafrique (236) utilisent XAF. Le reste XOF.
     let finalCurrency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
@@ -83,10 +70,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         }
     };
 
-    // 🚀 LOG DE LA REQUÊTE API
-    console.log(`[MeSomb Request] URL: ${url}`);
-    console.log(`[MeSomb Request] App-Key: ${APPLICATION_KEY.substring(0, 8)}...`);
-    console.log(`[MeSomb Request] Body:`, JSON.stringify(bodyObj));
+    console.log(`[MeSomb Request] Initiation de débit pour ${cleanPhone} | Montant: ${params.amount}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -100,28 +84,23 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
 
     const data = await response.json();
 
-    // 📥 LOG DE LA RÉPONSE API
-    console.log(`[MeSomb Response] Status: ${response.status}`);
-    console.log(`[MeSomb Response] Data:`, JSON.stringify(data));
-
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
       return { 
         success: true, 
         transactionId: String(data.pk || data.id || "PENDING"), 
-        message: "Demande de débit envoyée. Veuillez valider sur votre téléphone." 
+        message: "Demande de paiement envoyée. Veuillez valider avec votre code PIN sur votre téléphone." 
       };
     } else {
       const errorDetail = data.detail || data.message || "Refus de la passerelle.";
       console.error(`[MeSomb API Rejet] Cause: ${errorDetail}`);
       return { 
         success: false, 
-        transactionId: null,
-        error: `Erreur API MeSomb (${response.status}): ${errorDetail}` 
+        error: `Échec : ${errorDetail}` 
       };
     }
 
   } catch (error: any) {
-    console.error("[MeSomb Fatal Error] Connexion impossible:", error.message);
-    return { success: false, transactionId: null, error: "Impossible de joindre le serveur MeSomb. Vérifiez votre connexion." };
+    console.error("[MeSomb Fatal Error]", error.message);
+    return { success: false, error: "Connexion aux services Mobile Money impossible. Réessayez plus tard." };
   }
 }

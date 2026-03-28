@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V4.6 Restaurée & Sécurisée.
- * ✅ DESIGN : Restauration de la structure HTML originale avec sélecteur natif.
- * ✅ DATA : Connexion Firestore Temps Réel pour le solde et l'historique.
- * ✅ FIX : Correction des imports Input/Button pour le build.
+ * @fileOverview Ndara Wallet Étudiant - V5.0 Sécurisée.
+ * ✅ VALIDATION : Vérification des préfixes MTN/Orange avant envoi.
+ * ✅ UX : État 'PENDING' explicite pour la validation USSD.
  */
 
 import { useRole } from '@/context/RoleContext';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, doc } from 'firebase/firestore';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +19,9 @@ import {
     Receipt, 
     ArrowDownLeft, 
     ShoppingBag as ShoppingBagIcon,
-    CreditCard
+    CreditCard,
+    CheckCircle2,
+    AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -45,8 +46,9 @@ export default function NdaraWalletPage() {
     const [customAmount, setCustomAmount] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [selectedCountryCode, setSelectedCountryCode] = useState('cm');
-    const [selectedMethod, setSelectedMethod] = useState('orange');
+    const [selectedMethod, setSelectedMethod] = useState<'orange' | 'mtn' | 'wave'>('orange');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
 
     // 1. Écouteur de solde Firestore
     useEffect(() => {
@@ -77,18 +79,27 @@ export default function NdaraWalletPage() {
             toast({ variant: 'destructive', title: "Montant insuffisant", description: "Le minimum est de 100 FCFA." });
             return;
         }
-        if (phoneNumber.length < 8) {
-            toast({ variant: 'destructive', title: "Numéro invalide", description: "Veuillez entrer un numéro complet." });
+
+        // Validation locale des préfixes (Cameroon Standard)
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        if (selectedMethod === 'mtn' && !cleanPhone.match(/^(237)?6(7|8)/)) {
+            toast({ variant: 'destructive', title: "Numéro MTN invalide", description: "Un numéro MTN doit commencer par 67 ou 68." });
+            return;
+        }
+        if (selectedMethod === 'orange' && !cleanPhone.match(/^(237)?69/)) {
+            toast({ variant: 'destructive', title: "Numéro Orange invalide", description: "Un numéro Orange doit commencer par 69." });
             return;
         }
 
         setIsProcessing(true);
+        setIsAwaitingUssd(false);
+
         try {
-            const finalService = selectedMethod.toUpperCase() === 'MTN' || selectedMethod === 'momo' ? 'MTN' : 'ORANGE';
+            const finalService = selectedMethod.toUpperCase() as 'MTN' | 'ORANGE';
 
             const result = await initiateMeSombPayment({
                 amount: selectedAmount,
-                phoneNumber: phoneNumber,
+                phoneNumber: cleanPhone,
                 service: finalService,
                 courseId: 'WALLET_TOPUP',
                 userId: user.uid,
@@ -96,9 +107,10 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
+                setIsAwaitingUssd(true);
                 toast({ 
-                    title: "Demande envoyée !", 
-                    description: "Validez maintenant sur votre téléphone avec votre code PIN." 
+                    title: "Action requise !", 
+                    description: "Regardez votre téléphone et saisissez votre code PIN pour valider." 
                 });
                 setCustomAmount('');
             } else {
@@ -107,7 +119,7 @@ export default function NdaraWalletPage() {
         } catch (e: any) {
             toast({ 
                 variant: 'destructive', 
-                title: "Échec du paiement", 
+                title: "Erreur transaction", 
                 description: e.message || "Une erreur est survenue." 
             });
         } finally {
@@ -194,7 +206,6 @@ export default function NdaraWalletPage() {
             `}</style>
 
             <div className="w-full max-w-md min-h-screen bg-[#F5F5F5] relative flex flex-col shadow-2xl overflow-hidden">
-                {/* Header original */}
                 <header className="fixed top-0 w-full max-w-md z-40 bg-[#F5F5F5]/95 backdrop-blur-md safe-top border-b border-gray-200">
                     <div className="px-6 py-4 flex items-center justify-between">
                         <h1 className="font-black text-xl text-[#212121] tracking-wide uppercase">{t('title')}</h1>
@@ -205,7 +216,7 @@ export default function NdaraWalletPage() {
                 </header>
 
                 <main className="flex-1 overflow-y-auto hide-scrollbar pt-24 pb-48 px-6 relative">
-                    {/* Carte Solde original */}
+                    {/* Carte Solde */}
                     <div className="neo-card rounded-4xl p-6 mb-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-500 active:scale-95 transition-all">
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-8">
@@ -231,7 +242,22 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Sélecteur de Pays original */}
+                    {/* État USSD Pending */}
+                    {isAwaitingUssd && (
+                        <div className="mb-6 p-5 bg-amber-50 rounded-3xl border-2 border-amber-200 flex items-start gap-4 animate-in zoom-in duration-500">
+                            <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-black text-amber-900 text-xs uppercase mb-1">Confirmation Mobile</h3>
+                                <p className="text-amber-700 text-[10px] font-medium leading-relaxed">
+                                    Nous attendons la réponse de votre opérateur. Saisissez votre code secret sur le téléphone pour valider le dépôt.
+                                </p>
+                            </div>
+                            <button onClick={() => setIsAwaitingUssd(false)} className="text-amber-400"><XCircle size={16}/></button>
+                        </div>
+                    )}
+
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-100">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Pays de Résidence</label>
                         <div className="relative">
@@ -244,10 +270,6 @@ export default function NdaraWalletPage() {
                                 <option value="ci">🇨🇮 Côte d'Ivoire (XOF)</option>
                                 <option value="sn">🇸🇳 Sénégal (XOF)</option>
                                 <option value="ga">🇬🇦 Gabon (XAF)</option>
-                                <option value="ml">🇲🇱 Mali (XOF)</option>
-                                <option value="tg">🇹🇬 Togo (XOF)</option>
-                                <option value="bj">🇧🇯 Bénin (XOF)</option>
-                                <option value="bf">🇧🇫 Burkina Faso (XOF)</option>
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#757575]">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -255,7 +277,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Modes de Paiement original */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-200">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Mode de Paiement</label>
                         <div className="grid grid-cols-3 gap-3">
@@ -289,7 +310,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Montants original */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-300">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Montant à Recharger</label>
                         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -321,16 +341,15 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Téléphone original */}
                     <div className="mb-10 animate-in slide-in-from-bottom-4 duration-500 delay-350">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro de téléphone (avec code pays)</label>
+                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money (ex: 2376...)</label>
                         <div className="relative">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3F51B5]">
                                 <Smartphone className="w-5 h-5" />
                             </div>
                             <input 
                                 type="tel"
-                                placeholder="ex: 237690000000"
+                                placeholder="Numéro sans espaces"
                                 className="w-full h-16 pl-12 rounded-4xl bg-white border-2 border-gray-200 font-mono text-lg text-[#212121] focus:outline-none focus:border-[#3F51B5] shadow-sm"
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
@@ -338,7 +357,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* Historique original */}
                     <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-400">
                         <h2 className="font-black text-[#212121] text-sm uppercase tracking-wide flex items-center gap-2 mb-4">
                             <Receipt className="w-4 h-4 text-[#3F51B5]" />
@@ -372,7 +390,6 @@ export default function NdaraWalletPage() {
                     </div>
                 </main>
 
-                {/* Bouton Fixe original */}
                 <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-[#F5F5F5] via-[#F5F5F5] to-transparent pt-6 pb-6 px-6 z-40">
                     <Button 
                         onClick={handleRecharge}
@@ -380,10 +397,18 @@ export default function NdaraWalletPage() {
                         className="w-full h-16 bg-[#3F51B5] hover:bg-[#303F9F] text-white rounded-4xl font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 animate-pulse-glow"
                     >
                         {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
-                        <span>{t('action_button')}</span>
+                        <span>{isAwaitingUssd ? "Réessayer" : t('action_button')}</span>
                     </Button>
                 </div>
             </div>
         </div>
+    );
+}
+
+function XCircle(props: any) {
+    return (
+        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
+        </svg>
     );
 }
