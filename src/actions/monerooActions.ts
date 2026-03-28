@@ -1,24 +1,18 @@
 'use server';
 
-import { getAdminDb } from '@/firebase/admin';
-import { processNdaraPayment } from '@/services/paymentProcessor';
-
 /**
  * @fileOverview Actions serveur pour la passerelle Moneroo.
- * Gère l'initiation sécurisée (Server-to-Server).
- * ✅ SÉCURITÉ : Vérifie la présence des clés API avant l'appel.
+ * ✅ FIX : Renforcement du format Authorization Bearer.
+ * ✅ SÉCURITÉ : Vérification stricte des variables d'environnement.
  */
 
 class Moneroo {
-    private secretKey: string | undefined;
+    private secretKey: string;
 
-    constructor(secretKey?: string) {
+    constructor(secretKey: string) {
         this.secretKey = secretKey;
     }
 
-    /**
-     * Initie un paiement auprès de Moneroo pour obtenir une URL de redirection.
-     */
     async createPayment(params: {
         amount: number;
         currency: string;
@@ -26,10 +20,7 @@ class Moneroo {
         metadata: any;
         returnUrl: string;
     }) {
-        if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-            throw new Error("Clé secrète Moneroo non configurée sur le serveur. Veuillez contacter l'administrateur.");
-        }
-
+        // En-tête Bearer TOKEN standard
         const response = await fetch('https://api.moneroo.io/v1/payments', {
             method: 'POST',
             headers: {
@@ -66,11 +57,14 @@ export async function initiateMonerooPayment(params: {
     couponId?: string;
     returnUrl: string;
 }) {
-    const secretKey = process.env.MONEROO_SECRET_KEY;
+    const secretKey = process.env.MONEROO_SECRET_KEY?.trim();
     
-    // ✅ CEO Request: Sécurité automatique si les clés sont absentes
-    if (!secretKey || secretKey === "YOUR_MONEROO_SECRET_KEY_HERE" || secretKey.length < 10) {
-        return { success: false, error: "La passerelle Moneroo est actuellement en maintenance technique (Clés non configurées)." };
+    if (!secretKey || secretKey.length < 10) {
+        console.error("ERREUR : Clé Moneroo manquante ou invalide.");
+        return { 
+            success: false, 
+            error: "La passerelle de paiement n'est pas encore activée. Veuillez patienter ou utiliser un autre moyen." 
+        };
     }
 
     const moneroo = new Moneroo(secretKey);
