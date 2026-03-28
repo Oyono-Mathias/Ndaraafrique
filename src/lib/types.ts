@@ -173,6 +173,34 @@ export interface AffiliateTransaction {
   unlockDate: Timestamp | FieldValue | Date;
 }
 
+export interface NdaraPaymentDetails {
+  transactionId: string | number;
+  gatewayTransactionId?: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  metadata: {
+    userId: string;
+    courseId: string;
+    type?: string;
+    [key: string]: any;
+  };
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  courseId: string;
+  courseTitle: string;
+  instructorId: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses: number;
+  usedCount: number;
+  createdAt: Timestamp | FieldValue | Date;
+  expiresAt: Timestamp | FieldValue | Date;
+}
+
 /* --- PÉDAGOGIE --- */
 
 export interface Course {
@@ -276,6 +304,54 @@ export interface Review {
   rating: number;
   comment: string;
   createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface Assignment {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  sectionId: string;
+  instructorId: string;
+  title: string;
+  description?: string;
+  correctionGuide?: string;
+  dueDate?: Timestamp | FieldValue | Date;
+  attachments?: { name: string; url: string }[];
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl: string;
+  instructorId: string;
+  courseId: string;
+  courseTitle: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  submissionContent: string;
+  submissionUrl?: string;
+  grade?: number;
+  feedback?: string;
+  status: 'submitted' | 'graded';
+  submittedAt: Timestamp | FieldValue | Date;
+  gradedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface CourseQuestion {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl: string;
+  instructorId: string;
+  questionText: string;
+  answerText?: string;
+  status: 'pending' | 'answered';
+  createdAt: Timestamp | FieldValue | Date;
+  answeredAt?: Timestamp | FieldValue | Date;
 }
 
 /* --- ADMINISTRATION & SYSTÈME --- */
@@ -509,4 +585,23 @@ export interface CartItem {
   title: string;
   price: number;
   imageUrl: string;
+}
+
+export interface Notification {
+  id: string;
+  text: string;
+  link?: string;
+  type: 'success' | 'info' | 'reminder' | 'alert';
+  read: boolean;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface Announcement {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  instructorId: string;
+  title: string;
+  message: string;
+  createdAt: Timestamp | FieldValue | Date;
 }
