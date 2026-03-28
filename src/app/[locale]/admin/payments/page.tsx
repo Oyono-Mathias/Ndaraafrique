@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Cockpit Trésorerie & Audit Financier.
- * ✅ STANDARD : Statuts en minuscules.
+ * ✅ UI : Intégration des logos opérateurs réels.
  */
 
 import { useState, useMemo } from 'react';
@@ -17,7 +17,6 @@ import {
     Search, 
     Download, 
     Landmark, 
-    Smartphone, 
     User,
     ArrowUpRight,
     Loader2
@@ -28,6 +27,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Payment } from '@/lib/types';
+import { OperatorLogo } from '@/components/ui/OperatorLogo';
 
 export default function AdminPaymentsPage() {
     const db = getFirestore();
@@ -145,7 +145,7 @@ export default function AdminPaymentsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2 text-slate-400">
-                                                {payment.provider === 'wallet' ? <ArrowUpRight className="h-3.5 w-3.5 text-primary" /> : <Smartphone className="h-3.5 w-3.5" />}
+                                                <OperatorLogo operatorName={payment.provider} size={24} />
                                                 <span className="text-[9px] font-black uppercase tracking-widest">{payment.provider}</span>
                                             </div>
                                         </TableCell>

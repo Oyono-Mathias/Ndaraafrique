@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V5.0 Sécurisée.
- * ✅ VALIDATION : Vérification des préfixes MTN/Orange avant envoi.
- * ✅ UX : État 'PENDING' explicite pour la validation USSD.
+ * @fileOverview Ndara Wallet Étudiant - V5.1 avec Logos Opérateurs.
+ * ✅ UI : Intégration de OperatorLogo dans l'historique.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -20,8 +19,7 @@ import {
     ArrowDownLeft, 
     ShoppingBag as ShoppingBagIcon,
     CreditCard,
-    CheckCircle2,
-    AlertTriangle
+    XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -30,6 +28,7 @@ import { fr } from 'date-fns/locale';
 import type { Payment } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { OperatorLogo } from '@/components/ui/OperatorLogo';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
 
@@ -39,7 +38,6 @@ export default function NdaraWalletPage() {
     const { toast } = useToast();
     const t = useTranslations('Wallet');
     
-    // États
     const [liveBalance, setLiveBalance] = useState<number | null>(null);
     const [transactions, setTransactions] = useState<Payment[]>([]);
     const [selectedAmount, setSelectedAmount] = useState<number>(5000);
@@ -50,7 +48,6 @@ export default function NdaraWalletPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
 
-    // 1. Écouteur de solde Firestore
     useEffect(() => {
         if (!user?.uid) return;
         const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
@@ -59,7 +56,6 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
-    // 2. Écouteur d'historique Firestore
     useEffect(() => {
         if (!user?.uid) return;
         const q = query(
@@ -80,7 +76,6 @@ export default function NdaraWalletPage() {
             return;
         }
 
-        // Validation locale des préfixes (Cameroon Standard)
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         if (selectedMethod === 'mtn' && !cleanPhone.match(/^(237)?6(7|8)/)) {
             toast({ variant: 'destructive', title: "Numéro MTN invalide", description: "Un numéro MTN doit commencer par 67 ou 68." });
@@ -96,7 +91,6 @@ export default function NdaraWalletPage() {
 
         try {
             const finalService = selectedMethod.toUpperCase() as 'MTN' | 'ORANGE';
-
             const result = await initiateMeSombPayment({
                 amount: selectedAmount,
                 phoneNumber: cleanPhone,
@@ -108,20 +102,13 @@ export default function NdaraWalletPage() {
 
             if (result.success) {
                 setIsAwaitingUssd(true);
-                toast({ 
-                    title: "Action requise !", 
-                    description: "Regardez votre téléphone et saisissez votre code PIN pour valider." 
-                });
+                toast({ title: "Action requise !", description: "Regardez votre téléphone et saisissez votre code PIN." });
                 setCustomAmount('');
             } else {
                 throw new Error(result.error);
             }
         } catch (e: any) {
-            toast({ 
-                variant: 'destructive', 
-                title: "Erreur transaction", 
-                description: e.message || "Une erreur est survenue." 
-            });
+            toast({ variant: 'destructive', title: "Erreur transaction", description: e.message });
         } finally {
             setIsProcessing(false);
         }
@@ -194,15 +181,6 @@ export default function NdaraWalletPage() {
                     opacity: 0.03;
                     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
                 }
-                .payment-method.selected {
-                    border-color: #3F51B5;
-                    background: rgba(63, 81, 181, 0.05);
-                }
-                .amount-pill.selected {
-                    background: #3F51B5;
-                    color: #FFFFFF;
-                    border-color: #3F51B5;
-                }
             `}</style>
 
             <div className="w-full max-w-md min-h-screen bg-[#F5F5F5] relative flex flex-col shadow-2xl overflow-hidden">
@@ -216,7 +194,6 @@ export default function NdaraWalletPage() {
                 </header>
 
                 <main className="flex-1 overflow-y-auto hide-scrollbar pt-24 pb-48 px-6 relative">
-                    {/* Carte Solde */}
                     <div className="neo-card rounded-4xl p-6 mb-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-500 active:scale-95 transition-all">
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-8">
@@ -235,14 +212,13 @@ export default function NdaraWalletPage() {
                             <div className="flex items-center justify-between mt-4">
                                 <div>
                                     <p className="text-white/70 text-[9px] font-bold uppercase mb-1">Titulaire</p>
-                                    <p className="text-white font-bold text-sm tracking-wide uppercase">{currentUser?.fullName || 'Chargement...'}</p>
+                                    <p className="text-white font-bold text-sm tracking-wide uppercase">{currentUser?.fullName || '---'}</p>
                                 </div>
                                 <Wifi className="text-white/70 text-xl rotate-90" />
                             </div>
                         </div>
                     </div>
 
-                    {/* État USSD Pending */}
                     {isAwaitingUssd && (
                         <div className="mb-6 p-5 bg-amber-50 rounded-3xl border-2 border-amber-200 flex items-start gap-4 animate-in zoom-in duration-500">
                             <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
@@ -250,106 +226,65 @@ export default function NdaraWalletPage() {
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-black text-amber-900 text-xs uppercase mb-1">Confirmation Mobile</h3>
-                                <p className="text-amber-700 text-[10px] font-medium leading-relaxed">
-                                    Nous attendons la réponse de votre opérateur. Saisissez votre code secret sur le téléphone pour valider le dépôt.
-                                </p>
+                                <p className="text-amber-700 text-[10px] font-medium leading-relaxed">Saisissez votre code secret sur votre téléphone pour valider le dépôt.</p>
                             </div>
                             <button onClick={() => setIsAwaitingUssd(false)} className="text-amber-400"><XCircle size={16}/></button>
                         </div>
                     )}
 
-                    <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-100">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Pays de Résidence</label>
-                        <div className="relative">
-                            <select 
-                                value={selectedCountryCode}
-                                onChange={(e) => setSelectedCountryCode(e.target.value)}
-                                className="w-full bg-white border-2 border-gray-200 rounded-4xl px-4 py-4 pr-12 text-[#212121] font-bold text-sm focus:outline-none focus:border-[#3F51B5] appearance-none cursor-pointer"
-                            >
-                                <option value="cm">🇨🇲 Cameroun (XAF)</option>
-                                <option value="ci">🇨🇮 Côte d'Ivoire (XOF)</option>
-                                <option value="sn">🇸🇳 Sénégal (XOF)</option>
-                                <option value="ga">🇬🇦 Gabon (XAF)</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#757575]">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-200">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Mode de Paiement</label>
-                        <div className="grid grid-cols-3 gap-3">
-                            <button 
-                                onClick={() => setSelectedMethod('orange')}
-                                className={cn("payment-method bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'orange' ? "selected" : "border-gray-200")}
-                            >
-                                <div className="w-10 h-10 rounded-full bg-[#FF7900]/20 flex items-center justify-center">
-                                    <span className="text-[#FF7900] font-black text-xs">OM</span>
-                                </div>
-                                <span className="text-[#212121] text-[10px] font-bold">Orange</span>
-                            </button>
-                            <button 
-                                onClick={() => setSelectedMethod('mtn')}
-                                className={cn("payment-method bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'mtn' ? "selected" : "border-gray-200")}
-                            >
-                                <div className="w-10 h-10 rounded-full bg-[#FFCC00]/20 flex items-center justify-center">
-                                    <span className="text-[#FFCC00] font-black text-xs">MTN</span>
-                                </div>
-                                <span className="text-[#212121] text-[10px] font-bold">MoMo</span>
-                            </button>
-                            <button 
-                                onClick={() => setSelectedMethod('wave')}
-                                className={cn("payment-method bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'wave' ? "selected" : "border-gray-200")}
-                            >
-                                <div className="w-10 h-10 rounded-full bg-[#1DC0F1]/20 flex items-center justify-center">
-                                    <span className="text-[#1DC0F1] font-black text-xs">W</span>
-                                </div>
-                                <span className="text-[#212121] text-[10px] font-bold">Wave</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-300">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Montant à Recharger</label>
+                    <div className="mb-6">
+                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Recharger mon compte</label>
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             {PRESET_AMOUNTS.map(val => (
                                 <button 
                                     key={val}
                                     onClick={() => { setSelectedAmount(val); setCustomAmount(''); }}
                                     className={cn(
-                                        "amount-pill border-2 rounded-3xl py-4 font-black text-sm transition-all active:scale-95",
-                                        selectedAmount === val && !customAmount ? "selected" : "bg-white border-gray-200 text-[#212121]"
+                                        "border-2 rounded-3xl py-4 font-black text-sm transition-all active:scale-95",
+                                        selectedAmount === val && !customAmount ? "bg-[#3F51B5] text-white border-[#3F51B5]" : "bg-white border-gray-200 text-[#212121]"
                                     )}
                                 >
                                     {val.toLocaleString()} {currencyLabel}
                                 </button>
                             ))}
                         </div>
-                        <div className="relative">
-                            <Input 
-                                type="number" 
-                                placeholder="Autre montant"
-                                className="w-full h-16 bg-white border-2 border-gray-200 rounded-4xl px-4 text-[#212121] font-bold text-sm focus:outline-none focus:border-[#3F51B5] shadow-sm"
-                                value={customAmount}
-                                onChange={(e) => {
-                                    setCustomAmount(e.target.value);
-                                    setSelectedAmount(Number(e.target.value) || 0);
-                                }}
-                            />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">{currencyLabel}</div>
+                        <Input 
+                            type="number" 
+                            placeholder="Autre montant"
+                            className="w-full h-16 bg-white border-2 border-gray-200 rounded-4xl px-4 text-[#212121] font-bold text-sm focus:outline-none focus:border-[#3F51B5] shadow-sm"
+                            value={customAmount}
+                            onChange={(e) => {
+                                setCustomAmount(e.target.value);
+                                setSelectedAmount(Number(e.target.value) || 0);
+                            }}
+                        />
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Mode de Paiement</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            <button onClick={() => setSelectedMethod('orange')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'orange' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
+                                <OperatorLogo operatorName="orange" size={32} />
+                                <span className="text-[#212121] text-[10px] font-bold uppercase">Orange</span>
+                            </button>
+                            <button onClick={() => setSelectedMethod('mtn')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'mtn' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
+                                <OperatorLogo operatorName="mtn" size={32} />
+                                <span className="text-[#212121] text-[10px] font-bold uppercase">MTN</span>
+                            </button>
+                            <button onClick={() => setSelectedMethod('wave')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'wave' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
+                                <OperatorLogo operatorName="wave" size={32} />
+                                <span className="text-[#212121] text-[10px] font-bold uppercase">Wave</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div className="mb-10 animate-in slide-in-from-bottom-4 duration-500 delay-350">
+                    <div className="mb-10">
                         <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money (ex: 2376...)</label>
                         <div className="relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3F51B5]">
-                                <Smartphone className="w-5 h-5" />
-                            </div>
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3F51B5]"><Smartphone className="w-5 h-5" /></div>
                             <input 
                                 type="tel"
-                                placeholder="Numéro sans espaces"
+                                placeholder="Saisir numéro"
                                 className="w-full h-16 pl-12 rounded-4xl bg-white border-2 border-gray-200 font-mono text-lg text-[#212121] focus:outline-none focus:border-[#3F51B5] shadow-sm"
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
@@ -357,7 +292,7 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    <div className="mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-400">
+                    <div className="mb-6">
                         <h2 className="font-black text-[#212121] text-sm uppercase tracking-wide flex items-center gap-2 mb-4">
                             <Receipt className="w-4 h-4 text-[#3F51B5]" />
                             {t('history')}
@@ -367,20 +302,19 @@ export default function NdaraWalletPage() {
                                 const date = (txn.date as any)?.toDate?.() || new Date();
                                 const isIncome = txn.amount > 0;
                                 return (
-                                    <div key={txn.id} className="vintage-receipt rounded-3xl p-4 shadow-sm">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", isIncome ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600")}>
-                                                    {isIncome ? <ArrowDownLeft className="w-4 h-4" /> : <ShoppingBagIcon className="w-4 h-4" />}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-[#212121] text-xs uppercase truncate max-w-[150px]">{txn.courseTitle || 'Recharge'}</p>
-                                                    <p className="text-[#757575] text-[9px] font-mono">{format(date, 'dd MMM • HH:mm', { locale: fr })}</p>
-                                                </div>
+                                    <div key={txn.id} className="vintage-receipt rounded-3xl p-4 shadow-sm flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <OperatorLogo operatorName={txn.provider} size={36} />
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-[#212121] text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
+                                                <p className="text-[#757575] text-[9px] font-mono">{format(date, 'dd MMM • HH:mm', { locale: fr })}</p>
                                             </div>
+                                        </div>
+                                        <div className="text-right">
                                             <p className={cn("font-mono font-black text-sm", isIncome ? "text-emerald-600" : "text-red-500")}>
                                                 {isIncome ? '+' : ''}{txn.amount.toLocaleString()} F
                                             </p>
+                                            <span className="text-[8px] font-black uppercase text-slate-400">{txn.status}</span>
                                         </div>
                                     </div>
                                 );
