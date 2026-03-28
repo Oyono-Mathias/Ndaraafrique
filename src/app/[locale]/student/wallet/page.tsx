@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V5.2 avec validation Orange étendue.
- * ✅ UI : Intégration de OperatorLogo dans l'historique.
- * ✅ VALIDATION : Support des préfixes Orange 69, 655-659, 686-689, 640.
+ * @fileOverview Ndara Wallet Étudiant - V5.3 avec validation exhaustive des préfixes Cameroun.
+ * ✅ VALIDATION : Support des préfixes Orange (69x, 655-659, 686-689, 640) et MTN (650-654, 67x, 680-683).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -78,13 +77,28 @@ export default function NdaraWalletPage() {
         }
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
-        if (selectedMethod === 'mtn' && !cleanPhone.match(/^(237)?6(7|8)/)) {
-            toast({ variant: 'destructive', title: "Numéro MTN invalide", description: "Un numéro MTN doit commencer par 67 ou 68." });
-            return;
-        }
-        if (selectedMethod === 'orange' && !cleanPhone.match(/^(237)?6(9|5[5-9]|8[6-9]|40)/)) {
-            toast({ variant: 'destructive', title: "Numéro Orange invalide", description: "Veuillez utiliser un numéro Orange valide (69, 655-659, 686-689, 640)." });
-            return;
+        
+        // VALIDATION MTN CAMEROUN
+        if (selectedMethod === 'mtn') {
+            if (!cleanPhone.match(/^(237)?6(5[0-4]|7\d|8[0-3])/)) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: "Numéro MTN invalide", 
+                    description: "Préfixes valides: 650-654, 67x, 680-683." 
+                });
+                return;
+            }
+        } 
+        // VALIDATION ORANGE CAMEROUN
+        else if (selectedMethod === 'orange') {
+            if (!cleanPhone.match(/^(237)?6(9\d|5[5-9]|8[6-9]|40)/)) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: "Numéro Orange invalide", 
+                    description: "Préfixes valides: 69x, 655-659, 686-689, 640." 
+                });
+                return;
+            }
         }
 
         setIsProcessing(true);
@@ -103,7 +117,7 @@ export default function NdaraWalletPage() {
 
             if (result.success) {
                 setIsAwaitingUssd(true);
-                toast({ title: "Action requise !", description: "Regardez votre téléphone et saisissez votre code PIN." });
+                toast({ title: "Action requise !", description: result.message });
                 setCustomAmount('');
             } else {
                 throw new Error(result.error);
@@ -280,12 +294,12 @@ export default function NdaraWalletPage() {
                     </div>
 
                     <div className="mb-10">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money (ex: 2376...)</label>
+                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money (Cameroun)</label>
                         <div className="relative">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3F51B5]"><Smartphone className="w-5 h-5" /></div>
                             <input 
                                 type="tel"
-                                placeholder="Saisir numéro"
+                                placeholder="6xx xxx xxx"
                                 className="w-full h-16 pl-12 rounded-4xl bg-white border-2 border-gray-200 font-mono text-lg text-[#212121] focus:outline-none focus:border-[#3F51B5] shadow-sm"
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}

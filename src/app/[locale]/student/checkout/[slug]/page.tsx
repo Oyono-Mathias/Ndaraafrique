@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V4.1.
- * ✅ DESIGN : Choix direct de l'opérateur (Orange, MTN, Wave).
- * ✅ VALIDATION : Support étendu des préfixes Orange Cameroun.
+ * @fileOverview Tunnel de paiement Ndara Afrique V4.2.
+ * ✅ VALIDATION : Support complet Orange (69x, 655-659, 686-689, 640) et MTN (650-654, 67x, 680-683).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -102,12 +101,28 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user || !course || !settings) return;
     
-    // Validation du numéro si MeSomb est utilisé
-    if (provider === 'orange' && !settings.monerooEnabled) {
+    // 🛡️ VALIDATION AVANT ENVOI (CAMEROUN)
+    if (!['wallet', 'virtual'].includes(provider) && !settings.monerooEnabled) {
         const clean = phoneNumber.replace(/\D/g, '');
-        if (!clean.match(/^(237)?6(9|5[5-9]|8[6-9]|40)/)) {
-            toast({ variant: 'destructive', title: "Numéro Orange invalide", description: "Utilisez un numéro Orange valide (69, 655-659, 686-689, 640)." });
-            return;
+        
+        if (provider === 'orange') {
+            if (!clean.match(/^(237)?6(9\d|5[5-9]|8[6-9]|40)/)) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: "Numéro Orange invalide", 
+                    description: "Préfixes valides: 69x, 655-659, 686-689, 640." 
+                });
+                return;
+            }
+        } else if (provider === 'mtn') {
+            if (!clean.match(/^(237)?6(5[0-4]|7\d|8[0-3])/)) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: "Numéro MTN invalide", 
+                    description: "Préfixes valides: 650-654, 67x, 680-683." 
+                });
+                return;
+            }
         }
     }
 
@@ -297,14 +312,14 @@ function CheckoutContent() {
                 </div>
             ) : !settings.monerooEnabled ? (
                 <div className="space-y-3">
-                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money (MeSomb)</label>
+                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money (Cameroun)</label>
                     <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
                             <Smartphone className="h-5 w-5 text-primary" />
                         </div>
                         <Input 
                             type="tel" 
-                            placeholder="Ex: 07 07 07 07" 
+                            placeholder="6xx xxx xxx" 
                             value={phoneNumber}
                             onChange={(e) => setPhoneNumber(e.target.value)}
                             className="w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 text-white font-mono text-lg"

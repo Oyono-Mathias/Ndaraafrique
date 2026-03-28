@@ -4,8 +4,8 @@ import { randomBytes } from 'crypto';
 
 /**
  * @fileOverview Actions serveur pour MeSomb (Ndara Afrique).
- * ✅ SÉCURITÉ : Validation étendue des préfixes Orange Cameroun (69, 655-659, 686-689, 640).
- * ✅ INTÉGRITÉ : Suppression de la simulation de succès interne.
+ * ✅ SÉCURITÉ : Validation exhaustive des préfixes Cameroun (Orange & MTN).
+ * ✅ INTÉGRITÉ : Mapping dynamique des devises XAF/XOF.
  */
 
 interface MeSombPaymentParams {
@@ -23,28 +23,33 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
 
-  // 1. Nettoyage et Validation du numéro
+  // 1. Nettoyage du numéro
   const cleanPhone = params.phoneNumber.replace(/\D/g, '');
   
-  // Validation des préfixes selon l'opérateur (Standards Cameroun)
+  // 🛡️ VALIDATION STRICTE DES PRÉFIXES (CAMEROUN)
   if (params.service === 'MTN') {
-      // Un numéro MTN valide doit commencer par 67 ou 68 (après le code pays éventuel)
-      if (!cleanPhone.match(/^(237)?6(7|8)/)) {
-          return { success: false, error: "Le numéro ne correspond pas à l'opérateur MTN (doit commencer par 67 ou 68)." };
+      // MTN Cameroun : 650-654, 67x, 680-683
+      if (!cleanPhone.match(/^(237)?6(5[0-4]|7\d|8[0-3])/)) {
+          return { 
+            success: false, 
+            error: "Numéro invalide pour MTN (préfixes valides: 650-654, 67x, 680-683)." 
+          };
       }
   } else if (params.service === 'ORANGE') {
       // Orange Cameroun : 69x, 655-659, 686-689, 640
-      if (!cleanPhone.match(/^(237)?6(9|5[5-9]|8[6-9]|40)/)) {
-          return { success: false, error: "Le numéro ne correspond pas à l'opérateur Orange (préfixes valides: 69, 655-659, 686-689, 640)." };
+      if (!cleanPhone.match(/^(237)?6(9\d|5[5-9]|8[6-9]|40)/)) {
+          return { 
+            success: false, 
+            error: "Numéro invalide pour Orange (préfixes valides: 69x, 655-659, 686-689, 640)." 
+          };
       }
   }
 
-  // 🛡️ VÉRIFICATION CONFIGURATION
   if (!SECRET_KEY || !APPLICATION_KEY) {
-    console.error(`[MeSomb] ❌ CLÉS MANQUANTES : La passerelle n'est pas configurée sur le serveur.`);
+    console.error(`[MeSomb] ❌ CONFIG_MISSING : Clés API introuvables.`);
     return { 
         success: false, 
-        error: "Le service de paiement Mobile Money n'est pas encore configuré par l'administrateur." 
+        error: "Le service de paiement Mobile Money n'est pas encore configuré sur ce serveur." 
     };
   }
 
@@ -70,7 +75,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         }
     };
 
-    console.log(`[MeSomb Request] Initiation de débit pour ${cleanPhone} | Montant: ${params.amount}`);
+    console.log(`[MeSomb] Requête : ${params.service} | ${cleanPhone} | ${params.amount} ${finalCurrency}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -88,19 +93,16 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
       return { 
         success: true, 
         transactionId: String(data.pk || data.id || "PENDING"), 
-        message: "Demande de paiement envoyée. Veuillez valider avec votre code PIN sur votre téléphone." 
+        message: "Demande envoyée. Saisissez votre code PIN sur votre téléphone." 
       };
     } else {
-      const errorDetail = data.detail || data.message || "Refus de la passerelle.";
-      console.error(`[MeSomb API Rejet] Cause: ${errorDetail}`);
-      return { 
-        success: false, 
-        error: `Échec : ${errorDetail}` 
-      };
+      const errorDetail = data.detail || data.message || "La passerelle a refusé la transaction.";
+      console.error(`[MeSomb API Rejet] : ${errorDetail}`);
+      return { success: false, error: `Échec : ${errorDetail}` };
     }
 
   } catch (error: any) {
-    console.error("[MeSomb Fatal Error]", error.message);
-    return { success: false, error: "Connexion aux services Mobile Money impossible. Réessayez plus tard." };
+    console.error("[MeSomb Fatal]", error.message);
+    return { success: false, error: "Impossible de joindre la passerelle de paiement." };
   }
 }
