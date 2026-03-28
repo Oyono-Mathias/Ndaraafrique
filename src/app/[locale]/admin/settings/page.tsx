@@ -191,7 +191,7 @@ export default function AdminSettingsPage() {
           supportPhone: d.general?.supportPhone || '',
           defaultLanguage: d.general?.defaultLanguage || 'fr',
           defaultCountry: d.general?.defaultCountry || 'CF',
-          maintenanceMode: d.platform?.maintenanceMode || d.general?.maintenanceMode || false,
+          maintenanceMode: d.platform?.maintenanceMode || false,
           announcementMessage: d.platform?.announcementMessage || '',
           facebookUrl: d.social?.facebookUrl || '',
           instagramUrl: d.social?.instagramUrl || '',
