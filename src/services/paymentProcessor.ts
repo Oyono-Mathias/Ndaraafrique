@@ -7,13 +7,42 @@ import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/typ
 
 /**
  * @fileOverview Ndara Payment Processor (Le Cerveau Financier V4).
- * ✅ FIX : Notification dynamique (XAF/XOF).
- * ✅ SÉCURITÉ : Idempotence renforcée pour éviter les doubles crédits.
+ * ✅ SÉCURITÉ : Nettoyage récursif des 'undefined' pour Firestore.
  */
 
-export async function processNdaraPayment(details: NdaraPaymentDetails) {
-  const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
+/**
+ * Nettoie un objet de ses propriétés 'undefined' pour éviter les crashs Firestore.
+ * Utile car le SDK Admin ne supporte pas toujours ignoreUndefinedProperties nativement.
+ */
+function sanitize(obj: any): any {
+  if (obj === null || typeof obj !== 'object') return obj;
+  // Ne pas toucher aux types spéciaux de Firestore/Firebase
+  if (obj instanceof Date || obj instanceof Timestamp || (obj.constructor && obj.constructor.name === 'FieldValue')) {
+    return obj;
+  }
   
+  if (Array.isArray(obj)) return obj.map(sanitize);
+
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(([_, v]) => v !== undefined)
+      .map(([k, v]) => [k, sanitize(v)])
+  );
+}
+
+export async function processNdaraPayment(details: NdaraPaymentDetails) {
+  // 🛡️ NETTOYAGE IMMÉDIAT
+  const cleanDetails = sanitize(details);
+  const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = cleanDetails;
+  
+  console.log(`[PaymentProcessor] Traitement de ${transactionId} pour l'utilisateur ${metadata?.userId}`);
+
+  // Validation des champs critiques
+  if (!metadata?.userId) {
+      console.error("[PaymentProcessor] Erreur: userId manquant dans les métadonnées", metadata);
+      throw new Error("USER_ID_MANQUANT");
+  }
+
   const db = getAdminDb();
 
   try {
@@ -58,17 +87,16 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       provider: provider || 'mesomb',
       date: FieldValue.serverTimestamp(),
       status: 'completed',
-      metadata: {
+      metadata: sanitize({
           ...metadata,
           processedAt: new Date().toISOString()
-      }
+      })
     };
 
     // --- LOGIQUE WALLET (RECHARGE) ---
     if (isTopup) {
         paymentData.courseTitle = "Recharge Wallet Ndara";
         const userRef = db.collection('users').doc(metadata.userId);
-        // On incrémente le solde
         batch.update(userRef, { 
             balance: FieldValue.increment(Number(amount)),
             lastTopupDate: FieldValue.serverTimestamp()
@@ -100,6 +128,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           id: enrollmentId,
           studentId: metadata.userId,
           courseId: metadata.courseId,
+          instructorId: courseData.instructorId,
           status: 'active', 
           progress: 0,
           enrollmentDate: FieldValue.serverTimestamp(),
@@ -118,10 +147,10 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     }
 
     // 4. Validation finale du batch
-    batch.set(paymentDocRef, paymentData);
+    batch.set(paymentDocRef, sanitize(paymentData));
     await batch.commit();
 
-    // 5. Notification (Correction de la devise)
+    // 5. Notification
     try {
         const displayCurrency = currency || 'FCFA';
         await sendUserNotification(metadata.userId, {

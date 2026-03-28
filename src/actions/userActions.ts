@@ -2,13 +2,20 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ STANDARD : Statuts en minuscules.
+ * ✅ SÉCURITÉ : Nettoyage des objets pour Firestore (Anti-undefined).
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 import { sendUserNotification } from './notificationActions';
+
+/**
+ * Nettoie un objet des valeurs undefined pour Firestore.
+ */
+function sanitize(obj: any): any {
+    return JSON.parse(JSON.stringify(obj, (key, value) => value === undefined ? null : value));
+}
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
     try {
@@ -51,29 +58,33 @@ export async function rechargeUserWallet({
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        batch.set(paymentRef, {
+        // 🛡️ Nettoyage des données avant envoi
+        const paymentData = sanitize({
             id: paymentRef.id,
             userId,
             amount,
             currency: 'XOF',
             provider: 'admin_recharge',
-            status: 'completed', // ✅ STANDARD
+            status: 'completed',
             date: FieldValue.serverTimestamp(),
             courseTitle: `Recharge Admin: ${reason}`,
             metadata: { type: 'wallet_topup', adminId, reason }
         });
 
-        batch.set(auditRef, {
+        batch.set(paymentRef, paymentData);
+
+        batch.set(auditRef, sanitize({
             adminId,
             eventType: 'user.wallet.recharge',
             target: { id: userId, type: 'user' },
             details: `Recharge réelle de ${amount} XOF effectuée. Motif: ${reason}`,
             timestamp: FieldValue.serverTimestamp()
-        });
+        }));
 
         await batch.commit();
         return { success: true, message: "success.wallet_recharged" };
     } catch (e: any) {
+        console.error("[RechargeWallet] Firestore Error:", e.message);
         return { success: false, error: "error.generic" };
     }
 }
@@ -248,7 +259,7 @@ export async function createEliteDemoAccountAction({
             profilePictureURL: `https://api.dicebear.com/8.x/avataaars/svg?seed=${userRecord.uid}`
         };
 
-        await db.collection('users').doc(userRecord.uid).set(userData);
+        await db.collection('users').doc(userRecord.uid).set(sanitize(userData));
 
         return { success: true, email, password: 'password123' };
     } catch (e: any) {
@@ -289,7 +300,7 @@ export async function grantCourseAccess({
             expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60000);
         }
 
-        batch.set(enrollmentRef, {
+        batch.set(enrollmentRef, sanitize({
             studentId,
             courseId,
             instructorId: courseDoc.data()?.instructorId || '',
@@ -298,7 +309,7 @@ export async function grantCourseAccess({
             enrollmentDate: FieldValue.serverTimestamp(),
             lastAccessedAt: FieldValue.serverTimestamp(),
             expiresAt
-        }, { merge: true });
+        }), { merge: true });
 
         batch.set(db.collection('admin_audit_logs').doc(), {
             adminId,
@@ -318,7 +329,7 @@ export async function grantCourseAccess({
 export async function updateUserProfileAction({ userId, data, requesterId }: { userId: string, data: any, requesterId: string }) {
     try {
         const db = getAdminDb();
-        await db.collection('users').doc(userId).update(data);
+        await db.collection('users').doc(userId).update(sanitize(data));
         return { success: true, message: "success.profile_updated" };
     } catch (error: any) {
         return { success: false, error: "error.generic" };
