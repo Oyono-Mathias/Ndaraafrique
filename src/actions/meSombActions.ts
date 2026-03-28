@@ -3,8 +3,9 @@
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4.4).
- * ✅ FIX : Signature simplifiée pour éviter le "Invalid Format".
+ * @fileOverview Actions serveur pour MeSomb (Ndara Afrique V4.5).
+ * ✅ FIX : Format de l'en-tête Authorization STRICT (AccessKey:Signature:Nonce:Timestamp).
+ * ✅ FIX : Signature incluant le corps de la requête (Body) pour les requêtes POST.
  */
 
 const APPLICATION_KEY = (process.env.MESOMB_APP_KEY || "9f9efc20ca14004f962c7d129ca724c6543ee051").trim();
@@ -24,7 +25,6 @@ interface MeSombPaymentParams {
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   try {
-    // 1. Paramètres de base
     const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
     const timestamp = Math.floor(Date.now() / 1000);
     const nonce = randomBytes(16).toString('hex');
@@ -32,27 +32,8 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
     let finalCurrency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
 
-    // 2. Création de la signature HMAC (Format STRICT MeSomb)
-    // IMPORTANT : Pas de caractères spéciaux en dehors de \n
-    const method = "POST";
-    const credentials = `${method}\n${url}\n${timestamp}\n${nonce}`;
-    
-    const signature = createHmac('sha256', SECRET_KEY)
-      .update(credentials)
-      .digest('hex');
-
-    // 3. Construction de l'en-tête Authorization
-    // Format : MeSomb <AccessKey>:<Signature>:<Timestamp>:<Nonce>
-    const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${timestamp}:${nonce}`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': authHeader,
-        'X-MeSomb-Application': APPLICATION_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // 1. Préparation du corps de la requête (Body)
+    const bodyObj = {
         amount: params.amount,
         service: params.service,
         receiver: cleanPhone,
@@ -65,7 +46,30 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
           affiliateId: params.affiliateId || "",
           couponId: params.couponId || ""
         }
-      }),
+    };
+    const bodyStr = JSON.stringify(bodyObj);
+
+    // 2. Création de la signature HMAC (Format STRICT MeSomb v1.1)
+    // Signature = HMAC_SHA256(secret_key, method + "\n" + url + "\n" + timestamp + "\n" + nonce + "\n" + body)
+    const method = "POST";
+    const credentials = `${method}\n${url}\n${timestamp}\n${nonce}\n${bodyStr}`;
+    
+    const signature = createHmac('sha256', SECRET_KEY)
+      .update(credentials)
+      .digest('hex');
+
+    // 3. Construction de l'en-tête Authorization
+    // Format CORRECT : MeSomb <AccessKey>:<Signature>:<Nonce>:<Timestamp>
+    const authHeader = `MeSomb ${ACCESS_KEY}:${signature}:${nonce}:${timestamp}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'X-MeSomb-Application': APPLICATION_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: bodyStr,
     });
 
     const data = await response.json();
@@ -77,16 +81,16 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         message: "Demande envoyée. Validez sur votre téléphone." 
       };
     } else {
-      console.error("DEBUG MeSomb Response:", data);
+      console.error("DEBUG MeSomb Error Response:", data);
       return { 
         success: false, 
         transactionId: null,
-        error: data.detail || data.message || "Erreur de validation (Authorization Header)." 
+        error: data.detail || data.message || "Erreur de validation des identifiants (Header Format)." 
       };
     }
 
   } catch (error: any) {
-    console.error("FATAL ERROR:", error.message);
+    console.error("FATAL MeSomb Action Error:", error.message);
     return { success: false, transactionId: null, error: "Connexion au service de paiement impossible." };
   }
 }
