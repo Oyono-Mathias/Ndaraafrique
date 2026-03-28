@@ -9,12 +9,6 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { StudentSidebar } from '@/components/layout/student-sidebar';
-import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
-import { AdminSidebar } from '@/components/layout/admin-sidebar';
-import { BottomNav } from '@/components/navigation/BottomNav';
-import { InstructorBottomNav } from '@/components/layout/instructor-bottom-nav';
-import { AdminBottomNav } from '@/components/layout/admin-bottom-nav';
 import { Button } from '@/components/ui/button';
 import { Wrench, Loader2, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +17,15 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
 import { useLocale } from 'next-intl';
+import dynamic from 'next/dynamic';
+
+// Dynamic imports to optimize chunk size and resolve loading issues
+const StudentSidebar = dynamic(() => import('@/components/layout/student-sidebar').then(mod => mod.StudentSidebar), { ssr: false });
+const InstructorSidebar = dynamic(() => import('@/components/layout/instructor-sidebar').then(mod => mod.InstructorSidebar), { ssr: false });
+const AdminSidebar = dynamic(() => import('@/components/layout/admin-sidebar').then(mod => mod.AdminSidebar), { ssr: false });
+const BottomNav = dynamic(() => import('@/components/navigation/BottomNav').then(mod => mod.BottomNav), { ssr: false });
+const InstructorBottomNav = dynamic(() => import('@/components/layout/instructor-bottom-nav').then(mod => mod.InstructorBottomNav), { ssr: false });
+const AdminBottomNav = dynamic(() => import('@/components/layout/admin-bottom-nav').then(mod => mod.AdminBottomNav), { ssr: false });
 
 function AnnouncementBanner({ message }: { message: string }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -57,6 +60,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const locale = useLocale();
   const pathname = usePathname() || '';
   const db = getFirestore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [siteSettings, setSiteSettings] = useState({
       maintenanceMode: false,
@@ -142,7 +150,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", !!user && isDashboardArea && !isFullScreen && !isPublicPage && "md:grid md:grid-cols-[280px_1fr]")}>
         <div className="grain-overlay" />
 
-        {!!user && isDashboardArea && !isFullScreen && !isPublicPage && (
+        {!!user && isDashboardArea && !isFullScreen && !isPublicPage && mounted && (
           <aside className="hidden md:block h-screen sticky top-0 border-r border-white/5">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
@@ -151,7 +159,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-1 relative z-10">
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           
-          {!!user && isDashboardArea && !isFullScreen && !isPublicPage && (
+          {!!user && isDashboardArea && !isFullScreen && !isPublicPage && mounted && (
             <header className="h-16 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md">
                 <Header />
             </header>
@@ -162,7 +170,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </main>
 
           {/* Bottom Nav Logique Mobile Multi-Rôle */}
-          {!!user && !isFullScreen && (
+          {!!user && !isFullScreen && mounted && (
               <div className="md:hidden">
                   {showAdminBottomNav && <AdminBottomNav />}
                   {showInstructorBottomNav && <InstructorBottomNav />}
@@ -175,10 +183,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return null;
-
   return (
     <>
       <SplashScreen />

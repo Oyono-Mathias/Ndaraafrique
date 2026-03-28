@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -9,23 +9,24 @@ import { cn } from '@/lib/utils';
  * ✅ DESIGN : Transformation du logo en "Token" circulaire pour supprimer le cadre carré.
  * ✅ EFFETS : Light Streaks, Particules et lueur émeraude.
  * ✅ SLOGAN : Corrigé pour refléter l'éducation (L'Excellence par le Savoir).
+ * ✅ HYDRATION : Particules générées après le montage.
  */
 export function SplashScreen() {
   const [isVisible, setIsVisible] = useState(false);
   const [isFading, setIsFading] = useState(false);
+  const [particles, setParticles] = useState<{id: number, size: number, left: number, delay: number, duration: number, color: string}[]>([]);
   
-  const particles = useMemo(() => {
-    return Array.from({ length: 30 }).map((_, i) => ({
+  useEffect(() => {
+    // Generate particles only on the client to avoid hydration mismatch
+    setParticles(Array.from({ length: 30 }).map((_, i) => ({
       id: i,
       size: Math.random() * 3 + 1,
       left: Math.random() * 100,
       delay: Math.random() * 2,
       duration: Math.random() * 3 + 2,
       color: ['#10b981', '#fbbf24', '#ffffff'][Math.floor(Math.random() * 3)],
-    }));
-  }, []);
+    })));
 
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const sessionStarted = sessionStorage.getItem('ndara-session-started');
