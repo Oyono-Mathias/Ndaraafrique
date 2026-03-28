@@ -183,7 +183,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
-        const d = snap.data() as any;
+        const d = snap.data() as Settings;
         form.reset({
           siteName: d.general?.siteName || 'Ndara Afrique',
           siteDescription: d.general?.siteDescription || '',
@@ -272,7 +272,6 @@ export default function AdminSettingsPage() {
             supportPhone: values.supportPhone || '',
             defaultLanguage: values.defaultLanguage, 
             defaultCountry: values.defaultCountry, 
-            // maintenanceMode: values.maintenanceMode 
         },
         social: {
             facebookUrl: values.facebookUrl,
@@ -316,7 +315,7 @@ export default function AdminSettingsPage() {
             allowFree: values.allowFreeCourses,
             maxLessons: values.maxLessonsPerCourse,
             maxVideoDuration: values.maxVideoDurationMin
-        } as any,
+        },
         instructors: {
             verificationRequired: values.instructorVerificationRequired,
             autoApproval: values.instructorAutoApproval,
@@ -328,7 +327,7 @@ export default function AdminSettingsPage() {
             emailVerification: values.emailVerificationRequired,
             phoneVerification: values.phoneVerificationRequired,
             dailyDownloadLimit: values.dailyDownloadLimit
-        } as any,
+        },
         affiliate: {
             enabled: values.affiliateEnabled,
             commissionRate: values.affiliateCommissionRate,
@@ -358,11 +357,10 @@ export default function AdminSettingsPage() {
             facebookPixelId: values.facebookPixelId,
             conversionTracking: values.conversionTracking,
             internalAnalytics: true
-        } as any,
+        },
         storage: {
             useBunnyCdn: values.useBunnyCdn,
             maxFileSizeMb: values.maxFileSizeMb,
-            // maxVideoSizeMb: 500
         },
         legal: {
             termsOfService: values.termsOfService,
@@ -375,7 +373,7 @@ export default function AdminSettingsPage() {
             senderName: values.senderName,
             senderEmail: values.senderEmail,
             templates: {}
-        } as any
+        }
       };
 
       const result = await updateGlobalSettings({
