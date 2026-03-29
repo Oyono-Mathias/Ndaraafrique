@@ -31,6 +31,7 @@ export interface NdaraUser {
   countryName?: string;
   countryCode?: string;
   bio?: string;
+  rating?: number;
   referralCode?: string;
   referredBy?: string | null;
   affiliateStats?: {
