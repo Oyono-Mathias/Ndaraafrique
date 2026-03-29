@@ -21,11 +21,15 @@ async function findUserByEmail(email: string): Promise<(NdaraUser & { uid: strin
         if (snapshot.empty) return null;
 
         const userDoc = snapshot.docs[0];
+        const userData = userDoc.data() as NdaraUser;
+
+        // On extrait 'uid' s'il existe déjà dans data pour éviter le doublon au build
+        const { uid: _, ...rest } = userData as any;
 
         return {
             uid: userDoc.id,
-            ...(userDoc.data() as NdaraUser),
-        };
+            ...rest,
+        } as NdaraUser & { uid: string };
     } catch (e) {
         console.error("Error finding user:", e);
         return null;
@@ -34,13 +38,13 @@ async function findUserByEmail(email: string): Promise<(NdaraUser & { uid: strin
 
 /**
  * 🔍 Trouver un cours par titre
- * ⚠️ On évite d'importer Course pour éviter conflit build
  */
 async function findCourseByTitle(title: string): Promise<(any & { id: string }) | null> {
     try {
         const db = getAdminDb();
         const coursesRef = db.collection('courses');
 
+        // Recherche par préfixe pour plus de souplesse
         const q = coursesRef
             .where('title', '>=', title)
             .where('title', '<=', title + '\uf8ff')
@@ -51,10 +55,14 @@ async function findCourseByTitle(title: string): Promise<(any & { id: string }) 
         if (snapshot.empty) return null;
 
         const courseDoc = snapshot.docs[0];
+        const courseData = courseDoc.data();
+        
+        // On extrait 'id' s'il existe déjà dans data pour éviter le doublon
+        const { id: _, ...rest } = courseData as any;
 
         return {
             id: courseDoc.id,
-            ...courseDoc.data(),
+            ...rest,
         };
     } catch (e) {
         console.error("Error finding course:", e);
