@@ -7,6 +7,8 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
+export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge';
+
 export interface NdaraUser {
   uid: string;
   email: string;
@@ -231,7 +233,7 @@ export interface Payment {
   courseTitle?: string;
   amount: number;
   currency: string;
-  provider: string;
+  provider: PaymentProvider | string;
   status: 'completed' | 'pending' | 'failed' | 'refunded';
   date: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
@@ -313,7 +315,7 @@ export interface PaymentMethod {
   id: string;
   name: string;
   logo?: string;
-  provider: string;
+  provider: PaymentProvider | string;
   active: boolean;
 }
 
@@ -565,7 +567,7 @@ export interface RecommendedCourseItem {
 export interface NdaraPaymentDetails {
   transactionId: string | number;
   gatewayTransactionId?: string;
-  provider: string;
+  provider: PaymentProvider | string;
   amount: number;
   currency: string;
   metadata: {
