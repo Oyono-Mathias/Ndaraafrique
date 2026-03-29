@@ -47,7 +47,7 @@ import {
   Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+import type { Settings } from '@/lib/types';
 
 // Schéma de validation complet
 const settingsSchema = z.object({
@@ -427,10 +427,18 @@ export default function AdminSettingsPage() {
                         <CardContent className="p-8 space-y-6">
                             <div className="grid md:grid-cols-2 gap-6">
                                 <FormField control={form.control} name="siteName" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom de la plateforme</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 text-white" /></FormControl></FormItem>
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom de la plateforme</FormLabel>
+                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 text-white" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                                 <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Email Support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 text-white" /></FormControl></FormItem>
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Email Support</FormLabel>
+                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 text-white" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                             </div>
                             
@@ -444,6 +452,7 @@ export default function AdminSettingsPage() {
                                                 <Input {...field} placeholder="23675000000" className="h-12 pl-10 bg-slate-950 border-slate-800 text-white" />
                                             </div>
                                         </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}/>
                                 <div className="space-y-4 pt-4">
@@ -457,11 +466,19 @@ export default function AdminSettingsPage() {
                             </div>
 
                             <FormField control={form.control} name="siteDescription" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description Meta (SEO)</FormLabel><FormControl><Textarea {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl></FormItem>
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description Meta (SEO)</FormLabel>
+                                    <FormControl><Textarea {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}/>
 
                             <FormField control={form.control} name="announcementMessage" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Bandeau d'alerte global</FormLabel><FormControl><Input {...field} placeholder="Ex: Flash Sale : -50% !" className="h-12 bg-slate-950 border-slate-800 text-white" /></FormControl></FormItem>
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Bandeau d'alerte global</FormLabel>
+                                    <FormControl><Input {...field} placeholder="Ex: Flash Sale : -50% !" className="h-12 bg-slate-950 border-slate-800 text-white" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}/>
                         </CardContent>
                     </Card>
@@ -469,14 +486,24 @@ export default function AdminSettingsPage() {
 
                 <TabsContent value="financial" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                        <CardHeader className="bg-primary/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase">Économie & Commissions</CardTitle></CardHeader>
+                        <CardHeader className="bg-primary/10 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-bold uppercase">Économie & Commissions</CardTitle>
+                        </CardHeader>
                         <CardContent className="p-8 space-y-8">
                             <div className="grid md:grid-cols-2 gap-8">
                                 <FormField control={form.control} name="platformCommission" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Taxe Ndara (%)</FormLabel><FormControl><Input type="number" {...field} className="h-14 bg-slate-950 border-slate-800 text-2xl font-black text-primary" /></FormControl></FormItem>
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Taxe Ndara (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} className="h-14 bg-slate-950 border-slate-800 text-2xl font-black text-primary" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                                 <FormField control={form.control} name="instructorShare" render={({ field }) => (
-                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Part Expert (%)</FormLabel><FormControl><Input type="number" {...field} className="h-14 bg-slate-950 border-slate-800 text-2xl font-black text-white" /></FormControl></FormItem>
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Part Expert (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} className="h-14 bg-slate-950 border-slate-800 text-2xl font-black text-white" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                             </div>
                         </CardContent>
@@ -492,12 +519,14 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="mesombEnabled" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Activer MeSomb</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
                             )}/>
                             <FormField control={form.control} name="monerooEnabled" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Activer Moneroo</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
                             )}/>
                             <FormField control={form.control} name="paymentMode" render={({ field }) => (
                                 <FormItem>
