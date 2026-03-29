@@ -42,13 +42,6 @@ import {
   Mail,
   ShieldCheck,
   ChevronRight,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Youtube,
-  MessageCircle,
-  Share2,
   Zap,
   Server,
   Shield
@@ -499,12 +492,12 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="mesombEnabled" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Activer MeSomb</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                             )}/>
                             <FormField control={form.control} name="monerooEnabled" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold uppercase text-xs">Activer Moneroo</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                             )}/>
                             <FormField control={form.control} name="paymentMode" render={({ field }) => (
                                 <FormItem>
