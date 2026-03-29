@@ -92,54 +92,136 @@ export interface NdaraUser {
   };
   permissions?: { [key: string]: boolean };
   isDemoAccount?: boolean;
+  badges?: string[];
 }
 
-/* --- SUPPORT UTILISATEUR --- */
+export interface Course {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  instructorId: string;
+  category: string;
+  price: number;
+  imageUrl?: string;
+  status: 'Draft' | 'Published' | 'Pending Review';
+  rating?: number;
+  participantsCount?: number;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+  publishedAt?: Timestamp | FieldValue | Date | null;
+  currency?: string;
+  learningObjectives?: string[];
+  ownerId?: string;
+  creatorId?: string;
+  resaleRightsAvailable?: boolean;
+  resaleRightsPrice?: number;
+  isPlatformOwned?: boolean;
+  buyoutStatus?: 'none' | 'requested' | 'approved';
+  buyoutPrice?: number;
+  rightsChain?: string[];
+  moderationFeedback?: string;
+}
+
+export interface Section {
+  id: string;
+  title: string;
+  order: number;
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Lecture {
+  id: string;
+  title: string;
+  type: 'video' | 'youtube' | 'text' | 'pdf';
+  contentUrl?: string;
+  textContent?: string;
+  duration?: number;
+  order: number;
+  isFreePreview?: boolean;
+  description?: string;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Quiz {
+  id: string;
+  courseId: string;
+  sectionId: string;
+  instructorId: string;
+  title: string;
+  description?: string;
+  questionsCount?: number;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  order: number;
+  options: {
+    text: string;
+    isCorrect: boolean;
+  }[];
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Enrollment {
+  id: string;
+  studentId: string;
+  courseId: string;
+  instructorId: string;
+  status: 'active' | 'completed' | 'suspended';
+  progress: number;
+  enrollmentDate: Timestamp | FieldValue | Date;
+  lastAccessedAt: Timestamp | FieldValue | Date;
+  priceAtEnrollment?: number;
+  expiresAt?: Timestamp | null;
+}
+
+export interface CourseProgress {
+  id: string;
+  userId: string;
+  courseId: string;
+  courseTitle: string;
+  courseCover?: string;
+  progressPercent: number;
+  completedLessons: string[];
+  lastLessonId?: string;
+  lastLessonTitle?: string;
+  updatedAt: Timestamp | FieldValue | Date;
+}
+
+export interface UserActivity {
+  id: string;
+  userId: string;
+  type: 'enrollment' | 'certificate' | 'review' | 'assignment';
+  title: string;
+  description?: string;
+  link?: string;
+  read: boolean;
+  createdAt: Timestamp | FieldValue | Date;
+}
 
 export interface SupportTicket {
   id: string;
   userId: string;
-  userName?: string;
-  userEmail?: string;
-
   subject: string;
-  message: string;
-
-  status: 'open' | 'pending' | 'resolved' | 'closed';
-  priority?: 'low' | 'medium' | 'high';
-
-  adminResponse?: string;
-
-  // 💬 mode chat (optionnel mais puissant)
-  messages?: {
-    senderId: string;
-    text: string;
-    createdAt: Timestamp | FieldValue | Date;
-  }[];
-
+  category: 'Paiement' | 'Technique' | 'Pédagogique';
+  status: 'ouvert' | 'pending' | 'resolved' | 'fermé';
+  lastMessage?: string;
   createdAt: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-  resolvedAt?: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
+  resolution?: string;
 }
 
-/* --- FINANCES --- */
-
-export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'cancelled' | 'approved' | 'paid' | 'rejected' | 'refunded';
-export type TransactionType = 'deposit' | 'purchase' | 'commission' | 'payout' | 'wallet_topup' | 'course_purchase' | 'license_purchase';
-export type PaymentProvider = 'mesomb' | 'moneroo' | 'cinetpay' | 'wallet' | 'admin_recharge' | 'manual' | 'orange' | 'mtn' | 'wave';
-
-export interface WalletTransaction {
+export interface Message {
   id: string;
-  userId: string;
-  amount: number;
-  currency: string;
-  type: TransactionType;
-  status: TransactionStatus;
-  provider: PaymentProvider;
-  description: string;
-  metadata?: any;
+  senderId: string;
+  text: string;
   createdAt: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
+  status?: 'sent' | 'delivered' | 'read';
 }
 
 export interface Payment {
@@ -202,20 +284,6 @@ export interface AffiliateTransaction {
   unlockDate: Timestamp | FieldValue | Date;
 }
 
-export interface NdaraPaymentDetails {
-  transactionId: string | number;
-  gatewayTransactionId?: string;
-  provider: string;
-  amount: number;
-  currency: string;
-  metadata: {
-    userId: string;
-    courseId: string;
-    type?: string;
-    [key: string]: any;
-  };
-}
-
 export interface Coupon {
   id: string;
   code: string;
@@ -230,4 +298,369 @@ export interface Coupon {
   expiresAt: Timestamp | FieldValue | Date;
 }
 
-/* --- (le reste de ton fichier reste inchangé) --- */
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  currency: string;
+  prefix: string;
+  flagEmoji: string;
+  active: boolean;
+  paymentMethods: PaymentMethod[];
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  logo?: string;
+  provider: string;
+  active: boolean;
+}
+
+export interface Settings {
+  general?: {
+    siteName: string;
+    siteDescription: string;
+    contactEmail: string;
+    supportPhone: string;
+    defaultLanguage: string;
+    defaultCountry: string;
+    logoUrl?: string;
+  };
+  social?: {
+    facebookUrl?: string;
+    instagramUrl?: string;
+    twitterUrl?: string;
+    linkedinUrl?: string;
+    youtubeUrl?: string;
+    telegramUrl?: string;
+    tiktokUrl?: string;
+  };
+  platform?: {
+    maintenanceMode: boolean;
+    announcementMessage: string;
+    allowTeacherToTeacherResale: boolean;
+    allowCourseBuyout: boolean;
+    allowResaleRights: boolean;
+    allowInstructorSignup: boolean;
+    allowYoutube: boolean;
+    allowBunny: boolean;
+    market?: {
+      minimumLicensePrice?: number;
+    };
+    ai?: {
+      autoCorrection: boolean;
+      autonomousTutor: boolean;
+      fraudDetection: boolean;
+    };
+  };
+  commercial?: {
+    platformCommission: number;
+    instructorShare: number;
+    minPayoutThreshold: number;
+    withdrawalFee: number;
+    payoutDelayDays: number;
+    currency: string;
+    affiliatePercentage: number;
+  };
+  payments?: {
+    enableMtn: boolean;
+    enableOrange: boolean;
+    mesombEnabled: boolean;
+    monerooEnabled: boolean;
+    paymentMode: 'test' | 'live';
+  };
+  courses?: {
+    autoApproval: boolean;
+    minPrice: number;
+    maxPrice: number;
+    allowFree: boolean;
+    maxLessons: number;
+    maxVideoDuration: number;
+  };
+  instructors?: {
+    verificationRequired: boolean;
+    autoApproval: boolean;
+    maxCoursesPerUser: number;
+    expertBadgeEnabled: boolean;
+  };
+  students?: {
+    allowRegistration: boolean;
+    emailVerification: boolean;
+    phoneVerification: boolean;
+    dailyDownloadLimit: number;
+  };
+  affiliate?: {
+    enabled: boolean;
+    commissionRate: number;
+    cookieDurationDays: number;
+    payoutThreshold: number;
+  };
+  notifications?: {
+    enableEmail: boolean;
+    enableInApp: boolean;
+    notifySales: boolean;
+    notifyEnrollments: boolean;
+    notifyMessages: boolean;
+  };
+  security?: {
+    enable2fa: boolean;
+    maxLoginAttempts: number;
+    ipBlacklist: string[];
+    accountProtectionRules: string;
+  };
+  appearance?: {
+    primaryColor: string;
+    borderRadius: 'none' | 'md' | 'lg' | 'xl';
+    fontScale: 'small' | 'medium' | 'large';
+  };
+  analytics?: {
+    googleAnalyticsId?: string;
+    facebookPixelId?: string;
+    conversionTracking: boolean;
+    internalAnalytics: boolean;
+  };
+  storage?: {
+    useBunnyCdn: boolean;
+    maxFileSizeMb: number;
+  };
+  legal?: {
+    termsOfService: string;
+    privacyPolicy: string;
+    refundPolicy: string;
+    legalNotices: string;
+  };
+  email?: {
+    smtpHost?: string;
+    senderName?: string;
+    senderEmail?: string;
+    templates: Record<string, any>;
+  };
+  content?: {
+    landingPage?: any;
+    aboutPage?: any;
+  };
+}
+
+export interface FAQ {
+  id: string;
+  question_fr: string;
+  answer_fr: string;
+  tags: string[];
+  order: number;
+  isActive: boolean;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface CarouselSlide {
+  id: string;
+  imageUrl: string;
+  link?: string;
+  order: number;
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Review {
+  id: string;
+  courseId: string;
+  studentId: string;
+  instructorId: string;
+  rating: number;
+  comment: string;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface CourseQuestion {
+  id: string;
+  courseId: string;
+  courseTitle?: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl?: string;
+  instructorId: string;
+  questionText: string;
+  answerText?: string;
+  status: 'pending' | 'answered';
+  createdAt: Timestamp | FieldValue | Date;
+  answeredAt?: Timestamp | FieldValue | Date;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl?: string;
+  instructorId: string;
+  courseId: string;
+  courseTitle: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  submissionContent?: string;
+  submissionUrl?: string;
+  status: 'submitted' | 'graded';
+  grade?: number;
+  feedback?: string;
+  submittedAt: Timestamp | FieldValue | Date;
+  gradedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Assignment {
+  id: string;
+  courseId: string;
+  courseTitle?: string;
+  sectionId: string;
+  instructorId?: string;
+  title: string;
+  description?: string;
+  correctionGuide?: string;
+  dueDate?: Timestamp | FieldValue | Date;
+  attachments?: { name: string; url: string }[];
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface PushCampaign {
+  id: string;
+  message: string;
+  target: 'all' | 'instructor' | 'student';
+  status: 'sent' | 'scheduled' | 'draft';
+  scheduledFor?: Timestamp | FieldValue | Date;
+  sentAt?: Timestamp | FieldValue | Date;
+  createdAt: Timestamp | FieldValue | Date;
+  stats?: {
+    delivered: number;
+    clicked: number;
+  };
+}
+
+export interface CourseTemplate {
+  id: string;
+  imageUrl: string;
+  description: string;
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio: string;
+  imageUrl: string;
+}
+
+export interface UserRecommendations {
+  userId: string;
+  courses: RecommendedCourseItem[];
+  updatedAt: Timestamp | FieldValue | Date;
+}
+
+export interface RecommendedCourseItem {
+  courseId: string;
+  title: string;
+  coverImage: string;
+  instructorId: string;
+  price: number;
+  score: number;
+}
+
+export interface NdaraPaymentDetails {
+  transactionId: string | number;
+  gatewayTransactionId?: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  metadata: {
+    userId: string;
+    courseId: string;
+    type?: string;
+    [key: string]: any;
+  };
+}
+
+export interface Notification {
+  id: string;
+  text: string;
+  link?: string;
+  type: 'success' | 'info' | 'reminder' | 'alert';
+  read: boolean;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface Chat {
+  id: string;
+  participants: string[];
+  participantCategories?: string[];
+  lastMessage: string;
+  lastSenderId: string;
+  unreadBy?: string[];
+  status?: 'active' | 'blocked';
+  blockedBy?: string;
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
+}
+
+export interface Announcement {
+  id: string;
+  courseId: string;
+  courseTitle?: string;
+  instructorId: string;
+  title: string;
+  message: string;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface SecurityLog {
+  id: string;
+  eventType: string;
+  userId?: string;
+  targetId: string;
+  details: string;
+  timestamp: Timestamp | FieldValue | Date;
+  status?: 'open' | 'resolved';
+}
+
+export interface AdminAuditLog {
+  id: string;
+  adminId: string;
+  eventType: string;
+  target: { id: string; type: string };
+  details: string;
+  timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface TrackingEvent {
+  eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
+  sessionId: string;
+  pageUrl: string;
+  metadata?: Record<string, any>;
+  timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface CartItem {
+  id: string;
+  courseId: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isActive: boolean;
+  targetRole: UserRole;
+}
+
+export interface InvestorLead {
+  id: string;
+  fullName: string;
+  email: string;
+  organization?: string;
+  message?: string;
+  status: 'new' | 'contacted' | 'interested';
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
+}
