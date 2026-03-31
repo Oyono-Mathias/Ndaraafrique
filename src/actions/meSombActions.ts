@@ -5,8 +5,9 @@ import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 /**
- * @fileOverview Initiation Hardened des paiements MeSomb.
- * ✅ SÉCURITÉ : Union Type pour séparer Simulation et Production.
+ * @fileOverview Initiation sécurisée des paiements MeSomb.
+ * ✅ TYPAGE : Union Type pour séparer Simulation et Production.
+ * ✅ SÉCURITÉ : Validation de vélocité et clés masquées.
  */
 
 export type MeSombResponse =
@@ -36,7 +37,7 @@ async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string
         .count()
         .get();
     
-    return recentTxns.data().count < 5; // Plus souple pour le dev
+    return recentTxns.data().count < 5; 
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
@@ -54,6 +55,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     };
   }
 
+  // Si on arrive ici, on est en production avec les clés présentes
   const db = getAdminDb();
   
   // 1. Protection Anti-Fraude
@@ -88,14 +90,16 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     });
 
-    // 3. Appel API Real
-    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
-      method: 'POST',
-      headers: {
+    // 3. Appel API avec headers garantis strings
+    const headers: HeadersInit = {
         'Authorization': `Bearer ${SECRET_KEY}`,
         'X-MeSomb-Application': APPLICATION_KEY,
         'Content-Type': 'application/json',
-      },
+    };
+
+    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
+      method: 'POST',
+      headers,
       body: JSON.stringify({
         amount: params.amount,
         service: params.service,

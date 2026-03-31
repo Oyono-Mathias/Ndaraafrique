@@ -1,19 +1,20 @@
-
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 import { detectFraud } from '@/ai/flows/detect-fraud-flow';
+import { getRequiredEnv } from '@/lib/env';
 
 /**
  * @fileOverview Webhook MeSomb Hardened.
- * ✅ STRATÉGIE : Zero-Trust + Secret Token Validation + IA Fraud Scoring.
+ * ✅ STRATÉGIE : Zero-Trust + Double vérification API officielle + Typage strict.
  */
 
 export async function POST(req: Request) {
-  const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
-  const APP_KEY = process.env.MESOMB_APP_KEY?.trim();
-
   try {
+    // 1. Récupération sécurisée des clés (Fail-fast si manquantes en production)
+    const SECRET_KEY = getRequiredEnv('MESOMB_SECRET_KEY');
+    const APP_KEY = getRequiredEnv('MESOMB_APP_KEY');
+
     const body = await req.json();
     const txnData = body.transaction || body;
     const extra = txnData.metadata || txnData.extra || body.extra;
@@ -28,13 +29,12 @@ export async function POST(req: Request) {
 
     const db = getAdminDb();
     
-    // 1. Vérification de l'existence et du Secret Nonce (Anti-Spoofing)
+    // 2. Vérification de l'existence et du Secret Nonce
     const paymentDoc = await db.collection('payments').doc(internalRef).get();
     if (!paymentDoc.exists) {
-        // Détecter une attaque par brute-force d'ID
         await db.collection('security_logs').add({
-            eventType: 'webhook_brute_force_attempt',
-            details: `ID inexistant tenté: ${internalRef}`,
+            eventType: 'webhook_not_found',
+            details: `ID transaction inexistant: ${internalRef}`,
             timestamp: new Date()
         });
         return NextResponse.json({ error: 'Not Found' }, { status: 404 });
@@ -45,26 +45,36 @@ export async function POST(req: Request) {
         await db.collection('security_logs').add({
             eventType: 'webhook_token_mismatch',
             userId: storedData?.userId,
-            details: `Token invalide reçu pour ${internalRef}`,
+            details: `Token de sécurité invalide pour ${internalRef}`,
             timestamp: new Date()
         });
         return NextResponse.json({ error: 'Invalid Token' }, { status: 403 });
     }
 
-    // 2. Double-Vérification API (Source of Truth)
+    // 3. Double-Vérification API (Source of Truth)
+    // ✅ Typage strict des headers pour éviter les erreurs 'string | undefined'
+    const headers: HeadersInit = {
+        'Authorization': `Bearer ${SECRET_KEY}`,
+        'X-MeSomb-Application': APP_KEY,
+        'Content-Type': 'application/json'
+    };
+
     const verifyRes = await fetch(`https://mesomb.hachther.com/api/v1.1/payment/status/?id=${txnData.pk || txnData.id}`, {
-        headers: {
-            'Authorization': `Bearer ${SECRET_KEY}`,
-            'X-MeSomb-Application': APP_KEY,
-        }
+        headers
     });
 
-    if (!verifyRes.ok) return NextResponse.json({ error: 'Auth failed' }, { status: 403 });
+    if (!verifyRes.ok) {
+        console.error(`[MeSomb] Échec vérification API: ${verifyRes.status}`);
+        return NextResponse.json({ error: 'Gateway verification failed' }, { status: 403 });
+    }
+
     const officialTxn = await verifyRes.json();
 
-    if (officialTxn.status !== 'SUCCESS') return NextResponse.json({ status: 'ignored' });
+    if (officialTxn.status !== 'SUCCESS') {
+        return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
+    }
 
-    // 3. Analyse Anti-Fraude par IA Mathias
+    // 4. Analyse Anti-Fraude par IA Mathias
     const userDoc = await db.collection('users').doc(storedData?.userId).get();
     const userData = userDoc.data();
     
@@ -80,8 +90,8 @@ export async function POST(req: Request) {
         }
     });
 
-    // 4. Blocage si risque trop élevé (> 80)
-    if (fraudAnalysis.riskScore > 80) {
+    // 5. Blocage si risque critique
+    if (fraudAnalysis.riskScore > 85) {
         await db.collection('security_logs').add({
             eventType: 'fraud_blocked',
             userId: storedData?.userId,
@@ -91,7 +101,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Fraud detected' }, { status: 403 });
     }
 
-    // 5. Validation finale
+    // 6. Validation finale atomique
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(officialTxn.pk || officialTxn.id),
@@ -109,7 +119,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ processed: true, riskScore: fraudAnalysis.riskScore });
 
   } catch (error: any) {
-    console.error("❌ Erreur critique Webhook:", error.message);
+    console.error("❌ Erreur critique Webhook MeSomb:", error.message);
     return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
   }
 }
