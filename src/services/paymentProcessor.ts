@@ -1,50 +1,34 @@
-
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { sendUserNotification } from '@/actions/notificationActions';
-import type { NdaraPaymentDetails, Course, Settings, NdaraUser } from '@/lib/types';
+import type { NdaraPaymentDetails, Course, Settings } from '@/lib/types';
 
 /**
- * @fileOverview Ndara Payment Processor (Cerveau Financier v4.5).
- * ✅ ATOMICITÉ : Utilisation de transactions pour garantir l'intégrité.
- * ✅ IDEMPOTENCE : Empêche strictement le double traitement.
+ * @fileOverview Cerveau Financier Ndara (V5.0).
+ * ✅ ATOMICITÉ : Transactions Firestore pour garantir zéro perte de données.
+ * ✅ IDEMPOTENCE : Protection stricte contre le double-crédit.
  */
 
-function sanitize(obj: any): any {
-  if (obj === null || typeof obj !== 'object') return obj;
-  if (obj instanceof Date || obj instanceof Timestamp || (obj.constructor && obj.constructor.name === 'FieldValue')) {
-    return obj;
-  }
-  if (Array.isArray(obj)) return obj.map(sanitize);
-  return Object.fromEntries(
-    Object.entries(obj)
-      .filter(([_, v]) => v !== undefined)
-      .map(([k, v]) => [k, sanitize(v)])
-  );
-}
-
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
-  const cleanDetails = sanitize(details);
-  const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = cleanDetails;
+  const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
   
-  if (!metadata?.userId) throw new Error("USER_ID_MANQUANT");
+  if (!metadata?.userId) throw new Error("IDENTIFIANT_UTILISATEUR_MANQUANT");
 
   const db = getAdminDb();
 
   try {
-    // 🛡️ TRANSACTION ATOMIQUE : Tout passe ou rien ne passe
     return await db.runTransaction(async (transaction) => {
         const paymentDocRef = db.collection('payments').doc(String(transactionId));
         const paymentSnap = await transaction.get(paymentDocRef);
         
-        // Si le paiement est déjà complété, on ne fait rien
+        // 🛡️ IDEMPOTENCE : Si déjà traité, on sort proprement
         if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
+            console.log(`[Processor] Transaction ${transactionId} déjà traitée. Skip.`);
             return { success: true, alreadyProcessed: true };
         }
 
-        const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
         const userRef = db.collection('users').doc(metadata.userId);
         const settingsRef = db.collection('settings').doc('global');
         
@@ -53,69 +37,76 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             transaction.get(settingsRef)
         ]);
 
-        if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
+        if (!userSnap.exists) throw new Error("UTILISATEUR_INTROUVABLE");
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        const paymentData: any = {
+        const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
+
+        // 1. Mise à jour de la transaction
+        transaction.update(paymentDocRef, {
             status: 'completed',
             gatewayTransactionId: String(gatewayTransactionId || transactionId),
+            verifiedAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
             amount: Number(amount),
             provider: provider || 'mesomb'
-        };
+        });
 
         if (isTopup) {
+            // 2a. Cas Recharge Wallet
             transaction.update(userRef, { 
                 balance: FieldValue.increment(Number(amount)),
-                lastTopupDate: FieldValue.serverTimestamp()
+                lastWalletUpdate: FieldValue.serverTimestamp()
             });
         } else {
+            // 2b. Cas Achat de cours
             const courseRef = db.collection('courses').doc(metadata.courseId);
             const courseSnap = await transaction.get(courseRef);
-            if (!courseSnap.exists) throw new Error("COURSE_NOT_FOUND");
             
-            const courseData = courseSnap.data() as Course;
-            const instructorShare = settings.commercial?.instructorShare || 80;
-            const revenue = (amount * instructorShare) / 100;
-
-            // Inscription
-            const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
-            transaction.set(db.collection('enrollments').doc(enrollmentId), {
-                id: enrollmentId,
-                studentId: metadata.userId,
-                courseId: metadata.courseId,
-                instructorId: courseData.instructorId,
-                status: 'active',
-                progress: 0,
-                enrollmentDate: FieldValue.serverTimestamp(),
-                priceAtEnrollment: amount
-            }, { merge: true });
-
-            // Crédit Expert
-            const sellerId = courseData.ownerId || courseData.instructorId;
-            if (sellerId && sellerId !== 'NDARA_OFFICIAL') {
-                transaction.update(db.collection('users').doc(sellerId), {
-                    balance: FieldValue.increment(revenue)
+            if (courseSnap.exists) {
+                const courseData = courseSnap.data() as Course;
+                const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
+                
+                // Inscription immédiate
+                transaction.set(db.collection('enrollments').doc(enrollmentId), {
+                    id: enrollmentId,
+                    studentId: metadata.userId,
+                    courseId: metadata.courseId,
+                    instructorId: courseData.instructorId,
+                    status: 'active',
+                    progress: 0,
+                    enrollmentDate: FieldValue.serverTimestamp(),
+                    pricePaid: amount
                 });
+
+                // Crédit de l'instructeur (Partage de revenus)
+                const instructorShare = settings.commercial?.instructorShare || 80;
+                const instructorRevenue = (amount * instructorShare) / 100;
+                const instructorId = courseData.ownerId || courseData.instructorId;
+
+                if (instructorId && instructorId !== 'NDARA_OFFICIAL') {
+                    transaction.update(db.collection('users').doc(instructorId), {
+                        balance: FieldValue.increment(instructorRevenue)
+                    });
+                }
             }
         }
 
-        transaction.update(paymentDocRef, paymentData);
-        
-        // Notifications (Hors transaction car non critique)
-        setTimeout(() => {
-            sendUserNotification(metadata.userId, {
-                text: isTopup ? `Dépôt de ${amount} ${currency} validé.` : `Accès débloqué pour ${metadata.courseId}`,
-                type: 'success',
-                link: isTopup ? '/student/wallet' : `/student/courses/${metadata.courseId}`
-            }).catch(() => {});
-        }, 100);
+        // 3. Journalisation de sécurité
+        const auditRef = db.collection('admin_audit_logs').doc();
+        transaction.set(auditRef, {
+            eventType: 'payment_processed',
+            adminId: 'SYSTEM_PAYMENT',
+            target: { id: metadata.userId, type: 'user' },
+            details: `Paiement ${provider} de ${amount} ${currency} validé pour ${isTopup ? 'Recharge' : 'Cours ' + metadata.courseId}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
 
         return { success: true };
     });
 
   } catch (error: any) {
-    console.error("❌ ERREUR FINANCIÈRE:", error.message);
+    console.error("❌ ÉCHEC CRITIQUE DU PROCESSEUR FINANCIER:", error.message);
     throw error;
   }
 }
