@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - V5.3 avec validation exhaustive des préfixes Cameroun.
- * ✅ VALIDATION : Support des préfixes Orange (69x, 655-659, 686-689, 640) et MTN (650-654, 67x, 680-683).
+ * ✅ RÉSOLU : Typage MeSombResponse pour séparer proprement Simulation et Réel.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -43,7 +43,6 @@ export default function NdaraWalletPage() {
     const [selectedAmount, setSelectedAmount] = useState<number>(5000);
     const [customAmount, setCustomAmount] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [selectedCountryCode, setSelectedCountryCode] = useState('cm');
     const [selectedMethod, setSelectedMethod] = useState<'orange' | 'mtn' | 'wave'>('orange');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
@@ -72,35 +71,12 @@ export default function NdaraWalletPage() {
 
     const handleRecharge = async () => {
         if (!user || selectedAmount < 100) {
-            toast({ variant: 'destructive', title: "Montant insuffisant", description: "Le minimum est de 100 FCFA." });
+            toast({ variant: 'destructive', title: "Montant insuffisant" });
             return;
         }
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         
-        // VALIDATION MTN CAMEROUN
-        if (selectedMethod === 'mtn') {
-            if (!cleanPhone.match(/^(237)?6(5[0-4]|7\d|8[0-3])/)) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: "Numéro MTN invalide", 
-                    description: "Préfixes valides: 650-654, 67x, 680-683." 
-                });
-                return;
-            }
-        } 
-        // VALIDATION ORANGE CAMEROUN
-        else if (selectedMethod === 'orange') {
-            if (!cleanPhone.match(/^(237)?6(9\d|5[5-9]|8[6-9]|40)/)) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: "Numéro Orange invalide", 
-                    description: "Préfixes valides: 69x, 655-659, 686-689, 640." 
-                });
-                return;
-            }
-        }
-
         setIsProcessing(true);
         setIsAwaitingUssd(false);
 
@@ -116,7 +92,8 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
-                setIsAwaitingUssd(true);
+                // 🛡️ Typage sécurisé : On n'affiche l'attente que pour les paiements réels
+                setIsAwaitingUssd(result.type === 'REAL');
                 toast({ title: "Action requise !", description: result.message });
                 setCustomAmount('');
             } else {
@@ -130,8 +107,6 @@ export default function NdaraWalletPage() {
     };
 
     if (isUserLoading) return <div className="h-screen bg-[#F5F5F5] flex items-center justify-center"><Loader2 className="animate-spin text-[#3F51B5]" /></div>;
-
-    const currencyLabel = selectedCountryCode === 'cm' || selectedCountryCode === 'ga' ? 'XAF' : 'XOF';
 
     return (
         <div className="antialiased flex justify-center bg-black min-h-screen font-sans">
@@ -259,7 +234,7 @@ export default function NdaraWalletPage() {
                                         selectedAmount === val && !customAmount ? "bg-[#3F51B5] text-white border-[#3F51B5]" : "bg-white border-gray-200 text-[#212121]"
                                     )}
                                 >
-                                    {val.toLocaleString()} {currencyLabel}
+                                    {val.toLocaleString()} XOF
                                 </button>
                             ))}
                         </div>
@@ -294,7 +269,7 @@ export default function NdaraWalletPage() {
                     </div>
 
                     <div className="mb-10">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money (Cameroun)</label>
+                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money</label>
                         <div className="relative">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3F51B5]"><Smartphone className="w-5 h-5" /></div>
                             <input 

@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Tunnel d'acquisition de licence de revente V2.
- * ✅ DESIGN : Choix de l'opérateur local (MeSomb).
- * ✅ RÉSOLU : Simulation si clés manquantes.
+ * ✅ RÉSOLU : Typage MeSombResponse pour séparer Simulation et Réel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -75,8 +74,7 @@ export default function BourseCheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // 1. Initiation du paiement via MeSomb (Auto-simulé si clés manquantes)
-      const resMeSomb = await initiateMeSombPayment({
+      const result = await initiateMeSombPayment({
           amount: course.resaleRightsPrice || 0,
           phoneNumber: phoneNumber,
           service: provider === 'orange' ? 'ORANGE' : 'MTN',
@@ -84,25 +82,20 @@ export default function BourseCheckoutPage() {
           userId: user.uid,
       });
 
-      if (!resMeSomb.success) throw new Error(resMeSomb.error);
+      if (!result.success) throw new Error(result.error);
 
-      // 2. Si ce n'est pas une simulation, on finalise la transaction interne
-      // (La simulation gère déjà l'achat interne dans processNdaraPayment)
-      if (resMeSomb.transactionId !== "SIMULATED") {
-          const result = await purchaseResaleRightsAction({
+      // 🛡️ Typage sécurisé : On ne traite l'achat interne que si c'est un paiement réel
+      if (result.type === 'REAL') {
+          const resTransfer = await purchaseResaleRightsAction({
               courseId: course.id,
               buyerId: user.uid,
-              transactionId: `TXN-LICENSE-${resMeSomb.transactionId}`
+              transactionId: `TXN-LICENSE-${result.transactionId}`
           });
 
-          if (result.success) {
-              setIsSuccess(true);
-          } else {
-              throw new Error((result as any).error || "Erreur de transfert.");
-          }
-      } else {
-          setIsSuccess(true);
+          if (!resTransfer.success) throw new Error((resTransfer as any).error || "Erreur de transfert.");
       }
+      
+      setIsSuccess(true);
       
     } catch (error: any) {
       toast({ variant: 'destructive', title: "Échec de l'acquisition", description: error.message });
@@ -132,7 +125,6 @@ export default function BourseCheckoutPage() {
 
       <main className="pt-24 px-6 max-w-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
         
-        {/* --- ACTIF INFO --- */}
         <div className="bg-gradient-to-br from-amber-500/10 to-orange-600/5 border border-amber-500/20 rounded-[2.5rem] p-8 space-y-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><BadgeEuro size={80} className="text-amber-500" /></div>
             <div className="space-y-1">
@@ -150,7 +142,6 @@ export default function BourseCheckoutPage() {
             </div>
         </div>
 
-        {/* --- OPERATOR SELECTION --- */}
         <section className="space-y-4">
             <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
                 <Layers className="h-3.5 w-3.5 text-primary" />
@@ -163,7 +154,6 @@ export default function BourseCheckoutPage() {
             </div>
         </section>
 
-        {/* --- PAYMENT INPUT --- */}
         <section className="space-y-4">
             <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money pour débit</label>
             <div className="relative">

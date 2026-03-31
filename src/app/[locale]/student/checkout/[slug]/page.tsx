@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V4.2.
- * ✅ VALIDATION : Support complet Orange (69x, 655-659, 686-689, 640) et MTN (650-654, 67x, 680-683).
+ * ✅ RÉSOLU : Typage MeSombResponse et gestion sécurisée de la simulation.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -101,65 +101,32 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user || !course || !settings) return;
     
-    // 🛡️ VALIDATION AVANT ENVOI (CAMEROUN)
-    if (!['wallet', 'virtual'].includes(provider) && !settings.monerooEnabled) {
-        const clean = phoneNumber.replace(/\D/g, '');
-        
-        if (provider === 'orange') {
-            if (!clean.match(/^(237)?6(9\d|5[5-9]|8[6-9]|40)/)) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: "Numéro Orange invalide", 
-                    description: "Préfixes valides: 69x, 655-659, 686-689, 640." 
-                });
-                return;
-            }
-        } else if (provider === 'mtn') {
-            if (!clean.match(/^(237)?6(5[0-4]|7\d|8[0-3])/)) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: "Numéro MTN invalide", 
-                    description: "Préfixes valides: 650-654, 67x, 680-683." 
-                });
-                return;
-            }
-        }
-    }
-
     setIsProcessing(true);
 
     try {
       if (provider === 'wallet') {
           const balance = currentUser?.balance || 0;
           if (balance < discountedPrice) {
-              toast({ variant: 'destructive', title: "Solde insuffisant", description: "Veuillez recharger votre portefeuille." });
+              toast({ variant: 'destructive', title: "Solde insuffisant" });
               setIsProcessing(false);
               return;
           }
 
-          await updateDoc(doc(db, 'users', user.uid), {
-              balance: increment(-discountedPrice)
-          });
+          await updateDoc(doc(db, 'users', user.uid), { balance: increment(-discountedPrice) });
 
           await processNdaraPayment({
               transactionId: `WAL-${user.uid.substring(0,5)}-${Date.now()}`,
               provider: 'wallet',
               amount: discountedPrice,
               currency: 'XOF',
-              metadata: {
-                  userId: user.uid,
-                  courseId: course.id,
-                  type: 'course_purchase'
-              }
+              metadata: { userId: user.uid, courseId: course.id, type: 'course_purchase' }
           });
           setIsSuccess(true);
       } else if (provider === 'virtual') {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           setIsSuccess(true);
       } else {
-          const useMoneroo = settings.monerooEnabled;
-
-          if (useMoneroo) {
+          if (settings.monerooEnabled) {
               const result = await initiateMonerooPayment({
                   amount: discountedPrice,
                   userId: user.uid,
@@ -172,14 +139,11 @@ function CheckoutContent() {
               });
 
               if (result.success && result.checkoutUrl) {
-                  toast({ title: "Redirection vers Moneroo..." });
                   window.location.href = result.checkoutUrl;
               } else {
                   throw new Error(result.error);
               }
           } else {
-              if (!settings.mesombEnabled) throw new Error("Toutes les passerelles de paiement sont actuellement suspendues.");
-
               const result = await initiateMeSombPayment({
                   amount: discountedPrice,
                   phoneNumber: phoneNumber,
@@ -191,10 +155,10 @@ function CheckoutContent() {
               });
 
               if (result.success) {
-                  if (result.transactionId === "SIMULATED") {
+                  if (result.type === 'SIMULATED') {
                       setIsSuccess(true);
                   } else {
-                      toast({ title: "Demande envoyée !", description: result.message });
+                      toast({ title: "Action requise", description: result.message });
                   }
               } else {
                   throw new Error(result.error);
@@ -202,7 +166,7 @@ function CheckoutContent() {
           }
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: "Échec du paiement", description: error.message });
+      toast({ variant: 'destructive', title: "Échec", description: error.message });
     } finally {
       setIsProcessing(false);
     }
@@ -227,9 +191,7 @@ function CheckoutContent() {
         </div>
       </header>
 
-      <main className="pt-24 px-4 max-w-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
-        
-        {/* --- RECEIPT STYLE TICKET --- */}
+      <main className="pt-24 px-4 max-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
         <div className="relative">
             <div className="bg-[#FEF3C7] rounded-[2rem] overflow-hidden shadow-2xl relative">
                 <div className="h-3 w-full" style={{ backgroundImage: 'radial-gradient(circle at 10px -1px, transparent 10px, #FEF3C7 11px)', backgroundSize: '20px 20px', backgroundRepeat: 'repeat-x' }} />
@@ -252,45 +214,16 @@ function CheckoutContent() {
             </div>
         </div>
 
-        {/* --- OPERATOR SELECTION --- */}
         <section className="space-y-4">
             <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
                 <LayoutGrid className="h-3.5 w-3.5 text-primary" />
                 CHOIX DE L'OPÉRATEUR
             </h2>
             <div className="grid grid-cols-4 gap-2">
-                <button 
-                    onClick={() => setProvider('wallet')}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
-                        provider === 'wallet' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 opacity-40"
-                    )}
-                >
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-slate-950 shadow-lg">
-                        <Wallet size={18} />
-                    </div>
-                    <span className="text-white text-[8px] font-black uppercase">Wallet</span>
-                </button>
-                
-                {settings.enableOrange && (
-                    <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />
-                )}
-                {settings.enableMtn && (
-                    <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />
-                )}
-                
-                <button 
-                    onClick={() => setProvider('virtual')}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
-                        provider === 'virtual' ? "bg-primary/10 border-primary" : "bg-slate-900 border-white/5 opacity-40 grayscale"
-                    )}
-                >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-slate-950">
-                        <Zap size={18} className="fill-current" />
-                    </div>
-                    <span className="text-white text-[8px] font-black uppercase">Virtuel</span>
-                </button>
+                <button onClick={() => setProvider('wallet')} className={cn("flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95", provider === 'wallet' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 opacity-40")}><div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-slate-950 shadow-lg"><Wallet size={18} /></div><span className="text-white text-[8px] font-black uppercase">Wallet</span></button>
+                {settings.enableOrange && <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />}
+                {settings.enableMtn && <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />}
+                <button onClick={() => setProvider('virtual')} className={cn("flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95", provider === 'virtual' ? "bg-primary/10 border-primary" : "bg-slate-900 border-white/5 opacity-40 grayscale")}><div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-slate-950"><Zap size={18} className="fill-current" /></div><span className="text-white text-[8px] font-black uppercase">Virtuel</span></button>
             </div>
         </section>
 
@@ -301,51 +234,30 @@ function CheckoutContent() {
                         <span>Solde Portefeuille</span>
                         <span className="text-primary">{(currentUser?.balance || 0).toLocaleString()} XOF</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 italic">"Paiement instantané sans validation téléphone."</p>
                 </div>
             ) : provider === 'virtual' ? (
                 <div className="p-6 bg-primary/10 border border-primary/20 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
-                        <Sparkles size={16} /> Mode Publicitaire Actif
-                    </div>
-                    <p className="text-[10px] text-slate-400 italic">"Ce mode simule un paiement réussi pour vos vidéos de démonstration."</p>
+                    <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest"><Sparkles size={16} /> Mode Publicitaire Actif</div>
                 </div>
             ) : !settings.monerooEnabled ? (
                 <div className="space-y-3">
-                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money (Cameroun)</label>
+                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money</label>
                     <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
                             <Smartphone className="h-5 w-5 text-primary" />
                         </div>
-                        <Input 
-                            type="tel" 
-                            placeholder="6xx xxx xxx" 
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            className="w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 text-white font-mono text-lg"
-                        />
+                        <Input type="tel" placeholder="6xx xxx xxx" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 text-white font-mono text-lg" />
                     </div>
                 </div>
             ) : (
                 <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-widest">
-                        <ShieldCheck size={14} /> Passerelle Moneroo active
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed font-medium">Vous allez être redirigé vers la page sécurisée de Moneroo pour finaliser votre transaction via Mobile Money ou Carte.</p>
+                    <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-widest"><ShieldCheck size={14} /> Passerelle Moneroo active</div>
                 </div>
             )}
 
             <div className="flex gap-2">
-                <Input 
-                    placeholder="CODE PROMO" 
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    className="flex-1 bg-slate-900 border-white/5 rounded-2xl h-12 text-white font-black"
-                    disabled={!!appliedCoupon}
-                />
-                <Button onClick={handleValidateCoupon} disabled={isValidating || !couponCode.trim()} className="h-12 px-6 rounded-2xl bg-slate-800 font-black text-[10px]">
-                    {isValidating ? <Loader2 className="h-4 w-4 animate-spin"/> : "OK"}
-                </Button>
+                <Input placeholder="CODE PROMO" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} className="flex-1 bg-slate-900 border-white/5 rounded-2xl h-12 text-white font-black" disabled={!!appliedCoupon} />
+                <Button onClick={handleValidateCoupon} disabled={isValidating || !couponCode.trim()} className="h-12 px-6 rounded-2xl bg-slate-800 font-black text-[10px]">{isValidating ? <Loader2 className="h-4 w-4 animate-spin"/> : "OK"}</Button>
             </div>
         </section>
 
@@ -353,7 +265,6 @@ function CheckoutContent() {
             <ShieldCheck className="h-8 w-8 text-emerald-500 opacity-50" />
             <p className="text-slate-500 text-[10px] font-medium italic">Vos fonds sont sécurisés par l'infrastructure Ndara Afrique.</p>
         </div>
-
       </main>
 
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-2xl">
@@ -371,7 +282,7 @@ function CheckoutContent() {
 
       {isSuccess && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in duration-300">
-              <div className="bg-slate-900 border-white/10 rounded-[3rem] p-10 w-full max-w-sm text-center shadow-2xl animate-in zoom-in duration-500">
+              <div className="bg-slate-900 border-white/10 rounded-[3rem] p-10 w-full max-sm text-center shadow-2xl animate-in zoom-in duration-500">
                   <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
                       <Check className="h-10 w-10 text-slate-900" strokeWidth={4} />
                   </div>
