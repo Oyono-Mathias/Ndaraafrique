@@ -319,6 +319,12 @@ export interface PaymentMethod {
   active: boolean;
 }
 
+export interface DesignSettings {
+  primaryColor: string;
+  borderRadius: 'none' | 'md' | 'lg' | 'xl';
+  fontScale: 'small' | 'medium' | 'large';
+}
+
 export interface Settings {
   general?: {
     siteName: string;
@@ -411,11 +417,7 @@ export interface Settings {
     ipBlacklist: string[];
     accountProtectionRules: string;
   };
-  appearance?: {
-    primaryColor: string;
-    borderRadius: 'none' | 'md' | 'lg' | 'xl';
-    fontScale: 'small' | 'medium' | 'large';
-  };
+  appearance?: DesignSettings;
   analytics?: {
     googleAnalyticsId?: string;
     facebookPixelId?: string;
