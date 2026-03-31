@@ -9,6 +9,14 @@ export type UserRole = 'student' | 'instructor' | 'admin';
 
 export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge';
 
+export interface Role {
+  id: string;
+  name: string;
+  permissions: { [key: string]: boolean };
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
