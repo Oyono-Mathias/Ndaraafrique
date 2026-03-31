@@ -4,10 +4,16 @@ import { useEffect } from 'react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import type { Settings, DesignSettings } from '@/lib/types';
 
+const DEFAULT_DESIGN: DesignSettings = {
+  primaryColor: '#10b981',
+  borderRadius: 'lg',
+  fontScale: 'medium',
+};
+
 /**
  * @fileOverview Composant invisible injectant les styles dynamiques.
  * Transforme les choix de l'admin en variables CSS root.
- * ✅ RÉSOLU : Support du format HEX et des arrondis variables.
+ * ✅ RÉSOLU : Typage strict DesignSettings via fusion avec valeurs par défaut.
  */
 export function DynamicDesignManager() {
   useEffect(() => {
@@ -15,7 +21,15 @@ export function DynamicDesignManager() {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const settings = snap.data() as Settings;
-        applyStyles(settings.appearance || {});
+        
+        // On fusionne les réglages reçus avec les valeurs par défaut
+        // pour garantir un objet DesignSettings complet à applyStyles.
+        applyStyles({
+          ...DEFAULT_DESIGN,
+          ...settings.appearance,
+        });
+      } else {
+        applyStyles(DEFAULT_DESIGN);
       }
     });
     return () => unsub();
@@ -24,10 +38,8 @@ export function DynamicDesignManager() {
   const applyStyles = (design: DesignSettings) => {
     const root = document.documentElement;
 
-    // 1. Gestion des Couleurs (Conversion HEX vers HSL si nécessaire ou injection brute)
+    // 1. Gestion des Couleurs
     if (design.primaryColor) {
-        // Pour Tailwind HSL, on préfère injecter directement si c'est possible
-        // Note: Ici on simplifie en injectant la couleur comme variable CSS
         root.style.setProperty('--primary-hex', design.primaryColor);
     }
 
@@ -38,7 +50,7 @@ export function DynamicDesignManager() {
       lg: "24px",
       xl: "40px",
     };
-    const radius = radii[design.borderRadius as keyof typeof radii] || radii.lg;
+    const radius = radii[design.borderRadius] || radii.lg;
     root.style.setProperty('--radius', radius);
   };
 
