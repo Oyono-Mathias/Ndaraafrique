@@ -224,6 +224,9 @@ export interface SupportTicket {
   createdAt: Timestamp | FieldValue | Date;
   updatedAt: Timestamp | FieldValue | Date;
   resolution?: string;
+  courseId: string;
+  instructorId: string;
+  courseTitle?: string;
 }
 
 export interface Message {
