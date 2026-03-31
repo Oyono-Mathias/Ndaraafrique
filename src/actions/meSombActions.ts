@@ -1,13 +1,13 @@
-
-'use client';
+'use server';
 
 import { randomBytes } from 'crypto';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { processNdaraPayment } from '@/services/paymentProcessor';
+import { getAdminDb } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
- * @fileOverview Actions serveur pour MeSomb (Ndara Afrique).
- * ✅ SÉCURITÉ : Pré-enregistrement de la transaction pour validation croisée.
+ * @fileOverview Actions serveur sécurisées pour MeSomb.
+ * ✅ SÉCURITÉ : Exécuté uniquement côté serveur.
+ * ✅ INTÉGRITÉ : Utilise Admin SDK pour l'initiation.
  */
 
 interface MeSombPaymentParams {
@@ -17,29 +17,24 @@ interface MeSombPaymentParams {
   courseId: string;
   userId: string;
   type?: 'course_purchase' | 'wallet_topup';
-  affiliateId?: string;
-  couponId?: string;
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams) {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
 
-  // 1. Nettoyage et validation
-  const cleanPhone = params.phoneNumber.replace(/\D/g, '');
-  
   if (!SECRET_KEY || !APPLICATION_KEY) {
-    console.error(`[MeSomb] ❌ CONFIG_MISSING`);
-    return { success: false, error: "Configuration serveur incomplète." };
+    console.error("[MeSomb] Config serveur manquante");
+    return { success: false, error: "Erreur de configuration serveur." };
   }
 
-  const db = getFirestore();
-  const internalRef = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const db = getAdminDb();
+  const internalRef = `TXN-${Date.now()}-${randomBytes(3).toString('hex')}`;
+  const cleanPhone = params.phoneNumber.replace(/\D/g, '');
 
   try {
-    // 🛡️ SÉCURITÉ FINTECH : On enregistre l'intention de paiement AVANT l'appel API
-    // Cela permet de vérifier le montant lors du retour du Webhook.
-    await setDoc(doc(db, 'payments', internalRef), {
+    // 1. Enregistrement de l'intention de paiement via Admin SDK (Sécurisé)
+    await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
         amount: params.amount,
@@ -48,36 +43,28 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
         provider: 'mesomb',
         type: params.type || 'wallet_topup',
         courseId: params.courseId,
-        createdAt: serverTimestamp()
+        createdAt: FieldValue.serverTimestamp()
     });
 
-    const url = 'https://mesomb.hachther.com/api/v1.1/payment/collect';
-    const nonce = randomBytes(16).toString('hex');
-    
-    let finalCurrency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
-
-    const bodyObj = {
-        amount: params.amount,
-        service: params.service,
-        receiver: cleanPhone,
-        currency: finalCurrency,
-        nonce: nonce,
-        extra: {
-          internalReference: internalRef, // On passe notre ID interne
-          userId: params.userId,
-          courseId: params.courseId || 'WALLET_TOPUP',
-          type: params.type || 'wallet_topup'
-        }
-    };
-
-    const response = await fetch(url, {
+    // 2. Appel API MeSomb depuis le serveur
+    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SECRET_KEY}`,
         'X-MeSomb-Application': APPLICATION_KEY,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(bodyObj),
+      body: JSON.stringify({
+        amount: params.amount,
+        service: params.service,
+        receiver: cleanPhone,
+        currency: (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF',
+        nonce: randomBytes(16).toString('hex'),
+        extra: {
+          internalReference: internalRef,
+          userId: params.userId
+        }
+      }),
     });
 
     const data = await response.json();
@@ -93,6 +80,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams) {
     }
 
   } catch (error: any) {
+    console.error("[MeSomb Initiation Error]", error);
     return { success: false, error: "Erreur de connexion à la passerelle." };
   }
 }
