@@ -14,21 +14,21 @@ export const MOBILE_OPERATORS: Record<string, MobileOperator> = {
   mtn: {
     id: 'mtn',
     name: 'MTN MoMo',
-    logoUrl: '/images/operators/mtn-momo.png',
+    logoUrl: '/images/mtn-momo.png',
     color: 'bg-[#FFCC00]',
     textColor: 'text-black'
   },
   orange: {
     id: 'orange',
     name: 'Orange Money',
-    logoUrl: '/images/operators/orange-money.png',
+    logoUrl: '/images/orange-money.png',
     color: 'bg-[#FF7900]',
     textColor: 'text-white'
   },
   wave: {
     id: 'wave',
     name: 'Wave',
-    logoUrl: '/images/operators/wave.png',
+    logoUrl: '/images/wave.png',
     color: 'bg-[#1DC0F1]',
     textColor: 'text-white'
   },

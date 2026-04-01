@@ -15,7 +15,8 @@ interface OperatorLogoProps {
 
 /**
  * @fileOverview Composant d'affichage intelligent du logo opérateur.
- * Utilise next/image pour les logos locaux avec un fallback textuel si l'image échoue.
+ * ✅ DESIGN : Parfaitement circulaire pour correspondre à l'UI Fintech.
+ * ✅ FALLBACK : Affiche les initiales en majuscules si l'image est absente.
  */
 export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLogoProps) {
   const code = normalizeOperator(operatorName);
@@ -25,7 +26,7 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
     return (
       <div 
         style={{ width: size, height: size }}
-        className={cn("rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shadow-inner", className)}
+        className={cn("rounded-full bg-slate-800 flex items-center justify-center text-slate-500 shadow-inner", className)}
       >
         <Smartphone size={size * 0.6} />
       </div>
@@ -36,35 +37,30 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative rounded-lg overflow-hidden flex items-center justify-center shadow-md shrink-0",
+        "relative rounded-full overflow-hidden flex items-center justify-center shadow-md shrink-0",
         operator.color,
         className
       )}
     >
-      {/* 
-          next/image pour les logos locaux. 
-          Note: Les fichiers doivent être présents dans /public/images/operators/
-      */}
       <Image
         src={operator.logoUrl}
         alt={operator.name}
         fill
-        className="object-contain p-1.5 z-10"
+        className="object-contain z-10"
         sizes={`${size}px`}
-        // Fallback technique si le fichier local est manquant
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.style.display = 'none';
         }}
       />
       
-      {/* Fallback texte stylisé toujours présent en arrière-plan */}
+      {/* Fallback texte stylisé (Initiales en MAJUSCULES) */}
       <span className={cn(
         "font-black uppercase select-none absolute inset-0 flex items-center justify-center pointer-events-none",
         operator.textColor,
-        size < 30 ? "text-[7px]" : "text-[10px]"
+        size < 35 ? "text-[10px]" : "text-xs"
       )}>
-        {operator.name.substring(0, 2)}
+        {operator.name.substring(0, 2).toUpperCase()}
       </span>
     </div>
   );
