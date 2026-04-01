@@ -237,6 +237,17 @@ export interface Message {
   status?: 'sent' | 'delivered' | 'read';
 }
 
+export interface Resource {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  type: 'pdf' | 'video' | 'image' | 'link' | 'file';
+  courseId: string;
+  instructorId: string;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
 export interface Payment {
   id: string;
   userId: string;
