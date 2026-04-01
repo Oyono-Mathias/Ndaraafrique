@@ -5,17 +5,14 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, Settings } from '@/lib/types';
 
 /**
- * @fileOverview Processeur financier centralisé, atomique et idempotent.
- * ✅ ATOMICITÉ : Utilise les transactions Firestore pour éviter les doublons.
- * ✅ LOGGING : Audit systématique de chaque succès financier.
+ * @fileOverview Processeur financier centralisé et idempotent.
+ * ✅ ATOMICITÉ : runTransaction pour prévenir les doubles crédits.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
   
   if (!metadata?.userId) throw new Error("USER_ID_REQUIRED");
-
-  console.log(`[Processor] ⚙️ Traitement paiement: ${transactionId} | User: ${metadata.userId} | Montant: ${amount}`);
 
   const db = getAdminDb();
 
@@ -24,9 +21,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         const paymentDocRef = db.collection('payments').doc(String(transactionId));
         const paymentSnap = await transaction.get(paymentDocRef);
         
-        // 🛡️ IDEMPOTENCE : Si la transaction est déjà marquée 'completed', on s'arrête là.
+        // 🛡️ IDEMPOTENCE : Stop si déjà complété
         if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
-            console.warn(`[Processor] 🛑 Transaction ${transactionId} déjà traitée. Abandon.`);
             return { success: true, alreadyProcessed: true };
         }
 
@@ -42,7 +38,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
         const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-        // 1. Mise à jour du document de paiement
+        // 1. Mise à jour du statut paiement
         transaction.update(paymentDocRef, {
             status: 'completed',
             gatewayTransactionId: gatewayTransactionId || transactionId,
@@ -53,15 +49,13 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         });
 
         if (isTopup) {
-            // 2a. RECHARGEMENT DU WALLET
-            console.log(`[Processor] 💰 Crédit Wallet: +${amount} pour ${metadata.userId}`);
+            // 2a. RECHARGEMENT WALLET
             transaction.update(userRef, { 
                 balance: FieldValue.increment(Number(amount)),
                 lastWalletUpdate: FieldValue.serverTimestamp()
             });
         } else {
-            // 2b. ACHAT DE COURS + INSCRIPTION
-            console.log(`[Processor] 🎓 Inscription au cours: ${metadata.courseId}`);
+            // 2b. INSCRIPTION COURS
             const courseRef = db.collection('courses').doc(metadata.courseId);
             const courseSnap = await transaction.get(courseRef);
             
@@ -80,7 +74,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                     pricePaid: amount
                 });
 
-                // Partage de revenus avec l'instructeur
+                // Partage de revenus
                 const instructorShare = settings.commercial?.instructorShare || 80;
                 const instructorRevenue = (amount * instructorShare) / 100;
                 const finalInstructorId = courseData.ownerId || courseData.instructorId;
@@ -93,13 +87,12 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             }
         }
 
-        // 3. LOG D'AUDIT ADMIN
-        const auditRef = db.collection('admin_audit_logs').doc();
-        transaction.set(auditRef, {
+        // 3. LOG D'AUDIT
+        transaction.set(db.collection('admin_audit_logs').doc(), {
             eventType: 'payment_verified',
             adminId: 'SYSTEM_BOT',
             target: { id: metadata.userId, type: 'user' },
-            details: `Paiement ${provider} validé (${amount} ${currency}). ID: ${transactionId}. Risk: ${metadata.fraudScore || 0}`,
+            details: `Paiement ${provider} validé (${amount} ${currency}). ID: ${transactionId}`,
             timestamp: FieldValue.serverTimestamp()
         });
 

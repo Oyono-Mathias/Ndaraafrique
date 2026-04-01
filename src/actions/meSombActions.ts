@@ -2,13 +2,14 @@
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
- * ✅ PRODUCTION : Désactivation simulation si clés présentes.
- * ✅ TRAÇABILITÉ : Enregistrement de l'intention avec token de sécurité.
+ * ✅ PRODUCTION : Utilisation impérative des clés secrètes.
+ * ✅ GÉO : Détection automatique des préfixes (Cameroun/Centrafrique).
  */
 
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getRequiredEnv } from '@/lib/env';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
@@ -26,6 +27,7 @@ interface MeSombPaymentParams {
   couponId?: string;
 }
 
+/** 🛡️ Limite le spam de requêtes de paiement */
 async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string) {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const recentTxns = await db.collection('payments')
@@ -34,45 +36,59 @@ async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string
         .count()
         .get();
     
-    return recentTxns.data().count < 5; 
+    return recentTxns.data().count < 3; 
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
-  const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
-  const APPLICATION_KEY = process.env.MESOMB_APP_KEY?.trim();
   const IS_DEV = process.env.NODE_ENV === 'development';
+  
+  // 1. Récupération sécurisée des clés (Fail early si manquant)
+  let SECRET_KEY: string;
+  let APPLICATION_KEY: string;
 
-  console.log(`[MeSomb] Initiation paiement - User: ${params.userId}, Montant: ${params.amount}`);
-
-  // 🛡️ MODE SIMULATION : Uniquement si clés absentes ou mode DEV explicite
-  if (!SECRET_KEY || !APPLICATION_KEY) {
-    console.warn("[MeSomb] Mode Simulation activé car les clés API sont absentes.");
-    return { 
-        success: true, 
-        type: 'SIMULATED', 
-        message: "Simulation : Paiement validé automatiquement en mode test." 
-    };
+  try {
+    SECRET_KEY = getRequiredEnv('MESOMB_SECRET_KEY');
+    APPLICATION_KEY = getRequiredEnv('MESOMB_APP_KEY');
+  } catch (e) {
+    if (IS_DEV) {
+        console.warn("[MeSomb] Mode Simulation activé en local.");
+        return { 
+            success: true, 
+            type: 'SIMULATED', 
+            message: "Mode Test : Paiement validé automatiquement (Clés absentes)." 
+        };
+    }
+    throw e; // En prod, on ne simule pas si les clés manquent
   }
 
   const db = getAdminDb();
   
+  // 2. Vérification vélocité
   const isVelocityOk = await checkUserVelocity(db, params.userId);
   if (!isVelocityOk) {
-      console.warn(`[MeSomb] 🛑 Vélocité dépassée pour user: ${params.userId}`);
       return { success: false, error: "Trop de tentatives. Veuillez patienter 5 minutes." };
   }
 
   const internalRef = randomUUID();
   const secretNonce = randomBytes(32).toString('hex');
-  const cleanPhone = params.phoneNumber.replace(/\D/g, '');
+  
+  // 3. Normalisation du numéro et devise
+  let cleanPhone = params.phoneNumber.replace(/\D/g, '');
+  
+  // Si numéro à 9 chiffres commençant par 6 (Cameroun standard), on ajoute 237
+  if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
+      cleanPhone = '237' + cleanPhone;
+  }
+
+  const currency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
 
   try {
-    // 1. Enregistrement de l'intention en base (Admin SDK)
+    // 4. Enregistrement de l'intention (Admin SDK)
     await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
         amount: Number(params.amount),
-        currency: (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF',
+        currency,
         status: 'pending',
         provider: 'mesomb',
         type: params.type || 'wallet_topup',
@@ -88,14 +104,15 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     });
 
-    // 2. Appel API MeSomb
+    // 5. Appel API MeSomb
     const headers: HeadersInit = {
         'Authorization': `Bearer ${SECRET_KEY}`,
         'X-MeSomb-Application': APPLICATION_KEY,
         'Content-Type': 'application/json',
     };
 
-    console.log(`[MeSomb] Envoi requête de collecte à MeSomb...`);
+    console.log(`[MeSomb] Collecte initiée pour ${cleanPhone} (${currency})`);
+    
     const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
       method: 'POST',
       headers,
@@ -103,7 +120,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         amount: params.amount,
         service: params.service,
         receiver: cleanPhone,
-        currency: (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF',
+        currency,
         nonce: randomBytes(16).toString('hex'),
         extra: {
           internalReference: internalRef,
@@ -115,7 +132,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     const data = await response.json();
 
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
-      console.log(`[MeSomb] Collecte initiée avec succès. ID MeSomb: ${data.pk || data.id}`);
       return { 
         success: true, 
         type: 'REAL',
