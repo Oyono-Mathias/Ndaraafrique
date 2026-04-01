@@ -15,6 +15,7 @@ interface OperatorLogoProps {
 
 /**
  * @fileOverview Composant d'affichage intelligent du logo opérateur.
+ * Utilise next/image pour les logos locaux avec un fallback textuel si l'image échoue.
  */
 export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLogoProps) {
   const code = normalizeOperator(operatorName);
@@ -35,24 +36,34 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative rounded-lg overflow-hidden flex items-center justify-center shadow-md",
+        "relative rounded-lg overflow-hidden flex items-center justify-center shadow-md shrink-0",
         operator.color,
         className
       )}
     >
+      {/* 
+          next/image pour les logos locaux. 
+          Note: Les fichiers doivent être présents dans /public/images/operators/
+      */}
       <Image
         src={operator.logoUrl}
         alt={operator.name}
         fill
-        className="object-contain p-1.5"
+        className="object-contain p-1.5 z-10"
         sizes={`${size}px`}
-        // Fallback technique si l'image distante échoue
+        // Fallback technique si le fichier local est manquant
         onError={(e) => {
-          (e.target as any).style.display = 'none';
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'none';
         }}
       />
-      {/* Fallback texte si l'image ne charge pas */}
-      <span className={cn("font-black text-[10px] uppercase select-none", operator.textColor)}>
+      
+      {/* Fallback texte stylisé toujours présent en arrière-plan */}
+      <span className={cn(
+        "font-black uppercase select-none absolute inset-0 flex items-center justify-center pointer-events-none",
+        operator.textColor,
+        size < 30 ? "text-[7px]" : "text-[10px]"
+      )}>
         {operator.name.substring(0, 2)}
       </span>
     </div>

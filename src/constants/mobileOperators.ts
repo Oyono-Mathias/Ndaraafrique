@@ -14,35 +14,35 @@ export const MOBILE_OPERATORS: Record<string, MobileOperator> = {
   mtn: {
     id: 'mtn',
     name: 'MTN MoMo',
-    logoUrl: 'https://ndara-assets.b-cdn.net/operators/mtn_logo.png',
+    logoUrl: '/images/operators/mtn-momo.png',
     color: 'bg-[#FFCC00]',
     textColor: 'text-black'
   },
   orange: {
     id: 'orange',
     name: 'Orange Money',
-    logoUrl: 'https://ndara-assets.b-cdn.net/operators/orange_logo.png',
+    logoUrl: '/images/operators/orange-money.png',
     color: 'bg-[#FF7900]',
     textColor: 'text-white'
   },
   wave: {
     id: 'wave',
     name: 'Wave',
-    logoUrl: 'https://ndara-assets.b-cdn.net/operators/wave_logo.png',
+    logoUrl: '/images/operators/wave.png',
     color: 'bg-[#1DC0F1]',
     textColor: 'text-white'
   },
   wallet: {
     id: 'wallet',
     name: 'Ndara Wallet',
-    logoUrl: 'https://ndara-assets.b-cdn.net/logo.png',
+    logoUrl: '/logo.png',
     color: 'bg-primary',
     textColor: 'text-slate-950'
   },
   admin: {
     id: 'admin',
     name: 'Admin Recharge',
-    logoUrl: 'https://ndara-assets.b-cdn.net/logo.png',
+    logoUrl: '/logo.png',
     color: 'bg-slate-800',
     textColor: 'text-white'
   }
