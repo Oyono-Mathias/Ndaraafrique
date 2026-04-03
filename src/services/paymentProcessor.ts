@@ -1,12 +1,13 @@
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, Settings } from '@/lib/types';
 
 /**
  * @fileOverview Processeur financier centralisé et idempotent.
- * ✅ ATOMICITÉ : runTransaction pour prévenir les doubles crédits.
+ * ✅ GESTION DES GELS : Utilise settings.commercial.payoutDelayDays pour débloquer les commissions.
+ * ✅ AFFILIATION : Création automatique des transactions d'affiliation.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -74,7 +75,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                     pricePaid: amount
                 });
 
-                // Partage de revenus
+                // --- PARTAGE DE REVENUS FORMATEUR ---
                 const instructorShare = settings.commercial?.instructorShare || 80;
                 const instructorRevenue = (amount * instructorShare) / 100;
                 const finalInstructorId = courseData.ownerId || courseData.instructorId;
@@ -83,6 +84,43 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                     transaction.update(db.collection('users').doc(finalInstructorId), {
                         balance: FieldValue.increment(instructorRevenue)
                     });
+                }
+
+                // --- GESTION AFFILIATION (AMBASSADEUR) ---
+                if (metadata.affiliateId && metadata.affiliateId !== metadata.userId) {
+                    const affiliateRef = db.collection('users').doc(metadata.affiliateId);
+                    const affSnap = await transaction.get(affiliateRef);
+
+                    if (affSnap.exists) {
+                        const affRate = settings.affiliate?.commissionRate || 10;
+                        const affCommission = (amount * affRate) / 100;
+                        const delayDays = settings.commercial?.payoutDelayDays || 14;
+                        
+                        const unlockDate = new Date();
+                        unlockDate.setDate(unlockDate.getDate() + delayDays);
+
+                        const affTransRef = db.collection('affiliate_transactions').doc();
+                        transaction.set(affTransRef, {
+                            id: affTransRef.id,
+                            affiliateId: metadata.affiliateId,
+                            buyerId: metadata.userId,
+                            buyerName: userSnap.data()?.fullName || 'Étudiant Ndara',
+                            courseId: metadata.courseId,
+                            courseTitle: courseData.title,
+                            amount: Number(amount),
+                            commissionAmount: affCommission,
+                            status: 'pending',
+                            createdAt: FieldValue.serverTimestamp(),
+                            unlockDate: Timestamp.fromDate(unlockDate)
+                        });
+
+                        // Geler la commission dans le solde de l'ambassadeur
+                        transaction.update(affiliateRef, {
+                            pendingAffiliateBalance: FieldValue.increment(affCommission),
+                            'affiliateStats.sales': FieldValue.increment(1),
+                            'affiliateStats.earnings': FieldValue.increment(affCommission)
+                        });
+                    }
                 }
             }
         }

@@ -3,10 +3,11 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
+import type { Settings } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour les instructeurs.
- * ✅ RÉSOLU : Initialisation correcte des rôles (Creator/Owner/Instructor).
+ * ✅ RÉSOLU : Validation des prix et des limites selon les réglages Admin.
  */
 
 const CourseFormSchema = z.object({
@@ -30,8 +31,38 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   
   try {
     const db = getAdminDb();
-    const newCourseRef = db.collection('courses').doc();
     
+    // 1. Charger les réglages de la plateforme
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+    const { price } = validatedFields.data;
+
+    // 🛡️ Vérification du prix (Min/Max/Free)
+    const minPrice = settings.courses?.minPrice ?? 0;
+    const maxPrice = settings.courses?.maxPrice ?? 1000000;
+    const allowFree = settings.courses?.allowFree ?? true;
+
+    if (price === 0 && !allowFree) {
+        return { success: false, message: "Les cours gratuits sont actuellement désactivés par l'administration." };
+    }
+
+    if (price > 0 && price < minPrice) {
+        return { success: false, message: `Le prix minimum autorisé est de ${minPrice.toLocaleString()} XOF.` };
+    }
+
+    if (price > maxPrice) {
+        return { success: false, message: `Le prix maximum autorisé est de ${maxPrice.toLocaleString()} XOF.` };
+    }
+
+    // 🛡️ Vérification de la limite de cours par instructeur
+    const maxCourses = settings.instructors?.maxCoursesPerUser ?? 50;
+    const existingCoursesSnap = await db.collection('courses').where('instructorId', '==', instructorId).count().get();
+    if (existingCoursesSnap.data().count >= maxCourses) {
+        return { success: false, message: `Vous avez atteint la limite maximale de ${maxCourses} formations autorisées.` };
+    }
+
+    const newCourseRef = db.collection('courses').doc();
     const data = validatedFields.data;
 
     const newCoursePayload = {
@@ -42,15 +73,13 @@ export async function createCourseAction({ formData, instructorId }: { formData:
       imageUrl: data.imageUrl,
       id: newCourseRef.id,
       courseId: newCourseRef.id,
-      // ✅ SÉPARATION DES RÔLES À LA CRÉATION
       creatorId: instructorId,
       ownerId: instructorId,
       instructorId: instructorId,
-      
-      status: 'Draft',
+      status: settings.courses?.autoApproval ? 'Published' : 'Draft',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      currency: 'XOF',
+      currency: settings.commercial?.currency || 'XOF',
       learningObjectives: [],
       participantsCount: 0
     };
@@ -59,6 +88,7 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
+    console.error("Create Course Error:", error);
     return { 
       success: false, 
       message: 'error.save_failed' 

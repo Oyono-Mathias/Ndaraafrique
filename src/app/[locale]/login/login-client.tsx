@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ i18n : Internationalisation complète du bouton Google, CGU et liens.
+ * ✅ SÉCURITÉ : Vérification de 'allowRegistration' avant toute inscription.
  */
 
 import { useState, useEffect } from 'react';
@@ -29,7 +28,8 @@ import {
   serverTimestamp, 
   getDoc,
   updateDoc,
-  increment
+  increment,
+  onSnapshot
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
@@ -40,8 +40,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
+import type { Settings } from '@/lib/types';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -80,6 +81,7 @@ export default function LoginClient() {
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
+  const [settings, setSettings] = useState<Settings | null>(null);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -95,6 +97,13 @@ export default function LoginClient() {
     resolver: zodResolver(registerSchema),
     defaultValues: { fullName: '', email: '', password: '', terms: false },
   });
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        if (snap.exists()) setSettings(snap.data() as Settings);
+    });
+    return () => unsub();
+  }, [db]);
 
   useEffect(() => {
     if (!isUserLoading && !loading && user && role) {
@@ -113,20 +122,6 @@ export default function LoginClient() {
     }
   }, [user, isUserLoading, loading, role, router, locale, redirectUrl]);
 
-  const getStoredReferrer = () => {
-      if (referralId) return referralId;
-      if (typeof window !== 'undefined') {
-          const stored = localStorage.getItem('ndara_referral');
-          if (stored) {
-              try {
-                  const data = JSON.parse(stored);
-                  if (data.expiresAt > Date.now()) return data.instructorId;
-              } catch (e) { console.error("Referral parse error"); }
-          }
-      }
-      return null;
-  };
-
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
@@ -140,10 +135,14 @@ export default function LoginClient() {
   };
 
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
+    if (settings?.students?.allowRegistration === false) {
+        toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Les nouvelles inscriptions sont temporairement suspendues." });
+        return;
+    }
+
     setIsLoading(true);
     const auth = getAuth();
     try {
-      const instructorSponsorId = getStoredReferrer();
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const authUser = userCredential.user;
       
@@ -163,27 +162,13 @@ export default function LoginClient() {
         preferredLanguage: locale as 'fr' | 'en' | 'sg',
         isOnline: true,
         lastSeen: serverTimestamp(),
-        referredBy: instructorSponsorId || null,
-        referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-        affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+        balance: 0,
         affiliateBalance: 0,
         pendingAffiliateBalance: 0,
-        balance: 0
+        affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
       };
 
       await setDoc(userRef, userData);
-
-      if (instructorSponsorId) {
-          const sponsorRef = doc(db, 'users', instructorSponsorId);
-          const sponsorDoc = await getDoc(sponsorRef);
-          if (sponsorDoc.exists()) {
-              await updateDoc(sponsorRef, {
-                  'affiliateStats.registrations': increment(1)
-              });
-          }
-          if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
-      }
-
       toast({ title: tActions('success.generic') });
 
     } catch (error: any) {
@@ -203,7 +188,12 @@ export default function LoginClient() {
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
-        const instructorSponsorId = getStoredReferrer();
+        if (settings?.students?.allowRegistration === false) {
+            await getAuth().signOut();
+            toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Veuillez réessayer plus tard." });
+            return;
+        }
+
         const userData = {
           uid: user.uid,
           email: user.email,
@@ -218,23 +208,12 @@ export default function LoginClient() {
           isOnline: true,
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
-          referredBy: instructorSponsorId || null,
-          referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-          affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+          balance: 0,
           affiliateBalance: 0,
           pendingAffiliateBalance: 0,
-          balance: 0
+          affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
         };
         await setDoc(userRef, userData);
-
-        if (instructorSponsorId) {
-            const sponsorRef = doc(db, 'users', instructorSponsorId);
-            const sponsorDoc = await getDoc(sponsorRef);
-            if (sponsorDoc.exists()) {
-                await updateDoc(sponsorRef, { 'affiliateStats.registrations': increment(1) });
-            }
-            if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
-        }
       }
       toast({ title: tActions('success.generic') });
     } catch (err) {
@@ -275,25 +254,33 @@ export default function LoginClient() {
                     </TabsContent>
 
                     <TabsContent value="register" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
-                        <Form {...registerForm}>
-                            <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Prénom & Nom" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="terms" render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
-                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
-                                 <div className="space-y-1 leading-none">
-                                    <FormLabel className="text-[10px] font-medium text-slate-500">
-                                      {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">{t('privacy_policy')}</Link>
-                                    </FormLabel>
-                                    <FormMessage />
-                                 </div>
-                              </FormItem>
-                            )} />
-                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl mt-4" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
-                            </form>
-                        </Form>
+                        {settings?.students?.allowRegistration === false ? (
+                            <div className="py-10 text-center space-y-4">
+                                <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
+                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Inscriptions suspendues</p>
+                                <p className="text-xs text-slate-500 italic">Revenez très prochainement.</p>
+                            </div>
+                        ) : (
+                            <Form {...registerForm}>
+                                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                                <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Prénom & Nom" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                                <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                                <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                                <FormField control={registerForm.control} name="terms" render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
+                                    <div className="space-y-1 leading-none">
+                                        <FormLabel className="text-[10px] font-medium text-slate-500">
+                                        {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">{t('privacy_policy')}</Link>
+                                        </FormLabel>
+                                        <FormMessage />
+                                    </div>
+                                </FormItem>
+                                )} />
+                                <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl mt-4" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
+                                </form>
+                            </Form>
+                        )}
                     </TabsContent>
 
                     <div className="relative my-8">
