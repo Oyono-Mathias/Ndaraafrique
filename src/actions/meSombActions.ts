@@ -3,13 +3,13 @@
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
  * ✅ PRODUCTION : Utilisation impérative des clés secrètes.
- * ✅ GÉO : Détection automatique des préfixes (Cameroun/Centrafrique).
- * ✅ ROBUSTE : Retourne des erreurs structurées au lieu de crash le serveur.
+ * ✅ RÉGLAGES : Respect strict de la devise et du verrouillage admin.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import type { Settings } from '@/lib/types';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
@@ -42,13 +42,11 @@ async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
   const IS_DEV = process.env.NODE_ENV === 'development';
   
-  // 1. Récupération sécurisée des clés (Retourne une erreur propre si manquant)
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY;
 
   if (!SECRET_KEY || !APPLICATION_KEY) {
     if (IS_DEV) {
-        console.warn("[MeSomb] Mode Simulation activé en local (Clés absentes).");
         return { 
             success: true, 
             type: 'SIMULATED', 
@@ -57,33 +55,40 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     }
     return { 
         success: false, 
-        error: "Configuration MeSomb manquante sur le serveur. Veuillez ajouter MESOMB_SECRET_KEY et MESOMB_APP_KEY dans vos variables d'environnement." 
+        error: "Configuration MeSomb manquante sur le serveur." 
     };
   }
 
   try {
     const db = getAdminDb();
     
+    // 🛡️ RÉGLAGES ADMIN : Vérification du verrouillage
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = settingsSnap.data() as Settings;
+
+    if (!settings?.payments?.mesombEnabled) {
+        return { success: false, error: "Le service de paiement est actuellement désactivé." };
+    }
+
+    // ✅ STANDARDISATION : Uniquement la devise des réglages
+    const currency = settings?.commercial?.currency || 'XOF';
+
     // 2. Vérification vélocité
     const isVelocityOk = await checkUserVelocity(db, params.userId);
     if (!isVelocityOk) {
-        return { success: false, error: "Trop de tentatives. Veuillez patienter quelques minutes." };
+        return { success: false, error: "Trop de tentatives. Veuillez patienter." };
     }
 
     const internalRef = randomUUID();
     const secretNonce = randomBytes(32).toString('hex');
     
-    // 3. Normalisation du numéro et devise (Spécifique Cameroun)
+    // 3. Normalisation du numéro (Cameroun standard)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    
-    // Si numéro à 9 chiffres commençant par 6 (Cameroun standard), on ajoute 237
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('65') || cleanPhone.startsWith('67') || cleanPhone.startsWith('68') || cleanPhone.startsWith('69'))) {
         cleanPhone = '237' + cleanPhone;
     }
 
-    const currency = (cleanPhone.startsWith('237') || cleanPhone.startsWith('236')) ? 'XAF' : 'XOF';
-
-    // 4. Enregistrement de l'intention (Admin SDK)
+    // 4. Enregistrement de l'intention
     await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
@@ -137,16 +142,15 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         message: "Veuillez valider le paiement sur votre mobile." 
       };
     } else {
-      console.error(`[MeSomb] Erreur collecte:`, data.detail || data);
       await db.collection('payments').doc(internalRef).update({
           status: 'failed',
           error: data.detail || "Refus opérateur"
       });
-      return { success: false, error: data.detail || "Transaction refusée par l'opérateur. Vérifiez votre solde ou le numéro." };
+      return { success: false, error: data.detail || "Transaction refusée par l'opérateur." };
     }
 
   } catch (error: any) {
     console.error("[MeSomb Fatal Error]", error);
-    return { success: false, error: "Erreur de connexion avec la passerelle de paiement." };
+    return { success: false, error: "Erreur de connexion avec la passerelle." };
   }
 }

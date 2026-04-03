@@ -2,12 +2,14 @@
 
 /**
  * @fileOverview Actions serveur pour les retraits.
- * ✅ RÉSOLU : Codes de traduction pour les retours serveur.
+ * ✅ RÉSOLU : Application des frais de retrait définis en admin.
+ * ✅ SÉCURITÉ : Vérification du solde (Montant + Frais).
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification, sendUserNotification } from './notificationActions';
+import type { Settings, NdaraUser } from '@/lib/types';
 
 interface RequestPayoutParams {
     instructorId: string;
@@ -18,6 +20,15 @@ interface RequestPayoutParams {
 export async function requestPayoutAction({ instructorId, amount, method }: RequestPayoutParams): Promise<{ success: boolean; error?: string; message?: string }> {
     try {
         const db = getAdminDb();
+        
+        // 1. Charger les réglages commerciaux
+        const settingsSnap = await db.collection('settings').doc('global').get();
+        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+        
+        const minThreshold = settings.commercial?.minPayoutThreshold || 5000;
+        const withdrawalFee = settings.commercial?.withdrawalFee || 0;
+
+        // 2. Charger les données utilisateur
         const instructorRef = db.collection('users').doc(instructorId);
         const instructorDoc = await instructorRef.get();
 
@@ -25,14 +36,22 @@ export async function requestPayoutAction({ instructorId, amount, method }: Requ
             return { success: false, error: "error.user_not_found" };
         }
 
-        const data = instructorDoc.data();
+        const userData = instructorDoc.data() as NdaraUser;
+        const currentBalance = userData.balance || 0;
         
-        if (method === 'mobile_money' && !data?.payoutInfo?.mobileMoneyNumber) {
-            return { success: false, error: "error.payout_info_missing" };
+        // ✅ APPLICATION DES FRAIS
+        const totalCost = amount + withdrawalFee;
+
+        if (currentBalance < totalCost) {
+            return { success: false, error: "error.insufficient_balance" };
         }
 
-        if (amount < 5000) {
+        if (amount < minThreshold) {
             return { success: false, error: "error.payout_min_amount" };
+        }
+
+        if (method === 'mobile_money' && !userData.payoutInfo?.mobileMoneyNumber) {
+            return { success: false, error: "error.payout_info_missing" };
         }
 
         const payoutRef = db.collection('payout_requests').doc();
@@ -40,6 +59,8 @@ export async function requestPayoutAction({ instructorId, amount, method }: Requ
             id: payoutRef.id,
             instructorId,
             amount,
+            withdrawalFee,
+            totalCost,
             method,
             status: 'pending',
             createdAt: FieldValue.serverTimestamp(),
@@ -47,7 +68,7 @@ export async function requestPayoutAction({ instructorId, amount, method }: Requ
 
         await sendAdminNotification({
             title: '💸 Nouvelle Demande de Retrait',
-            body: `${data?.fullName} demande un retrait de ${amount.toLocaleString('fr-FR')} XOF.`,
+            body: `${userData.fullName} demande un retrait de ${amount.toLocaleString('fr-FR')} XOF. (Frais: ${withdrawalFee} F)`,
             link: '/admin/payouts',
             type: 'newPayouts'
         });
@@ -76,7 +97,16 @@ export async function updatePayoutStatusAction({
 
         if (!payoutDoc.exists) return { success: false, error: "error.generic" };
         
-        const instructorId = payoutDoc.data()?.instructorId;
+        const data = payoutDoc.data();
+        const instructorId = data?.instructorId;
+        const totalCost = data?.totalCost || data?.amount;
+
+        // Si le retrait est validé ou payé, on déduit du solde
+        if (status === 'approved') {
+            await db.collection('users').doc(instructorId).update({
+                balance: FieldValue.increment(-totalCost)
+            });
+        }
 
         await payoutRef.update({
             status,
@@ -88,7 +118,7 @@ export async function updatePayoutStatusAction({
             adminId,
             eventType: 'payout.process',
             target: { id: payoutId, type: 'payout' },
-            details: `Retrait ${payoutId} passé à '${status}'.`,
+            details: `Retrait ${payoutId} passé à '${status}'. Montant total déduit: ${totalCost} F`,
             timestamp: FieldValue.serverTimestamp(),
         });
 

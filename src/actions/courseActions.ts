@@ -6,7 +6,6 @@ import type { Course, NdaraUser, Settings } from '@/lib/types';
 
 /**
  * Assigner ou changer l'instructeur d'un cours (Action Admin).
- * Permet à Mathias de donner le contrôle pédagogique d'un cours à un expert.
  */
 export async function assignInstructorToCourseAction({
     courseId,
@@ -27,32 +26,28 @@ export async function assignInstructorToCourseAction({
         
         const oldInstructorId = courseDoc.data()?.instructorId;
 
-        // Mise à jour de l'instructeur (Pédagogie)
         batch.update(courseRef, {
             instructorId: newInstructorId,
             updatedAt: FieldValue.serverTimestamp(),
         });
 
-        // Journalisation dans l'audit stratégique
         batch.set(db.collection('admin_audit_logs').doc(), {
             adminId,
             eventType: 'course.moderation',
             target: { id: courseId, type: 'course' },
-            details: `Le cours "${courseDoc.data()?.title}" a été réattribué pédagogiquement. Nouvel instructeur: ${newInstructorId} (Ancien: ${oldInstructorId})`,
+            details: `Le cours "${courseDoc.data()?.title}" a été réattribué pédagogiquement.`,
             timestamp: FieldValue.serverTimestamp(),
         });
 
         await batch.commit();
         return { success: true };
     } catch (e: any) {
-        console.error("ASSIGN_INSTRUCTOR_ERROR:", e);
         return { success: false, error: 'error.generic' };
     }
 }
 
 /**
- * Activer ou désactiver les droits de revente pour un cours (Action du propriétaire).
- * Vérifie maintenant le prix plancher configuré en admin.
+ * Activer ou désactiver les droits de revente pour un cours.
  */
 export async function toggleResaleRightsAction({
     courseId,
@@ -73,7 +68,6 @@ export async function toggleResaleRightsAction({
         if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
         const data = courseDoc.data() as Course;
 
-        // ✅ SÉCURISATION : Vérification des nouveaux rôles (Owner)
         const currentOwner = data.ownerId || data.instructorId; 
         const isAdmin = userId === 'SYSTEM' || (await db.collection('users').doc(userId).get()).data()?.role === 'admin';
         
@@ -81,11 +75,10 @@ export async function toggleResaleRightsAction({
             return { success: false, error: 'error.not_authorized' };
         }
 
-        // Vérification du prix minimum si en vente
         if (available) {
             const settingsSnap = await db.collection('settings').doc('global').get();
             const settings = settingsSnap.data() as Settings;
-            const minPrice = (settings as any).platform?.market?.minimumLicensePrice || 10000;
+            const minPrice = settings.platform?.market?.minimumLicensePrice || 10000;
             if (price < minPrice) {
                 return { success: false, error: 'error.resale_min_price' };
             }
@@ -94,9 +87,6 @@ export async function toggleResaleRightsAction({
         await courseRef.update({
             resaleRightsAvailable: available,
             resaleRightsPrice: price,
-            // Migration paresseuse des rôles si absents
-            creatorId: data.creatorId || data.instructorId,
-            ownerId: currentOwner,
             updatedAt: FieldValue.serverTimestamp(),
         });
 
@@ -108,7 +98,7 @@ export async function toggleResaleRightsAction({
 
 /**
  * Finaliser l'achat des droits de revente (Transaction atomique).
- * ✅ RÉSOLU : Utilisation de runTransaction pour éviter les race conditions.
+ * ✅ RÉSOLU : Application de la commission plateforme.
  */
 export async function purchaseResaleRightsAction({
     courseId,
@@ -123,53 +113,70 @@ export async function purchaseResaleRightsAction({
     
     try {
         await db.runTransaction(async (transaction) => {
+            const settingsRef = db.collection('settings').doc('global');
             const courseRef = db.collection('courses').doc(courseId);
-            const courseDoc = await transaction.get(courseRef);
+            
+            const [settingsSnap, courseDoc] = await Promise.all([
+                transaction.get(settingsRef),
+                transaction.get(courseRef)
+            ]);
             
             if (!courseDoc.exists) throw new Error("error.course_not_found");
             
+            const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
             const courseData = courseDoc.data() as Course;
+            
             if (!courseData.resaleRightsAvailable) throw new Error("error.license_not_available");
 
             const previousOwner = courseData.ownerId || courseData.instructorId;
             const price = courseData.resaleRightsPrice || 0;
 
-            // 1. Transfert de propriété financier (Owner)
+            // ✅ CALCUL COMMISSION BOURSE
+            const commissionRate = settings.commercial?.platformCommission || 20;
+            const platformRevenue = (price * commissionRate) / 100;
+            const instructorRevenue = price - platformRevenue;
+
+            // 1. Transfert de propriété
             transaction.update(courseRef, {
                 ownerId: buyerId,
-                instructorId: buyerId, // On aligne la pédagogie par défaut à l'achat
+                instructorId: buyerId,
                 resaleRightsAvailable: false,
                 buyoutStatus: 'none',
                 rightsChain: FieldValue.arrayUnion(previousOwner),
                 updatedAt: FieldValue.serverTimestamp(),
             });
 
-            // 2. Création de l'historique de licence
+            // 2. Historique
             const historyRef = courseRef.collection('license_history').doc();
             transaction.set(historyRef, {
                 fromOwnerId: previousOwner,
                 toOwnerId: buyerId,
                 price: price,
+                commission: platformRevenue,
+                netToSeller: instructorRevenue,
                 transactionId: transactionId,
                 timestamp: FieldValue.serverTimestamp()
             });
 
-            // 3. Créditer l'ancien propriétaire (si ce n'est pas Ndara)
+            // 3. Créditer l'ancien propriétaire (Net)
             if (previousOwner !== 'NDARA_OFFICIAL') {
                 const payoutRef = db.collection('payouts').doc();
                 transaction.set(payoutRef, {
                     instructorId: previousOwner,
-                    amount: price,
+                    amount: instructorRevenue,
                     status: 'valide',
-                    method: 'Vente Licence Secondaire',
+                    method: 'Vente Licence Bourse',
                     date: FieldValue.serverTimestamp()
+                });
+
+                transaction.update(db.collection('users').doc(previousOwner), {
+                    balance: FieldValue.increment(instructorRevenue)
                 });
             }
         });
 
         return { success: true };
     } catch (e: any) {
-        console.error("TRANSACTION_FAILED:", e.message);
         return { success: false, error: e.message || 'error.generic' };
     }
 }
@@ -189,7 +196,6 @@ export async function requestCourseBuyoutAction({
   try {
     const db = getAdminDb();
     
-    // 0. Vérification de l'activation globale
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settingsData = settingsSnap.data() as Settings;
     if (settingsData?.platform?.allowCourseBuyout === false) {
@@ -247,7 +253,6 @@ export async function approveCourseBuyoutAction({
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    // Enregistrer le gain pour l'ancien propriétaire
     await db.collection('payouts').add({
         instructorId: originalOwner,
         amount: data?.buyoutPrice || 0,
@@ -256,15 +261,16 @@ export async function approveCourseBuyoutAction({
         date: FieldValue.serverTimestamp()
     });
 
+    await db.collection('users').doc(originalOwner).update({
+        balance: FieldValue.increment(data?.buyoutPrice || 0)
+    });
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: 'error.generic' };
   }
 }
 
-/**
- * Sanctionner un formateur pour violation des règles de rachat.
- */
 export async function sanctionInstructorForBuyoutViolation({
     userId,
     adminId,
@@ -305,7 +311,6 @@ export async function submitCourseForReviewAction({
 
     if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
     
-    // On vérifie le créateur ou l'instructeur actuel
     const canSubmit = courseDoc.data()?.creatorId === instructorId || courseDoc.data()?.instructorId === instructorId;
     if (!canSubmit) {
       return { success: false, error: 'error.not_authorized' };

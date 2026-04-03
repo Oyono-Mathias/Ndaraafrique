@@ -1,5 +1,10 @@
 'use server';
 
+/**
+ * @fileOverview Met à jour les réglages globaux de la plateforme.
+ * ✅ TRAÇABILITÉ : Log old vs new values pour l'audit stratégique.
+ */
+
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Settings } from '@/lib/types';
@@ -9,38 +14,36 @@ interface UpdateSettingsParams {
   adminId: string;
 }
 
-/**
- * @fileOverview Met à jour les réglages globaux de la plateforme.
- * Les réglages sont organisés en sections (general, commercial, platform, etc.)
- */
 export async function updateGlobalSettings({
   settings,
   adminId
 }: UpdateSettingsParams): Promise<{ success: boolean; error?: string }> {
   try {
     const db = getAdminDb();
-    const batch = db.batch();
-    
     const settingsRef = db.collection('settings').doc('global');
     
-    // On fusionne les réglages existants avec les nouveaux
-    batch.set(settingsRef, settings, { merge: true });
+    // 1. Récupérer l'état actuel avant modification
+    const currentSnap = await settingsRef.get();
+    const currentSettings = currentSnap.exists ? currentSnap.data() : {};
 
-    // Journalisation de l'audit stratégique
-    const auditLogRef = db.collection('admin_audit_logs').doc();
-    batch.set(auditLogRef, {
+    // 2. Mise à jour (Fusion)
+    await settingsRef.set(settings, { merge: true });
+
+    // 3. Journalisation détaillée de l'audit
+    await db.collection('admin_audit_logs').add({
       adminId,
       eventType: 'settings.update',
       target: { id: 'global', type: 'settings' },
-      details: `La configuration globale du système a été modifiée par l'administrateur.`,
+      details: `Modification de la configuration infrastructure par l'administrateur.`,
+      oldValue: currentSettings,
+      newValue: settings,
       timestamp: FieldValue.serverTimestamp(),
     });
 
-    await batch.commit();
     return { success: true };
 
   } catch (error: any) {
     console.error("Error updating settings:", error);
-    return { success: false, error: "Une erreur est survenue lors de la sauvegarde : " + (error.message || "Erreur base de données") };
+    return { success: false, error: "Une erreur est survenue lors de la sauvegarde." };
   }
 }
