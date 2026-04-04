@@ -32,7 +32,6 @@ import {
   Smartphone,
   BookOpen,
   Users,
-  Target,
   Bell,
   Lock,
   Palette,
@@ -41,10 +40,6 @@ import {
   FileText,
   Mail,
   ShieldCheck,
-  ChevronRight,
-  Zap,
-  Server,
-  Shield,
   HardDrive
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -372,7 +367,6 @@ export default function AdminSettingsPage() {
     { id: 'courses', label: 'Cours', icon: BookOpen },
     { id: 'instructors', label: 'Experts', icon: ShieldCheck },
     { id: 'students', label: 'Ndara', icon: Users },
-    { id: 'affiliate', label: 'Ambassadeur', icon: Target },
     { id: 'notifications', label: 'Alertes', icon: Bell },
     { id: 'security', label: 'Sécurité', icon: Lock },
     { id: 'appearance', label: 'Branding', icon: Palette },
@@ -459,7 +453,8 @@ export default function AdminSettingsPage() {
                                     <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
                                         <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
                                             <FormLabel className="text-sm font-bold text-white uppercase">Mode Maintenance</FormLabel>
-                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
                                     )}/>
                                 </div>
                             </div>
