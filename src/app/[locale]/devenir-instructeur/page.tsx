@@ -63,6 +63,20 @@ export default function DevenirInstructeurPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
 
+  const form = useForm<ApplicationValues>({
+    resolver: zodResolver(applicationSchema),
+    defaultValues: {
+      specialty: '',
+      professionalExperience: '',
+      firstCourseTitle: '',
+      firstCourseDescription: '',
+      whatsappNumber: '',
+      portfolioUrl: '',
+      linkedinUrl: '',
+      youtubeUrl: '',
+    },
+  });
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
         if (snap.exists()) setSettings(snap.data() as Settings);
