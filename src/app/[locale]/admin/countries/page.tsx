@@ -227,17 +227,18 @@ export default function AdminCountriesPage() {
                                     </TableCell>
                                     <TableCell className="text-right pr-6">
                                         <div className="flex justify-end gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
+                                            <button 
                                                 onClick={() => { setSelectedCountry(country); setIsMethodsModalOpen(true); }}
-                                                className="h-8 w-8 text-primary hover:bg-primary/10"
+                                                className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary transition shadow-xl active:scale-90"
                                             >
                                                 <Settings2 size={14} />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => deleteCountryAction(country.id)} className="h-8 w-8 text-red-500 hover:bg-red-500/10">
+                                            </button>
+                                            <button 
+                                                onClick={() => deleteCountryAction(country.id)} 
+                                                className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition shadow-xl active:scale-90"
+                                            >
                                                 <Trash2 size={14} />
-                                            </Button>
+                                            </button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -277,7 +278,7 @@ export default function AdminCountriesPage() {
                                                 onCheckedChange={() => handleToggleMethod(selectedCountry!.id, selectedCountry!.paymentMethods, m.id)}
                                                 className="data-[state=checked]:bg-primary"
                                             />
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveMethod(m.id)} className="h-8 w-8 text-red-500"><Trash2 size={14} /></Button>
+                                            <button onClick={() => handleRemoveMethod(m.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition"><Trash2 size={14} /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -289,7 +290,14 @@ export default function AdminCountriesPage() {
                             <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Ajouter une méthode</label>
                             <div className="grid grid-cols-2 gap-3">
                                 <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800" />
-                                <Input placeholder="URL Logo (Optionnel)" value={newMethod.logo} onChange={e => setNewMethod({...newMethod, logo: e.target.value})} className="bg-slate-950 border-slate-800" />
+                                <Select value={newMethod.provider} onValueChange={(v: any) => setNewMethod({...newMethod, provider: v})}>
+                                    <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                        <SelectItem value="mesomb">MeSomb (Orange/MTN)</SelectItem>
+                                        <SelectItem value="moneroo">Moneroo (Global)</SelectItem>
+                                        <SelectItem value="wave">Wave</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <Button onClick={handleAddMethod} disabled={isSubmitting} className="w-full h-12 rounded-xl bg-slate-800 hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all">
                                 {isSubmitting ? <Loader2 className="animate-spin" /> : <><Plus size={14} className="mr-2"/> Ajouter à la liste</>}

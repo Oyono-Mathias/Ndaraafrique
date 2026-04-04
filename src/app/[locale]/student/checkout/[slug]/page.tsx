@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V4.2.
- * ✅ RÉSOLU : Typage MeSombResponse et gestion sécurisée de la simulation.
+ * @fileOverview Tunnel de paiement Ndara Afrique V5.0.
+ * ✅ INTERNATIONAL : Modes de paiement chargés dynamiquement par pays.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
-import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { doc, getFirestore, updateDoc, increment, onSnapshot } from 'firebase/firestore';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { doc, getFirestore, updateDoc, increment, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -26,10 +26,10 @@ import {
   Wallet,
   LayoutGrid,
   CreditCard,
-  AlertTriangle
+  Globe
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Course, Settings } from '@/lib/types';
+import type { Course, Settings, Country, PaymentMethod } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { validateCouponAction } from '@/actions/couponActions';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -37,8 +37,7 @@ import { initiateMonerooPayment } from '@/actions/monerooActions';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
-
-type Provider = 'orange' | 'mtn' | 'wave' | 'virtual' | 'wallet';
+import { OperatorLogo } from '@/components/ui/OperatorLogo';
 
 function CheckoutContent() {
   const params = useParams();
@@ -50,7 +49,6 @@ function CheckoutContent() {
   const { toast } = useToast();
   const db = getFirestore();
 
-  const [provider, setProvider] = useState<Provider>('orange');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [isValidating, setIsValidating] = useState(false);
@@ -59,260 +57,154 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const [settings, setSettings] = useState<Settings['payments'] | null>(null);
+  // --- ÉTAT INTERNATIONAL ---
+  const [countryData, setCountryData] = useState<Country | null>(null);
+  const [selectedMethodId, setSelectedMethodId] = useState<string>('wallet');
+  const [isLoadingCountry, setIsLoadingCountry] = useState(true);
 
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
-        if (snap.exists()) {
-            setSettings(snap.data().payments);
+    if (!currentUser?.countryCode) return;
+
+    const fetchCountry = async () => {
+        setIsLoadingCountry(true);
+        try {
+            const q = query(collection(db, 'countries'), where('code', '==', currentUser.countryCode), where('active', '==', true), limit(1));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                setCountryData({ id: snap.docs[0].id, ...snap.docs[0].data() } as Country);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingCountry(false);
         }
-    });
-    return () => unsub();
-  }, [db]);
+    };
+    fetchCountry();
+  }, [currentUser?.countryCode, db]);
 
   const discountedPrice = useMemo(() => {
     if (!course) return 0;
     if (!appliedCoupon) return course.price;
-
-    if (appliedCoupon.discountType === 'percentage') {
-      return Math.max(0, course.price - (course.price * appliedCoupon.discountValue) / 100);
-    } else {
-      return Math.max(0, course.price - appliedCoupon.discountValue);
-    }
+    return appliedCoupon.discountType === 'percentage' 
+        ? Math.max(0, course.price - (course.price * appliedCoupon.discountValue) / 100)
+        : Math.max(0, course.price - appliedCoupon.discountValue);
   }, [course, appliedCoupon]);
 
-  const handleValidateCoupon = async () => {
-    if (!couponCode.trim() || !course) return;
-    setIsValidating(true);
-    const result = await validateCouponAction(couponCode, course.id);
-    if (result.success) {
-      setAppliedCoupon(result.coupon);
-      toast({ title: "Remise appliquée !" });
-    } else {
-      setAppliedCoupon(null);
-      toast({ variant: 'destructive', title: "Erreur", description: result.error as string });
-    }
-    setIsValidating(false);
-  };
+  const activeMethod = useMemo(() => 
+    selectedMethodId === 'wallet' ? { provider: 'wallet', name: 'Wallet' } :
+    selectedMethodId === 'virtual' ? { provider: 'virtual', name: 'Virtuel' } :
+    countryData?.paymentMethods.find(m => m.id === selectedMethodId),
+  [countryData, selectedMethodId]);
 
   const handlePayment = async () => {
-    if (!user || !course || !settings) return;
-    
+    if (!user || !course || !activeMethod) return;
     setIsProcessing(true);
 
     try {
-      if (provider === 'wallet') {
-          const balance = currentUser?.balance || 0;
-          if (balance < discountedPrice) {
-              toast({ variant: 'destructive', title: "Solde insuffisant" });
-              setIsProcessing(false);
-              return;
-          }
-
+      if (activeMethod.provider === 'wallet') {
+          if ((currentUser?.balance || 0) < discountedPrice) throw new Error("Solde insuffisant");
           await updateDoc(doc(db, 'users', user.uid), { balance: increment(-discountedPrice) });
-
           await processNdaraPayment({
-              transactionId: `WAL-${user.uid.substring(0,5)}-${Date.now()}`,
+              transactionId: `WAL-${Date.now()}`,
               provider: 'wallet',
               amount: discountedPrice,
-              currency: 'XOF',
+              currency: countryData?.currency || 'XOF',
               metadata: { userId: user.uid, courseId: course.id, type: 'course_purchase' }
           });
           setIsSuccess(true);
-      } else if (provider === 'virtual') {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          setIsSuccess(true);
-      } else {
-          if (settings.monerooEnabled) {
-              const result = await initiateMonerooPayment({
-                  amount: discountedPrice,
-                  userId: user.uid,
-                  userEmail: user.email!,
-                  userName: currentUser?.fullName || 'Étudiant Ndara',
-                  courseId: course.id,
-                  affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
-                  couponId: appliedCoupon?.id,
-                  returnUrl: `${window.location.origin}/${locale}/student/courses`
-              });
-
-              if (result.success && result.checkoutUrl) {
-                  window.location.href = result.checkoutUrl;
-              } else {
-                  throw new Error(result.error);
-              }
-          } else {
-              const result = await initiateMeSombPayment({
-                  amount: discountedPrice,
-                  phoneNumber: phoneNumber,
-                  service: provider === 'orange' ? 'ORANGE' : 'MTN',
-                  courseId: course.id,
-                  userId: user.uid,
-                  affiliateId: localStorage.getItem('ndara_affiliate_id') ? JSON.parse(localStorage.getItem('ndara_affiliate_id')!).id : undefined,
-                  couponId: appliedCoupon?.id
-              });
-
-              if (result.success) {
-                  if (result.type === 'SIMULATED') {
-                      setIsSuccess(true);
-                  } else {
-                      toast({ title: "Action requise", description: result.message });
-                  }
-              } else {
-                  throw new Error(result.error);
-              }
-          }
+      } else if (activeMethod.provider === 'mesomb') {
+          const result = await initiateMeSombPayment({
+              amount: discountedPrice,
+              phoneNumber: phoneNumber,
+              service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : 'ORANGE',
+              courseId: course.id,
+              userId: user.uid
+          });
+          if (result.success) {
+              if (result.type === 'SIMULATED') setIsSuccess(true);
+              else toast({ title: "Action requise sur votre mobile" });
+          } else throw new Error(result.error);
       }
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: "Échec", description: error.message });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: "Échec", description: e.message });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (courseLoading || !settings) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
-  if (!course) return null;
+  if (courseLoading || isLoadingCountry) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
 
   return (
     <div className="min-h-screen bg-slate-950 pb-40 relative">
       <div className="grain-overlay" />
-      
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-4">
-            <div className="flex items-center gap-3">
-                <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90 transition">
-                    <ArrowLeft className="h-5 w-5" />
-                </button>
-                <h1 className="font-black text-xl text-white uppercase tracking-tight">Paiement</h1>
-            </div>
-            <div className="w-10" />
+            <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90"><ArrowLeft className="h-5 w-5" /></button>
+            <h1 className="font-black text-xl text-white uppercase tracking-tight">Checkout</h1>
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">{countryData?.flagEmoji}</div>
         </div>
       </header>
 
-      <main className="pt-24 px-4 max-md mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
-        <div className="relative">
-            <div className="bg-[#FEF3C7] rounded-[2rem] overflow-hidden shadow-2xl relative">
-                <div className="h-3 w-full" style={{ backgroundImage: 'radial-gradient(circle at 10px -1px, transparent 10px, #FEF3C7 11px)', backgroundSize: '20px 20px', backgroundRepeat: 'repeat-x' }} />
-                <div className="px-6 py-5 space-y-4">
-                    <div className="flex items-center justify-between border-b-2 border-dashed border-[#D97706]/20 pb-4">
-                        <div className="flex-1 min-w-0 pr-4">
-                            <p className="font-mono text-[#D97706]/60 text-[9px] uppercase tracking-widest mb-1">Désignation</p>
-                            <h2 className="font-black text-[#D97706] text-sm leading-tight uppercase truncate">{course.title}</h2>
-                        </div>
-                        <GraduationCap className="h-8 w-8 text-[#D97706] opacity-20" />
-                    </div>
-                    <div className="flex justify-between items-end">
-                        <p className="font-mono text-[#D97706]/60 text-[10px] uppercase font-bold tracking-widest">Montant à régler</p>
-                        <p className="font-mono font-black text-[#D97706] text-3xl">
-                            {discountedPrice.toLocaleString('fr-FR')} F
-                        </p>
-                    </div>
-                </div>
-                <div className="h-3 w-full" style={{ backgroundImage: 'radial-gradient(circle at 10px 1px, transparent 10px, #0f172a 11px)', backgroundSize: '20px 20px', backgroundRepeat: 'repeat-x' }} />
+      <main className="pt-24 px-4 max-md mx-auto space-y-8 animate-in fade-in">
+        <div className="bg-[#FEF3C7] rounded-[2rem] p-6 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b-2 border-dashed border-[#D97706]/20 pb-4 mb-4">
+                <h2 className="font-black text-[#D97706] text-sm uppercase truncate pr-4">{course?.title}</h2>
+                <GraduationCap className="h-6 w-6 text-[#D97706] opacity-30" />
+            </div>
+            <div className="flex justify-between items-end">
+                <span className="text-[#D97706]/60 text-[10px] font-black uppercase">À régler</span>
+                <span className="font-mono font-black text-[#D97706] text-3xl">{discountedPrice.toLocaleString()} {countryData?.currency}</span>
             </div>
         </div>
 
         <section className="space-y-4">
-            <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
-                <LayoutGrid className="h-3.5 w-3.5 text-primary" />
-                CHOIX DE L'OPÉRATEUR
-            </h2>
+            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] ml-1">Moyen de paiement</h3>
             <div className="grid grid-cols-4 gap-2">
-                <button onClick={() => setProvider('wallet')} className={cn("flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95", provider === 'wallet' ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 opacity-40")}><div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-slate-950 shadow-lg"><Wallet size={18} /></div><span className="text-white text-[8px] font-black uppercase">Wallet</span></button>
-                {settings.enableOrange && <ProviderBtn active={provider === 'orange'} onClick={() => setProvider('orange')} label="Orange" color="bg-[#FF7900]" initials="OM" />}
-                {settings.enableMtn && <ProviderBtn active={provider === 'mtn'} onClick={() => setProvider('mtn')} label="MTN" color="bg-[#FFCC00]" initials="MTN" darkText />}
-                <button onClick={() => setProvider('virtual')} className={cn("flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95", provider === 'virtual' ? "bg-primary/10 border-primary" : "bg-slate-900 border-white/5 opacity-40 grayscale")}><div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-slate-950"><Zap size={18} className="fill-current" /></div><span className="text-white text-[8px] font-black uppercase">Virtuel</span></button>
+                <button onClick={() => setSelectedMethodId('wallet')} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2", selectedMethodId === 'wallet' ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><Wallet className="h-5 w-5 text-primary mb-1"/><span className="text-[8px] font-black uppercase text-white">Wallet</span></button>
+                {countryData?.paymentMethods.filter(m => m.active).map(m => (
+                    <button key={m.id} onClick={() => setSelectedMethodId(m.id)} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2", selectedMethodId === m.id ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><OperatorLogo operatorName={m.provider} size={24} className="mb-1"/><span className="text-[8px] font-black uppercase text-white truncate w-full text-center">{m.name}</span></button>
+                ))}
+                <button onClick={() => setSelectedMethodId('virtual')} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2", selectedMethodId === 'virtual' ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><Zap className="h-5 w-5 text-primary mb-1"/><span className="text-[8px] font-black uppercase text-white">Virtuel</span></button>
             </div>
         </section>
 
         <section className="space-y-6">
-            {provider === 'wallet' ? (
-                <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl space-y-3 animate-in slide-in-from-top-2">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
-                        <span>Solde Portefeuille</span>
-                        <span className="text-primary">{(currentUser?.balance || 0).toLocaleString()} XOF</span>
-                    </div>
+            {selectedMethodId === 'wallet' ? (
+                <div className="p-5 bg-slate-900 border border-white/5 rounded-3xl text-center">
+                    <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Solde actuel</p>
+                    <p className="text-xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {countryData?.currency}</p>
                 </div>
-            ) : provider === 'virtual' ? (
-                <div className="p-6 bg-primary/10 border border-primary/20 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest"><Sparkles size={16} /> Mode Publicitaire Actif</div>
-                </div>
-            ) : !settings.monerooEnabled ? (
+            ) : selectedMethodId !== 'virtual' && (
                 <div className="space-y-3">
-                    <label className="block text-slate-500 text-[10px] font-black uppercase tracking-widest ml-1">Numéro Mobile Money</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Numéro Mobile Money ({countryData?.prefix})</label>
                     <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-white/5">
-                            <Smartphone className="h-5 w-5 text-primary" />
-                        </div>
-                        <Input type="tel" placeholder="6xx xxx xxx" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full bg-slate-900 border-white/5 rounded-[2rem] h-14 pl-16 text-white font-mono text-lg" />
+                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                        <Input type="tel" placeholder="6xx xxx xxx" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="h-14 pl-12 bg-slate-900 border-white/5 rounded-2xl text-white font-mono" />
                     </div>
-                </div>
-            ) : (
-                <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-widest"><ShieldCheck size={14} /> Passerelle Moneroo active</div>
                 </div>
             )}
-
-            <div className="flex gap-2">
-                <Input placeholder="CODE PROMO" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} className="flex-1 bg-slate-900 border-white/5 rounded-2xl h-12 text-white font-black" disabled={!!appliedCoupon} />
-                <Button onClick={handleValidateCoupon} disabled={isValidating || !couponCode.trim()} className="h-12 px-6 rounded-2xl bg-slate-800 font-black text-[10px]">{isValidating ? <Loader2 className="h-4 w-4 animate-spin"/> : "OK"}</Button>
-            </div>
         </section>
 
-        <div className="bg-slate-900/50 rounded-3xl p-4 border border-white/5 flex items-center gap-4">
-            <ShieldCheck className="h-8 w-8 text-emerald-500 opacity-50" />
-            <p className="text-slate-500 text-[10px] font-medium italic">Vos fonds sont sécurisés par l'infrastructure Ndara Afrique.</p>
-        </div>
+        <Button onClick={handlePayment} disabled={isProcessing || isSuccess} className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95">
+            {isProcessing ? <Loader2 className="animate-spin h-5 w-5" /> : <Lock className="h-4 w-4 mr-2" />}
+            Confirmer le paiement
+        </Button>
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-2xl">
-        <div className="max-w-md mx-auto">
-            <Button 
-                onClick={handlePayment} 
-                disabled={isProcessing || isSuccess || (!phoneNumber && !settings.monerooEnabled && provider !== 'wallet' && provider !== 'virtual')}
-                className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95"
-            >
-                {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : <Lock className="h-4 w-4 mr-2"/>}
-                {settings.monerooEnabled && !['wallet', 'virtual'].includes(provider) ? "CONTINUER VERS MONEROO" : "VALIDER LE PAIEMENT"}
-            </Button>
-        </div>
-      </footer>
-
       {isSuccess && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in duration-300">
-              <div className="bg-slate-900 border-white/10 rounded-[3rem] p-10 w-full max-sm text-center shadow-2xl animate-in zoom-in duration-500">
-                  <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Check className="h-10 w-10 text-slate-900" strokeWidth={4} />
-                  </div>
-                  <h3 className="font-black text-white text-2xl uppercase mb-2">Succès !</h3>
-                  <p className="text-slate-400 text-sm mb-8 leading-relaxed">Votre formation est maintenant débloquée.</p>
-                  <Button onClick={() => router.push(`/${locale}/courses/${slug}`)} className="w-full h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
-                      Commencer l'étude
-                  </Button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
+              <div className="bg-slate-900 rounded-[3rem] p-10 text-center space-y-6">
+                  <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl"><Check className="h-10 w-10 text-slate-950" strokeWidth={4} /></div>
+                  <h3 className="text-2xl font-black text-white uppercase">Inscription réussie</h3>
+                  <Button onClick={() => router.push(`/${locale}/courses/${course?.id}`)} className="w-full h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase">Accéder au cours</Button>
               </div>
           </div>
       )}
     </div>
   );
-}
-
-function ProviderBtn({ active, onClick, label, color, initials, darkText = false }: any) {
-    return (
-        <button 
-            onClick={onClick}
-            className={cn(
-                "flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all active:scale-95",
-                active ? "bg-primary/10 border-primary shadow-lg" : "bg-slate-900 border-white/5 grayscale opacity-40"
-            )}
-        >
-            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-black text-[10px] shadow-lg", color, darkText ? "text-slate-950" : "text-white")}>
-                {initials}
-            </div>
-            <span className="text-white text-[8px] font-black uppercase">{label}</span>
-        </button>
-    );
 }
 
 export default function CheckoutPage() {

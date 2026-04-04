@@ -9,7 +9,7 @@
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Settings } from '@/lib/types';
+import type { Settings, Country } from '@/lib/types';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
@@ -46,13 +46,28 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
   try {
     const db = getAdminDb();
     
-    // 1. Charger les réglages admin
-    const settingsSnap = await db.collection('settings').doc('global').get();
+    // 1. Charger les réglages admin et utilisateur
+    const [settingsSnap, userSnap] = await Promise.all([
+        db.collection('settings').doc('global').get(),
+        db.collection('users').doc(params.userId).get()
+    ]);
+
     const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+    const userData = userSnap.data();
 
     // 🛡️ VERROUILLAGE : MeSomb actif ?
     if (!settings?.payments?.mesombEnabled) {
         return { success: false, error: "Le service de paiement est actuellement désactivé." };
+    }
+
+    // 🛡️ RÉGULATION PAYS : Vérifier si MeSomb est autorisé pour le pays de l'utilisateur
+    if (userData?.countryCode) {
+        const countrySnap = await db.collection('countries').where('code', '==', userData.countryCode).limit(1).get();
+        if (!countrySnap.empty) {
+            const country = countrySnap.docs[0].data() as Country;
+            const hasMeSomb = country.paymentMethods.some(m => m.provider === 'mesomb' && m.active);
+            if (!hasMeSomb) return { success: false, error: "Ce mode de paiement n'est pas autorisé dans votre région." };
+        }
     }
 
     // 🧪 MODE TEST : Simulation si configuré en admin ou clés absentes
@@ -65,8 +80,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         };
     }
 
-    const currency = settings?.commercial?.currency || 'XAF';
-
     // 2. Vérification vélocité
     const isVelocityOk = await checkUserVelocity(db, params.userId);
     if (!isVelocityOk) {
@@ -75,10 +88,12 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     const internalRef = randomUUID();
     const secretNonce = randomBytes(32).toString('hex');
+    const currency = settings?.commercial?.currency || 'XOF';
     
-    // 3. Normalisation du numéro (Cameroun standard)
+    // 3. Normalisation du numéro selon le pays
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    if (cleanPhone.length === 9 && (cleanPhone.startsWith('65') || cleanPhone.startsWith('67') || cleanPhone.startsWith('68') || cleanPhone.startsWith('69'))) {
+    // Fallback Cameroun si 9 chiffres (MVP)
+    if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
         cleanPhone = '237' + cleanPhone;
     }
 
@@ -90,7 +105,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         currency,
         status: 'pending',
         provider: 'mesomb',
-        type: params.type || 'wallet_topup',
+        type: params.type || 'course_purchase',
         courseId: params.courseId || 'WALLET_TOPUP',
         createdAt: FieldValue.serverTimestamp(),
         security: {
