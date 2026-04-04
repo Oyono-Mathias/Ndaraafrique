@@ -30,6 +30,7 @@ import { fr } from 'date-fns/locale';
 import type { Payment, Country, PaymentMethod } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -272,7 +273,7 @@ export default function NdaraWalletPage() {
                     </div>
                 </main>
 
-                <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-[#F5F5F5] via-[#F5F5F5] to-transparent pt-8 pb-8 px-6 z-40">
+                <div className="fixed bottom-0 w-full max-md bg-gradient-to-t from-[#F5F5F5] via-[#F5F5F5] to-transparent pt-8 pb-8 px-6 z-40">
                     <Button 
                         onClick={handleRecharge}
                         disabled={isProcessing || !phoneNumber || !activeMethod}
