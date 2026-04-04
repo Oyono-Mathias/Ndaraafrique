@@ -128,20 +128,22 @@ export default function NdaraWalletPage() {
                 const result = await initiateMeSombPayment({
                     amount: selectedAmount,
                     phoneNumber: cleanPhone,
-                    service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : 'ORANGE',
+                    service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
                     userId: user.uid,
                     type: 'wallet_topup'
                 });
 
                 if (result.success) {
-                    if (result.type === 'SIMULATED') setIsSuccess(true);
-                    else {
+                    if (result.type === 'SIMULATED') {
+                        setIsSuccess(true);
+                    } else {
                         setIsAwaitingUssd(true);
                         toast({ title: "Action requise !" });
                     }
-                } else throw new Error(String(result.error));
+                } else {
+                    throw new Error(String(result.error));
+                }
             }
-            // Autres providers à ajouter ici...
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Erreur transaction", description: String(e.message) });
         } finally {

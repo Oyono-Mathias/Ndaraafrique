@@ -19,7 +19,7 @@ export type MeSombResponse =
 interface MeSombPaymentParams {
   amount: number;
   phoneNumber: string;
-  service: 'ORANGE' | 'MTN';
+  service: 'ORANGE' | 'MTN' | 'WAVE';
   userId: string;
   type?: 'course_purchase' | 'wallet_topup';
   courseId?: string;
@@ -39,6 +39,19 @@ async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string
     return recentTxns.data().count < 5; 
 }
 
+/** 🇨🇲 Détecte l'opérateur camerounais basé sur le numéro */
+function detectCameroonOperator(phone: string, currentService: string): 'ORANGE' | 'MTN' {
+    const clean = phone.replace(/\D/g, '');
+    const num = clean.length === 9 ? clean : clean.slice(-9);
+    
+    // MTN: 67, 68, 650-654
+    if (/^6(7|8|5[0-4])/.test(num)) return 'MTN';
+    // Orange: 69, 655-659
+    if (/^6(9|5[5-9])/.test(num)) return 'ORANGE';
+    
+    return currentService as 'ORANGE' | 'MTN';
+}
+
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY;
@@ -55,6 +68,24 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
     const userData = userSnap.data();
 
+    // 🧪 MODE TEST : Simulation PRIORITAIRE si configuré en admin
+    if (settings?.payments?.paymentMode === 'test') {
+        console.log("[MeSomb] Simulation active (Mode Test Admin)");
+        return { 
+            success: true, 
+            type: 'SIMULATED', 
+            message: "Simulation : Paiement validé automatiquement en mode test." 
+        };
+    }
+
+    // 🛡️ MODE LIVE : Vérification des clés
+    if (!SECRET_KEY || !APPLICATION_KEY) {
+        return { 
+            success: false, 
+            error: "Configuration MeSomb manquante sur le serveur. Veuillez ajouter vos clés API dans Vercel/Firebase." 
+        };
+    }
+
     // 🛡️ VERROUILLAGE : MeSomb actif ?
     if (!settings?.payments?.mesombEnabled) {
         return { success: false, error: "Le service de paiement est actuellement désactivé." };
@@ -70,16 +101,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     }
 
-    // 🧪 MODE TEST : Simulation si configuré en admin ou clés absentes
-    if (settings?.payments?.paymentMode === 'test' || !SECRET_KEY || !APPLICATION_KEY) {
-        console.log("[MeSomb] Simulation active (Mode Test)");
-        return { 
-            success: true, 
-            type: 'SIMULATED', 
-            message: "Simulation : Paiement validé automatiquement en mode test." 
-        };
-    }
-
     // 2. Vérification vélocité
     const isVelocityOk = await checkUserVelocity(db, params.userId);
     if (!isVelocityOk) {
@@ -90,11 +111,16 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     const secretNonce = randomBytes(32).toString('hex');
     const currency = settings?.commercial?.currency || 'XOF';
     
-    // 3. Normalisation du numéro selon le pays
+    // 3. Normalisation du numéro et correction opérateur (Cameroun)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    // Fallback Cameroun si 9 chiffres (MVP)
-    if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
-        cleanPhone = '237' + cleanPhone;
+    let finalService = params.service;
+
+    if (cleanPhone.length >= 9) {
+        const cameroonNum = cleanPhone.slice(-9);
+        if (cameroonNum.startsWith('6')) {
+            cleanPhone = '237' + cameroonNum;
+            finalService = detectCameroonOperator(cameroonNum, params.service);
+        }
     }
 
     // 4. Enregistrement de l'intention
@@ -130,7 +156,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
       headers,
       body: JSON.stringify({
         amount: params.amount,
-        service: params.service,
+        service: finalService,
         receiver: cleanPhone,
         currency,
         nonce: randomBytes(16).toString('hex'),
