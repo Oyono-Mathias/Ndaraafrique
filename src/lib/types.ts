@@ -435,8 +435,6 @@ export interface Settings {
   };
   security?: {
     enable2fa: boolean;
-    maxLoginAttempts: number;
-    ipBlacklist: string[];
     accountProtectionRules: string;
   };
   appearance?: DesignSettings;

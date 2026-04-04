@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de candidature pour devenir instructeur sur Ndara Afrique.
- * ✅ AUTOMATISATION : Utilise 'instructorAutoApproval' pour une promotion immédiate.
+ * ✅ SÉCURITÉ : Vérification du paramètre 'allowInstructorSignup' avant d'autoriser l'envoi.
  */
 
 import { useState, useEffect } from 'react';
@@ -23,22 +23,14 @@ import {
   CheckCircle2, 
   Loader2, 
   Award,
-  BookOpen,
   Bot,
-  Linkedin,
-  Star,
   FileText,
   Smartphone,
-  ShieldCheck,
-  Clock,
-  Headset,
   Send,
   Coins,
   ArrowLeft,
-  Youtube,
-  Globe
+  ShieldAlert
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Settings } from '@/lib/types';
 
@@ -88,7 +80,26 @@ export default function DevenirInstructeurPage() {
     return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
 
-  // --- ÉTAT 1 : DÉJÀ APPROUVÉ ---
+  // 🛡️ SÉCURITÉ : Vérifier si le recrutement est fermé
+  if (settings && settings.platform?.allowInstructorSignup === false) {
+      return (
+        <div className="max-w-md mx-auto py-32 px-6 text-center space-y-8 animate-in fade-in duration-700">
+            <div className="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                <ShieldAlert className="h-12 w-12 text-amber-500" />
+            </div>
+            <div className="space-y-2">
+                <h1 className="text-3xl font-black text-white uppercase tracking-tight">Recrutement Suspendu</h1>
+                <p className="text-slate-400 font-medium leading-relaxed">
+                    Nous ne recrutons plus de nouveaux experts pour le moment. Revenez ultérieurement !
+                </p>
+            </div>
+            <Button onClick={() => router.push('/')} className="w-full h-16 rounded-[2rem] bg-slate-900 border border-white/5 text-white font-black uppercase text-xs">
+                Retour à l'accueil
+            </Button>
+        </div>
+      );
+  }
+
   if (currentUser?.isInstructorApproved) {
     return (
       <div className="max-w-md mx-auto py-32 px-6 text-center space-y-8 animate-in fade-in duration-700">
@@ -106,7 +117,6 @@ export default function DevenirInstructeurPage() {
     );
   }
 
-  // --- ÉTAT 2 : CANDIDATURE EN COURS ---
   if (currentUser?.instructorApplication?.submittedAt && currentUser.instructorApplication.status === 'pending') {
     return (
       <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center px-6 text-center">

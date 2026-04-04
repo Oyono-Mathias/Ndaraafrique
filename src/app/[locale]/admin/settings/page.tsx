@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Global Ndara Afrique - Version Intégrale Corrigée.
+ * @fileOverview Centre de Contrôle Global Ndara Afrique - Version Intégrale Connectée.
  * Gère l'ensemble des configurations de la plateforme (Finances, Pédagogie, Sécurité, etc.)
  */
 
@@ -44,12 +44,13 @@ import {
   ChevronRight,
   Zap,
   Server,
-  Shield
+  Shield,
+  HardDrive
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Settings } from '@/lib/types';
 
-// Schéma de validation complet
+// Schéma de validation complet - Alignée sur les besoins réels du backend
 const settingsSchema = z.object({
   siteName: z.string().min(2),
   siteDescription: z.string().optional(),
@@ -85,6 +86,7 @@ const settingsSchema = z.object({
   maxVideoDurationMin: z.coerce.number().default(120),
   instructorVerificationRequired: z.boolean(),
   instructorAutoApproval: z.boolean(),
+  allowInstructorSignup: z.boolean(),
   maxCoursesPerUser: z.coerce.number(),
   allowRegistration: z.boolean(),
   emailVerificationRequired: z.boolean(),
@@ -99,7 +101,6 @@ const settingsSchema = z.object({
   notifyEnrollments: z.boolean().default(true),
   notifyMessages: z.boolean().default(true),
   enable2fa: z.boolean(),
-  maxLoginAttempts: z.coerce.number(),
   primaryColor: z.string(),
   borderRadius: z.enum(['none', 'md', 'lg', 'xl']),
   fontScale: z.enum(['small', 'medium', 'large']),
@@ -149,6 +150,7 @@ export default function AdminSettingsPage() {
         allowResaleRights: true,
         mesombEnabled: true,
         monerooEnabled: false,
+        allowInstructorSignup: true,
     }
   });
 
@@ -191,6 +193,7 @@ export default function AdminSettingsPage() {
           maxVideoDurationMin: d.courses?.maxVideoDuration || 120,
           instructorVerificationRequired: d.instructors?.verificationRequired ?? true,
           instructorAutoApproval: d.instructors?.autoApproval ?? false,
+          allowInstructorSignup: d.platform?.allowInstructorSignup ?? true,
           maxCoursesPerUser: d.instructors?.maxCoursesPerUser || 20,
           allowRegistration: d.students?.allowRegistration ?? true,
           emailVerificationRequired: d.students?.emailVerification ?? true,
@@ -205,7 +208,6 @@ export default function AdminSettingsPage() {
           notifyEnrollments: d.notifications?.notifyEnrollments ?? true,
           notifyMessages: d.notifications?.notifyMessages ?? true,
           enable2fa: d.security?.enable2fa ?? false,
-          maxLoginAttempts: d.security?.maxLoginAttempts || 5,
           primaryColor: d.appearance?.primaryColor || '#10b981',
           borderRadius: d.appearance?.borderRadius || 'lg',
           fontScale: d.appearance?.fontScale || 'medium',
@@ -260,7 +262,7 @@ export default function AdminSettingsPage() {
             allowTeacherToTeacherResale: values.allowTeacherToTeacherResale,
             allowCourseBuyout: values.allowCourseBuyout,
             allowResaleRights: values.allowResaleRights,
-            allowInstructorSignup: true,
+            allowInstructorSignup: values.allowInstructorSignup,
             allowYoutube: true,
             allowBunny: values.useBunnyCdn
         },
@@ -315,8 +317,6 @@ export default function AdminSettingsPage() {
         },
         security: {
             enable2fa: values.enable2fa,
-            maxLoginAttempts: values.maxLoginAttempts,
-            ipBlacklist: [],
             accountProtectionRules: ""
         },
         appearance: {
@@ -377,7 +377,7 @@ export default function AdminSettingsPage() {
     { id: 'security', label: 'Sécurité', icon: Lock },
     { id: 'appearance', label: 'Branding', icon: Palette },
     { id: 'analytics', label: 'Data', icon: BarChart3 },
-    { id: 'storage', label: 'Cloud/CDN', icon: Cloud },
+    { id: 'storage', label: 'CDN & Cloud', icon: Cloud },
     { id: 'legal', label: 'Légal', icon: FileText },
     { id: 'email', label: 'E-mailing', icon: Mail },
     { id: 'roles', label: 'Permissions', icon: Wrench },
@@ -459,19 +459,10 @@ export default function AdminSettingsPage() {
                                     <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
                                         <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
                                             <FormLabel className="text-sm font-bold text-white uppercase">Mode Maintenance</FormLabel>
-                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                        </FormItem>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                                     )}/>
                                 </div>
                             </div>
-
-                            <FormField control={form.control} name="siteDescription" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description Meta (SEO)</FormLabel>
-                                    <FormControl><Textarea {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
 
                             <FormField control={form.control} name="announcementMessage" render={({ field }) => (
                                 <FormItem>
@@ -510,34 +501,54 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="payments" className="space-y-6">
+                <TabsContent value="storage" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                        <CardHeader className="bg-blue-500/10 p-8 border-b border-white/5">
+                            <CardTitle className="text-xl font-bold uppercase flex items-center gap-3"><HardDrive className="text-blue-400 h-6 w-6" /> CDN & Stockage Bunny</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="useBunnyCdn" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
+                                    <div>
+                                        <FormLabel className="font-bold uppercase text-xs">Utiliser Bunny.net</FormLabel>
+                                        <FormDescription className="text-[10px]">Active le streaming vidéo et le stockage asset.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="maxFileSizeMb" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500">Taille Max Fichier (MB)</FormLabel>
+                                    <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 text-white font-black" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="instructors" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
                         <CardHeader className="bg-primary/5 p-8 border-b border-white/5">
-                            <CardTitle className="text-xl font-bold uppercase flex items-center gap-3"><Shield className="text-primary h-6 w-6" /> Passerelles de Paiement</CardTitle>
+                            <CardTitle className="text-xl font-bold uppercase">Recrutement & Limites</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6 text-white">
-                            <FormField control={form.control} name="mesombEnabled" render={({ field }) => (
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
-                                    <FormLabel className="font-bold uppercase text-xs">Activer MeSomb</FormLabel>
+                                    <div>
+                                        <FormLabel className="font-bold uppercase text-xs">Inscriptions Ouvertes</FormLabel>
+                                        <FormDescription className="text-[10px]">Permettre aux Ndara de postuler comme Experts.</FormDescription>
+                                    </div>
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                 </FormItem>
                             )}/>
-                            <FormField control={form.control} name="monerooEnabled" render={({ field }) => (
+                            <FormField control={form.control} name="instructorAutoApproval" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
-                                    <FormLabel className="font-bold uppercase text-xs">Activer Moneroo</FormLabel>
+                                    <div>
+                                        <FormLabel className="font-bold uppercase text-xs">Approbation Automatique</FormLabel>
+                                        <FormDescription className="text-[10px]">Passage expert sans revue manuelle.</FormDescription>
+                                    </div>
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="paymentMode" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500">Mode Environnement</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                        <FormControl><SelectTrigger className="bg-slate-950 border-slate-800 text-white"><SelectValue /></SelectTrigger></FormControl>
-                                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                            <SelectItem value="test">Bac à sable (Sandbox)</SelectItem>
-                                            <SelectItem value="live">Production (Réel)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
                                 </FormItem>
                             )}/>
                         </CardContent>
