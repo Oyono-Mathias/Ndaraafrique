@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V5.3 avec validation exhaustive des préfixes Cameroun.
- * ✅ RÉSOLU : Typage MeSombResponse pour séparer proprement Simulation et Réel.
+ * @fileOverview Ndara Wallet Étudiant - V5.5 Redesign.
+ * ✅ RÉSOLU : Suppression de l'UI corrompue via utilisation de Modals (Dialog).
+ * ✅ SÉCURITÉ : Validation stricte des retours MeSomb et gestion du mode test.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -17,9 +18,12 @@ import {
     Smartphone, 
     Receipt, 
     ArrowDownLeft, 
-    ShoppingBag as ShoppingBagIcon,
-    CreditCard,
-    XCircle
+    CreditCard, 
+    XCircle,
+    Check,
+    AlertCircle,
+    SmartphoneNfc,
+    Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -29,6 +33,7 @@ import type { Payment } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
 
@@ -46,6 +51,7 @@ export default function NdaraWalletPage() {
     const [selectedMethod, setSelectedMethod] = useState<'orange' | 'mtn' | 'wave'>('orange');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
     useEffect(() => {
         if (!user?.uid) return;
@@ -76,6 +82,10 @@ export default function NdaraWalletPage() {
         }
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
+        if (cleanPhone.length < 8) {
+            toast({ variant: 'destructive', title: "Numéro invalide" });
+            return;
+        }
         
         setIsProcessing(true);
         setIsAwaitingUssd(false);
@@ -92,15 +102,18 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
-                // 🛡️ Typage sécurisé : On n'affiche l'attente que pour les paiements réels
-                setIsAwaitingUssd(result.type === 'REAL');
-                toast({ title: "Action requise !", description: result.message });
+                if (result.type === 'SIMULATED') {
+                    setIsSuccess(true);
+                } else {
+                    setIsAwaitingUssd(true);
+                    toast({ title: "Action requise !", description: String(result.message) });
+                }
                 setCustomAmount('');
             } else {
-                throw new Error(result.error);
+                throw new Error(String(result.error));
             }
         } catch (e: any) {
-            toast({ variant: 'destructive', title: "Erreur transaction", description: e.message });
+            toast({ variant: 'destructive', title: "Erreur transaction", description: String(e.message) });
         } finally {
             setIsProcessing(false);
         }
@@ -118,31 +131,10 @@ export default function NdaraWalletPage() {
                     position: relative;
                     overflow: hidden;
                 }
-                .neo-card::before {
-                    content: '';
-                    position: absolute;
-                    top: -50%;
-                    right: -50%;
-                    width: 100%;
-                    height: 100%;
-                    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
-                    pointer-events: none;
-                }
                 .holo-chip {
                     background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
                     position: relative;
                     overflow: hidden;
-                }
-                .holo-chip::after {
-                    content: '';
-                    position: absolute;
-                    inset: 0;
-                    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
-                    animation: shimmer 3s infinite;
-                }
-                @keyframes shimmer {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
                 }
                 .vintage-receipt {
                     background: #FFFFFF;
@@ -150,25 +142,10 @@ export default function NdaraWalletPage() {
                     position: relative;
                     font-family: 'JetBrains Mono', monospace;
                 }
-                .vintage-receipt::before, .vintage-receipt::after {
-                    content: '';
-                    position: absolute;
-                    width: 20px;
-                    height: 20px;
-                    background: #F5F5F5;
-                    border-radius: 50%;
-                }
-                .vintage-receipt::before { left: -11px; top: 50%; transform: translateY(-50%); }
-                .vintage-receipt::after { right: -11px; top: 50%; transform: translateY(-50%); }
                 .grain-overlay {
                     position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    pointer-events: none;
-                    z-index: 9999;
-                    opacity: 0.03;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    pointer-events: none; z-index: 9999; opacity: 0.03;
                     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
                 }
             `}</style>
@@ -184,7 +161,7 @@ export default function NdaraWalletPage() {
                 </header>
 
                 <main className="flex-1 overflow-y-auto hide-scrollbar pt-24 pb-48 px-6 relative">
-                    <div className="neo-card rounded-4xl p-6 mb-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-500 active:scale-95 transition-all">
+                    <div className="neo-card rounded-4xl p-6 mb-8 shadow-2xl animate-in slide-in-from-bottom-4 duration-500 active:scale-95 transition-all">
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-8">
                                 <div>
@@ -195,7 +172,7 @@ export default function NdaraWalletPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-white/80 text-[10px] font-bold uppercase tracking-wider mb-2">Ndara Wallet</p>
-                                    <div className="holo-chip w-12 h-9 rounded-lg"></div>
+                                    <div className="holo-chip w-12 h-9 rounded-lg shadow-inner"></div>
                                 </div>
                             </div>
                             
@@ -209,21 +186,8 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {isAwaitingUssd && (
-                        <div className="mb-6 p-5 bg-amber-50 rounded-3xl border-2 border-amber-200 flex items-start gap-4 animate-in zoom-in duration-500">
-                            <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-black text-amber-900 text-xs uppercase mb-1">Confirmation Mobile</h3>
-                                <p className="text-amber-700 text-[10px] font-medium leading-relaxed">Saisissez votre code secret sur votre téléphone pour valider le dépôt.</p>
-                            </div>
-                            <button onClick={() => setIsAwaitingUssd(false)} className="text-amber-400"><XCircle size={16}/></button>
-                        </div>
-                    )}
-
-                    <div className="mb-6">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Recharger mon compte</label>
+                    <div className="mb-8">
+                        <label className="block text-[#757575] text-[10px] font-black uppercase mb-3 ml-1 tracking-widest">Recharger mon compte</label>
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             {PRESET_AMOUNTS.map(val => (
                                 <button 
@@ -231,7 +195,7 @@ export default function NdaraWalletPage() {
                                     onClick={() => { setSelectedAmount(val); setCustomAmount(''); }}
                                     className={cn(
                                         "border-2 rounded-3xl py-4 font-black text-sm transition-all active:scale-95",
-                                        selectedAmount === val && !customAmount ? "bg-[#3F51B5] text-white border-[#3F51B5]" : "bg-white border-gray-200 text-[#212121]"
+                                        selectedAmount === val && !customAmount ? "bg-[#3F51B5] text-white border-[#3F51B5] shadow-lg shadow-indigo-200" : "bg-white border-gray-200 text-[#212121] hover:border-indigo-200"
                                     )}
                                 >
                                     {val.toLocaleString()} XOF
@@ -241,7 +205,7 @@ export default function NdaraWalletPage() {
                         <Input 
                             type="number" 
                             placeholder="Autre montant"
-                            className="w-full h-16 bg-white border-2 border-gray-200 rounded-4xl px-4 text-[#212121] font-bold text-sm focus:outline-none focus:border-[#3F51B5] shadow-sm"
+                            className="w-full h-16 bg-white border-2 border-gray-200 rounded-4xl px-6 text-[#212121] font-black text-lg focus:outline-none focus:border-[#3F51B5] shadow-sm transition-all"
                             value={customAmount}
                             onChange={(e) => {
                                 setCustomAmount(e.target.value);
@@ -250,32 +214,32 @@ export default function NdaraWalletPage() {
                         />
                     </div>
 
-                    <div className="mb-6">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-3 ml-1">Mode de Paiement</label>
+                    <div className="mb-8">
+                        <label className="block text-[#757575] text-[10px] font-black uppercase mb-3 ml-1 tracking-widest">Opérateur</label>
                         <div className="grid grid-cols-3 gap-3">
-                            <button onClick={() => setSelectedMethod('orange')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'orange' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
+                            <button onClick={() => setSelectedMethod('orange')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95 shadow-sm", selectedMethod === 'orange' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
                                 <OperatorLogo operatorName="orange" size={32} />
-                                <span className="text-[#212121] text-[10px] font-bold uppercase">Orange</span>
+                                <span className="text-[#212121] text-[9px] font-black uppercase">Orange</span>
                             </button>
-                            <button onClick={() => setSelectedMethod('mtn')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'mtn' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
+                            <button onClick={() => setSelectedMethod('mtn')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95 shadow-sm", selectedMethod === 'mtn' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
                                 <OperatorLogo operatorName="mtn" size={32} />
-                                <span className="text-[#212121] text-[10px] font-bold uppercase">MTN</span>
+                                <span className="text-[#212121] text-[9px] font-black uppercase">MTN</span>
                             </button>
-                            <button onClick={() => setSelectedMethod('wave')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95", selectedMethod === 'wave' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
+                            <button onClick={() => setSelectedMethod('wave')} className={cn("bg-white rounded-3xl p-4 border-2 flex flex-col items-center gap-2 transition-all active:scale-95 shadow-sm", selectedMethod === 'wave' ? "border-[#3F51B5] bg-blue-50/20" : "border-gray-200")}>
                                 <OperatorLogo operatorName="wave" size={32} />
-                                <span className="text-[#212121] text-[10px] font-bold uppercase">Wave</span>
+                                <span className="text-[#212121] text-[9px] font-black uppercase">Wave</span>
                             </button>
                         </div>
                     </div>
 
-                    <div className="mb-10">
-                        <label className="block text-[#757575] text-[10px] font-bold uppercase mb-2 ml-1">Numéro Mobile Money</label>
+                    <div className="mb-12">
+                        <label className="block text-[#757575] text-[10px] font-black uppercase mb-3 ml-1 tracking-widest">Numéro Mobile Money</label>
                         <div className="relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3F51B5]"><Smartphone className="w-5 h-5" /></div>
+                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#3F51B5]"><SmartphoneNfc className="w-5 h-5" /></div>
                             <input 
                                 type="tel"
                                 placeholder="6xx xxx xxx"
-                                className="w-full h-16 pl-12 rounded-4xl bg-white border-2 border-gray-200 font-mono text-lg text-[#212121] focus:outline-none focus:border-[#3F51B5] shadow-sm"
+                                className="w-full h-16 pl-14 rounded-4xl bg-white border-2 border-gray-200 font-mono text-lg text-[#212121] focus:outline-none focus:border-[#3F51B5] shadow-sm transition-all"
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
                             />
@@ -283,48 +247,99 @@ export default function NdaraWalletPage() {
                     </div>
 
                     <div className="mb-6">
-                        <h2 className="font-black text-[#212121] text-sm uppercase tracking-wide flex items-center gap-2 mb-4">
+                        <h2 className="font-black text-[#212121] text-sm uppercase tracking-widest flex items-center gap-2 mb-6">
                             <Receipt className="w-4 h-4 text-[#3F51B5]" />
                             {t('history')}
                         </h2>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {transactions.map(txn => {
                                 const date = (txn.date as any)?.toDate?.() || new Date();
                                 const isIncome = txn.amount > 0;
                                 return (
-                                    <div key={txn.id} className="vintage-receipt rounded-3xl p-4 shadow-sm flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <OperatorLogo operatorName={txn.provider} size={36} />
+                                    <div key={txn.id} className="vintage-receipt rounded-3xl p-5 shadow-sm flex items-center justify-between border-gray-300">
+                                        <div className="flex items-center gap-4">
+                                            <OperatorLogo operatorName={txn.provider} size={40} />
                                             <div className="min-w-0">
-                                                <p className="font-bold text-[#212121] text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
-                                                <p className="text-[#757575] text-[9px] font-mono">{format(date, 'dd MMM • HH:mm', { locale: fr })}</p>
+                                                <p className="font-black text-[#212121] text-[11px] uppercase truncate max-w-[140px] leading-tight">{txn.courseTitle || 'Recharge Wallet'}</p>
+                                                <p className="text-[#757575] text-[10px] font-mono mt-1 font-bold">{format(date, 'dd MMM • HH:mm', { locale: fr })}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className={cn("font-mono font-black text-sm", isIncome ? "text-emerald-600" : "text-red-500")}>
+                                            <p className={cn("font-mono font-black text-[15px]", isIncome ? "text-emerald-600" : "text-red-500")}>
                                                 {isIncome ? '+' : ''}{txn.amount.toLocaleString()} F
                                             </p>
-                                            <span className="text-[8px] font-black uppercase text-slate-400">{txn.status}</span>
+                                            <span className={cn(
+                                                "text-[8px] font-black uppercase px-1.5 py-0.5 rounded ml-auto w-fit block mt-1",
+                                                txn.status === 'completed' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                                            )}>{txn.status}</span>
                                         </div>
                                     </div>
                                 );
                             })}
-                            {transactions.length === 0 && <p className="text-center py-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aucune transaction</p>}
+                            {transactions.length === 0 && <p className="text-center py-12 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Aucune transaction enregistrée</p>}
                         </div>
                     </div>
                 </main>
 
-                <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-[#F5F5F5] via-[#F5F5F5] to-transparent pt-6 pb-6 px-6 z-40">
+                <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-[#F5F5F5] via-[#F5F5F5] to-transparent pt-8 pb-8 px-6 z-40">
                     <Button 
                         onClick={handleRecharge}
                         disabled={isProcessing || selectedAmount <= 0 || !phoneNumber}
-                        className="w-full h-16 bg-[#3F51B5] hover:bg-[#303F9F] text-white rounded-4xl font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 animate-pulse-glow"
+                        className="w-full h-16 bg-[#3F51B5] hover:bg-[#303F9F] text-white rounded-4xl font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 animate-pulse-glow border-none"
                     >
                         {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
-                        <span>{isAwaitingUssd ? "Réessayer" : t('action_button')}</span>
+                        <span>{t('action_button')}</span>
                     </Button>
                 </div>
             </div>
+
+            {/* --- MODAL ATTENTE USSD --- */}
+            <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
+                <DialogContent className="sm:max-w-md bg-white border-none rounded-[2.5rem] p-10 text-center">
+                    <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                                <Loader2 className="h-12 w-12 animate-spin" />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow-lg border border-amber-100">
+                                <Smartphone className="h-6 w-6 text-amber-600" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">Confirmation Mobile</DialogTitle>
+                            <DialogDescription className="text-slate-500 font-medium leading-relaxed italic text-sm">
+                                Veuillez saisir votre code PIN secret sur votre téléphone pour valider le dépôt de <b>{selectedAmount.toLocaleString()} F</b>.
+                            </DialogDescription>
+                        </div>
+                        <div className="w-full py-4 border-t border-slate-100">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Temps d'attente estimé : 30s</p>
+                        </div>
+                        <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full h-12 rounded-2xl text-red-500 font-bold uppercase text-[10px] tracking-widest">
+                            Annuler l'attente
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* --- MODAL SUCCÈS --- */}
+            <Dialog open={isSuccess} onOpenChange={setIsSuccess}>
+                <DialogContent className="sm:max-w-md bg-white border-none rounded-[3rem] p-10 text-center">
+                    <div className="flex flex-col items-center gap-8 animate-in zoom-in duration-700">
+                        <div className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.4)] animate-bounce">
+                            <Check className="h-14 w-14 text-white" strokeWidth={4} />
+                        </div>
+                        <div className="space-y-3">
+                            <DialogTitle className="text-3xl font-black text-slate-900 uppercase tracking-tight">Injection Réussie</DialogTitle>
+                            <p className="text-slate-500 font-medium text-base">
+                                Votre portefeuille Ndara a été crédité de <span className="text-emerald-600 font-black">{selectedAmount.toLocaleString()} XOF</span>.
+                            </p>
+                        </div>
+                        <Button onClick={() => setIsSuccess(false)} className="w-full h-16 rounded-[2rem] bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-slate-200 transition-all active:scale-95">
+                            Terminer
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

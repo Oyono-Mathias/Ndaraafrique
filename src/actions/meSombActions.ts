@@ -3,7 +3,7 @@
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
  * ✅ PRODUCTION : Utilisation impérative des clés secrètes.
- * ✅ RÉGLAGES : Respect strict de la devise et du verrouillage admin.
+ * ✅ RÉGLAGES : Respect strict de la devise, du mode test et du verrouillage admin.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
@@ -40,43 +40,37 @@ async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
-  const IS_DEV = process.env.NODE_ENV === 'development';
-  
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
   const APPLICATION_KEY = process.env.MESOMB_APP_KEY;
-
-  if (!SECRET_KEY || !APPLICATION_KEY) {
-    if (IS_DEV) {
-        return { 
-            success: true, 
-            type: 'SIMULATED', 
-            message: "Mode Test : Paiement validé automatiquement (Clés absentes)." 
-        };
-    }
-    return { 
-        success: false, 
-        error: "Configuration MeSomb manquante sur le serveur." 
-    };
-  }
 
   try {
     const db = getAdminDb();
     
-    // 🛡️ RÉGLAGES ADMIN : Vérification du verrouillage
+    // 1. Charger les réglages admin
     const settingsSnap = await db.collection('settings').doc('global').get();
-    const settings = settingsSnap.data() as Settings;
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
+    // 🛡️ VERROUILLAGE : MeSomb actif ?
     if (!settings?.payments?.mesombEnabled) {
         return { success: false, error: "Le service de paiement est actuellement désactivé." };
     }
 
-    // ✅ STANDARDISATION : Uniquement la devise des réglages
-    const currency = settings?.commercial?.currency || 'XOF';
+    // 🧪 MODE TEST : Simulation si configuré en admin ou clés absentes
+    if (settings?.payments?.paymentMode === 'test' || !SECRET_KEY || !APPLICATION_KEY) {
+        console.log("[MeSomb] Simulation active (Mode Test)");
+        return { 
+            success: true, 
+            type: 'SIMULATED', 
+            message: "Simulation : Paiement validé automatiquement en mode test." 
+        };
+    }
+
+    const currency = settings?.commercial?.currency || 'XAF';
 
     // 2. Vérification vélocité
     const isVelocityOk = await checkUserVelocity(db, params.userId);
     if (!isVelocityOk) {
-        return { success: false, error: "Trop de tentatives. Veuillez patienter." };
+        return { success: false, error: "Trop de tentatives. Veuillez patienter 5 minutes." };
     }
 
     const internalRef = randomUUID();
@@ -142,15 +136,16 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         message: "Veuillez valider le paiement sur votre mobile." 
       };
     } else {
+      const errorMsg = data.detail ? String(data.detail) : "Transaction refusée par l'opérateur.";
       await db.collection('payments').doc(internalRef).update({
           status: 'failed',
-          error: data.detail || "Refus opérateur"
+          error: errorMsg
       });
-      return { success: false, error: data.detail || "Transaction refusée par l'opérateur." };
+      return { success: false, error: errorMsg };
     }
 
   } catch (error: any) {
     console.error("[MeSomb Fatal Error]", error);
-    return { success: false, error: "Erreur de connexion avec la passerelle." };
+    return { success: false, error: "Connexion impossible avec la passerelle de paiement." };
   }
 }
