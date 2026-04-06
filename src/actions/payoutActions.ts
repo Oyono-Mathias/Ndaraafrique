@@ -3,6 +3,7 @@
 /**
  * @fileOverview Actions serveur pour les retraits.
  * ✅ SÉCURITÉ : Vérification systématique du propriétaire du compte.
+ * ✅ RESTRICTIONS : Blocage des retraits si restriction active.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -31,18 +32,24 @@ export async function requestPayoutAction({
     try {
         const db = getAdminDb();
         
-        const settingsSnap = await db.collection('settings').doc('global').get();
-        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
-        
-        const minThreshold = settings.commercial?.minPayoutThreshold || 5000;
-        const withdrawalFee = settings.commercial?.withdrawalFee || 0;
-
         const instructorRef = db.collection('users').doc(instructorId);
         const instructorDoc = await instructorRef.get();
 
         if (!instructorDoc.exists) return { success: false, error: "error.user_not_found" };
 
         const userData = instructorDoc.data() as NdaraUser;
+
+        // 🚫 VÉRIFICATION DES RESTRICTIONS
+        if (userData.restrictions?.canWithdraw === false) {
+            return { success: false, error: "RESTRICTED: Votre droit de retrait est suspendu par l'administration." };
+        }
+
+        const settingsSnap = await db.collection('settings').doc('global').get();
+        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+        
+        const minThreshold = settings.commercial?.minPayoutThreshold || 5000;
+        const withdrawalFee = settings.commercial?.withdrawalFee || 0;
+
         const currentBalance = userData.balance || 0;
         const totalCost = amount + withdrawalFee;
 

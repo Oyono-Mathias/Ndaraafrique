@@ -4,12 +4,13 @@
  * @fileOverview Initiation sécurisée des paiements MeSomb.
  * ✅ PRODUCTION : Utilisation impérative des clés secrètes.
  * ✅ RÉGLAGES : Respect strict de la devise, du mode test et du verrouillage admin.
+ * ✅ RESTRICTIONS : Blocage si canBuyCourse est faux.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Settings, Country } from '@/lib/types';
+import type { Settings, Country, NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
@@ -66,7 +67,12 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     ]);
 
     const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
-    const userData = userSnap.data();
+    const userData = userSnap.data() as NdaraUser;
+
+    // 🚫 VÉRIFICATION DES RESTRICTIONS
+    if (userData.restrictions?.canBuyCourse === false && params.type === 'course_purchase') {
+        return { success: false, error: "RESTRICTED: Votre compte fait l'objet de restrictions limitant les nouveaux achats." };
+    }
 
     // 🧪 MODE TEST : Simulation PRIORITAIRE si configuré en admin
     if (settings?.payments?.paymentMode === 'test') {

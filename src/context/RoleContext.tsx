@@ -4,13 +4,13 @@
  * @fileOverview RoleProvider Ndara Afrique.
  * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
  * ✅ PRIORITÉ DES RÔLES : Admin > Instructor > Student.
- * ✅ PERSISTANCE LANGUE : Synchronisation avec preferredLanguage.
+ * ✅ SÉCURITÉ : Vérification des suspensions et restrictions plateforme.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { signOut, getAuth, onIdTokenChanged } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -118,9 +118,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
 
-          if (userData.status === 'suspended') {
+          // 🛡️ VÉRIFICATION SÉCURITÉ : Suspension ou Restriction d'accès
+          if (userData.status === 'suspended' || userData.restrictions?.canAccessPlatform === false) {
             await secureSignOut();
-            toast({ variant: 'destructive', title: 'Compte suspendu' });
+            toast({ 
+                variant: 'destructive', 
+                title: 'Compte restreint', 
+                description: userData.sanctions?.reason || 'Votre accès à la plateforme est suspendu par l\'administration.' 
+            });
             return;
           }
 

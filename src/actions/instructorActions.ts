@@ -3,11 +3,12 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
-import type { Settings } from '@/lib/types';
+import type { Settings, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour les instructeurs.
  * ✅ RÉSOLU : Validation des prix et des limites selon les réglages Admin.
+ * ✅ RESTRICTIONS : Blocage de la création si canSellCourse est faux.
  */
 
 const CourseFormSchema = z.object({
@@ -32,6 +33,13 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   try {
     const db = getAdminDb();
     
+    // 🛡️ VÉRIFICATION DES RESTRICTIONS
+    const userDoc = await db.collection('users').doc(instructorId).get();
+    const userData = userDoc.data() as NdaraUser;
+    if (userData.restrictions?.canSellCourse === false) {
+        return { success: false, message: "RESTRICTED: Votre droit de création et de vente de formations est suspendu." };
+    }
+
     // 1. Charger les réglages de la plateforme
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;

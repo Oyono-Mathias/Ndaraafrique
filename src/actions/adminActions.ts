@@ -5,6 +5,7 @@
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin en base de données.
  * ✅ AUDIT : Journalisation de chaque action dans admin_audit_logs.
  * ✅ VALIDATION : Contrôle strict des montants et des états.
+ * ✅ RESTRICTIONS : Gestion des droits granulaires.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -23,6 +24,87 @@ async function verifyAdminOrThrow(adminId: string) {
         console.error(`[SECURITY_ALERT] Tentative d'accès admin non autorisé par UID: ${adminId}`);
         throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
     }
+}
+
+/**
+ * 🚫 Appliquer des restrictions à un utilisateur.
+ */
+export async function applyUserRestrictionsAction({
+    adminId,
+    targetUserId,
+    restrictions,
+    reason,
+    expirationDays
+}: {
+    adminId: string;
+    targetUserId: string;
+    restrictions: NdaraUser['restrictions'];
+    reason: string;
+    expirationDays?: number;
+}) {
+    await verifyAdminOrThrow(adminId);
+
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(targetUserId);
+    
+    const expiresAt = expirationDays 
+        ? Timestamp.fromDate(new Date(Date.now() + expirationDays * 86400000))
+        : null;
+
+    await userRef.update({
+        restrictions,
+        sanctions: {
+            isSanctioned: true,
+            reason,
+            imposedBy: adminId,
+            date: FieldValue.serverTimestamp(),
+            expiresAt
+        },
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    // Logger l'audit
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: 'user.restrictions.apply',
+        target: { id: targetUserId, type: 'user' },
+        details: `Restrictions appliquées à l'utilisateur ${targetUserId}. Motif: ${reason}`,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
+    return { success: true };
+}
+
+/**
+ * ✅ Lever toutes les restrictions d'un utilisateur.
+ */
+export async function removeUserRestrictionsAction({
+    adminId,
+    targetUserId
+}: {
+    adminId: string;
+    targetUserId: string;
+}) {
+    await verifyAdminOrThrow(adminId);
+
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(targetUserId);
+
+    await userRef.update({
+        restrictions: FieldValue.delete(),
+        sanctions: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: 'user.restrictions.remove',
+        target: { id: targetUserId, type: 'user' },
+        details: `Toutes les restrictions ont été levées pour l'utilisateur ${targetUserId}.`,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
+    return { success: true };
 }
 
 /**

@@ -83,6 +83,21 @@ export interface NdaraUser {
     reason: string;
     date: Timestamp | FieldValue | Date;
   };
+  // RESTRICTIONS ET SANCTIONS AVANCÉES
+  restrictions?: {
+    canWithdraw: boolean;
+    canSendMessage: boolean;
+    canBuyCourse: boolean;
+    canSellCourse: boolean;
+    canAccessPlatform: boolean;
+  };
+  sanctions?: {
+    isSanctioned: boolean;
+    reason: string;
+    imposedBy: string;
+    date: Timestamp | FieldValue | Date;
+    expiresAt?: Timestamp | FieldValue | Date | null;
+  };
   pedagogicalPreferences?: {
     aiAssistanceEnabled: boolean;
     aiInterventionLevel: 'low' | 'medium' | 'high';
@@ -657,25 +672,6 @@ export interface TrackingEvent {
   pageUrl: string;
   metadata?: Record<string, any>;
   timestamp: Timestamp | FieldValue | Date;
-}
-
-export interface CartItem {
-  id: string;
-  courseId: string;
-  title: string;
-  price: number;
-  imageUrl?: string;
-}
-
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  billingCycle: 'monthly' | 'yearly';
-  features: string[];
-  isActive: boolean;
-  targetRole: UserRole;
 }
 
 export interface InvestorLead {

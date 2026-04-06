@@ -1,11 +1,14 @@
 'use server';
 
 import { processNdaraPayment } from '@/services/paymentProcessor';
+import { getAdminDb } from '@/firebase/admin';
+import type { NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la passerelle Moneroo.
  * ✅ DEBUG : Logs détaillés des échanges API.
  * ✅ SIMULATION : Redirection directe en mode test.
+ * ✅ RESTRICTIONS : Vérification canBuyCourse.
  */
 
 export async function initiateMonerooPayment(params: {
@@ -19,7 +22,15 @@ export async function initiateMonerooPayment(params: {
     returnUrl: string;
 }) {
     const secretKey = process.env.MONEROO_SECRET_KEY?.trim();
+    const db = getAdminDb();
     
+    // 🛡️ VÉRIFICATION DES RESTRICTIONS
+    const userDoc = await db.collection('users').doc(params.userId).get();
+    const userData = userDoc.data() as NdaraUser;
+    if (userData.restrictions?.canBuyCourse === false) {
+        return { success: false, error: "RESTRICTED: Votre droit d'achat est suspendu par l'administration." };
+    }
+
     // 🛠️ LOG DE DIAGNOSTIC
     console.log(`[Moneroo API] Initiation pour ${params.userEmail} | Montant: ${params.amount}`);
 
