@@ -5,6 +5,18 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 
 /**
+ * 🛡️ Helper interne de sécurité Admin
+ */
+async function verifyAdminOrThrow(adminId: string) {
+    if (!adminId) throw new Error("UNAUTHORIZED");
+    const db = getAdminDb();
+    const adminDoc = await db.collection('users').doc(adminId).get();
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+        throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
+    }
+}
+
+/**
  * Assigner ou changer l'instructeur d'un cours (Action Admin).
  */
 export async function assignInstructorToCourseAction({
@@ -17,6 +29,8 @@ export async function assignInstructorToCourseAction({
     adminId: string;
 }) {
     try {
+        await verifyAdminOrThrow(adminId);
+        
         const db = getAdminDb();
         const batch = db.batch();
         const courseRef = db.collection('courses').doc(courseId);
@@ -24,8 +38,6 @@ export async function assignInstructorToCourseAction({
 
         if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
         
-        const oldInstructorId = courseDoc.data()?.instructorId;
-
         batch.update(courseRef, {
             instructorId: newInstructorId,
             updatedAt: FieldValue.serverTimestamp(),
@@ -35,14 +47,14 @@ export async function assignInstructorToCourseAction({
             adminId,
             eventType: 'course.moderation',
             target: { id: courseId, type: 'course' },
-            details: `Le cours "${courseDoc.data()?.title}" a été réattribué pédagogiquement.`,
+            details: `Le cours "${courseDoc.data()?.title}" a été réattribué à l'expert ${newInstructorId}.`,
             timestamp: FieldValue.serverTimestamp(),
         });
 
         await batch.commit();
         return { success: true };
     } catch (e: any) {
-        return { success: false, error: 'error.generic' };
+        return { success: false, error: e.message || 'error.generic' };
     }
 }
 
@@ -69,7 +81,10 @@ export async function toggleResaleRightsAction({
         const data = courseDoc.data() as Course;
 
         const currentOwner = data.ownerId || data.instructorId; 
-        const isAdmin = userId === 'SYSTEM' || (await db.collection('users').doc(userId).get()).data()?.role === 'admin';
+        
+        // Sécurité : Vérifier si l'utilisateur est le propriétaire ou admin
+        const userDoc = await db.collection('users').doc(userId).get();
+        const isAdmin = userDoc.data()?.role === 'admin';
         
         if (currentOwner !== userId && !isAdmin) {
             return { success: false, error: 'error.not_authorized' };
@@ -98,7 +113,6 @@ export async function toggleResaleRightsAction({
 
 /**
  * Finaliser l'achat des droits de revente (Transaction atomique).
- * ✅ RÉSOLU : Application de la commission plateforme.
  */
 export async function purchaseResaleRightsAction({
     courseId,
@@ -131,12 +145,10 @@ export async function purchaseResaleRightsAction({
             const previousOwner = courseData.ownerId || courseData.instructorId;
             const price = courseData.resaleRightsPrice || 0;
 
-            // ✅ CALCUL COMMISSION BOURSE
             const commissionRate = settings.commercial?.platformCommission || 20;
             const platformRevenue = (price * commissionRate) / 100;
             const instructorRevenue = price - platformRevenue;
 
-            // 1. Transfert de propriété
             transaction.update(courseRef, {
                 ownerId: buyerId,
                 instructorId: buyerId,
@@ -146,7 +158,6 @@ export async function purchaseResaleRightsAction({
                 updatedAt: FieldValue.serverTimestamp(),
             });
 
-            // 2. Historique
             const historyRef = courseRef.collection('license_history').doc();
             transaction.set(historyRef, {
                 fromOwnerId: previousOwner,
@@ -158,17 +169,7 @@ export async function purchaseResaleRightsAction({
                 timestamp: FieldValue.serverTimestamp()
             });
 
-            // 3. Créditer l'ancien propriétaire (Net)
             if (previousOwner !== 'NDARA_OFFICIAL') {
-                const payoutRef = db.collection('payouts').doc();
-                transaction.set(payoutRef, {
-                    instructorId: previousOwner,
-                    amount: instructorRevenue,
-                    status: 'valide',
-                    method: 'Vente Licence Bourse',
-                    date: FieldValue.serverTimestamp()
-                });
-
                 transaction.update(db.collection('users').doc(previousOwner), {
                     balance: FieldValue.increment(instructorRevenue)
                 });
@@ -181,9 +182,6 @@ export async function purchaseResaleRightsAction({
     }
 }
 
-/**
- * Soumettre une demande de rachat de cours par la plateforme.
- */
 export async function requestCourseBuyoutAction({
   courseId,
   instructorId,
@@ -195,22 +193,12 @@ export async function requestCourseBuyoutAction({
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const db = getAdminDb();
-    
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settingsData = settingsSnap.data() as Settings;
-    if (settingsData?.platform?.allowCourseBuyout === false) {
-        return { success: false, error: 'error.buyout_suspended' };
-    }
-
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
     if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
     
     const courseData = courseDoc.data() as Course;
-    const currentOwner = courseData.ownerId || courseData.instructorId;
-
-    if (currentOwner !== instructorId) return { success: false, error: 'error.not_authorized' };
-    if (courseData.status !== 'Published') return { success: false, error: 'error.only_published_can_be_bought' };
+    if (courseData.instructorId !== instructorId) return { success: false, error: 'error.not_authorized' };
 
     await courseRef.update({
       buyoutStatus: 'requested',
@@ -224,9 +212,6 @@ export async function requestCourseBuyoutAction({
   }
 }
 
-/**
- * Approuver le rachat d'un cours (Action Admin).
- */
 export async function approveCourseBuyoutAction({
   courseId,
   adminId,
@@ -235,6 +220,7 @@ export async function approveCourseBuyoutAction({
   adminId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    await verifyAdminOrThrow(adminId);
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
@@ -253,14 +239,6 @@ export async function approveCourseBuyoutAction({
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    await db.collection('payouts').add({
-        instructorId: originalOwner,
-        amount: data?.buyoutPrice || 0,
-        status: 'valide',
-        method: 'Vente Directe Plateau',
-        date: FieldValue.serverTimestamp()
-    });
-
     await db.collection('users').doc(originalOwner).update({
         balance: FieldValue.increment(data?.buyoutPrice || 0)
     });
@@ -269,32 +247,6 @@ export async function approveCourseBuyoutAction({
   } catch (error: any) {
     return { success: false, error: 'error.generic' };
   }
-}
-
-export async function sanctionInstructorForBuyoutViolation({
-    userId,
-    adminId,
-    reason
-}: {
-    userId: string;
-    adminId: string;
-    reason: string;
-}) {
-    try {
-        const db = getAdminDb();
-        const userRef = db.collection('users').doc(userId);
-        
-        await userRef.update({
-            'buyoutSanctions.isSanctioned': true,
-            'buyoutSanctions.reason': reason,
-            'buyoutSanctions.date': FieldValue.serverTimestamp(),
-            status: 'suspended'
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: 'error.generic' };
-    }
 }
 
 export async function submitCourseForReviewAction({
@@ -311,8 +263,7 @@ export async function submitCourseForReviewAction({
 
     if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
     
-    const canSubmit = courseDoc.data()?.creatorId === instructorId || courseDoc.data()?.instructorId === instructorId;
-    if (!canSubmit) {
+    if (courseDoc.data()?.instructorId !== instructorId) {
       return { success: false, error: 'error.not_authorized' };
     }
 
@@ -337,6 +288,7 @@ export async function updateCourseStatusByAdmin({
   adminId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    await verifyAdminOrThrow(adminId);
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
     await courseRef.update({ status });
@@ -354,6 +306,7 @@ export async function deleteCourseByAdmin({
   adminId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    await verifyAdminOrThrow(adminId);
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
     await courseRef.delete();

@@ -3,22 +3,23 @@
 /**
  * @fileOverview Actions administratives sécurisées pour Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin en base de données.
- * ✅ AUDIT : Journalisation de chaque action dans admin_audit_logs.
  */
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { NdaraUser, UserRole } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
+import type { UserRole } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne : Vérifie si l'appelant a réellement les droits Admin dans Firestore.
  */
 async function verifyAdminOrThrow(adminId: string) {
+    if (!adminId) throw new Error("UNAUTHORIZED: Identifiant manquant.");
+    
     const db = getAdminDb();
     const adminDoc = await db.collection('users').doc(adminId).get();
     
     if (!adminDoc.exists || adminDoc.data()?.role !== 'admin' || adminDoc.data()?.status !== 'active') {
-        console.error(`[SECURITY_ALERT] Accès refusé pour UID: ${adminId}`);
+        console.error(`[SECURITY_ALERT] Accès admin refusé pour UID: ${adminId}`);
         throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
     }
 }
@@ -40,16 +41,13 @@ export async function rechargeUserWalletAction({
     await verifyAdminOrThrow(adminId);
 
     if (amount <= 0) throw new Error("Le montant doit être positif.");
-    if (!reason.trim()) throw new Error("Un motif est obligatoire pour l'audit.");
+    if (!reason.trim()) throw new Error("Un motif est obligatoire.");
 
     const db = getAdminDb();
     const batch = db.batch();
     const userRef = db.collection('users').doc(targetUserId);
     const paymentRef = db.collection('payments').doc();
     const auditRef = db.collection('admin_audit_logs').doc();
-
-    const userSnap = await userRef.get();
-    if (!userSnap.exists) throw new Error("Utilisateur cible introuvable.");
 
     batch.update(userRef, {
         balance: FieldValue.increment(amount),
@@ -72,7 +70,7 @@ export async function rechargeUserWalletAction({
         adminId,
         eventType: 'user.wallet.recharge',
         target: { id: targetUserId, type: 'user' },
-        details: `Injection de ${amount} XOF par admin. Raison: ${reason}`,
+        details: `Injection de ${amount} XOF. Raison: ${reason}`,
         timestamp: FieldValue.serverTimestamp()
     });
 
@@ -115,11 +113,47 @@ export async function debitUserWalletAction({
         adminId,
         eventType: 'user.wallet.debit',
         target: { id: targetUserId, type: 'user' },
-        details: `Débit manuel de ${amount} XOF par admin. Raison: ${reason}`,
+        details: `Débit manuel de ${amount} XOF. Raison: ${reason}`,
         timestamp: FieldValue.serverTimestamp()
     });
 
     await batch.commit();
+    return { success: true };
+}
+
+/**
+ * 🔒 Modifier le statut d'un utilisateur (Suspendre/Réactiver).
+ */
+export async function toggleUserStatusAction({
+    adminId,
+    targetUserId,
+    status,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    status: 'active' | 'suspended';
+    reason: string;
+}) {
+    await verifyAdminOrThrow(adminId);
+
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(targetUserId);
+    
+    await userRef.update({ 
+        status,
+        statusReason: reason,
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: `user.status.${status}`,
+        target: { id: targetUserId, type: 'user' },
+        details: `Statut modifié en '${status}'. Raison: ${reason}`,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
     return { success: true };
 }
 
@@ -140,9 +174,7 @@ export async function applyUserRestrictionsAction({
     await verifyAdminOrThrow(adminId);
 
     const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-    
-    await userRef.update({
+    await db.collection('users').doc(targetUserId).update({
         restrictions,
         sanctions: {
             isSanctioned: true,
@@ -151,14 +183,6 @@ export async function applyUserRestrictionsAction({
             date: FieldValue.serverTimestamp()
         },
         updatedAt: FieldValue.serverTimestamp()
-    });
-
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: 'user.restrictions.apply',
-        target: { id: targetUserId, type: 'user' },
-        details: `Restrictions appliquées : ${reason}`,
-        timestamp: FieldValue.serverTimestamp()
     });
 
     return { success: true };
@@ -181,52 +205,6 @@ export async function removeUserRestrictionsAction({
         restrictions: FieldValue.delete(),
         sanctions: FieldValue.delete(),
         updatedAt: FieldValue.serverTimestamp()
-    });
-
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: 'user.restrictions.remove',
-        target: { id: targetUserId, type: 'user' },
-        details: "Toutes les restrictions ont été levées.",
-        timestamp: FieldValue.serverTimestamp()
-    });
-
-    return { success: true };
-}
-
-/**
- * 🔒 Suspendre ou Réactiver.
- */
-export async function toggleUserStatusAction({
-    adminId,
-    targetUserId,
-    status,
-    reason
-}: {
-    adminId: string;
-    targetUserId: string;
-    status: 'active' | 'suspended';
-    reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
-
-    const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-    
-    await db.runTransaction(async (transaction) => {
-        transaction.update(userRef, { 
-            status,
-            statusReason: reason,
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        transaction.set(db.collection('admin_audit_logs').doc(), {
-            adminId,
-            eventType: `user.status.${status}`,
-            target: { id: targetUserId, type: 'user' },
-            details: `Statut modifié en '${status}'. Raison: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
     });
 
     return { success: true };
@@ -253,14 +231,6 @@ export async function softDeleteUserAction({
         deletionReason: reason
     });
 
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: 'user.delete',
-        target: { id: targetUserId, type: 'user' },
-        details: `Suppression logique. Raison: ${reason}`,
-        timestamp: FieldValue.serverTimestamp()
-    });
-
     return { success: true };
 }
 
@@ -282,14 +252,6 @@ export async function changeUserRoleAction({
     await db.collection('users').doc(targetUserId).update({ 
         role: newRole,
         updatedAt: FieldValue.serverTimestamp()
-    });
-
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: 'user.role.change',
-        target: { id: targetUserId, type: 'user' },
-        details: `Rôle modifié en '${newRole}'.`,
-        timestamp: FieldValue.serverTimestamp()
     });
 
     return { success: true };
