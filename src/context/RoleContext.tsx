@@ -4,7 +4,7 @@
  * @fileOverview RoleProvider Ndara Afrique.
  * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
  * ✅ PRIORITÉ DES RÔLES : Admin > Instructor > Student.
- * ✅ SÉCURITÉ : Vérification des suspensions et restrictions plateforme.
+ * ✅ SÉCURITÉ : Vérification des suspensions, suppressions et restrictions plateforme.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -118,13 +118,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
 
-          // 🛡️ VÉRIFICATION SÉCURITÉ : Suspension ou Restriction d'accès
-          if (userData.status === 'suspended' || userData.restrictions?.canAccessPlatform === false) {
+          // 🛡️ VÉRIFICATION SÉCURITÉ : Suspension ou Suppression
+          if (userData.status === 'suspended' || userData.status === 'deleted' || userData.restrictions?.canAccessPlatform === false) {
             await secureSignOut();
             toast({ 
                 variant: 'destructive', 
-                title: 'Compte restreint', 
-                description: userData.sanctions?.reason || 'Votre accès à la plateforme est suspendu par l\'administration.' 
+                title: 'Accès révoqué', 
+                description: userData.sanctions?.reason || 'Votre compte fait l\'objet d\'une mesure de restriction administrative.' 
             });
             return;
           }
@@ -187,7 +187,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 balance: 0,
                 affiliateBalance: 0,
                 pendingAffiliateBalance: 0,
-                affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
+                affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+                restrictions: {
+                    canWithdraw: true,
+                    canSendMessage: true,
+                    canBuyCourse: true,
+                    canSellCourse: true,
+                    canAccessPlatform: true
+                }
             };
             await setDoc(userDocRef, newUserDoc).catch(() => {});
             detectGeoLocation(user.uid);
