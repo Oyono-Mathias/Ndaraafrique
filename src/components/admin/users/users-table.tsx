@@ -1,15 +1,14 @@
-
 'use client';
 
 /**
- * @fileOverview Répertoire des Membres Ndara Afrique - Design Elite Qwen.
- * ✅ ANDROID-FIRST : Liste de cartes tactiles, recherche et filtres par pilules.
- * ✅ TEMPS RÉEL : Synchronisation complète avec Firebase.
+ * @fileOverview Répertoire des Membres Ndara Afrique - Cockpit Admin v2.5.
+ * ✅ DESIGN : Cartes tactiles avec menu d'actions complet segmenté.
+ * ✅ SÉCURITÉ : Boîtes de dialogue de confirmation pour chaque action critique.
  */
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, where, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -35,89 +35,142 @@ import {
   Ban,
   UserCheck,
   Plus,
-  Filter,
-  Mic,
   ShieldCheck,
   Star,
   MapPin,
-  Clock
+  Clock,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+  ShieldAlert,
+  History,
+  Unlock,
+  AlertTriangle
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserStatus, deleteUserAccount, updateUserRole } from '@/actions/userActions';
 import { useRouter } from 'next/navigation';
 import { startChat } from '@/lib/chat';
 import {
   AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { GrantCourseModal } from './GrantCourseModal';
-import { UserDetailsModal } from './UserDetailsModal';
+import { 
+    rechargeUserWalletAction, 
+    debitUserWalletAction, 
+    toggleUserStatusAction, 
+    changeUserRoleAction, 
+    softDeleteUserAction,
+    applyUserRestrictionsAction,
+    removeUserRestrictionsAction
+} from '@/actions/adminActions';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { africanCountries } from '@/lib/countries';
+import { GrantCourseModal } from './GrantCourseModal';
+import { UserDetailsModal } from './UserDetailsModal';
 
 const UserCard = ({ 
     user: targetUser, 
-    onGrantRequest, 
-    onViewProfile 
+    onAction
 }: { 
     user: NdaraUser, 
-    onGrantRequest: (user: NdaraUser) => void,
-    onViewProfile: (user: NdaraUser) => void
+    onAction: () => void
 }) => {
     const { currentUser: adminUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
-    const [isActionLoading, setIsActionLoading] = useState(false);
+    
+    // États des Modals
+    const [modals, setModals] = useState({
+        recharge: false,
+        debit: false,
+        restrict: false,
+        delete: false,
+        details: false,
+        grant: false,
+        role: false
+    });
 
-    const handleStatusUpdate = async (status: 'active' | 'suspended') => {
-        if (!adminUser || isActionLoading) return;
-        setIsActionLoading(true);
-        const result = await updateUserStatus({ userId: targetUser.uid, status, adminId: adminUser.uid });
-        if (result.success) toast({ title: status === 'active' ? 'Compte réactivé' : 'Compte suspendu' });
-        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-        setIsActionLoading(false);
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({ amount: 0, reason: '' });
+    const [restrictions, setRestrictions] = useState(targetUser.restrictions || {
+        canWithdraw: true,
+        canSendMessage: true,
+        canBuyCourse: true,
+        canSellCourse: true,
+        canAccessPlatform: true
+    });
+
+    const toggleModal = (key: keyof typeof modals, val: boolean) => setModals(m => ({ ...m, [key]: val }));
+
+    const handleSimpleAction = async (actionFn: any, successMsg: string) => {
+        if (!adminUser) return;
+        setLoading(true);
+        try {
+            const res = await actionFn();
+            if (res.success) toast({ title: successMsg });
+            else throw new Error(res.error);
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Erreur", description: e.message });
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleDeleteAccount = async () => {
-        if (!adminUser || isActionLoading) return;
-        setIsActionLoading(true);
-        const result = await deleteUserAccount({ userId: targetUser.uid, adminId: adminUser.uid });
-        if (result.success) toast({ title: 'Compte supprimé définitivement' });
-        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-        setIsActionLoading(false);
+    const handleFinanceAction = async (type: 'recharge' | 'debit') => {
+        if (!adminUser || formData.amount <= 0) return;
+        setLoading(true);
+        try {
+            const res = type === 'recharge' 
+                ? await rechargeUserWalletAction({ adminId: adminUser.uid, targetUserId: targetUser.uid, amount: formData.amount, reason: formData.reason })
+                : await debitUserWalletAction({ adminId: adminUser.uid, targetUserId: targetUser.uid, amount: formData.amount, reason: formData.reason });
+            
+            if (res.success) {
+                toast({ title: type === 'recharge' ? "Crédit effectué" : "Débit effectué" });
+                toggleModal(type, false);
+                setFormData({ amount: 0, reason: '' });
+            } else throw new Error(res.error);
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Erreur", description: e.message });
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleRoleChange = async (newRole: UserRole) => {
-        if (!adminUser || newRole === targetUser.role || isActionLoading) return;
-        setIsActionLoading(true);
-        const result = await updateUserRole({ userId: targetUser.uid, role: newRole, adminId: adminUser.uid });
-        if (result.success) toast({ title: 'Rôle mis à jour' });
-        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-        setIsActionLoading(false);
+    const handleApplyRestrictions = async () => {
+        if (!adminUser) return;
+        setLoading(true);
+        const res = await applyUserRestrictionsAction({
+            adminId: adminUser.uid,
+            targetUserId: targetUser.uid,
+            restrictions,
+            reason: formData.reason || "Mesure de régulation administrative."
+        });
+        if (res.success) {
+            toast({ title: "Restrictions appliquées" });
+            toggleModal('restrict', false);
+        }
+        setLoading(false);
     };
 
     const handleContact = async () => {
-        if (!adminUser || isActionLoading) return;
-        setIsActionLoading(true);
-        try {
-            const chatId = await startChat(adminUser.uid, targetUser.uid);
-            router.push(`/admin/messages?chatId=${chatId}`);
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de lancer le chat." });
-        } finally {
-            setIsActionLoading(false);
-        }
+        if (!adminUser) return;
+        setLoading(true);
+        const chatId = await startChat(adminUser.uid, targetUser.uid);
+        router.push(`/admin/messages?chatId=${chatId}`);
     };
 
     const createdAt = (targetUser.createdAt as any)?.toDate?.() || null;
@@ -125,15 +178,59 @@ const UserCard = ({
 
     return (
         <div className={cn(
-            "bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-[2rem] p-4 relative overflow-hidden transition-all active:scale-[0.98] group",
+            "bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-[2rem] p-4 relative overflow-hidden transition-all group",
             targetUser.status === 'suspended' && "opacity-60 grayscale"
         )}>
-            {targetUser.status === 'suspended' && (
-                <div className="absolute inset-0 bg-red-900/5 pointer-events-none" />
-            )}
+            {/* --- MODALS DE GESTION --- */}
             
+            {/* Recharge Modal */}
+            <Dialog open={modals.recharge} onOpenChange={(v) => toggleModal('recharge', v)}>
+                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
+                    <DialogHeader><DialogTitle className="uppercase font-black flex items-center gap-2"><ArrowUpRight className="text-primary"/> Injecter des fonds</DialogTitle></DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] uppercase font-black text-slate-500">Montant (XOF)</Label>
+                            <Input type="number" value={formData.amount} onChange={e => setFormData({...formData, amount: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-14 text-2xl font-black text-primary" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] uppercase font-black text-slate-500">Motif de l'opération</Label>
+                            <Input placeholder="Ex: Remboursement manuel..." value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} className="bg-slate-950 border-slate-800" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={() => handleFinanceAction('recharge')} disabled={loading} className="w-full h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs">
+                            {loading ? <Loader2 className="animate-spin" /> : "Signer la transaction"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Restrictions Modal */}
+            <Dialog open={modals.restrict} onOpenChange={(v) => toggleModal('restrict', v)}>
+                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
+                    <DialogHeader><DialogTitle className="uppercase font-black flex items-center gap-2"><ShieldAlert className="text-amber-500"/> Restrictions fines</DialogTitle></DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <RestrictionToggle label="Droit de retrait" checked={restrictions.canWithdraw} onChange={(v) => setRestrictions({...restrictions, canWithdraw: v})} />
+                        <RestrictionToggle label="Droit d'achat" checked={restrictions.canBuyCourse} onChange={(v) => setRestrictions({...restrictions, canBuyCourse: v})} />
+                        <RestrictionToggle label="Messagerie" checked={restrictions.canSendMessage} onChange={(v) => setRestrictions({...restrictions, canSendMessage: v})} />
+                        <RestrictionToggle label="Accès Plateforme" checked={restrictions.canAccessPlatform} onChange={(v) => setRestrictions({...restrictions, canAccessPlatform: v})} />
+                        
+                        <div className="space-y-2">
+                            <Label className="text-[10px] uppercase font-black text-slate-500">Motif de la sanction</Label>
+                            <Input placeholder="Ex: Suspicion de fraude..." value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} className="bg-slate-950 border-slate-800" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleApplyRestrictions} disabled={loading} className="w-full h-14 rounded-2xl bg-amber-500 text-slate-950 font-black uppercase text-xs">Appliquer les limites</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <GrantCourseModal isOpen={modals.grant} onOpenChange={(v) => toggleModal('grant', v)} targetUser={targetUser} />
+            <UserDetailsModal isOpen={modals.details} onOpenChange={(v) => toggleModal('details', v)} user={targetUser} />
+
+            {/* --- CARD CONTENT --- */}
             <div className="flex items-start gap-4 relative z-10">
-                {/* Avatar Zone */}
                 <div className="relative flex-shrink-0">
                     <div className={cn(
                         "w-14 h-14 rounded-full overflow-hidden border-2 shadow-xl",
@@ -141,89 +238,61 @@ const UserCard = ({
                     )}>
                         <Avatar className="h-full w-full">
                             <AvatarImage src={targetUser.profilePictureURL} className="object-cover" />
-                            <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
-                                {targetUser.fullName?.charAt(0)}
-                            </AvatarFallback>
+                            <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">{targetUser.fullName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                     </div>
-                    {targetUser.isOnline && (
-                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-slate-950 shadow-[0_0_10px_#10b981] animate-pulse" />
-                    )}
+                    {targetUser.isOnline && <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-slate-950 animate-pulse" />}
                 </div>
 
-                {/* Info Zone */}
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-black text-white text-base truncate uppercase tracking-tight">
-                            {targetUser.fullName}
-                        </h3>
+                        <h3 className="font-black text-white text-base truncate uppercase tracking-tight">{targetUser.fullName}</h3>
                         
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="text-slate-500 hover:text-white transition p-1">
-                                    <MoreVertical size={20} />
-                                </button>
+                                <button className="text-slate-500 hover:text-white transition p-1"><MoreVertical size={20} /></button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-300">
-                                <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Actions Admin</DropdownMenuLabel>
-                                <DropdownMenuSeparator className="bg-slate-800" />
-                                <DropdownMenuItem onClick={() => onViewProfile(targetUser)} className="gap-2 py-3 cursor-pointer">
-                                    <UserProfileIcon size={16} className="text-primary" /> Voir Profil
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleContact} className="gap-2 py-3 cursor-pointer">
-                                    <MessageSquare size={16} className="text-blue-400" /> Messagerie
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="gap-2 py-3 cursor-pointer">
-                                    <Gift size={16} /> Offrir un cours
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuSeparator className="bg-slate-800" />
-                                
-                                {targetUser.role !== 'admin' && (
-                                    <>
-                                        {targetUser.role === 'student' ? (
-                                            <DropdownMenuItem onClick={() => handleRoleChange('instructor')} className="gap-2 py-3 cursor-pointer text-primary">
-                                                <Star size={16} /> Passer Expert
-                                            </DropdownMenuItem>
-                                        ) : (
-                                            <DropdownMenuItem onClick={() => handleRoleChange('student')} className="gap-2 py-3 cursor-pointer">
-                                                <UserCog size={16} /> Retirer droits Expert
-                                            </DropdownMenuItem>
-                                        )}
-                                    </>
-                                )}
+                            <DropdownMenuContent align="end" className="w-64 bg-slate-950 border-slate-800 text-slate-300 rounded-2xl p-2 shadow-2xl">
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] mb-1">Identité</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => toggleModal('details', true)} className="gap-3 py-3 cursor-pointer rounded-xl"><UserProfileIcon size={16} className="text-primary" /> Voir Profil</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleContact} className="gap-3 py-3 cursor-pointer rounded-xl"><MessageSquare size={16} className="text-blue-400" /> Messagerie</DropdownMenuItem>
+                                </DropdownMenuGroup>
 
-                                {targetUser.status === 'active' ? (
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="gap-2 py-3 cursor-pointer text-red-500">
-                                        <Ban size={16} /> Suspendre
-                                    </DropdownMenuItem>
-                                ) : (
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="gap-2 py-3 cursor-pointer text-emerald-500">
-                                        <UserCheck size={16} /> Réactiver
-                                    </DropdownMenuItem>
-                                )}
+                                <DropdownMenuSeparator className="bg-slate-900" />
 
-                                <DropdownMenuSeparator className="bg-slate-800" />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] mb-1">Finance</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => toggleModal('recharge', true)} className="gap-3 py-3 cursor-pointer rounded-xl"><ArrowUpRight size={16} className="text-emerald-500" /> Recharger Wallet</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => toggleModal('debit', true)} className="gap-3 py-3 cursor-pointer rounded-xl"><ArrowDownRight size={16} className="text-red-400" /> Débiter Wallet</DropdownMenuItem>
+                                </DropdownMenuGroup>
 
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 py-3 cursor-pointer text-red-600 font-black">
-                                            <Trash2 size={16} /> Supprimer Définitivement
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-slate-900 border-slate-800 rounded-[2rem]">
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle className="text-white uppercase font-black">Action Irréversible</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-slate-400">
-                                                Voulez-vous vraiment supprimer le compte de <b>{targetUser.fullName}</b> ? Toutes ses données (inscriptions, progrès) seront perdues.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel className="bg-slate-800 border-none rounded-xl">Annuler</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700 rounded-xl">Supprimer</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <DropdownMenuSeparator className="bg-slate-900" />
+
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] mb-1">Pédagogie</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => toggleModal('grant', true)} className="gap-3 py-3 cursor-pointer rounded-xl"><Gift size={16} className="text-primary" /> Offrir un cours</DropdownMenuItem>
+                                </DropdownMenuGroup>
+
+                                <DropdownMenuSeparator className="bg-slate-900" />
+
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] mb-1">Régulation</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => toggleModal('restrict', true)} className="gap-3 py-3 cursor-pointer rounded-xl"><ShieldAlert size={16} className="text-amber-500" /> Appliquer Restrictions</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleSimpleAction(() => removeUserRestrictionsAction({ adminId: adminUser!.uid, targetUserId: targetUser.uid }), "Restrictions levées")} className="gap-3 py-3 cursor-pointer rounded-xl"><Unlock size={16} className="text-emerald-500" /> Lever Restrictions</DropdownMenuItem>
+                                </DropdownMenuGroup>
+
+                                <DropdownMenuSeparator className="bg-slate-900" />
+
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] mb-1">Administration</DropdownMenuLabel>
+                                    {targetUser.status === 'active' ? (
+                                        <DropdownMenuItem onClick={() => handleSimpleAction(() => toggleUserStatusAction({ adminId: adminUser!.uid, targetUserId: targetUser.uid, status: 'suspended', reason: 'Action admin' }), "Compte suspendu")} className="gap-3 py-3 cursor-pointer rounded-xl text-red-500"><Ban size={16} /> Suspendre</DropdownMenuItem>
+                                    ) : (
+                                        <DropdownMenuItem onClick={() => handleSimpleAction(() => toggleUserStatusAction({ adminId: adminUser!.uid, targetUserId: targetUser.uid, status: 'active', reason: 'Réactivation admin' }), "Compte réactivé")} className="gap-3 py-3 cursor-pointer rounded-xl text-emerald-500"><UserCheck size={16} /> Réactiver</DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => handleSimpleAction(() => softDeleteUserAction({ adminId: adminUser!.uid, targetUserId: targetUser.uid, reason: "Suppression définitive" }), "Compte supprimé")} className="gap-3 py-3 cursor-pointer rounded-xl text-red-600 font-black uppercase text-[10px]"><Trash2 size={16} /> Supprimer Définitivement</DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -256,17 +325,23 @@ const UserCard = ({
     );
 };
 
+function RestrictionToggle({ label, checked, onChange }: { label: string, checked: boolean, onChange: (v: boolean) => void }) {
+    return (
+        <div className="flex items-center justify-between p-4 bg-slate-950/50 rounded-2xl border border-white/5">
+            <span className="text-sm font-bold uppercase tracking-tight text-slate-300">{label}</span>
+            <Checkbox checked={checked} onCheckedChange={(v: boolean) => onChange(v)} className="h-6 w-6 border-slate-700 data-[state=checked]:bg-primary" />
+        </div>
+    );
+}
+
 export function UsersTable() {
     const db = getFirestore();
-    const { toast } = useToast(); // ✅ Ajouté pour corriger l'erreur de build
+    const { toast } = useToast();
     const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<'all' | 'student' | 'instructor' | 'admin' | 'suspended'>('all');
-    const [selectedUser, setSelectedUser] = useState<NdaraUser | null>(null);
-    const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
-    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
@@ -287,10 +362,6 @@ export function UsersTable() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700 pb-32">
-            <GrantCourseModal isOpen={isGrantModalOpen} onOpenChange={setIsGrantModalOpen} targetUser={selectedUser} />
-            <UserDetailsModal isOpen={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen} user={selectedUser} />
-
-            {/* Header & Search */}
             <div className="space-y-6">
                 <div className="relative group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" />
@@ -300,12 +371,8 @@ export function UsersTable() {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    <button className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary active:scale-95">
-                        <Mic size={18} />
-                    </button>
                 </div>
 
-                {/* Filter Pills */}
                 <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-2">
                     {['all', 'student', 'instructor', 'admin', 'suspended'].map((filter) => (
                         <button
@@ -324,7 +391,6 @@ export function UsersTable() {
                 </div>
             </div>
 
-            {/* Users List */}
             <div className="space-y-4">
                 {isLoading ? (
                     <div className="space-y-4">
@@ -333,12 +399,7 @@ export function UsersTable() {
                 ) : filteredUsers.length > 0 ? (
                     <div className="grid gap-4">
                         {filteredUsers.map(user => (
-                            <UserCard 
-                                key={user.uid} 
-                                user={user} 
-                                onGrantRequest={(u) => { setSelectedUser(u); setIsGrantModalOpen(true); }}
-                                onViewProfile={(u) => { setSelectedUser(u); setIsDetailsModalOpen(true); }}
-                            />
+                            <UserCard key={user.uid} user={user} onAction={() => {}} />
                         ))}
                     </div>
                 ) : (
@@ -348,14 +409,6 @@ export function UsersTable() {
                     </div>
                 )}
             </div>
-
-            {/* FAB Button */}
-            <button 
-                onClick={() => toast({ title: "Importation CSV", description: "Bientôt disponible dans le cockpit." })}
-                className="fixed bottom-24 right-6 w-16 h-16 bg-primary rounded-full flex items-center justify-center text-slate-950 shadow-2xl shadow-primary/40 z-40 hover:bg-emerald-400 transition-all active:scale-90 animate-pulse-glow"
-            >
-                <Plus size={32} strokeWidth={3} />
-            </button>
         </div>
     );
 }
