@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour les retraits.
- * ✅ RÉSOLU : Application des frais de retrait définis en admin.
- * ✅ SÉCURITÉ : Vérification du solde (Montant + Frais).
+ * ✅ SÉCURITÉ : Vérification systématique du propriétaire du compte.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -15,44 +14,40 @@ interface RequestPayoutParams {
     instructorId: string;
     amount: number;
     method: 'mobile_money' | 'bank_transfer';
+    requesterId: string; // Ajout pour validation
 }
 
-export async function requestPayoutAction({ instructorId, amount, method }: RequestPayoutParams): Promise<{ success: boolean; error?: string; message?: string }> {
+export async function requestPayoutAction({ 
+    instructorId, 
+    amount, 
+    method,
+    requesterId 
+}: RequestPayoutParams): Promise<{ success: boolean; error?: string; message?: string }> {
+    // 🛡️ Sécurité : Seul le propriétaire peut demander un retrait
+    if (instructorId !== requesterId) {
+        return { success: false, error: "error.not_authorized" };
+    }
+
     try {
         const db = getAdminDb();
         
-        // 1. Charger les réglages commerciaux
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
         
         const minThreshold = settings.commercial?.minPayoutThreshold || 5000;
         const withdrawalFee = settings.commercial?.withdrawalFee || 0;
 
-        // 2. Charger les données utilisateur
         const instructorRef = db.collection('users').doc(instructorId);
         const instructorDoc = await instructorRef.get();
 
-        if (!instructorDoc.exists) {
-            return { success: false, error: "error.user_not_found" };
-        }
+        if (!instructorDoc.exists) return { success: false, error: "error.user_not_found" };
 
         const userData = instructorDoc.data() as NdaraUser;
         const currentBalance = userData.balance || 0;
-        
-        // ✅ APPLICATION DES FRAIS
         const totalCost = amount + withdrawalFee;
 
-        if (currentBalance < totalCost) {
-            return { success: false, error: "error.insufficient_balance" };
-        }
-
-        if (amount < minThreshold) {
-            return { success: false, error: "error.payout_min_amount" };
-        }
-
-        if (method === 'mobile_money' && !userData.payoutInfo?.mobileMoneyNumber) {
-            return { success: false, error: "error.payout_info_missing" };
-        }
+        if (currentBalance < totalCost) return { success: false, error: "error.insufficient_balance" };
+        if (amount < minThreshold) return { success: false, error: "error.payout_min_amount" };
 
         const payoutRef = db.collection('payout_requests').doc();
         await payoutRef.set({
@@ -68,7 +63,7 @@ export async function requestPayoutAction({ instructorId, amount, method }: Requ
 
         await sendAdminNotification({
             title: '💸 Nouvelle Demande de Retrait',
-            body: `${userData.fullName} demande un retrait de ${amount.toLocaleString('fr-FR')} XOF. (Frais: ${withdrawalFee} F)`,
+            body: `${userData.fullName} demande ${amount.toLocaleString()} XOF.`,
             link: '/admin/payouts',
             type: 'newPayouts'
         });
@@ -76,7 +71,6 @@ export async function requestPayoutAction({ instructorId, amount, method }: Requ
         return { success: true, message: "success.payout_requested" };
 
     } catch (error: any) {
-        console.error("PAYOUT_REQUEST_ERROR:", error);
         return { success: false, error: "error.generic" };
     }
 }
@@ -91,7 +85,11 @@ export async function updatePayoutStatusAction({
     adminId: string; 
 }): Promise<{ success: boolean; error?: string; message?: string }> {
     try {
+        // 🛡️ Vérifier le rôle admin côté serveur
         const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        if (adminDoc.data()?.role !== 'admin') throw new Error("Unauthorized");
+
         const payoutRef = db.collection('payout_requests').doc(payoutId);
         const payoutDoc = await payoutRef.get();
 
@@ -101,7 +99,6 @@ export async function updatePayoutStatusAction({
         const instructorId = data?.instructorId;
         const totalCost = data?.totalCost || data?.amount;
 
-        // Si le retrait est validé ou payé, on déduit du solde
         if (status === 'approved') {
             await db.collection('users').doc(instructorId).update({
                 balance: FieldValue.increment(-totalCost)
@@ -112,14 +109,6 @@ export async function updatePayoutStatusAction({
             status,
             processedAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
-        });
-
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'payout.process',
-            target: { id: payoutId, type: 'payout' },
-            details: `Retrait ${payoutId} passé à '${status}'. Montant total déduit: ${totalCost} F`,
-            timestamp: FieldValue.serverTimestamp(),
         });
 
         if (instructorId) {

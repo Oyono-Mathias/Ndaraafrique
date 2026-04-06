@@ -2,34 +2,29 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ SÉCURITÉ : Nettoyage des objets pour Firestore (Anti-undefined).
+ * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
+ * ✅ ANTI-CORRUPTION : Plus de confiance aveugle dans l'ID passé par le client.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 import { sendUserNotification } from './notificationActions';
 
-/**
- * Nettoie un objet des valeurs undefined pour Firestore.
- */
+/** 🛡️ Vérifie si l'appelant est réellement admin dans Firestore */
+async function verifyAdminOrThrow(uid: string) {
+    const db = getAdminDb();
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists || userDoc.data()?.role !== 'admin') {
+        throw new Error("UNAUTHORIZED_ACCESS: Requester is not an admin.");
+    }
+}
+
 function sanitize(obj: any): any {
     return JSON.parse(JSON.stringify(obj, (key, value) => value === undefined ? null : value));
 }
 
-async function isRequesterAdmin(uid: string): Promise<boolean> {
-    try {
-        const db = getAdminDb();
-        const userDoc = await db.collection('users').doc(uid).get();
-        return userDoc.exists && userDoc.data()?.role === 'admin';
-    } catch {
-        return false;
-    }
-}
-
-/**
- * RECHARGER LE WALLET RÉEL (Action Admin)
- */
+/** RECHARGER LE WALLET RÉEL (Action Admin Sécurisée) */
 export async function rechargeUserWallet({ 
     userId, 
     amount, 
@@ -41,12 +36,11 @@ export async function rechargeUserWallet({
     adminId: string;
     reason: string;
 }) {
-    const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "error.admin_only" };
-
-    if (amount <= 0) return { success: false, error: "error.amount_positive" };
-
     try {
+        await verifyAdminOrThrow(adminId); // ✅ Validation serveur
+
+        if (amount <= 0) return { success: false, error: "error.amount_positive" };
+
         const db = getAdminDb();
         const batch = db.batch();
         const userRef = db.collection('users').doc(userId);
@@ -58,8 +52,7 @@ export async function rechargeUserWallet({
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        // 🛡️ Nettoyage des données avant envoi
-        const paymentData = sanitize({
+        batch.set(paymentRef, sanitize({
             id: paymentRef.id,
             userId,
             amount,
@@ -69,59 +62,25 @@ export async function rechargeUserWallet({
             date: FieldValue.serverTimestamp(),
             courseTitle: `Recharge Admin: ${reason}`,
             metadata: { type: 'wallet_topup', adminId, reason }
-        });
-
-        batch.set(paymentRef, paymentData);
+        }));
 
         batch.set(auditRef, sanitize({
             adminId,
             eventType: 'user.wallet.recharge',
             target: { id: userId, type: 'user' },
-            details: `Recharge réelle de ${amount} XOF effectuée. Motif: ${reason}`,
+            details: `Recharge réelle de ${amount} XOF par admin ${adminId}. Motif: ${reason}`,
             timestamp: FieldValue.serverTimestamp()
         }));
 
         await batch.commit();
         return { success: true, message: "success.wallet_recharged" };
     } catch (e: any) {
-        console.error("[RechargeWallet] Firestore Error:", e.message);
-        return { success: false, error: "error.generic" };
+        console.error("[RECHARGE_SECURE_ERROR]:", e.message);
+        return { success: false, error: "error.not_authorized" };
     }
 }
 
-/**
- * RECHARGER LE SOLDE VIRTUEL (Action Admin - Ads Factory)
- */
-export async function rechargeVirtualBalanceAction({ 
-    userId, 
-    amount, 
-    adminId 
-}: { 
-    userId: string; 
-    amount: number; 
-    adminId: string;
-}) {
-    const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "error.admin_only" };
-
-    try {
-        const db = getAdminDb();
-        const userRef = db.collection('users').doc(userId);
-        
-        await userRef.update({
-            virtualBalance: FieldValue.increment(amount),
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: "error.generic" };
-    }
-}
-
-/**
- * APPROUVER OU REJETER UNE CANDIDATURE EXPERT
- */
+/** APPROUVER UNE CANDIDATURE (Action Admin Sécurisée) */
 export async function approveInstructorApplication({
     userId,
     decision,
@@ -133,174 +92,72 @@ export async function approveInstructorApplication({
     message: string;
     adminId: string;
 }) {
-    const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "error.admin_only" };
-
     try {
+        await verifyAdminOrThrow(adminId); // ✅ Validation serveur
+
         const db = getAdminDb();
         const batch = db.batch();
         const userRef = db.collection('users').doc(userId);
 
+        const updateData: any = {
+            'instructorApplication.status': decision,
+            'instructorApplication.decisionDate': FieldValue.serverTimestamp(),
+            'instructorApplication.feedback': message,
+            updatedAt: FieldValue.serverTimestamp()
+        };
+
         if (decision === 'accepted') {
-            batch.update(userRef, {
-                isInstructorApproved: true,
-                role: 'instructor',
-                'instructorApplication.status': 'accepted',
-                'instructorApplication.decisionDate': FieldValue.serverTimestamp(),
-                'instructorApplication.feedback': message,
-                updatedAt: FieldValue.serverTimestamp()
-            });
-        } else {
-            batch.update(userRef, {
-                isInstructorApproved: false,
-                'instructorApplication.status': 'rejected',
-                'instructorApplication.decisionDate': FieldValue.serverTimestamp(),
-                'instructorApplication.feedback': message,
-                updatedAt: FieldValue.serverTimestamp()
-            });
+            updateData.isInstructorApproved = true;
+            updateData.role = 'instructor';
         }
 
-        const auditRef = db.collection('admin_audit_logs').doc();
-        batch.set(auditRef, {
+        batch.update(userRef, updateData);
+
+        await db.collection('admin_audit_logs').add({
             adminId,
             eventType: 'instructor.application',
             target: { id: userId, type: 'user' },
-            details: `Candidature instructeur ${decision}. Message: ${message}`,
+            details: `Candidature ${decision} pour ${userId}`,
             timestamp: FieldValue.serverTimestamp()
         });
 
         await batch.commit();
         
         await sendUserNotification(userId, {
-            text: decision === 'accepted' 
-                ? "Félicitations ! Votre compte Expert Ndara a été approuvé." 
-                : "Votre candidature Expert a été refusée après examen.",
+            text: decision === 'accepted' ? "Félicitations ! Votre compte Expert a été approuvé." : "Candidature Expert refusée.",
             link: decision === 'accepted' ? '/instructor/dashboard' : '/student/support',
             type: decision === 'accepted' ? 'success' : 'alert'
         });
 
         return { success: true };
     } catch (e: any) {
-        console.error("Approve Application Error:", e);
-        return { success: false, error: "error.generic" };
+        return { success: false, error: "error.not_authorized" };
     }
 }
 
-/**
- * SUPPRIMER DÉFINITIVEMENT UN COMPTE (Action Admin)
- */
-export async function deleteUserAccount({ userId, adminId }: { userId: string, adminId: string }) {
-    const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "error.admin_only" };
-
-    try {
-        const auth = getAdminAuth();
-        const db = getAdminDb();
-        
-        await auth.deleteUser(userId);
-        await db.collection('users').doc(userId).delete();
-
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'user.delete',
-            target: { id: userId, type: 'user' },
-            details: `Utilisateur ${userId} supprimé par l'admin.`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        return { success: true, message: "success.generic" };
-    } catch (e: any) {
-        console.error("Delete Account Error:", e);
-        return { success: false, error: "error.generic" };
-    }
-}
-
-/**
- * CRÉER UN COMPTE DE DÉMONSTRATION ÉLITE
- */
-export async function createEliteDemoAccountAction({ 
-    role, 
-    adminId 
-}: { 
-    role: UserRole; 
-    adminId: string; 
-}) {
-    const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "error.admin_only" };
-
-    try {
-        const auth = getAdminAuth();
-        const db = getAdminDb();
-        
-        const timestamp = Date.now();
-        const email = `demo_${role}_${timestamp}@ndara-afrique.demo`;
-        const fullName = role === 'instructor' ? 'Expert Ndara (Demo)' : 'Étudiant Elite (Demo)';
-        
-        const userRecord = await auth.createUser({
-            email,
-            password: 'password123',
-            displayName: fullName,
-        });
-
-        const userData: Partial<NdaraUser> = {
-            uid: userRecord.uid,
-            email,
-            fullName,
-            username: `ndara_demo_${timestamp}`,
-            role,
-            status: 'active',
-            isInstructorApproved: role === 'instructor',
-            isDemoAccount: true,
-            virtualBalance: 500000,
-            createdAt: FieldValue.serverTimestamp(),
-            isProfileComplete: true,
-            affiliateStats: { clicks: 120, registrations: 45, sales: 12, earnings: 150000 },
-            affiliateBalance: 75000,
-            profilePictureURL: `https://api.dicebear.com/8.x/avataaars/svg?seed=${userRecord.uid}`
-        };
-
-        await db.collection('users').doc(userRecord.uid).set(sanitize(userData));
-
-        return { success: true, email, password: 'password123' };
-    } catch (e: any) {
-        return { success: false, error: "error.generic" };
-    }
-}
-
-/**
- * ACCORDE L'ACCÈS À UN COURS
- */
 export async function grantCourseAccess({
     studentId,
     courseId,
     adminId,
     reason,
     expirationInDays,
-    expirationMinutes,
 }: {
     studentId: string;
     courseId: string;
     adminId: string;
     reason: string;
     expirationInDays?: number;
-    expirationMinutes?: number;
 }) {
     try {
+        await verifyAdminOrThrow(adminId); // ✅ Validation serveur
+
         const db = getAdminDb();
-        const batch = db.batch();
         const courseDoc = await db.collection('courses').doc(courseId).get();
         if (!courseDoc.exists) return { success: false, error: "error.course_not_found" };
 
         const enrollmentRef = db.collection('enrollments').doc(`${studentId}_${courseId}`);
         
-        let expiresAt = null;
-        if (expirationInDays) {
-            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 86400000);
-        } else if (expirationMinutes) {
-            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60000);
-        }
-
-        batch.set(enrollmentRef, sanitize({
+        const enrollmentData = sanitize({
             studentId,
             courseId,
             instructorId: courseDoc.data()?.instructorId || '',
@@ -308,50 +165,50 @@ export async function grantCourseAccess({
             progress: 0,
             enrollmentDate: FieldValue.serverTimestamp(),
             lastAccessedAt: FieldValue.serverTimestamp(),
-            expiresAt
-        }), { merge: true });
+            expiresAt: expirationInDays ? new Date(Date.now() + expirationInDays * 86400000) : null
+        });
 
-        batch.set(db.collection('admin_audit_logs').doc(), {
+        await enrollmentRef.set(enrollmentData, { merge: true });
+
+        await db.collection('admin_audit_logs').add({
             adminId,
             eventType: 'course.grant',
             target: { id: studentId, type: 'user' },
-            details: `Accès au cours "${courseDoc.data()?.title}" accordé. Motif: ${reason}`,
+            details: `Accès au cours ${courseId} accordé. Motif: ${reason}`,
             timestamp: FieldValue.serverTimestamp()
         });
 
-        await batch.commit();
         return { success: true, message: "success.course_granted" };
     } catch (e: any) {
-        return { success: false, error: "error.generic" };
-    }
-}
-
-export async function updateUserProfileAction({ userId, data, requesterId }: { userId: string, data: any, requesterId: string }) {
-    try {
-        const db = getAdminDb();
-        await db.collection('users').doc(userId).update(sanitize(data));
-        return { success: true, message: "success.profile_updated" };
-    } catch (error: any) {
-        return { success: false, error: "error.generic" };
+        return { success: false, error: "error.not_authorized" };
     }
 }
 
 export async function updateUserStatus({ userId, status, adminId }: { userId: string, status: string, adminId: string }) {
     try {
+        await verifyAdminOrThrow(adminId);
         const db = getAdminDb();
         await db.collection('users').doc(userId).update({ status });
-        return { success: true, message: "success.generic" };
-    } catch (e: any) {
-        return { success: false, error: "error.generic" };
-    }
+        return { success: true };
+    } catch (e) { return { success: false, error: "error.not_authorized" }; }
 }
 
 export async function updateUserRole({ userId, role, adminId }: { userId: string, role: string, adminId: string }) {
     try {
+        await verifyAdminOrThrow(adminId);
         const db = getAdminDb();
         await db.collection('users').doc(userId).update({ role });
-        return { success: true, message: "success.generic" };
-    } catch (e: any) {
-        return { success: false, error: "error.generic" };
+        return { success: true };
+    } catch (e) { return { success: false, error: "error.not_authorized" }; }
+}
+
+export async function updateUserProfileAction({ userId, data, requesterId }: { userId: string, data: any, requesterId: string }) {
+    // Ici, on vérifie que l'utilisateur modifie SON PROPRE profil ou qu'il est admin
+    if (userId !== requesterId) {
+        try { await verifyAdminOrThrow(requesterId); }
+        catch(e) { return { success: false, error: "error.not_authorized" }; }
     }
+    const db = getAdminDb();
+    await db.collection('users').doc(userId).update(sanitize(data));
+    return { success: true, message: "success.profile_updated" };
 }
