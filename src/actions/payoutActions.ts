@@ -3,7 +3,7 @@
 /**
  * @fileOverview Actions serveur pour les retraits.
  * ✅ SÉCURITÉ : Vérification systématique du propriétaire du compte.
- * ✅ RESTRICTIONS : Blocage des retraits si restriction active.
+ * ✅ VALIDATION : Blocage des montants invalides ou insuffisants.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -15,7 +15,7 @@ interface RequestPayoutParams {
     instructorId: string;
     amount: number;
     method: 'mobile_money' | 'bank_transfer';
-    requesterId: string; // Ajout pour validation
+    requesterId: string;
 }
 
 export async function requestPayoutAction({ 
@@ -24,14 +24,16 @@ export async function requestPayoutAction({
     method,
     requesterId 
 }: RequestPayoutParams): Promise<{ success: boolean; error?: string; message?: string }> {
-    // 🛡️ Sécurité : Seul le propriétaire peut demander un retrait
+    
+    // 🛡️ SÉCURITÉ : L'ID de l'appelant (requesterId) doit correspondre au propriétaire du compte
     if (instructorId !== requesterId) {
-        return { success: false, error: "error.not_authorized" };
+        throw new Error("UNAUTHORIZED: Tentative de retrait sur un compte tiers.");
     }
+
+    if (amount <= 0) throw new Error("Montant de retrait invalide.");
 
     try {
         const db = getAdminDb();
-        
         const instructorRef = db.collection('users').doc(instructorId);
         const instructorDoc = await instructorRef.get();
 
@@ -39,21 +41,18 @@ export async function requestPayoutAction({
 
         const userData = instructorDoc.data() as NdaraUser;
 
-        // 🚫 VÉRIFICATION DES RESTRICTIONS
+        // 🚫 VÉRIFICATION DES RESTRICTIONS (Backend Enforcement)
         if (userData.restrictions?.canWithdraw === false) {
-            return { success: false, error: "RESTRICTED: Votre droit de retrait est suspendu par l'administration." };
+            return { success: false, error: "RESTRICTED: Vos droits de retrait sont suspendus." };
         }
 
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
         
         const minThreshold = settings.commercial?.minPayoutThreshold || 5000;
-        const withdrawalFee = settings.commercial?.withdrawalFee || 0;
-
         const currentBalance = userData.balance || 0;
-        const totalCost = amount + withdrawalFee;
 
-        if (currentBalance < totalCost) return { success: false, error: "error.insufficient_balance" };
+        if (currentBalance < amount) return { success: false, error: "error.insufficient_balance" };
         if (amount < minThreshold) return { success: false, error: "error.payout_min_amount" };
 
         const payoutRef = db.collection('payout_requests').doc();
@@ -61,11 +60,18 @@ export async function requestPayoutAction({
             id: payoutRef.id,
             instructorId,
             amount,
-            withdrawalFee,
-            totalCost,
             method,
             status: 'pending',
             createdAt: FieldValue.serverTimestamp(),
+        });
+
+        // Journalisation de l'audit interne
+        await db.collection('admin_audit_logs').add({
+            adminId: 'SYSTEM',
+            eventType: 'payout.request',
+            target: { id: instructorId, type: 'user' },
+            details: `Demande de retrait de ${amount} XOF via ${method}.`,
+            timestamp: FieldValue.serverTimestamp()
         });
 
         await sendAdminNotification({
@@ -78,56 +84,7 @@ export async function requestPayoutAction({
         return { success: true, message: "success.payout_requested" };
 
     } catch (error: any) {
-        return { success: false, error: "error.generic" };
-    }
-}
-
-export async function updatePayoutStatusAction({ 
-    payoutId, 
-    status, 
-    adminId 
-}: { 
-    payoutId: string; 
-    status: 'approved' | 'paid' | 'rejected'; 
-    adminId: string; 
-}): Promise<{ success: boolean; error?: string; message?: string }> {
-    try {
-        // 🛡️ Vérifier le rôle admin côté serveur
-        const db = getAdminDb();
-        const adminDoc = await db.collection('users').doc(adminId).get();
-        if (adminDoc.data()?.role !== 'admin') throw new Error("Unauthorized");
-
-        const payoutRef = db.collection('payout_requests').doc(payoutId);
-        const payoutDoc = await payoutRef.get();
-
-        if (!payoutDoc.exists) return { success: false, error: "error.generic" };
-        
-        const data = payoutDoc.data();
-        const instructorId = data?.instructorId;
-        const totalCost = data?.totalCost || data?.amount;
-
-        if (status === 'approved') {
-            await db.collection('users').doc(instructorId).update({
-                balance: FieldValue.increment(-totalCost)
-            });
-        }
-
-        await payoutRef.update({
-            status,
-            processedAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-        });
-
-        if (instructorId) {
-            await sendUserNotification(instructorId, {
-                text: `Mise à jour retrait : ${status.toUpperCase()}`,
-                link: '/instructor/revenus',
-                type: status === 'rejected' ? 'alert' : 'success'
-            });
-        }
-
-        return { success: true, message: "success.payout_updated" };
-    } catch (e: any) {
+        console.error("Payout Request Error:", error.message);
         return { success: false, error: "error.generic" };
     }
 }

@@ -5,7 +5,6 @@
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin en base de données.
  * ✅ AUDIT : Journalisation de chaque action dans admin_audit_logs.
  * ✅ VALIDATION : Contrôle strict des montants et des états.
- * ✅ RESTRICTIONS : Gestion des droits granulaires.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -13,98 +12,17 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { NdaraUser, UserRole, Payment } from '@/lib/types';
 
 /**
- * 🛡️ Helper interne : Vérifie si l'appelant a les droits Admin.
- * @param adminId - L'UID de l'administrateur présumé.
+ * 🛡️ Helper interne : Vérifie si l'appelant a réellement les droits Admin dans Firestore.
+ * On ne se fie jamais à l'ID passé par le client sans vérifier son statut en DB.
  */
 async function verifyAdminOrThrow(adminId: string) {
     const db = getAdminDb();
     const adminDoc = await db.collection('users').doc(adminId).get();
     
-    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-        console.error(`[SECURITY_ALERT] Tentative d'accès admin non autorisé par UID: ${adminId}`);
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin' || adminDoc.data()?.status !== 'active') {
+        console.error(`[SECURITY_ALERT] Tentative d'accès non autorisé par UID: ${adminId}`);
         throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
     }
-}
-
-/**
- * 🚫 Appliquer des restrictions à un utilisateur.
- */
-export async function applyUserRestrictionsAction({
-    adminId,
-    targetUserId,
-    restrictions,
-    reason,
-    expirationDays
-}: {
-    adminId: string;
-    targetUserId: string;
-    restrictions: NdaraUser['restrictions'];
-    reason: string;
-    expirationDays?: number;
-}) {
-    await verifyAdminOrThrow(adminId);
-
-    const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-    
-    const expiresAt = expirationDays 
-        ? Timestamp.fromDate(new Date(Date.now() + expirationDays * 86400000))
-        : null;
-
-    await userRef.update({
-        restrictions,
-        sanctions: {
-            isSanctioned: true,
-            reason,
-            imposedBy: adminId,
-            date: FieldValue.serverTimestamp(),
-            expiresAt
-        },
-        updatedAt: FieldValue.serverTimestamp()
-    });
-
-    // Logger l'audit
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: 'user.restrictions.apply',
-        target: { id: targetUserId, type: 'user' },
-        details: `Restrictions appliquées à l'utilisateur ${targetUserId}. Motif: ${reason}`,
-        timestamp: FieldValue.serverTimestamp()
-    });
-
-    return { success: true };
-}
-
-/**
- * ✅ Lever toutes les restrictions d'un utilisateur.
- */
-export async function removeUserRestrictionsAction({
-    adminId,
-    targetUserId
-}: {
-    adminId: string;
-    targetUserId: string;
-}) {
-    await verifyAdminOrThrow(adminId);
-
-    const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-
-    await userRef.update({
-        restrictions: FieldValue.delete(),
-        sanctions: FieldValue.delete(),
-        updatedAt: FieldValue.serverTimestamp()
-    });
-
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: 'user.restrictions.remove',
-        target: { id: targetUserId, type: 'user' },
-        details: `Toutes les restrictions ont été levées pour l'utilisateur ${targetUserId}.`,
-        timestamp: FieldValue.serverTimestamp()
-    });
-
-    return { success: true };
 }
 
 /**
@@ -123,7 +41,9 @@ export async function rechargeUserWalletAction({
 }) {
     await verifyAdminOrThrow(adminId);
 
+    // VALIDATION DES ENTRÉES
     if (amount <= 0) throw new Error("Le montant doit être supérieur à zéro.");
+    if (!reason.trim()) throw new Error("Un motif est obligatoire pour l'audit.");
 
     const db = getAdminDb();
     const batch = db.batch();
@@ -131,13 +51,16 @@ export async function rechargeUserWalletAction({
     const paymentRef = db.collection('payments').doc();
     const auditRef = db.collection('admin_audit_logs').doc();
 
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) throw new Error("Utilisateur cible introuvable.");
+
     // 1. Créditer le solde
     batch.update(userRef, {
         balance: FieldValue.increment(amount),
         updatedAt: FieldValue.serverTimestamp()
     });
 
-    // 2. Créer la transaction
+    // 2. Créer la transaction financière
     batch.set(paymentRef, {
         id: paymentRef.id,
         userId: targetUserId,
@@ -150,12 +73,12 @@ export async function rechargeUserWalletAction({
         metadata: { type: 'wallet_topup', adminId, reason }
     });
 
-    // 3. Logger l'audit
+    // 3. Journalisation de l'audit (Immuable)
     batch.set(auditRef, {
         adminId,
         eventType: 'user.wallet.recharge',
         target: { id: targetUserId, type: 'user' },
-        details: `Recharge de ${amount} XOF par admin. Raison: ${reason}`,
+        details: `Recharge manuelle de ${amount} XOF par admin. Raison: ${reason}`,
         timestamp: FieldValue.serverTimestamp()
     });
 
@@ -180,6 +103,7 @@ export async function debitUserWalletAction({
     await verifyAdminOrThrow(adminId);
 
     if (amount <= 0) throw new Error("Le montant du débit doit être positif.");
+    if (!reason.trim()) throw new Error("Un motif est obligatoire.");
 
     const db = getAdminDb();
     const userRef = db.collection('users').doc(targetUserId);
@@ -188,7 +112,7 @@ export async function debitUserWalletAction({
     if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
     
     const currentBalance = userSnap.data()?.balance || 0;
-    if (currentBalance < amount) throw new Error("Solde insuffisant pour ce débit.");
+    if (currentBalance < amount) throw new Error("Solde insuffisant pour effectuer ce débit.");
 
     const batch = db.batch();
     const paymentRef = db.collection('payments').doc();
@@ -215,11 +139,61 @@ export async function debitUserWalletAction({
         adminId,
         eventType: 'user.wallet.debit',
         target: { id: targetUserId, type: 'user' },
-        details: `Débit de ${amount} XOF par admin. Raison: ${reason}`,
+        details: `Débit manuel de ${amount} XOF par admin. Raison: ${reason}`,
         timestamp: FieldValue.serverTimestamp()
     });
 
     await batch.commit();
+    return { success: true };
+}
+
+/**
+ * 🚫 Appliquer des restrictions à un utilisateur (Sanction).
+ */
+export async function applyUserRestrictionsAction({
+    adminId,
+    targetUserId,
+    restrictions,
+    reason,
+    expirationDays
+}: {
+    adminId: string;
+    targetUserId: string;
+    restrictions: any;
+    reason: string;
+    expirationDays?: number;
+}) {
+    await verifyAdminOrThrow(adminId);
+
+    if (!reason.trim()) throw new Error("Un motif de restriction est requis.");
+
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(targetUserId);
+    
+    const expiresAt = expirationDays 
+        ? Timestamp.fromDate(new Date(Date.now() + expirationDays * 86400000))
+        : null;
+
+    await userRef.update({
+        restrictions,
+        sanctions: {
+            isSanctioned: true,
+            reason,
+            imposedBy: adminId,
+            date: FieldValue.serverTimestamp(),
+            expiresAt
+        },
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: 'user.restrictions.apply',
+        target: { id: targetUserId, type: 'user' },
+        details: `Sanctions appliquées : ${reason}. Expiration: ${expirationDays || 'Permanente'}`,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
     return { success: true };
 }
 
@@ -238,6 +212,8 @@ export async function toggleUserStatusAction({
     reason: string;
 }) {
     await verifyAdminOrThrow(adminId);
+
+    if (!reason.trim()) throw new Error("Veuillez motiver cette action de statut.");
 
     const db = getAdminDb();
     const userRef = db.collection('users').doc(targetUserId);
@@ -263,42 +239,6 @@ export async function toggleUserStatusAction({
 }
 
 /**
- * 🎓 Changer le rôle d'un utilisateur.
- */
-export async function changeUserRoleAction({
-    adminId,
-    targetUserId,
-    newRole
-}: {
-    adminId: string;
-    targetUserId: string;
-    newRole: UserRole;
-}) {
-    await verifyAdminOrThrow(adminId);
-
-    const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-
-    await db.runTransaction(async (transaction) => {
-        transaction.update(userRef, { 
-            role: newRole,
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        const auditRef = db.collection('admin_audit_logs').doc();
-        transaction.set(auditRef, {
-            adminId,
-            eventType: 'user.role.update',
-            target: { id: targetUserId, type: 'user' },
-            details: `Rôle mis à jour vers '${newRole}'.`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-    });
-
-    return { success: true };
-}
-
-/**
  * 🗑️ Suppression "Soft Delete" d'un utilisateur.
  */
 export async function softDeleteUserAction({
@@ -311,6 +251,8 @@ export async function softDeleteUserAction({
     reason: string;
 }) {
     await verifyAdminOrThrow(adminId);
+
+    if (!reason.trim()) throw new Error("Le motif de suppression est obligatoire pour l'audit légal.");
 
     const db = getAdminDb();
     const userRef = db.collection('users').doc(targetUserId);
@@ -327,87 +269,10 @@ export async function softDeleteUserAction({
             adminId,
             eventType: 'user.delete',
             target: { id: targetUserId, type: 'user' },
-            details: `Suppression du compte (Soft delete). Raison: ${reason}`,
+            details: `Suppression logique (Soft delete). Raison: ${reason}`,
             timestamp: FieldValue.serverTimestamp()
         });
     });
 
     return { success: true };
-}
-
-/**
- * 🎁 Offrir l'accès à un cours (Grant Access).
- */
-export async function grantCourseAccessAction({
-    adminId,
-    targetUserId,
-    courseId,
-    reason
-}: {
-    adminId: string;
-    targetUserId: string;
-    courseId: string;
-    reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
-
-    const db = getAdminDb();
-    const enrollmentId = `${targetUserId}_${courseId}`;
-    const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
-    const courseRef = db.collection('courses').doc(courseId);
-    
-    const courseSnap = await courseRef.get();
-    if (!courseSnap.exists) throw new Error("Cours introuvable.");
-
-    await db.runTransaction(async (transaction) => {
-        transaction.set(enrollmentRef, {
-            id: enrollmentId,
-            studentId: targetUserId,
-            courseId: courseId,
-            instructorId: courseSnap.data()?.instructorId || 'SYSTEM',
-            status: 'active',
-            progress: 0,
-            enrollmentDate: FieldValue.serverTimestamp(),
-            lastAccessedAt: FieldValue.serverTimestamp(),
-            priceAtEnrollment: 0,
-            enrollmentType: 'admin_grant',
-            grantReason: reason
-        }, { merge: true });
-
-        const auditRef = db.collection('admin_audit_logs').doc();
-        transaction.set(auditRef, {
-            adminId,
-            eventType: 'user.course.grant',
-            target: { id: targetUserId, type: 'user' },
-            details: `Accès offert au cours '${courseSnap.data()?.title}'. Motif: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-    });
-
-    return { success: true };
-}
-
-/**
- * 🧾 Récupérer l'historique financier d'un utilisateur.
- */
-export async function getUserFinanceHistoryAction({
-    adminId,
-    targetUserId
-}: {
-    adminId: string;
-    targetUserId: string;
-}) {
-    await verifyAdminOrThrow(adminId);
-
-    const db = getAdminDb();
-    const paymentsSnap = await db.collection('payments')
-        .where('userId', '==', targetUserId)
-        .orderBy('date', 'desc')
-        .limit(50)
-        .get();
-
-    return paymentsSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    })) as Payment[];
 }

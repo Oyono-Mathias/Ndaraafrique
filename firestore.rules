@@ -3,22 +3,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- FONCTIONS DE SÉCURITÉ ---
+    // --- FONCTIONS DE SÉCURITÉ CENTRALISÉES ---
     function isSignedIn() {
       return request.auth != null;
     }
     
     function isAdmin() {
-      return isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isCourseOwner(courseId) {
-      const course = get(/databases/$(database)/documents/courses/$(courseId)).data;
-      return isSignedIn() && (course.ownerId == request.auth.uid || course.instructorId == request.auth.uid);
     }
 
     // --- RÈGLES PAR DÉFAUT : FERMÉ ---
@@ -27,30 +23,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // --- RÉGLAGES PUBLICS ---
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /carousel_slides/{slideId} { allow read: if true; }
-    match /faqs/{faqId} { allow read: if true; }
-
-    // --- COURS ---
-    match /courses/{courseId} {
-      allow read: if true;
-      allow update: if isAdmin() || isCourseOwner(courseId);
-      
-      match /sections/{sectionId} {
-        allow read: if true;
-        match /lectures/{lectureId} { allow read: if true; }
-        match /quizzes/{quizId} { allow read: if true; }
-      }
-    }
-
     // --- UTILISATEURS ---
     match /users/{userId} {
-      allow read: if isSignedIn(); // Permet l'annuaire
+      allow read: if isSignedIn(); // Permet l'annuaire et la recherche
+      allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       
       match /notifications/{notifId} { allow read, write: if isOwner(userId); }
@@ -58,24 +34,46 @@ service cloud.firestore {
       match /activity/{actId} { allow read: if isOwner(userId) || isAdmin(); }
     }
 
-    // --- PAIEMENTS & RETRAITS ---
+    // --- FINANCES & TRANSACTIONS ---
     match /payments/{paymentId} {
+      // Un utilisateur ne peut voir que ses propres paiements
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false; // Seul le serveur via Admin SDK peut écrire
     }
 
     match /payout_requests/{payoutId} {
       allow read: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn();
+      allow create: if isSignedIn(); // Création possible, mais auditée par le serveur
+      allow update: if isAdmin();
     }
 
-    // --- MESSAGERIE ---
-    match /chats/{chatId} {
-      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
-      allow create: if isSignedIn();
+    // --- RÉGLAGES SYSTÈME (PROTECTION CRITIQUE) ---
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // --- LOGS DE SÉCURITÉ ---
-    match /security_logs/{logId} { allow read: if isAdmin(); allow create: if true; }
-    match /admin_audit_logs/{logId} { allow read: if isAdmin(); }
+    // --- LOGS & AUDIT ---
+    match /admin_audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Strictement réservé au serveur
+    }
+
+    match /security_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isSignedIn(); // Permet au système de logger des alertes
+    }
+
+    // --- COURS & CONTENU ---
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      match /sections/{sectionId} {
+        allow read: if true;
+        match /lectures/{lectureId} { allow read: if true; }
+        match /quizzes/{quizId} { allow read: if true; }
+      }
+    }
   }
 }
