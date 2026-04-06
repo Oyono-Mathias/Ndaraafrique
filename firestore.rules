@@ -25,7 +25,7 @@ service cloud.firestore {
 
     // --- UTILISATEURS ---
     match /users/{userId} {
-      allow read: if isSignedIn(); // Permet l'annuaire et la recherche
+      allow read: if isSignedIn();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       
@@ -36,32 +36,31 @@ service cloud.firestore {
 
     // --- FINANCES & TRANSACTIONS ---
     match /payments/{paymentId} {
-      // Un utilisateur ne peut voir que ses propres paiements
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if false; // Seul le serveur via Admin SDK peut écrire
+      allow write: if false; // Strictement réservé au serveur (Admin SDK)
     }
 
     match /payout_requests/{payoutId} {
       allow read: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn(); // Création possible, mais auditée par le serveur
+      allow create: if isSignedIn();
       allow update: if isAdmin();
     }
 
-    // --- RÉGLAGES SYSTÈME (PROTECTION CRITIQUE) ---
+    // --- RÉGLAGES SYSTÈME ---
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // --- LOGS & AUDIT ---
+    // --- LOGS & AUDIT (EXTRÊMEMENT SENSIBLE) ---
     match /admin_audit_logs/{logId} {
       allow read: if isAdmin();
-      allow write: if false; // Strictement réservé au serveur
+      allow write: if false; 
     }
 
     match /security_logs/{logId} {
       allow read: if isAdmin();
-      allow write: if isSignedIn(); // Permet au système de logger des alertes
+      allow write: if isSignedIn(); // Permet au système de logger des alertes via actions
     }
 
     // --- COURS & CONTENU ---

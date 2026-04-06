@@ -4,23 +4,21 @@
  * @fileOverview Actions administratives sécurisées pour Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin en base de données.
  * ✅ AUDIT : Journalisation de chaque action dans admin_audit_logs.
- * ✅ VALIDATION : Contrôle strict des montants et des états.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { NdaraUser, UserRole, Payment } from '@/lib/types';
+import type { NdaraUser, UserRole } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne : Vérifie si l'appelant a réellement les droits Admin dans Firestore.
- * On ne se fie jamais à l'ID passé par le client sans vérifier son statut en DB.
  */
 async function verifyAdminOrThrow(adminId: string) {
     const db = getAdminDb();
     const adminDoc = await db.collection('users').doc(adminId).get();
     
     if (!adminDoc.exists || adminDoc.data()?.role !== 'admin' || adminDoc.data()?.status !== 'active') {
-        console.error(`[SECURITY_ALERT] Tentative d'accès non autorisé par UID: ${adminId}`);
+        console.error(`[SECURITY_ALERT] Accès refusé pour UID: ${adminId}`);
         throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
     }
 }
@@ -41,8 +39,7 @@ export async function rechargeUserWalletAction({
 }) {
     await verifyAdminOrThrow(adminId);
 
-    // VALIDATION DES ENTRÉES
-    if (amount <= 0) throw new Error("Le montant doit être supérieur à zéro.");
+    if (amount <= 0) throw new Error("Le montant doit être positif.");
     if (!reason.trim()) throw new Error("Un motif est obligatoire pour l'audit.");
 
     const db = getAdminDb();
@@ -54,13 +51,11 @@ export async function rechargeUserWalletAction({
     const userSnap = await userRef.get();
     if (!userSnap.exists) throw new Error("Utilisateur cible introuvable.");
 
-    // 1. Créditer le solde
     batch.update(userRef, {
         balance: FieldValue.increment(amount),
         updatedAt: FieldValue.serverTimestamp()
     });
 
-    // 2. Créer la transaction financière
     batch.set(paymentRef, {
         id: paymentRef.id,
         userId: targetUserId,
@@ -73,12 +68,11 @@ export async function rechargeUserWalletAction({
         metadata: { type: 'wallet_topup', adminId, reason }
     });
 
-    // 3. Journalisation de l'audit (Immuable)
     batch.set(auditRef, {
         adminId,
         eventType: 'user.wallet.recharge',
         target: { id: targetUserId, type: 'user' },
-        details: `Recharge manuelle de ${amount} XOF par admin. Raison: ${reason}`,
+        details: `Injection de ${amount} XOF par admin. Raison: ${reason}`,
         timestamp: FieldValue.serverTimestamp()
     });
 
@@ -87,7 +81,7 @@ export async function rechargeUserWalletAction({
 }
 
 /**
- * 💸 Débiter le portefeuille d'un utilisateur (Ex: Rectification).
+ * 💸 Débiter le portefeuille d'un utilisateur.
  */
 export async function debitUserWalletAction({
     adminId,
@@ -102,40 +96,22 @@ export async function debitUserWalletAction({
 }) {
     await verifyAdminOrThrow(adminId);
 
-    if (amount <= 0) throw new Error("Le montant du débit doit être positif.");
-    if (!reason.trim()) throw new Error("Un motif est obligatoire.");
-
+    if (amount <= 0) throw new Error("Le montant doit être positif.");
+    
     const db = getAdminDb();
     const userRef = db.collection('users').doc(targetUserId);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
-    
-    const currentBalance = userSnap.data()?.balance || 0;
-    if (currentBalance < amount) throw new Error("Solde insuffisant pour effectuer ce débit.");
+    if ((userSnap.data()?.balance || 0) < amount) throw new Error("Solde insuffisant.");
 
     const batch = db.batch();
-    const paymentRef = db.collection('payments').doc();
-    const auditRef = db.collection('admin_audit_logs').doc();
-
     batch.update(userRef, {
         balance: FieldValue.increment(-amount),
         updatedAt: FieldValue.serverTimestamp()
     });
 
-    batch.set(paymentRef, {
-        id: paymentRef.id,
-        userId: targetUserId,
-        amount: -amount,
-        currency: 'XOF',
-        provider: 'admin_debit',
-        status: 'completed',
-        date: FieldValue.serverTimestamp(),
-        courseTitle: `Débit Admin: ${reason}`,
-        metadata: { type: 'wallet_debit', adminId, reason }
-    });
-
-    batch.set(auditRef, {
+    batch.set(db.collection('admin_audit_logs').doc(), {
         adminId,
         eventType: 'user.wallet.debit',
         target: { id: targetUserId, type: 'user' },
@@ -148,40 +124,31 @@ export async function debitUserWalletAction({
 }
 
 /**
- * 🚫 Appliquer des restrictions à un utilisateur (Sanction).
+ * 🚫 Appliquer des restrictions à un utilisateur.
  */
 export async function applyUserRestrictionsAction({
     adminId,
     targetUserId,
     restrictions,
-    reason,
-    expirationDays
+    reason
 }: {
     adminId: string;
     targetUserId: string;
     restrictions: any;
     reason: string;
-    expirationDays?: number;
 }) {
     await verifyAdminOrThrow(adminId);
-
-    if (!reason.trim()) throw new Error("Un motif de restriction est requis.");
 
     const db = getAdminDb();
     const userRef = db.collection('users').doc(targetUserId);
     
-    const expiresAt = expirationDays 
-        ? Timestamp.fromDate(new Date(Date.now() + expirationDays * 86400000))
-        : null;
-
     await userRef.update({
         restrictions,
         sanctions: {
             isSanctioned: true,
             reason,
             imposedBy: adminId,
-            date: FieldValue.serverTimestamp(),
-            expiresAt
+            date: FieldValue.serverTimestamp()
         },
         updatedAt: FieldValue.serverTimestamp()
     });
@@ -190,7 +157,7 @@ export async function applyUserRestrictionsAction({
         adminId,
         eventType: 'user.restrictions.apply',
         target: { id: targetUserId, type: 'user' },
-        details: `Sanctions appliquées : ${reason}. Expiration: ${expirationDays || 'Permanente'}`,
+        details: `Restrictions appliquées : ${reason}`,
         timestamp: FieldValue.serverTimestamp()
     });
 
@@ -198,7 +165,37 @@ export async function applyUserRestrictionsAction({
 }
 
 /**
- * 🔒 Suspendre ou Réactiver un compte utilisateur.
+ * 🔓 Lever toutes les restrictions.
+ */
+export async function removeUserRestrictionsAction({
+    adminId,
+    targetUserId
+}: {
+    adminId: string;
+    targetUserId: string;
+}) {
+    await verifyAdminOrThrow(adminId);
+
+    const db = getAdminDb();
+    await db.collection('users').doc(targetUserId).update({
+        restrictions: FieldValue.delete(),
+        sanctions: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: 'user.restrictions.remove',
+        target: { id: targetUserId, type: 'user' },
+        details: "Toutes les restrictions ont été levées.",
+        timestamp: FieldValue.serverTimestamp()
+    });
+
+    return { success: true };
+}
+
+/**
+ * 🔒 Suspendre ou Réactiver.
  */
 export async function toggleUserStatusAction({
     adminId,
@@ -213,8 +210,6 @@ export async function toggleUserStatusAction({
 }) {
     await verifyAdminOrThrow(adminId);
 
-    if (!reason.trim()) throw new Error("Veuillez motiver cette action de statut.");
-
     const db = getAdminDb();
     const userRef = db.collection('users').doc(targetUserId);
     
@@ -225,8 +220,7 @@ export async function toggleUserStatusAction({
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        const auditRef = db.collection('admin_audit_logs').doc();
-        transaction.set(auditRef, {
+        transaction.set(db.collection('admin_audit_logs').doc(), {
             adminId,
             eventType: `user.status.${status}`,
             target: { id: targetUserId, type: 'user' },
@@ -239,7 +233,7 @@ export async function toggleUserStatusAction({
 }
 
 /**
- * 🗑️ Suppression "Soft Delete" d'un utilisateur.
+ * 🗑️ Suppression Logique.
  */
 export async function softDeleteUserAction({
     adminId,
@@ -252,26 +246,50 @@ export async function softDeleteUserAction({
 }) {
     await verifyAdminOrThrow(adminId);
 
-    if (!reason.trim()) throw new Error("Le motif de suppression est obligatoire pour l'audit légal.");
+    const db = getAdminDb();
+    await db.collection('users').doc(targetUserId).update({ 
+        status: 'deleted',
+        deletedAt: FieldValue.serverTimestamp(),
+        deletionReason: reason
+    });
+
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: 'user.delete',
+        target: { id: targetUserId, type: 'user' },
+        details: `Suppression logique. Raison: ${reason}`,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
+    return { success: true };
+}
+
+/**
+ * 🎓 Changer Rôle.
+ */
+export async function changeUserRoleAction({
+    adminId,
+    targetUserId,
+    newRole
+}: {
+    adminId: string;
+    targetUserId: string;
+    newRole: UserRole;
+}) {
+    await verifyAdminOrThrow(adminId);
 
     const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
+    await db.collection('users').doc(targetUserId).update({ 
+        role: newRole,
+        updatedAt: FieldValue.serverTimestamp()
+    });
 
-    await db.runTransaction(async (transaction) => {
-        transaction.update(userRef, { 
-            status: 'deleted',
-            deletedAt: FieldValue.serverTimestamp(),
-            deletionReason: reason
-        });
-
-        const auditRef = db.collection('admin_audit_logs').doc();
-        transaction.set(auditRef, {
-            adminId,
-            eventType: 'user.delete',
-            target: { id: targetUserId, type: 'user' },
-            details: `Suppression logique (Soft delete). Raison: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
+    await db.collection('admin_audit_logs').add({
+        adminId,
+        eventType: 'user.role.change',
+        target: { id: targetUserId, type: 'user' },
+        details: `Rôle modifié en '${newRole}'.`,
+        timestamp: FieldValue.serverTimestamp()
     });
 
     return { success: true };
