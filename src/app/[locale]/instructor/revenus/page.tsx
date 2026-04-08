@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -31,7 +32,7 @@ import {
 } from 'lucide-react';
 import { requestPayoutAction } from '@/actions/payoutActions';
 import { useToast } from '@/hooks/use-toast';
-import type { Payment, PayoutRequest } from '@/lib/types';
+import type { Payment, PayoutRequest, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -105,7 +106,8 @@ export default function InstructorRevenuePage() {
             const result = await requestPayoutAction({
                 instructorId: instructor.uid,
                 amount: amountNum,
-                method: 'mobile_money'
+                method: 'mobile_money',
+                requesterId: instructor.uid
             });
 
             if (result.success) {

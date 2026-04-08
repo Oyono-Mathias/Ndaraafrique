@@ -105,7 +105,8 @@ export default function AmbassadorPage() {
             const result = await requestPayoutAction({ 
                 instructorId: currentUser!.uid, 
                 amount: balance, 
-                method: 'mobile_money' 
+                method: 'mobile_money',
+                requesterId: currentUser!.uid
             });
             if (result.success) {
                 toast({ title: "Demande envoyée !", description: "Votre virement sera traité sous 48h." });
