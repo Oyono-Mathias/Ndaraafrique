@@ -1,9 +1,8 @@
-
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Course, NdaraUser, Settings } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
+import type { Course, Settings } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne de sécurité Admin
@@ -83,7 +82,6 @@ export async function toggleResaleRightsAction({
 
         const currentOwner = data.ownerId || data.instructorId; 
         
-        // Sécurité : Vérifier si l'utilisateur est le propriétaire ou admin
         const userDoc = await db.collection('users').doc(userId).get();
         const isAdmin = userDoc.data()?.role === 'admin';
         
@@ -94,7 +92,8 @@ export async function toggleResaleRightsAction({
         if (available) {
             const settingsSnap = await db.collection('settings').doc('global').get();
             const settings = settingsSnap.data() as Settings;
-            const minPrice = settings.platform?.market?.minimumLicensePrice || 10000;
+            // 🔄 CORRECTION : Utilisation du nouveau chemin 'marketplace'
+            const minPrice = settings.marketplace?.minimumResalePrice || 10000;
             if (price < minPrice) {
                 return { success: false, error: 'error.resale_min_price' };
             }
@@ -146,7 +145,8 @@ export async function purchaseResaleRightsAction({
             const previousOwner = courseData.ownerId || courseData.instructorId;
             const price = courseData.resaleRightsPrice || 0;
 
-            const commissionRate = settings.commercial?.platformCommission || 20;
+            // 🔄 CORRECTION : Utilisation du nouveau chemin 'payments'
+            const commissionRate = settings.payments?.transactionFeePercent || 20;
             const platformRevenue = (price * commissionRate) / 100;
             const instructorRevenue = price - platformRevenue;
 
@@ -250,9 +250,6 @@ export async function approveCourseBuyoutAction({
   }
 }
 
-/**
- * Appliquer une sanction à un instructeur pour violation des règles de rachat.
- */
 export async function sanctionInstructorForBuyoutViolation({
     userId,
     adminId,
