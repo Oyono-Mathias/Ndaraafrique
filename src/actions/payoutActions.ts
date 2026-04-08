@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour les retraits.
- * ✅ SÉCURITÉ : Vérification systématique du propriétaire du compte.
+ * ✅ SÉCURITÉ : Vérification systématique du propriétaire du compte et du rôle admin.
  * ✅ VALIDATION : Blocage des montants invalides ou insuffisants.
  */
 
@@ -10,6 +10,16 @@ import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification, sendUserNotification } from './notificationActions';
 import type { Settings, NdaraUser } from '@/lib/types';
+
+/** 🛡️ Helper interne de sécurité Admin */
+async function verifyAdminOrThrow(adminId: string) {
+    if (!adminId) throw new Error("UNAUTHORIZED");
+    const db = getAdminDb();
+    const adminDoc = await db.collection('users').doc(adminId).get();
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+        throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
+    }
+}
 
 interface RequestPayoutParams {
     instructorId: string;
@@ -86,5 +96,57 @@ export async function requestPayoutAction({
     } catch (error: any) {
         console.error("Payout Request Error:", error.message);
         return { success: false, error: "error.generic" };
+    }
+}
+
+/** 🛡️ METTRE À JOUR LE STATUT D'UN RETRAIT (Action Admin) */
+export async function updatePayoutStatusAction({ 
+    payoutId, 
+    status, 
+    adminId 
+}: { 
+    payoutId: string; 
+    status: 'approved' | 'paid' | 'rejected'; 
+    adminId: string;
+}) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        
+        const db = getAdminDb();
+        const payoutRef = db.collection('payout_requests').doc(payoutId);
+        const payoutDoc = await payoutRef.get();
+
+        if (!payoutDoc.exists) return { success: false, error: "Demande introuvable." };
+        
+        const payoutData = payoutDoc.data();
+        const instructorId = payoutData?.instructorId;
+
+        await payoutRef.update({
+            status,
+            processedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        // Si payé, on déduit réellement du solde si ce n'est pas déjà fait
+        if (status === 'paid' && instructorId) {
+            const userRef = db.collection('users').doc(instructorId);
+            await userRef.update({
+                balance: FieldValue.increment(-payoutData?.amount)
+            });
+        }
+
+        // Notification de l'instructeur
+        if (instructorId) {
+            await sendUserNotification(instructorId, {
+                text: `Votre demande de retrait de ${payoutData?.amount} XOF a été ${status === 'paid' ? 'payée' : status === 'approved' ? 'approuvée' : 'rejetée'}.`,
+                link: '/instructor/revenus',
+                type: status === 'rejected' ? 'alert' : 'success'
+            });
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Update Payout Status Error:", error.message);
+        return { success: false, error: error.message || "Erreur lors de la mise à jour." };
     }
 }

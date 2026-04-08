@@ -120,6 +120,18 @@ export interface NdaraUser {
   badges?: string[];
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isActive: boolean;
+  targetRole: UserRole;
+}
+
 export interface Course {
   id: string;
   courseId: string;

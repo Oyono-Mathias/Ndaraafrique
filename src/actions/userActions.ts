@@ -80,6 +80,55 @@ export async function rechargeUserWallet({
     }
 }
 
+/** 🧪 CRÉER UN COMPTE DE DÉMO ELITE (Ads Factory) */
+export async function createEliteDemoAccountAction({ role, adminId }: { role: UserRole, adminId: string }) {
+    await verifyAdminOrThrow(adminId);
+    
+    const db = getAdminDb();
+    const auth = getAdminAuth();
+    const email = `demo_${Date.now()}@ndara.africa`;
+    const password = "Password123!";
+    
+    try {
+        const userRecord = await auth.createUser({
+            email,
+            password,
+            displayName: `Elite Demo ${role.toUpperCase()}`,
+        });
+
+        const userRef = db.collection('users').doc(userRecord.uid);
+        await userRef.set({
+            uid: userRecord.uid,
+            email,
+            fullName: `Elite Demo ${role.toUpperCase()}`,
+            username: `demo_${userRecord.uid.substring(0, 5)}`,
+            role,
+            status: 'active',
+            isInstructorApproved: role === 'instructor',
+            isDemoAccount: true,
+            balance: 0,
+            virtualBalance: 1000000,
+            createdAt: FieldValue.serverTimestamp(),
+            affiliateStats: { clicks: 1500, registrations: 450, sales: 85, earnings: 250000 }
+        });
+
+        return { success: true, email, password };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 💰 GONFLER LE SOLDE VIRTUEL (Ads Factory) */
+export async function rechargeVirtualBalanceAction({ userId, amount, adminId }: { userId: string, amount: number, adminId: string }) {
+    await verifyAdminOrThrow(adminId);
+    const db = getAdminDb();
+    await db.collection('users').doc(userId).update({
+        virtualBalance: FieldValue.increment(amount),
+        updatedAt: FieldValue.serverTimestamp()
+    });
+    return { success: true };
+}
+
 /** APPROUVER UNE CANDIDATURE (Action Admin Sécurisée) */
 export async function approveInstructorApplication({
     userId,

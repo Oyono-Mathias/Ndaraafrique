@@ -3,7 +3,7 @@
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
  * ✅ VISIBILITÉ : Navigation affichée UNIQUEMENT dans les zones Dashboard/Privées.
- * ✅ RÉSOLU : Distinction claire entre BottomNav Admin, Formateur et Étudiant.
+ * ✅ RÉSOLU : Passage en imports statiques pour corriger les ChunkLoadError.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -17,15 +17,14 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
 import { useLocale } from 'next-intl';
-import dynamic from 'next/dynamic';
 
-// Dynamic imports to optimize chunk size and resolve loading issues
-const StudentSidebar = dynamic(() => import('@/components/layout/student-sidebar').then(mod => mod.StudentSidebar), { ssr: false });
-const InstructorSidebar = dynamic(() => import('@/components/layout/instructor-sidebar').then(mod => mod.InstructorSidebar), { ssr: false });
-const AdminSidebar = dynamic(() => import('@/components/layout/admin-sidebar').then(mod => mod.AdminSidebar), { ssr: false });
-const BottomNav = dynamic(() => import('@/components/navigation/BottomNav').then(mod => mod.BottomNav), { ssr: false });
-const InstructorBottomNav = dynamic(() => import('@/components/layout/instructor-bottom-nav').then(mod => mod.InstructorBottomNav), { ssr: false });
-const AdminBottomNav = dynamic(() => import('@/components/layout/admin-bottom-nav').then(mod => mod.AdminBottomNav), { ssr: false });
+// Imports statiques pour plus de stabilité dans l'environnement de build
+import { StudentSidebar } from '@/components/layout/student-sidebar';
+import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
+import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { BottomNav } from '@/components/navigation/BottomNav';
+import { InstructorBottomNav } from '@/components/layout/instructor-bottom-nav';
+import { AdminBottomNav } from '@/components/layout/admin-bottom-nav';
 
 function AnnouncementBanner({ message }: { message: string }) {
     const [isVisible, setIsVisible] = useState(false);
