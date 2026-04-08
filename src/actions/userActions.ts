@@ -190,12 +190,14 @@ export async function grantCourseAccess({
     adminId,
     reason,
     expirationInDays,
+    expirationMinutes,
 }: {
     studentId: string;
     courseId: string;
     adminId: string;
     reason: string;
     expirationInDays?: number;
+    expirationMinutes?: number;
 }) {
     try {
         await verifyAdminOrThrow(adminId); // ✅ Validation serveur
@@ -206,6 +208,13 @@ export async function grantCourseAccess({
 
         const enrollmentRef = db.collection('enrollments').doc(`${studentId}_${courseId}`);
         
+        let expiresAt = null;
+        if (expirationInDays) {
+            expiresAt = new Date(Date.now() + expirationInDays * 86400000);
+        } else if (expirationMinutes) {
+            expiresAt = new Date(Date.now() + expirationMinutes * 60000);
+        }
+
         const enrollmentData = sanitize({
             studentId,
             courseId,
@@ -214,7 +223,7 @@ export async function grantCourseAccess({
             progress: 0,
             enrollmentDate: FieldValue.serverTimestamp(),
             lastAccessedAt: FieldValue.serverTimestamp(),
-            expiresAt: expirationInDays ? new Date(Date.now() + expirationInDays * 86400000) : null
+            expiresAt: expiresAt
         });
 
         await enrollmentRef.set(enrollmentData, { merge: true });
