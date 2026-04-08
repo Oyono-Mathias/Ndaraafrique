@@ -83,7 +83,6 @@ export interface NdaraUser {
     reason: string;
     date: Timestamp | FieldValue | Date;
   };
-  // RESTRICTIONS ET SANCTIONS AVANCÉES
   restrictions?: {
     canWithdraw: boolean;
     canSendMessage: boolean;
@@ -383,122 +382,124 @@ export interface DesignSettings {
   fontScale: 'small' | 'medium' | 'large';
 }
 
+/**
+ * STRUCTURE DE CONFIGURATION GLOBALE NDARA
+ */
 export interface Settings {
-  general?: {
+  general: {
     siteName: string;
     siteDescription: string;
     contactEmail: string;
     supportPhone: string;
-    defaultLanguage: string;
+    address: string;
+    defaultLanguage: 'fr' | 'en' | 'sg';
     defaultCountry: string;
+    timezone: string;
     logoUrl?: string;
+    faviconUrl?: string;
   };
+  payments: {
+    paymentsEnabled: boolean;
+    currency: string;
+    paymentMethods: string[]; // ex: ["mtn", "orange", "card"]
+    transactionFeePercent: number;
+    minDeposit: number;
+    maxDeposit: number;
+    walletEnabled: boolean;
+    operatorCommission: number;
+    mesombEnabled: boolean;
+    paymentMode: 'test' | 'live';
+  };
+  users: {
+    allowRegistration: boolean;
+    requireEmailVerification: boolean;
+    autoApproveInstructors: boolean;
+    defaultRole: UserRole;
+    maxAccountsPerUser: number;
+  };
+  courses: {
+    allowCourseCreation: boolean;
+    requireAdminApproval: boolean;
+    minimumCoursePrice: number;
+    instructorRevenuePercent: number;
+    allowDownload: boolean;
+    certificateEnabled: boolean;
+    autoApproval: boolean;
+    maxLessons: number;
+    maxVideoDuration: number;
+  };
+  marketplace: {
+    enableMarketplace: boolean;
+    minimumResalePrice: number;
+    resaleCommissionPercent: number;
+    allowLicenseResale: boolean;
+    allowTeacherToTeacherResale: boolean;
+    allowCourseBuyout: boolean;
+    allowResaleRights: boolean;
+  };
+  ai: {
+    aiEnabled: boolean;
+    modelName: string;
+    maxRequestsPerUser: number;
+    contentGenerationEnabled: boolean;
+    autoCorrection: boolean;
+    autonomousTutor: boolean;
+    fraudDetection: boolean;
+  };
+  notifications: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    smsNotifications: boolean;
+    adminAlerts: {
+      newUser: boolean;
+      newPayment: boolean;
+      systemError: boolean;
+    };
+  };
+  security: {
+    maintenanceMode: boolean;
+    enable2fa: boolean;
+    maxLoginAttempts: number;
+    blockedUsers: string[];
+    activityLogsEnabled: boolean;
+    accountProtectionRules?: string;
+  };
+  localization: {
+    supportedLanguages: string[];
+    defaultLanguage: string;
+    autoDetectLanguage: boolean;
+  };
+  marketing: {
+    globalAnnouncement: string;
+    promoCodesEnabled: boolean;
+    referralProgramEnabled: boolean;
+    seo: {
+      title: string;
+      description: string;
+    };
+  };
+  finance: {
+    platformRevenuePercent: number;
+    minWithdrawal: number;
+    withdrawalDelayDays: number;
+    autoPayoutEnabled: boolean;
+    minPayoutThreshold: number;
+    withdrawalFee: number;
+    payoutDelayDays: number;
+  };
+  advanced: {
+    apiKeys: Record<string, string>;
+    firebaseConfig: Record<string, any>;
+    webhookUrls: string[];
+    debugMode: boolean;
+  };
+  appearance: DesignSettings;
   social?: {
     facebookUrl?: string;
     instagramUrl?: string;
     twitterUrl?: string;
     linkedinUrl?: string;
     youtubeUrl?: string;
-    telegramUrl?: string;
-    tiktokUrl?: string;
-  };
-  platform?: {
-    maintenanceMode: boolean;
-    announcementMessage: string;
-    allowTeacherToTeacherResale: boolean;
-    allowCourseBuyout: boolean;
-    allowResaleRights: boolean;
-    allowInstructorSignup: boolean;
-    allowYoutube: boolean;
-    allowBunny: boolean;
-    market?: {
-      minimumLicensePrice?: number;
-    };
-    ai?: {
-      autoCorrection: boolean;
-      autonomousTutor: boolean;
-      fraudDetection: boolean;
-    };
-  };
-  commercial?: {
-    platformCommission: number;
-    instructorShare: number;
-    minPayoutThreshold: number;
-    withdrawalFee: number;
-    payoutDelayDays: number;
-    currency: string;
-    affiliatePercentage: number;
-  };
-  payments?: {
-    enableMtn: boolean;
-    enableOrange: boolean;
-    mesombEnabled: boolean;
-    monerooEnabled: boolean;
-    paymentMode: 'test' | 'live';
-  };
-  courses?: {
-    autoApproval: boolean;
-    minPrice: number;
-    maxPrice: number;
-    allowFree: boolean;
-    maxLessons: number;
-    maxVideoDuration: number;
-  };
-  instructors?: {
-    verificationRequired: boolean;
-    autoApproval: boolean;
-    maxCoursesPerUser: number;
-    expertBadgeEnabled: boolean;
-  };
-  students?: {
-    allowRegistration: boolean;
-    emailVerification: boolean;
-    phoneVerification: boolean;
-    dailyDownloadLimit: number;
-  };
-  affiliate?: {
-    enabled: boolean;
-    commissionRate: number;
-    cookieDurationDays: number;
-    payoutThreshold: number;
-  };
-  notifications?: {
-    enableEmail: boolean;
-    enableInApp: boolean;
-    notifySales: boolean;
-    notifyEnrollments: boolean;
-    notifyMessages: boolean;
-  };
-  security?: {
-    enable2fa: boolean;
-    accountProtectionRules: string;
-  };
-  appearance?: DesignSettings;
-  analytics?: {
-    googleAnalyticsId?: string;
-    facebookPixelId?: string;
-    conversionTracking: boolean;
-    internalAnalytics: boolean;
-  };
-  storage?: {
-    useBunnyCdn: boolean;
-    maxFileSizeMb: number;
-  };
-  legal?: {
-    termsOfService: string;
-    privacyPolicy: string;
-    refundPolicy: string;
-    legalNotices: string;
-  };
-  email?: {
-    smtpHost?: string;
-    senderName?: string;
-    senderEmail?: string;
-    templates: Record<string, any>;
-  };
-  content?: {
-    landingPage?: any;
-    aboutPage?: any;
   };
 }
 
