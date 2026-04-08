@@ -4,6 +4,7 @@
  * @fileOverview Répertoire des Membres Ndara Afrique - Cockpit Admin v2.5.
  * ✅ RÉSOLU : Utilisation de onSelect pour la compatibilité Dropdown/Dialog.
  * ✅ SÉCURITÉ : Validation serveur sur chaque action critique.
+ * ✅ FIX : Correction des erreurs de typage sur les retours d'actions.
  */
 
 import { useState, useMemo } from 'react';
@@ -97,13 +98,16 @@ const UserCard = ({ user: targetUser }: { user: NdaraUser }) => {
 
     const toggleModal = (key: keyof typeof modals, val: boolean) => setModals(m => ({ ...m, [key]: val }));
 
-    const handleSimpleAction = async (actionFn: () => Promise<any>, successMsg: string) => {
+    const handleSimpleAction = async (actionFn: () => Promise<{ success: boolean; error?: string }>, successMsg: string) => {
         if (!adminUser) return;
         setLoading(true);
         try {
             const res = await actionFn();
-            if (res.success) toast({ title: successMsg });
-            else throw new Error(res.error);
+            if (res.success) {
+                toast({ title: successMsg });
+            } else {
+                throw new Error(res.error || "Une erreur est survenue.");
+            }
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Erreur", description: e.message });
         } finally {
@@ -123,7 +127,9 @@ const UserCard = ({ user: targetUser }: { user: NdaraUser }) => {
                 toast({ title: type === 'recharge' ? "Crédit effectué" : "Débit effectué" });
                 toggleModal(type, false);
                 setFormData({ amount: 0, reason: '' });
-            } else throw new Error(res.error);
+            } else {
+                throw new Error(res.error || "L'opération a échoué.");
+            }
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Erreur", description: e.message });
         } finally {
@@ -134,17 +140,24 @@ const UserCard = ({ user: targetUser }: { user: NdaraUser }) => {
     const handleApplyRestrictions = async () => {
         if (!adminUser) return;
         setLoading(true);
-        const res = await applyUserRestrictionsAction({
-            adminId: adminUser.uid,
-            targetUserId: targetUser.uid,
-            restrictions,
-            reason: formData.reason || "Mesure administrative."
-        });
-        if (res.success) {
-            toast({ title: "Restrictions appliquées" });
-            toggleModal('restrict', false);
+        try {
+            const res = await applyUserRestrictionsAction({
+                adminId: adminUser.uid,
+                targetUserId: targetUser.uid,
+                restrictions,
+                reason: formData.reason || "Mesure administrative."
+            });
+            if (res.success) {
+                toast({ title: "Restrictions appliquées" });
+                toggleModal('restrict', false);
+            } else {
+                throw new Error(res.error);
+            }
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Erreur", description: e.message });
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleContact = async () => {

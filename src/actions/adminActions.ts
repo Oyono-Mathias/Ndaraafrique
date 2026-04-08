@@ -3,6 +3,7 @@
 /**
  * @fileOverview Actions administratives sécurisées pour Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin en base de données.
+ * ✅ ROBUSTESSE : Retour d'un objet standard { success, error } pour le frontend.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -37,45 +38,50 @@ export async function rechargeUserWalletAction({
     targetUserId: string;
     amount: number;
     reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    if (amount <= 0) throw new Error("Le montant doit être positif.");
-    if (!reason.trim()) throw new Error("Un motif est obligatoire.");
+        if (amount <= 0) throw new Error("Le montant doit être positif.");
+        if (!reason.trim()) throw new Error("Un motif est obligatoire.");
 
-    const db = getAdminDb();
-    const batch = db.batch();
-    const userRef = db.collection('users').doc(targetUserId);
-    const paymentRef = db.collection('payments').doc();
-    const auditRef = db.collection('admin_audit_logs').doc();
+        const db = getAdminDb();
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(targetUserId);
+        const paymentRef = db.collection('payments').doc();
+        const auditRef = db.collection('admin_audit_logs').doc();
 
-    batch.update(userRef, {
-        balance: FieldValue.increment(amount),
-        updatedAt: FieldValue.serverTimestamp()
-    });
+        batch.update(userRef, {
+            balance: FieldValue.increment(amount),
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
-    batch.set(paymentRef, {
-        id: paymentRef.id,
-        userId: targetUserId,
-        amount: amount,
-        currency: 'XOF',
-        provider: 'admin_recharge',
-        status: 'completed',
-        date: FieldValue.serverTimestamp(),
-        courseTitle: `Recharge Admin: ${reason}`,
-        metadata: { type: 'wallet_topup', adminId, reason }
-    });
+        batch.set(paymentRef, {
+            id: paymentRef.id,
+            userId: targetUserId,
+            amount: amount,
+            currency: 'XOF',
+            provider: 'admin_recharge',
+            status: 'completed',
+            date: FieldValue.serverTimestamp(),
+            courseTitle: `Recharge Admin: ${reason}`,
+            metadata: { type: 'wallet_topup', adminId, reason }
+        });
 
-    batch.set(auditRef, {
-        adminId,
-        eventType: 'user.wallet.recharge',
-        target: { id: targetUserId, type: 'user' },
-        details: `Injection de ${amount} XOF. Raison: ${reason}`,
-        timestamp: FieldValue.serverTimestamp()
-    });
+        batch.set(auditRef, {
+            adminId,
+            eventType: 'user.wallet.recharge',
+            target: { id: targetUserId, type: 'user' },
+            details: `Injection de ${amount} XOF. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
 
-    await batch.commit();
-    return { success: true };
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        console.error("[RECHARGE_ERROR]", e.message);
+        return { success: false, error: e.message };
+    }
 }
 
 /**
@@ -91,34 +97,39 @@ export async function debitUserWalletAction({
     targetUserId: string;
     amount: number;
     reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    if (amount <= 0) throw new Error("Le montant doit être positif.");
-    
-    const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-    const userSnap = await userRef.get();
+        if (amount <= 0) throw new Error("Le montant doit être positif.");
+        
+        const db = getAdminDb();
+        const userRef = db.collection('users').doc(targetUserId);
+        const userSnap = await userRef.get();
 
-    if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
-    if ((userSnap.data()?.balance || 0) < amount) throw new Error("Solde insuffisant.");
+        if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
+        if ((userSnap.data()?.balance || 0) < amount) throw new Error("Solde insuffisant.");
 
-    const batch = db.batch();
-    batch.update(userRef, {
-        balance: FieldValue.increment(-amount),
-        updatedAt: FieldValue.serverTimestamp()
-    });
+        const batch = db.batch();
+        batch.update(userRef, {
+            balance: FieldValue.increment(-amount),
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
-    batch.set(db.collection('admin_audit_logs').doc(), {
-        adminId,
-        eventType: 'user.wallet.debit',
-        target: { id: targetUserId, type: 'user' },
-        details: `Débit manuel de ${amount} XOF. Raison: ${reason}`,
-        timestamp: FieldValue.serverTimestamp()
-    });
+        batch.set(db.collection('admin_audit_logs').doc(), {
+            adminId,
+            eventType: 'user.wallet.debit',
+            target: { id: targetUserId, type: 'user' },
+            details: `Débit manuel de ${amount} XOF. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
 
-    await batch.commit();
-    return { success: true };
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        console.error("[DEBIT_ERROR]", e.message);
+        return { success: false, error: e.message };
+    }
 }
 
 /**
@@ -134,27 +145,31 @@ export async function toggleUserStatusAction({
     targetUserId: string;
     status: 'active' | 'suspended';
     reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    const db = getAdminDb();
-    const userRef = db.collection('users').doc(targetUserId);
-    
-    await userRef.update({ 
-        status,
-        statusReason: reason,
-        updatedAt: FieldValue.serverTimestamp()
-    });
+        const db = getAdminDb();
+        const userRef = db.collection('users').doc(targetUserId);
+        
+        await userRef.update({ 
+            status,
+            statusReason: reason,
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
-    await db.collection('admin_audit_logs').add({
-        adminId,
-        eventType: `user.status.${status}`,
-        target: { id: targetUserId, type: 'user' },
-        details: `Statut modifié en '${status}'. Raison: ${reason}`,
-        timestamp: FieldValue.serverTimestamp()
-    });
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: `user.status.${status}`,
+            target: { id: targetUserId, type: 'user' },
+            details: `Statut modifié en '${status}'. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
 /**
@@ -170,22 +185,26 @@ export async function applyUserRestrictionsAction({
     targetUserId: string;
     restrictions: any;
     reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    const db = getAdminDb();
-    await db.collection('users').doc(targetUserId).update({
-        restrictions,
-        sanctions: {
-            isSanctioned: true,
-            reason,
-            imposedBy: adminId,
-            date: FieldValue.serverTimestamp()
-        },
-        updatedAt: FieldValue.serverTimestamp()
-    });
+        const db = getAdminDb();
+        await db.collection('users').doc(targetUserId).update({
+            restrictions,
+            sanctions: {
+                isSanctioned: true,
+                reason,
+                imposedBy: adminId,
+                date: FieldValue.serverTimestamp()
+            },
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
 /**
@@ -197,17 +216,21 @@ export async function removeUserRestrictionsAction({
 }: {
     adminId: string;
     targetUserId: string;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    const db = getAdminDb();
-    await db.collection('users').doc(targetUserId).update({
-        restrictions: FieldValue.delete(),
-        sanctions: FieldValue.delete(),
-        updatedAt: FieldValue.serverTimestamp()
-    });
+        const db = getAdminDb();
+        await db.collection('users').doc(targetUserId).update({
+            restrictions: FieldValue.delete(),
+            sanctions: FieldValue.delete(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
 /**
@@ -221,17 +244,21 @@ export async function softDeleteUserAction({
     adminId: string;
     targetUserId: string;
     reason: string;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    const db = getAdminDb();
-    await db.collection('users').doc(targetUserId).update({ 
-        status: 'deleted',
-        deletedAt: FieldValue.serverTimestamp(),
-        deletionReason: reason
-    });
+        const db = getAdminDb();
+        await db.collection('users').doc(targetUserId).update({ 
+            status: 'deleted',
+            deletedAt: FieldValue.serverTimestamp(),
+            deletionReason: reason
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
 /**
@@ -245,14 +272,18 @@ export async function changeUserRoleAction({
     adminId: string;
     targetUserId: string;
     newRole: UserRole;
-}) {
-    await verifyAdminOrThrow(adminId);
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
 
-    const db = getAdminDb();
-    await db.collection('users').doc(targetUserId).update({ 
-        role: newRole,
-        updatedAt: FieldValue.serverTimestamp()
-    });
+        const db = getAdminDb();
+        await db.collection('users').doc(targetUserId).update({ 
+            role: newRole,
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
