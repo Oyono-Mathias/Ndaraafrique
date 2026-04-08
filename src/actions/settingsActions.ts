@@ -9,45 +9,65 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Settings } from '@/lib/types';
+import { revalidatePath } from 'next/cache';
 
 interface UpdateSettingsParams {
   settings: Partial<Settings>;
   adminId: string;
+  section?: keyof Settings; // Permet de mettre à jour juste une section (ex: 'ai')
 }
 
+/**
+ * Met à jour les réglages globaux dans Firestore
+ */
 export async function updateGlobalSettings({
   settings,
-  adminId
+  adminId,
+  section
 }: UpdateSettingsParams): Promise<{ success: boolean; error?: string }> {
   try {
     const db = getAdminDb();
     const settingsRef = db.collection('settings').doc('global');
     
-    // 1. Récupérer l'état actuel avant modification (Audit Trail)
+    // 1. Récupérer l'état actuel avant modification pour l'Audit Trail
     const currentSnap = await settingsRef.get();
-    const currentSettings = currentSnap.exists ? currentSnap.data() : {};
+    const currentData = currentSnap.exists ? currentSnap.data() : {};
 
-    // 2. Mise à jour (Fusion)
-    await settingsRef.set(settings, { merge: true });
+    // 2. Préparation de la mise à jour
+    // Si une section est spécifiée, on ne met à jour que ce bloc
+    const updatePayload = section ? { [section]: settings[section] } : settings;
 
-    // 3. Journalisation ultra-détaillée de l'audit
-    // On enregistre les changements précis pour la conformité Fintech
+    // 3. Exécution de la mise à jour (Fusion)
+    await settingsRef.set({
+      ...updatePayload,
+      updatedAt: FieldValue.serverTimestamp(),
+      lastAdminId: adminId
+    }, { merge: true });
+
+    // 4. Journalisation de l'audit pour la conformité
     await db.collection('admin_audit_logs').add({
       adminId,
-      eventType: 'settings.global_update',
+      eventType: section ? `settings.${section}_update` : 'settings.full_update',
       target: { id: 'global', type: 'settings' },
-      details: `Refonte de la configuration système par l'administrateur ${adminId}.`,
+      details: `Mise à jour de la configuration : ${section || 'Toutes les sections'}.`,
       diff: {
-          previous: currentSettings,
-          next: settings
+          previous: section ? (currentData[section] || {}) : currentData,
+          next: section ? settings[section] : settings
       },
       timestamp: FieldValue.serverTimestamp(),
     });
 
+    // 5. Revalidation du cache pour que les changements soient visibles immédiatement
+    revalidatePath('/admin/settings');
+    revalidatePath('/[locale]/admin/settings', 'page');
+
     return { success: true };
 
   } catch (error: any) {
-    console.error("Error updating settings:", error);
-    return { success: false, error: "Une erreur critique est survenue lors du déploiement des réglages." };
+    console.error("Erreur critique lors de la mise à jour des réglages:", error);
+    return { 
+      success: false, 
+      error: "Impossible de déployer les réglages. Vérifiez les permissions Firestore." 
+    };
   }
 }
