@@ -8,6 +8,7 @@ import type { Settings, NdaraUser } from '@/lib/types';
 /**
  * @fileOverview Actions serveur pour les instructeurs.
  * ✅ RÉSOLU : Alignement strict sur la nouvelle structure Settings v3.0 (12 Modules).
+ * ✅ EXPORT : updateCourseAction inclus pour corriger l'erreur de build.
  */
 
 const CourseFormSchema = z.object({
@@ -46,9 +47,8 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     const { price } = validatedFields.data;
 
     // 🛡️ VÉRIFICATION DES PRIX (Alignement sur module 'courses')
-    // Utilisation des nouveaux noms de champs : minimumCoursePrice, allowCourseCreation
     const minPrice = settings.courses?.minimumCoursePrice ?? 0;
-    const maxPrice = 1000000; // Optionnel : à ajouter au schéma si nécessaire
+    const maxPrice = 2000000; // Limite haute de sécurité
     const allowFree = settings.courses?.allowCourseCreation ?? true;
 
     if (price === 0 && !allowFree) {
@@ -85,11 +85,10 @@ export async function createCourseAction({ formData, instructorId }: { formData:
       creatorId: instructorId,
       ownerId: instructorId,
       instructorId: instructorId,
-      // 🔄 Status basé sur requireAdminApproval (inverse de autoApproval)
-      status: settings.courses?.requireAdminApproval ? 'Draft' : 'Published',
+      status: settings.courses?.requireAdminApproval ? 'Pending Review' : 'Published',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      currency: settings.payments?.currency || 'XOF', // Changé commercial -> payments
+      currency: settings.payments?.currency || 'XOF',
       learningObjectives: [],
       participantsCount: 0
     };
@@ -99,11 +98,42 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
     console.error("Create Course Error:", error);
-    return { 
-      success: false, 
-      message: 'error.save_failed' 
-    };
+    return { success: false, message: 'error.save_failed' };
   }
 }
 
-// ... updateCourseAction reste identique car il n'utilise pas l'objet settings
+/**
+ * Met à jour un cours existant
+ */
+export async function updateCourseAction({ courseId, formData }: { courseId: string, formData: unknown }) {
+    const validatedFields = CourseFormSchema.safeParse(formData);
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'error.invalid_fields',
+        };
+    }
+
+    try {
+        const db = getAdminDb();
+        const courseRef = db.collection('courses').doc(courseId);
+        
+        const data = validatedFields.data;
+
+        await courseRef.update({
+            title: data.title,
+            description: data.description,
+            price: data.price,
+            category: data.category,
+            imageUrl: data.imageUrl,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+        
+        return { success: true };
+    } catch (error: any) {
+        console.error("Update Course Error:", error);
+        return { success: false, message: 'error.save_failed' };
+    }
+}
