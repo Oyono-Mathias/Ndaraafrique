@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
@@ -190,7 +191,7 @@ export async function requestCourseBuyoutAction({
   courseId: string;
   instructorId: string;
   requestedPrice: number;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
   try {
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
@@ -218,7 +219,7 @@ export async function approveCourseBuyoutAction({
 }: {
   courseId: string;
   adminId: string;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
   try {
     await verifyAdminOrThrow(adminId);
     const db = getAdminDb();
@@ -249,13 +250,52 @@ export async function approveCourseBuyoutAction({
   }
 }
 
+/**
+ * Appliquer une sanction à un instructeur pour violation des règles de rachat.
+ */
+export async function sanctionInstructorForBuyoutViolation({
+    userId,
+    adminId,
+    reason
+}: {
+    userId: string;
+    adminId: string;
+    reason: string;
+}) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        await db.collection('users').doc(userId).update({
+            'buyoutSanctions.isSanctioned': true,
+            'buyoutSanctions.reason': reason,
+            'buyoutSanctions.date': FieldValue.serverTimestamp(),
+            'status': 'active', 
+            'restrictions.canSellCourse': false,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.sanction.buyout',
+            target: { id: userId, type: 'user' },
+            details: `Sanction rachat appliquée. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'error.generic' };
+    }
+}
+
 export async function submitCourseForReviewAction({
   courseId,
   instructorId,
 }: {
   courseId: string;
   instructorId: string;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
   try {
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
@@ -286,7 +326,7 @@ export async function updateCourseStatusByAdmin({
   courseId: string;
   status: Course['status'];
   adminId: string;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
   try {
     await verifyAdminOrThrow(adminId);
     const db = getAdminDb();
@@ -304,7 +344,7 @@ export async function deleteCourseByAdmin({
 }: {
   courseId: string;
   adminId: string;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
   try {
     await verifyAdminOrThrow(adminId);
     const db = getAdminDb();

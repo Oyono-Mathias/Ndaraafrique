@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -94,6 +95,9 @@ const settingsSchema = z.object({
   // Email
   senderName: z.string().optional(),
   senderEmail: z.string().email().optional().or(z.literal('')),
+
+  // Sécurité
+  enable2fa: z.boolean().default(false),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -120,6 +124,7 @@ export default function AdminSettingsPage() {
         maxFileSizeMb: 50,
         mesombEnabled: true,
         allowInstructorSignup: true,
+        enable2fa: false,
     }
   });
 
@@ -168,6 +173,7 @@ export default function AdminSettingsPage() {
           privacyPolicy: d.legal?.privacyPolicy || '',
           senderName: d.email?.senderName || 'Ndara Afrique',
           senderEmail: d.email?.senderEmail || '',
+          enable2fa: d.security?.enable2fa || false,
         });
       }
       setIsLoading(false);
@@ -194,6 +200,7 @@ export default function AdminSettingsPage() {
         analytics: { googleAnalyticsId: values.googleAnalyticsId, facebookPixelId: values.facebookPixelId },
         legal: { termsOfService: values.termsOfService, privacyPolicy: values.privacyPolicy },
         email: { senderName: values.senderName, senderEmail: values.senderEmail },
+        security: { enable2fa: values.enable2fa },
       };
 
       const result = await updateGlobalSettings({ adminId: currentUser.uid, settings: payload });
