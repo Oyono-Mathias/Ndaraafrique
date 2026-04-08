@@ -3,8 +3,8 @@
 
 /**
  * @fileOverview Centre de Contrôle Global Ndara Afrique - Version 2.5 Intégrale.
- * ✅ RÉORGANISATION : 14 sections fusionnées en 6 Hubs fonctionnels pour éviter les onglets vides.
- * ✅ ACTIVATION : 100% des paramètres du schéma sont désormais connectés à l'UI.
+ * ✅ RÉORGANISATION : 14 sections fusionnées en 6 Hubs fonctionnels.
+ * ✅ RÉSOLU : Correction du typage strict pour enable2fa dans le schéma Zod.
  */
 
 import { useState, useEffect } from 'react';
@@ -395,7 +395,7 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="enable2fa" render={({ field }) => (
                                 <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-white/5">
                                     <FormLabel className="font-bold text-white text-xs uppercase">Authentification 2FA</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                                 </FormItem>
                             )}/>
                             <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-start gap-4">

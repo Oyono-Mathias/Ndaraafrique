@@ -276,7 +276,7 @@ export async function sanctionInstructorForBuyoutViolation({
         });
 
         await db.collection('admin_audit_logs').add({
-            adminId,
+            adminId: adminId,
             eventType: 'user.sanction.buyout',
             target: { id: userId, type: 'user' },
             details: `Sanction rachat appliquée. Raison: ${reason}`,
