@@ -132,6 +132,15 @@ export interface SubscriptionPlan {
   targetRole: UserRole;
 }
 
+export interface CartItem {
+  id: string;
+  courseId: string;
+  price: number;
+  imageUrl?: string;
+  title: string;
+  addedAt?: Timestamp | FieldValue | Date;
+}
+
 export interface Course {
   id: string;
   courseId: string;
