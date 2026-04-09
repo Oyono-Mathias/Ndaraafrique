@@ -18,8 +18,19 @@ import { Plus, Trash2, ImageIcon, Loader2, Save, Sparkles, Copy, CheckCircle2, H
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import type { CourseTemplate } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// ❌ Supprimé : import type { CourseTemplate } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale robuste pour le build.
+ * Elle définit précisément ce que cette page attend d'un template d'image.
+ */
+interface CourseTemplate {
+  id: string;
+  imageUrl: string;
+  description: string;
+  createdAt?: any;
+}
 
 export default function AdminTemplatesPage() {
   const db = getFirestore();
@@ -30,6 +41,7 @@ export default function AdminTemplatesPage() {
   
   const [newTemplate, setNewTemplate] = useState({ imageUrl: '', description: '' });
 
+  // Utilisation de la collection 'course_templates' comme dans ton code original
   const templatesQuery = useMemo(() => query(collection(db, 'course_templates'), orderBy('createdAt', 'desc')), [db]);
   const { data: customTemplates, isLoading } = useCollection<CourseTemplate>(templatesQuery);
 
@@ -131,7 +143,6 @@ export default function AdminTemplatesPage() {
             </TabsTrigger>
         </TabsList>
 
-        {/* --- SECTION 1 : IMAGES DU PROJET (IA) --- */}
         <TabsContent value="project" className="mt-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {PlaceHolderImages.map((img) => (
@@ -158,7 +169,6 @@ export default function AdminTemplatesPage() {
             </div>
         </TabsContent>
 
-        {/* --- SECTION 2 : MODÈLES CUSTOM (Firestore) --- */}
         <TabsContent value="custom" className="mt-0">
             {isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
