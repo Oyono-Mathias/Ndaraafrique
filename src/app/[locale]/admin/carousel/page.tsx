@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -8,16 +7,27 @@
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getFirestore, collection, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Link as LinkIcon, ImageIcon, Loader2, GripVertical, Save } from 'lucide-react';
+import { Plus, Trash2, Link as LinkIcon, ImageIcon, Loader2, Save } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import type { CarouselSlide } from '@/lib/types';
+// ❌ Supprimé car pose problème au build : import type { CarouselSlide } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale pour garantir la compilation
+ */
+interface CarouselSlide {
+  id: string;
+  imageUrl: string;
+  link?: string;
+  order: number;
+  createdAt?: any;
+}
 
 export default function AdminCarouselPage() {
   const db = getFirestore();
@@ -27,6 +37,7 @@ export default function AdminCarouselPage() {
   
   const [newSlide, setNewSlide] = useState({ imageUrl: '', link: '', order: 0 });
 
+  // ✅ Utilisation sécurisée de l'interface locale
   const slidesQuery = useMemo(() => query(collection(db, 'carousel_slides'), orderBy('order', 'asc')), [db]);
   const { data: slides, isLoading } = useCollection<CarouselSlide>(slidesQuery);
 
