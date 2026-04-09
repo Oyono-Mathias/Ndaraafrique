@@ -2,11 +2,10 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { sendAdminNotification, sendUserNotification } from './notificationActions';
-import type { Settings, NdaraUser } from '@/lib/types';
+import { sendAdminNotification } from './notificationActions';
+import type { NdaraUser, RequestPayoutParams } from '@/lib/types';
 
-// ... (verifyAdminOrThrow et RequestPayoutParams restent identiques)
-
+// ✅ DEMANDE DE RETRAIT
 export async function requestPayoutAction({ 
     instructorId, 
     amount, 
@@ -18,34 +17,41 @@ export async function requestPayoutAction({
         throw new Error("UNAUTHORIZED: Tentative de retrait sur un compte tiers.");
     }
 
-    if (amount <= 0) throw new Error("Montant de retrait invalide.");
+    if (amount <= 0) {
+        return { success: false, error: "Montant invalide" };
+    }
 
     try {
         const db = getAdminDb();
         const instructorRef = db.collection('users').doc(instructorId);
         const instructorDoc = await instructorRef.get();
 
-        if (!instructorDoc.exists) return { success: false, error: "error.user_not_found" };
+        if (!instructorDoc.exists) {
+            return { success: false, error: "Utilisateur introuvable" };
+        }
 
         const userData = instructorDoc.data() as NdaraUser;
 
         if (userData.restrictions?.canWithdraw === false) {
-            return { success: false, error: "RESTRICTED: Vos droits de retrait sont suspendus." };
+            return { success: false, error: "Retraits suspendus" };
         }
 
         const settingsSnap = await db.collection('settings').doc('global').get();
-        // On récupère les données brutes pour éviter le blocage du typage strict sur le champ manquant
-        const settingsData = (settingsSnap.exists ? settingsSnap.data() : {}) as any;
-        
-        // 🔄 Utilisation du champ du nouveau module 'payments'
-        // On prévoit un repli (fallback) sur 5000 si le champ est absent en base
-        const minThreshold = settingsData.payments?.minimumPayoutAmount || 5000;
+        const settingsData = settingsSnap.exists ? settingsSnap.data() : {};
+
+        const minThreshold = (settingsData as any)?.payments?.minimumPayoutAmount || 5000;
         const currentBalance = userData.balance || 0;
 
-        if (currentBalance < amount) return { success: false, error: "error.insufficient_balance" };
-        if (amount < minThreshold) return { success: false, error: "error.payout_min_amount" };
+        if (currentBalance < amount) {
+            return { success: false, error: "Solde insuffisant" };
+        }
+
+        if (amount < minThreshold) {
+            return { success: false, error: `Minimum retrait: ${minThreshold} XOF` };
+        }
 
         const payoutRef = db.collection('payout_requests').doc();
+
         await payoutRef.set({
             id: payoutRef.id,
             instructorId,
@@ -55,7 +61,6 @@ export async function requestPayoutAction({
             createdAt: FieldValue.serverTimestamp(),
         });
 
-        // Notifications et logs...
         await sendAdminNotification({
             title: '💸 Nouvelle Demande de Retrait',
             body: `${userData.fullName} demande ${amount.toLocaleString()} XOF.`,
@@ -63,10 +68,41 @@ export async function requestPayoutAction({
             type: 'newPayouts'
         });
 
-        return { success: true, message: "success.payout_requested" };
+        return { success: true, message: "Demande envoyée" };
 
     } catch (error: any) {
         console.error("Payout Request Error:", error.message);
-        return { success: false, error: "error.generic" };
+        return { success: false, error: "Erreur serveur" };
     }
+}
+
+//////////////////////////////////////////////////////
+// ✅ AJOUT MANQUANT (CRUCIAL POUR TON BUILD)
+//////////////////////////////////////////////////////
+
+export async function updatePayoutStatusAction(
+  payoutId: string,
+  status: 'pending' | 'approved' | 'rejected'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const db = getAdminDb();
+
+    const payoutRef = db.collection('payout_requests').doc(payoutId);
+    const payoutDoc = await payoutRef.get();
+
+    if (!payoutDoc.exists) {
+      return { success: false, error: 'Payout introuvable' };
+    }
+
+    await payoutRef.update({
+      status,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true };
+
+  } catch (error: any) {
+    console.error('Update payout error:', error.message);
+    return { success: false, error: 'Erreur serveur' };
+  }
 }
