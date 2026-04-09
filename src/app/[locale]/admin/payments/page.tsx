@@ -26,8 +26,25 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import type { Payment } from '@/lib/types';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
+// ❌ Supprimé pour le build : import type { Payment } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale robuste pour le build
+ */
+interface Payment {
+    id: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    status: 'pending' | 'completed' | 'failed' | 'refunded';
+    provider: string; // Ex: 'orange', 'mtn'
+    date: any; // Timestamp Firestore
+    courseTitle?: string;
+    metadata?: {
+        type?: string;
+    };
+}
 
 export default function AdminPaymentsPage() {
     const db = getFirestore();
@@ -36,6 +53,7 @@ export default function AdminPaymentsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
+    // ✅ Correction : Utilisation du champ 'date' comme défini dans ton query
     const paymentsQuery = useMemo(() => query(
         collection(db, 'payments'),
         orderBy('date', 'desc'),
@@ -48,7 +66,7 @@ export default function AdminPaymentsPage() {
         if (!payments) return [];
         return payments.filter(p => 
             p.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.courseTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.courseTitle && p.courseTitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
             p.id.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [payments, searchTerm]);
@@ -123,6 +141,7 @@ export default function AdminPaymentsPage() {
                             ))
                         ) : filtered.length > 0 ? (
                             filtered.map(payment => {
+                                // Extraction sécurisée de la date
                                 const date = (payment.date as any)?.toDate?.() || new Date();
                                 const isPending = payment.status === 'pending';
                                 
