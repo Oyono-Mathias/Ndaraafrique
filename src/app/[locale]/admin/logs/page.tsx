@@ -16,8 +16,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { History, ShieldAlert, ShieldCheck, UserCog, Database, CreditCard, Lock, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { AdminAuditLog, SecurityLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
+// ❌ Supprimé car pose problème au build : import type { AdminAuditLog, SecurityLog } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interfaces locales pour bypasser les erreurs de build
+ */
+interface AdminAuditLog {
+  id: string;
+  eventType: string;
+  details: string;
+  adminId: string;
+  timestamp: any;
+}
+
+interface SecurityLog {
+  id: string;
+  eventType: string;
+  status: string;
+  details: string;
+  targetId: string;
+  timestamp: any;
+}
 
 const LogIcon = ({ type }: { type: string }) => {
   if (type.includes('user')) return <UserCog className="h-4 w-4 text-blue-400" />;
@@ -34,6 +54,7 @@ export default function AdminLogsPage() {
   const auditQuery = useMemo(() => query(collection(db, 'admin_audit_logs'), orderBy('timestamp', 'desc'), limit(100)), [db]);
   const securityQuery = useMemo(() => query(collection(db, 'security_logs'), orderBy('timestamp', 'desc'), limit(100)), [db]);
 
+  // Utilisation des types locaux ici
   const { data: auditLogs, isLoading: loadingAudit } = useCollection<AdminAuditLog>(auditQuery);
   const { data: securityLogs, isLoading: loadingSecurity } = useCollection<SecurityLog>(securityQuery);
 
@@ -96,7 +117,7 @@ export default function AdminLogsPage() {
                       </TableCell>
                       <TableCell className="text-xs text-slate-300 max-w-xs">{log.details}</TableCell>
                       <TableCell className="text-[10px] font-mono text-slate-500">
-                        Admin: {log.adminId.substring(0, 8)}...
+                        Admin: {log.adminId?.substring(0, 8) || 'System'}...
                       </TableCell>
                       <TableCell className="text-right pr-6 text-[10px] text-slate-500 font-bold uppercase">
                         {log.timestamp && typeof (log.timestamp as any).toDate === 'function' 
@@ -113,14 +134,14 @@ export default function AdminLogsPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <LogIcon type={log.eventType} />
-                          <Badge variant={log.status === 'open' ? 'destructive' : 'success'} className="text-[9px]">
+                          <Badge variant={log.status === 'open' ? 'destructive' : 'secondary'} className="text-[9px]">
                             {log.eventType.replace(/_/g, ' ')}
                           </Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-slate-300">{log.details}</TableCell>
                       <TableCell className="text-[10px] font-mono text-slate-500">
-                        Target: {log.targetId.substring(0, 8)}...
+                        Target: {log.targetId?.substring(0, 8) || 'N/A'}...
                       </TableCell>
                       <TableCell className="text-right pr-6 text-[10px] text-slate-500 font-bold uppercase">
                         {log.timestamp && typeof (log.timestamp as any).toDate === 'function' 
