@@ -17,7 +17,7 @@ import type { Settings } from '@/lib/types';
 interface TeamMember {
   name: string;
   role: string;
-  imageUrl?: string; // Correspond à member.imageUrl utilisé plus bas
+  imageUrl?: string; 
   bio?: string;
 }
 
@@ -47,8 +47,9 @@ export default function AboutPage() {
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
 
-  // ✅ Extraction sécurisée du contenu dynamique
-  const content = (settings?.content as any)?.aboutPage;
+  // ✅ CORRECTION : Cast "settings" en any pour accéder à .content sans erreur TypeScript
+  const settingsAny = settings as any;
+  const content = settingsAny?.content?.aboutPage;
   const team = (content?.teamMembers as TeamMember[]) || [];
   
   if (isLoading) {
