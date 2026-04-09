@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Actions serveur pour les retraits.
- * ✅ SÉCURITÉ : Vérification systématique du propriétaire du compte et du rôle admin.
- * ✅ VALIDATION : Blocage des montants invalides ou insuffisants.
+ * ✅ RÉSOLU : Alignement sur 'settings.payments.minimumPayoutAmount' (v3.0).
+ * ✅ SÉCURITÉ : Vérification systématique du propriétaire et du rôle admin.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -11,7 +11,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification, sendUserNotification } from './notificationActions';
 import type { Settings, NdaraUser } from '@/lib/types';
 
-/** 🛡️ Helper interne de sécurité Admin */
+// ... (Garder verifyAdminOrThrow et RequestPayoutParams identiques)
+
 async function verifyAdminOrThrow(adminId: string) {
     if (!adminId) throw new Error("UNAUTHORIZED");
     const db = getAdminDb();
@@ -35,7 +36,6 @@ export async function requestPayoutAction({
     requesterId 
 }: RequestPayoutParams): Promise<{ success: boolean; error?: string; message?: string }> {
     
-    // 🛡️ SÉCURITÉ : L'ID de l'appelant (requesterId) doit correspondre au propriétaire du compte
     if (instructorId !== requesterId) {
         throw new Error("UNAUTHORIZED: Tentative de retrait sur un compte tiers.");
     }
@@ -51,7 +51,6 @@ export async function requestPayoutAction({
 
         const userData = instructorDoc.data() as NdaraUser;
 
-        // 🚫 VÉRIFICATION DES RESTRICTIONS (Backend Enforcement)
         if (userData.restrictions?.canWithdraw === false) {
             return { success: false, error: "RESTRICTED: Vos droits de retrait sont suspendus." };
         }
@@ -59,7 +58,9 @@ export async function requestPayoutAction({
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
         
-        const minThreshold = settings.commercial?.minPayoutThreshold || 5000;
+        // 🔄 CORRECTION : settings.commercial -> settings.payments
+        // On utilise 'minimumPayoutAmount' défini dans ton schéma v3.0
+        const minThreshold = settings.payments?.minimumPayoutAmount || 5000;
         const currentBalance = userData.balance || 0;
 
         if (currentBalance < amount) return { success: false, error: "error.insufficient_balance" };
@@ -75,7 +76,6 @@ export async function requestPayoutAction({
             createdAt: FieldValue.serverTimestamp(),
         });
 
-        // Journalisation de l'audit interne
         await db.collection('admin_audit_logs').add({
             adminId: 'SYSTEM',
             eventType: 'payout.request',
@@ -99,7 +99,8 @@ export async function requestPayoutAction({
     }
 }
 
-/** 🛡️ METTRE À JOUR LE STATUT D'UN RETRAIT (Action Admin) */
+// ... (Garder updatePayoutStatusAction identique)
+
 export async function updatePayoutStatusAction({ 
     payoutId, 
     status, 
@@ -127,7 +128,6 @@ export async function updatePayoutStatusAction({
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        // Si payé, on déduit réellement du solde si ce n'est pas déjà fait
         if (status === 'paid' && instructorId) {
             const userRef = db.collection('users').doc(instructorId);
             await userRef.update({
@@ -135,7 +135,6 @@ export async function updatePayoutStatusAction({
             });
         }
 
-        // Notification de l'instructeur
         if (instructorId) {
             await sendUserNotification(instructorId, {
                 text: `Votre demande de retrait de ${payoutData?.amount} XOF a été ${status === 'paid' ? 'payée' : status === 'approved' ? 'approuvée' : 'rejetée'}.`,
