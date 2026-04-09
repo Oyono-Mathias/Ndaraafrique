@@ -3,8 +3,23 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
-import type { Lecture } from '@/lib/types';
+// ❌ Supprimé car absent de @/lib/types : import type { Lecture } from '@/lib/types';
 import { deleteBunnyVideo } from './bunnyActions';
+
+/**
+ * ✅ RÉSOLU : Interface locale pour bypasser l'erreur d'exportation de @/lib/types
+ */
+interface LocalLecture {
+  id: string;
+  title: string;
+  type: 'video' | 'youtube' | 'text' | 'pdf';
+  contentUrl: string;
+  textContent?: string;
+  duration?: number;
+  order: number;
+  createdAt?: any;
+  updatedAt?: any;
+}
 
 /**
  * @fileOverview Actions pour la gestion des leçons avec suppression synchronisée Bunny Stream.
@@ -69,11 +84,11 @@ export async function deleteLecture({ courseId, sectionId, lectureId }: { course
         
         if (!lectureDoc.exists) return { success: false, error: "error.not_found" };
         
-        const lectureData = lectureDoc.data() as Lecture;
+        // ✅ Utilisation du type local
+        const lectureData = lectureDoc.data() as LocalLecture;
 
         // 1. Si c'est une vidéo Bunny, on lance la suppression chez Bunny.net
         if (lectureData.type === 'video' && lectureData.contentUrl) {
-            // On tente la suppression Bunny, mais on ne bloque pas si ça échoue (vidéo déjà absente, etc.)
             deleteBunnyVideo(lectureData.contentUrl).catch(err => 
                 console.warn(`Bunny deletion failed for ${lectureData.contentUrl}, skipping.`, err)
             );
