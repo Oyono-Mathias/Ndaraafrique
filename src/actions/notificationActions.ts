@@ -7,7 +7,7 @@ import type { PushCampaign, Settings } from '@/lib/types';
 
 /**
  * @fileOverview Gestion des notifications Ndara Afrique.
- * ✅ FILTRAGE : Respect des réglages globaux et préférences utilisateur.
+ * ✅ RÉSOLU : Alignement sur le module 'settings.notifications' (Schéma v3).
  */
 
 interface NotificationPayload {
@@ -15,6 +15,8 @@ interface NotificationPayload {
   link?: string;
   type?: 'success' | 'info' | 'reminder' | 'alert';
 }
+
+// ... (Garder cleanupInvalidTokens et sendPushNotification identiques)
 
 const cleanupInvalidTokens = async (tokensToRemove: string[], userId: string) => {
     if (tokensToRemove.length > 0 && userId) {
@@ -60,8 +62,11 @@ export async function sendUserNotification(userId: string, payload: Notification
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        if (settings.notifications?.enableInApp === false) {
-            return { success: false, message: "Notifications désactivées au niveau global." };
+        // 🔄 CORRECTION : Remplacement de enableInApp par pushNotifications
+        const globalEnabled = settings.notifications?.pushNotifications ?? true;
+
+        if (!globalEnabled) {
+            return { success: false, message: "Notifications désactivées au niveau global par l'admin." };
         }
 
         // 🛡️ 2. Charger les préférences utilisateur
@@ -69,9 +74,7 @@ export async function sendUserNotification(userId: string, payload: Notification
         if (!userDoc.exists) return { success: false, message: "Utilisateur introuvable." };
         const userData = userDoc.data() as DocumentData;
 
-        // On peut ajouter ici un check sur userData.notificationPreferences si besoin
-
-        // 3. Enregistrer la notification in-app
+        // 3. Enregistrer la notification in-app (toujours utile pour l'historique interne)
         const notificationRef = db.collection('users').doc(userId).collection('notifications').doc();
         await notificationRef.set({
             ...payload,
@@ -104,6 +107,7 @@ export async function sendUserNotification(userId: string, payload: Notification
     }
 }
 
+// ... (Gardez sendAdminNotification et createPushCampaign identiques)
 
 export async function sendAdminNotification(payload: { title: string; body: string; link: string; type: 'newPayouts' | 'newApplications' | 'newSupportTickets' | 'financialAnomalies' | 'general' }): Promise<{ success: boolean; message: string }> {
   try {
@@ -115,7 +119,6 @@ export async function sendAdminNotification(payload: { title: string; body: stri
 
     for (const adminDoc of adminsSnapshot.docs) {
         const adminData = adminDoc.data();
-        // Vérification préférence admin si spécifiée
         const prefs = adminData.notificationPreferences;
         if (payload.type && payload.type !== 'general' && prefs && prefs[payload.type] === false) {
             continue; 
