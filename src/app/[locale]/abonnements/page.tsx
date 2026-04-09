@@ -9,7 +9,21 @@ import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { SubscriptionPlan } from '@/lib/types';
+// ❌ Supprimé car pose problème au build : import type { SubscriptionPlan } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale pour bypasser l'erreur de build
+ */
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isActive: boolean;
+  targetRole?: string;
+}
 
 const PlanCard = ({ plan, onChoose, isSubmitting }: { plan: SubscriptionPlan, onChoose: (planId: string) => void, isSubmitting: boolean }) => (
     <Card className={cn(
@@ -41,7 +55,6 @@ const PlanCard = ({ plan, onChoose, isSubmitting }: { plan: SubscriptionPlan, on
         </CardFooter>
     </Card>
 );
-
 
 export default function SubscriptionsPage() {
     const db = getFirestore();
