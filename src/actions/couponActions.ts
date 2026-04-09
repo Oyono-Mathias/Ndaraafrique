@@ -3,11 +3,23 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
-import type { Coupon } from '@/lib/types';
 
 /**
- * @fileOverview Actions serveur pour la gestion des coupons de réduction.
+ * ✅ RÉSOLU : Définition locale du type Coupon pour éviter l'erreur d'export @/lib/types.
  */
+interface LocalCoupon {
+  id: string;
+  code: string;
+  courseId: string;
+  courseTitle: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses: number;
+  usedCount: number;
+  instructorId: string;
+  expiresAt: Timestamp | Date;
+  createdAt: FieldValue;
+}
 
 const CouponSchema = z.object({
   code: z.string().min(3).max(20).toUpperCase().regex(/^[A-Z0-9_-]+$/, "Code invalide"),
@@ -76,14 +88,19 @@ export async function validateCouponAction(code: string, courseId: string) {
       return { success: false, error: "Code promo invalide." };
     }
 
-    const coupon = docSnap.data() as Coupon;
+    // Utilisation du type local pour la validation
+    const coupon = docSnap.data() as LocalCoupon;
 
     if (coupon.courseId !== courseId) {
       return { success: false, error: "Ce code n'est pas applicable à ce cours." };
     }
 
     const now = Timestamp.now();
-    if ((coupon.expiresAt as Timestamp).seconds < now.seconds) {
+    const expiry = coupon.expiresAt instanceof Timestamp 
+        ? coupon.expiresAt 
+        : Timestamp.fromDate(coupon.expiresAt as Date);
+
+    if (expiry.seconds < now.seconds) {
       return { success: false, error: "Ce code promo a expiré." };
     }
 
@@ -101,6 +118,7 @@ export async function validateCouponAction(code: string, courseId: string) {
       }
     };
   } catch (e: any) {
+    console.error("Coupon validation error:", e);
     return { success: false, error: "Erreur de validation." };
   }
 }
