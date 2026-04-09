@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -18,7 +17,20 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Trash2, Edit3, Search, Save, MessageCircleQuestion, Tag, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { FAQ } from '@/lib/types';
+// ❌ Supprimé car absent de @/lib/types : import type { FAQ } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale pour bypasser l'erreur de build
+ * Adaptée selon les propriétés utilisées dans ton composant.
+ */
+interface FAQ {
+  id: string;
+  question_fr: string;
+  answer_fr: string;
+  tags: string[];
+  order: number;
+  isActive?: boolean;
+}
 
 export default function AdminFaqPage() {
   const db = getFirestore();
@@ -27,6 +39,7 @@ export default function AdminFaqPage() {
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Utilisation sécurisée de l'interface locale
   const faqsQuery = useMemo(() => query(collection(db, 'faqs'), orderBy('order', 'asc')), [db]);
   const { data: faqs, isLoading } = useCollection<FAQ>(faqsQuery);
 
