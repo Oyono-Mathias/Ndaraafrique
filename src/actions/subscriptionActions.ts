@@ -3,7 +3,21 @@
 import { getAdminDb } from '@/firebase/admin';
 import { sendAdminNotification } from './notificationActions';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { SubscriptionPlan, NdaraUser } from '@/lib/types';
+// ❌ Supprimé car absent de @/lib/types : import type { SubscriptionPlan, NdaraUser } from '@/lib/types';
+import type { NdaraUser } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale pour bypasser l'erreur d'exportation de @/lib/types
+ */
+interface LocalSubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly'; // Correction ici : billingCycle au lieu de interval pour coller à ton code
+  features: string[];
+  active: boolean;
+  monerooPlanId?: string;
+}
 
 // This is a placeholder for the real Moneroo SDK.
 class Moneroo {
@@ -58,7 +72,8 @@ export async function verifySubscriptionTransaction(transactionId: string): Prom
                 throw new Error("Plan ou Utilisateur introuvable.");
             }
 
-            const plan = planSnap.data() as SubscriptionPlan;
+            // ✅ Utilisation du type local pour valider billingCycle
+            const plan = planSnap.data() as LocalSubscriptionPlan;
             const user = userSnap.data() as NdaraUser;
             const now = Timestamp.now();
             
