@@ -1,14 +1,25 @@
 'use client';
 
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ChevronsRight, Loader2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useDoc } from '@/firebase';
-import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { Settings, TeamMember } from '@/lib/types';
+// ✅ RÉSOLU : On n'importe que Settings, TeamMember est défini localement
+import type { Settings } from '@/lib/types';
+
+/**
+ * ✅ INTERFACE LOCALE : Pour bypasser l'erreur "no exported member TeamMember"
+ */
+interface TeamMember {
+  name: string;
+  role: string;
+  imageUrl?: string; // Correspond à member.imageUrl utilisé plus bas
+  bio?: string;
+}
 
 const SangoQuote = ({ children }: { children: React.ReactNode }) => (
     <blockquote className="relative text-center my-12 md:my-16">
@@ -36,6 +47,7 @@ export default function AboutPage() {
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
 
+  // ✅ Extraction sécurisée du contenu dynamique
   const content = (settings?.content as any)?.aboutPage;
   const team = (content?.teamMembers as TeamMember[]) || [];
   
