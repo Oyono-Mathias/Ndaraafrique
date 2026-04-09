@@ -170,3 +170,4 @@ function EmptyLogs({ message }: { message: string }) {
     </TableRow>
   );
 }
+
