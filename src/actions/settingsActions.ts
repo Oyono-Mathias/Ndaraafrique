@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Met à jour les réglages globaux de la plateforme.
- * ✅ TRAÇABILITÉ : Log old vs new values pour l'audit stratégique complet.
- * ✅ SÉCURITÉ : Validation des types et protection Admin.
+ * ✅ RÉSOLU : Typage sécurisé pour éviter l'erreur 'possibly undefined' sur currentData.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -14,7 +13,7 @@ import { revalidatePath } from 'next/cache';
 interface UpdateSettingsParams {
   settings: Partial<Settings>;
   adminId: string;
-  section?: keyof Settings; // Permet de mettre à jour juste une section (ex: 'ai')
+  section?: keyof Settings;
 }
 
 /**
@@ -29,35 +28,37 @@ export async function updateGlobalSettings({
     const db = getAdminDb();
     const settingsRef = db.collection('settings').doc('global');
     
-    // 1. Récupérer l'état actuel avant modification pour l'Audit Trail
+    // 1. Récupérer l'état actuel
     const currentSnap = await settingsRef.get();
-    const currentData = currentSnap.exists ? currentSnap.data() : {};
+    
+    // ✅ CORRECTION : On force le type 'any' et on garantit un objet vide
+    const currentData = (currentSnap.exists ? currentSnap.data() : {}) as any;
 
     // 2. Préparation de la mise à jour
-    // Si une section est spécifiée, on ne met à jour que ce bloc
     const updatePayload = section ? { [section]: settings[section] } : settings;
 
-    // 3. Exécution de la mise à jour (Fusion)
+    // 3. Exécution de la mise à jour
     await settingsRef.set({
       ...updatePayload,
       updatedAt: FieldValue.serverTimestamp(),
       lastAdminId: adminId
     }, { merge: true });
 
-    // 4. Journalisation de l'audit pour la conformité
+    // 4. Journalisation de l'audit
     await db.collection('admin_audit_logs').add({
       adminId,
       eventType: section ? `settings.${section}_update` : 'settings.full_update',
       target: { id: 'global', type: 'settings' },
       details: `Mise à jour de la configuration : ${section || 'Toutes les sections'}.`,
       diff: {
-          previous: section ? (currentData[section] || {}) : currentData,
-          next: section ? settings[section] : settings
+          // ✅ CORRECTION : Utilisation de l'optional chaining ?. pour sécuriser l'accès
+          previous: section ? (currentData?.[section] || {}) : currentData,
+          next: section ? (settings?.[section] || {}) : settings
       },
       timestamp: FieldValue.serverTimestamp(),
     });
 
-    // 5. Revalidation du cache pour que les changements soient visibles immédiatement
+    // 5. Revalidation du cache
     revalidatePath('/admin/settings');
     revalidatePath('/[locale]/admin/settings', 'page');
 
