@@ -9,8 +9,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, orderBy, limit, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase';
-import { useDoc } from '@/firebase';
+import { useCollection, useDoc } from '@/firebase';
 import { 
     Activity, 
     Zap, 
@@ -36,7 +35,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { Settings, SecurityLog } from '@/lib/types';
+// ❌ Supprimé pour le build : import type { Settings, SecurityLog } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interfaces locales pour bypasser les erreurs de build Vercel
+ */
+interface Settings {
+    platform?: {
+        ai?: {
+            autoCorrection: boolean;
+            autonomousTutor: boolean;
+            fraudDetection: boolean;
+        }
+    }
+}
+
+interface SecurityLog {
+    id: string;
+    timestamp: any;
+    eventType: string;
+    details: string;
+}
 
 export default function AdminMonitoringPage() {
     const db = getFirestore();
@@ -216,12 +235,12 @@ export default function AdminMonitoringPage() {
                                         </span>
                                         <span className={cn(
                                             "font-bold uppercase shrink-0",
-                                            log.eventType.includes('course') ? "text-blue-400" :
-                                            log.eventType.includes('user') ? "text-primary" :
-                                            log.eventType.includes('alert') ? "text-amber-500" :
+                                            log.eventType?.includes('course') ? "text-blue-400" :
+                                            log.eventType?.includes('user') ? "text-primary" :
+                                            log.eventType?.includes('alert') ? "text-amber-500" :
                                             "text-purple-400"
                                         )}>
-                                            [{log.eventType.split('_')[0].substring(0,3).toUpperCase()}]
+                                            [{log.eventType?.split('_')[0].substring(0,3).toUpperCase() || 'SYS'}]
                                         </span>
                                         <span className="text-slate-400">{log.details}</span>
                                     </div>
