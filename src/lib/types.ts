@@ -1,8 +1,8 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.8 (STABLE)
- * ✅ Inclus : Coupons, Transactions et Notifications pour éviter les erreurs de build en série.
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.9 (STABLE)
+ * ✅ Inclus : Correction critique 'isPlatformOwned' pour le build Vercel.
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -127,10 +127,16 @@ export interface Course {
   createdAt?: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
   publishedAt?: Timestamp | FieldValue | Date | null;
+  
+  // ✅ FIX CRITIQUE : Propriétés pour le rachat et la gestion plateforme
+  isPlatformOwned?: boolean; 
   resaleRightsAvailable?: boolean;
   resaleRightsPrice?: number;
   buyoutStatus?: 'none' | 'requested' | 'approved';
   buyoutPrice?: number;
+  
+  level?: 'beginner' | 'intermediate' | 'advanced';
+  tags?: string[];
 }
 
 export interface QuestionOption {
@@ -152,7 +158,6 @@ export interface Quiz {
   questions?: Question[];
 }
 
-// ✅ FIX : Ajout de l'interface Coupon demandée par Vercel
 export interface Coupon {
   id: string;
   code: string;
@@ -211,7 +216,7 @@ export interface RequestPayoutParams {
 }
 
 /* =========================
-   SETTINGS (CORRIGÉ POUR LE BUILD)
+   SETTINGS
 ========================= */
 export interface Settings {
   general: {
@@ -274,7 +279,7 @@ export interface Country {
 }
 
 /* =========================
-   NOTIFICATIONS (PRÉVENTION)
+   NOTIFICATIONS
 ========================= */
 export interface NdaraNotification {
   id: string;
