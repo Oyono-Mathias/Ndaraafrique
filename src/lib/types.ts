@@ -1,9 +1,8 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.2 (ULTIMATE STABLE)
- * ✅ Correctif : Expansion de l'interface Settings pour inclure tous les modules.
- * ✅ Correctif : Ajout des préférences pédagogiques et notifications dans NdaraUser.
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.3 (STABILISÉE)
+ * ✅ Correctif : Ajout de learningObjectives et métadonnées manquantes dans Course.
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -139,15 +138,19 @@ export interface NdaraUser {
 ========================= */
 export interface Course {
   id: string;
+  courseId?: string; // Aliases used in some actions
+  creatorId?: string;
   title: string;
   description: string;
   instructorId: string;
   category: string;
   price: number;
+  currency?: string;
   status: 'Draft' | 'Published' | 'Pending Review';
   imageUrl?: string;
   rating?: number;
   participantsCount?: number;
+  learningObjectives?: string[];
   createdAt?: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
   publishedAt?: Timestamp | FieldValue | Date | null;
