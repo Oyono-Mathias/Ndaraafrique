@@ -508,6 +508,7 @@ export interface Settings {
     twitterUrl?: string;
     linkedinUrl?: string;
     youtubeUrl?: string;
+    telegramUrl?: string;
   };
   platform?: {
     maintenanceMode?: boolean;
