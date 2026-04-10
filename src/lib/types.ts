@@ -1,7 +1,8 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.7 (ULTIMATE FIX)
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.8 (STABLE)
+ * ✅ Inclus : Coupons, Transactions et Notifications pour éviter les erreurs de build en série.
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -110,7 +111,7 @@ export interface NdaraUser {
 }
 
 /* =========================
-   COURSES & QUIZZES (NOUVEAU)
+   COURSES, QUIZZES & COUPONS
 ========================= */
 export interface Course {
   id: string;
@@ -151,8 +152,23 @@ export interface Quiz {
   questions?: Question[];
 }
 
+// ✅ FIX : Ajout de l'interface Coupon demandée par Vercel
+export interface Coupon {
+  id: string;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  courseId: string;
+  instructorId: string;
+  maxUses?: number;
+  usedCount: number;
+  isActive: boolean;
+  expiresAt?: Timestamp | FieldValue | Date | null;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
 /* =========================
-   PAYMENTS & PAYOUTS
+   PAYMENTS, PAYOUTS & TRANSACTIONS
 ========================= */
 export interface Payment {
   id: string;
@@ -164,6 +180,17 @@ export interface Payment {
   date: Timestamp | FieldValue | Date;
   metadata?: Record<string, any>;
   platformFee?: number;
+}
+
+export interface Transaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'deposit' | 'withdrawal' | 'purchase' | 'sale' | 'affiliate_commission' | 'refund';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  description?: string;
+  createdAt: Timestamp | FieldValue | Date;
+  metadata?: Record<string, any>;
 }
 
 export interface PayoutRequest {
@@ -193,7 +220,6 @@ export interface Settings {
     defaultLanguage: 'fr' | 'en' | 'sg';
   };
 
-  // ✅ AJOUTÉ : Pour la page "Devenir Instructeur"
   platform?: {
     allowInstructorSignup?: boolean;
     maintenanceMode?: boolean;
@@ -245,4 +271,18 @@ export interface Country {
   flagEmoji: string;
   active: boolean;
   paymentMethods: PaymentMethod[];
+}
+
+/* =========================
+   NOTIFICATIONS (PRÉVENTION)
+========================= */
+export interface NdaraNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'transaction' | 'course';
+  read: boolean;
+  createdAt: Timestamp | FieldValue | Date;
+  actionUrl?: string;
 }
