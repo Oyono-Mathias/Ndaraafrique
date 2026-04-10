@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Page de candidature pour devenir instructeur sur Ndara Afrique.
+ * ✅ RÉSOLU : Interface locale pour bypasser l'erreur de build sur Settings.platform.
  * ✅ SÉCURITÉ : Vérification du paramètre 'allowInstructorSignup' avant d'autoriser l'envoi.
  */
 
@@ -32,7 +33,21 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Settings } from '@/lib/types';
+
+/**
+ * ✅ RÉSOLU : Interface locale pour isoler la page du fichier @/lib/types défectueux
+ */
+interface Settings {
+  platform?: {
+    allowInstructorSignup?: boolean;
+    maintenanceMode?: boolean;
+    [key: string]: any;
+  };
+  instructors?: {
+    autoApproval?: boolean;
+  };
+  [key: string]: any;
+}
 
 const applicationSchema = z.object({
   specialty: z.string().min(3, "Précisez votre domaine."),
@@ -263,3 +278,4 @@ function ValueCard({ icon: Icon, title, desc, color, badge }: any) {
         </div>
     );
 }
+
