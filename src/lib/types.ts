@@ -509,6 +509,20 @@ export interface Settings {
     linkedinUrl?: string;
     youtubeUrl?: string;
   };
+  platform?: {
+    maintenanceMode?: boolean;
+    announcementMessage?: string;
+    allowYoutube?: boolean;
+    allowBunny?: boolean;
+    allowInstructorSignup?: boolean;
+  };
+  commercial?: {
+    instructorShare?: number;
+    payoutDelayDays?: number;
+  };
+  affiliate?: {
+    commissionRate?: number;
+  };
   content?: {
     landingPage?: {
       heroBadge?: string;
