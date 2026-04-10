@@ -1,8 +1,8 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.0 (STABLE)
- * ✅ Correctif : AssignmentSubmission & Enrollment pour le Dashboard.
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.1 (ULTIMATE STABLE)
+ * ✅ Correctif : Export individuel de PaymentMethod pour countryActions.ts
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -20,7 +20,7 @@ export type PaymentProvider =
   | 'admin_recharge';
 
 /* =========================
-   ROLES & PERMISSIONS
+   USER & ROLES
 ========================= */
 export interface Role {
   id: string;
@@ -30,9 +30,6 @@ export interface Role {
   updatedAt?: Timestamp | FieldValue | Date;
 }
 
-/* =========================
-   USER
-========================= */
 export interface NdaraUser {
   uid: string;
   email: string;
@@ -136,23 +133,16 @@ export interface Course {
   tags?: string[];
 }
 
-export interface QuestionOption {
-  text: string;
-  isCorrect: boolean;
-}
-
-export interface Question {
-  id: string;
-  text: string;
-  options: QuestionOption[];
-}
-
 export interface Quiz {
   id: string;
   title: string;
   description?: string;
   courseId: string;
-  questions?: Question[];
+  questions?: {
+    id: string;
+    text: string;
+    options: { text: string; isCorrect: boolean; }[];
+  }[];
 }
 
 export interface Coupon {
@@ -170,7 +160,7 @@ export interface Coupon {
 }
 
 /* =========================
-   LEARNING & SUBMISSIONS (NEW)
+   LEARNING & SUBMISSIONS
 ========================= */
 export interface Enrollment {
   id: string;
@@ -205,7 +195,7 @@ export interface AssignmentSubmission {
 }
 
 /* =========================
-   PAYMENTS, PAYOUTS & TRANSACTIONS
+   FINANCE & TRANSACTIONS
 ========================= */
 export interface Payment {
   id: string;
@@ -216,7 +206,6 @@ export interface Payment {
   status: 'completed' | 'pending' | 'failed';
   date: Timestamp | FieldValue | Date;
   metadata?: Record<string, any>;
-  platformFee?: number;
 }
 
 export interface Transaction {
@@ -225,9 +214,7 @@ export interface Transaction {
   amount: number;
   type: 'deposit' | 'withdrawal' | 'purchase' | 'sale' | 'affiliate_commission' | 'refund';
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
-  description?: string;
   createdAt: Timestamp | FieldValue | Date;
-  metadata?: Record<string, any>;
 }
 
 export interface PayoutRequest {
@@ -237,43 +224,18 @@ export interface PayoutRequest {
   method: 'mobile_money' | 'bank_transfer';
   status: 'pending' | 'approved' | 'paid' | 'rejected';
   createdAt: Timestamp | FieldValue | Date;
-  processedAt?: Timestamp | FieldValue | Date;
 }
 
 /* =========================
-   SETTINGS & GEO
+   GEO & PAYS (FIX EXPORT)
 ========================= */
-export interface Settings {
-  general: {
-    siteName: string;
-    contactEmail: string;
-    defaultLanguage: 'fr' | 'en' | 'sg';
-  };
-  platform?: {
-    allowInstructorSignup?: boolean;
-    maintenanceMode?: boolean;
-    [key: string]: any;
-  };
-  instructors?: {
-    autoApproval?: boolean;
-  };
-  payments: {
-    paymentsEnabled: boolean;
-    currency: string;
-    transactionFeePercent: number;
-    operatorCommission: number;
-    minDeposit: number;
-    maxDeposit: number;
-    walletEnabled: boolean;
-    minimumPayoutAmount: number;
-    paymentMode: 'test' | 'live';
-  };
-  marketplace?: {
-    minimumResalePrice?: number;
-  };
-  security: {
-    maintenanceMode: boolean;
-  };
+// ✅ Sorti de l'interface pour être exportable individuellement
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  provider: PaymentProvider | string;
+  active: boolean;
+  logo?: string;
 }
 
 export interface Country {
@@ -284,25 +246,31 @@ export interface Country {
   prefix: string;
   flagEmoji: string;
   active: boolean;
-  paymentMethods: {
-    id: string;
-    name: string;
-    provider: PaymentProvider | string;
-    active: boolean;
-    logo?: string;
-  }[];
+  paymentMethods: PaymentMethod[];
 }
 
 /* =========================
-   NOTIFICATIONS
+   SETTINGS & NOTIFICATIONS
 ========================= */
+export interface Settings {
+  general: { siteName: string; contactEmail: string; defaultLanguage: 'fr' | 'en' | 'sg'; };
+  platform?: { allowInstructorSignup?: boolean; maintenanceMode?: boolean; [key: string]: any; };
+  payments: {
+    paymentsEnabled: boolean;
+    currency: string;
+    transactionFeePercent: number;
+    minimumPayoutAmount: number;
+    paymentMode: 'test' | 'live';
+    [key: string]: any;
+  };
+}
+
 export interface NdaraNotification {
   id: string;
   userId: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'transaction' | 'course';
+  type: 'info' | 'success' | 'warning' | 'error';
   read: boolean;
   createdAt: Timestamp | FieldValue | Date;
-  actionUrl?: string;
 }
