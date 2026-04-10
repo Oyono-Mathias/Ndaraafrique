@@ -5,6 +5,18 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification } from './notificationActions';
 import type { NdaraUser, RequestPayoutParams } from '@/lib/types';
 
+/**
+ * 🛡️ Helper interne de sécurité Admin
+ */
+async function verifyAdminOrThrow(adminId: string) {
+    if (!adminId) throw new Error("UNAUTHORIZED");
+    const db = getAdminDb();
+    const adminDoc = await db.collection('users').doc(adminId).get();
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+        throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
+    }
+}
+
 // ✅ DEMANDE DE RETRAIT
 export async function requestPayoutAction({ 
     instructorId, 
@@ -76,17 +88,20 @@ export async function requestPayoutAction({
     }
 }
 
-//////////////////////////////////////////////////////
-// ✅ AJOUT MANQUANT (CRUCIAL POUR TON BUILD)
-//////////////////////////////////////////////////////
-
-export async function updatePayoutStatusAction(
-  payoutId: string,
-  status: 'pending' | 'approved' | 'rejected'
-): Promise<{ success: boolean; error?: string }> {
+// ✅ MISE À JOUR STATUT (Action Admin)
+export async function updatePayoutStatusAction({
+  payoutId,
+  status,
+  adminId
+}: {
+  payoutId: string;
+  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  adminId: string;
+}): Promise<{ success: boolean; error?: string }> {
   try {
+    await verifyAdminOrThrow(adminId);
+    
     const db = getAdminDb();
-
     const payoutRef = db.collection('payout_requests').doc(payoutId);
     const payoutDoc = await payoutRef.get();
 

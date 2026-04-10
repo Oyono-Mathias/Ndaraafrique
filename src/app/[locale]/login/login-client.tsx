@@ -3,6 +3,7 @@
 /**
  * @fileOverview Client de connexion Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification de 'allowRegistration' avant toute inscription.
+ * ✅ RÉSOLU : Utilisation de settings.users conformément au schéma types.ts.
  */
 
 import { useState, useEffect } from 'react';
@@ -135,7 +136,8 @@ export default function LoginClient() {
   };
 
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
-    if (settings?.students?.allowRegistration === false) {
+    // ✅ Utilisation correcte du module 'users'
+    if (settings?.users?.allowRegistration === false) {
         toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Les nouvelles inscriptions sont temporairement suspendues." });
         return;
     }
@@ -188,7 +190,8 @@ export default function LoginClient() {
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
-        if (settings?.students?.allowRegistration === false) {
+        // ✅ Utilisation correcte du module 'users'
+        if (settings?.users?.allowRegistration === false) {
             await getAuth().signOut();
             toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Veuillez réessayer plus tard." });
             return;
@@ -254,7 +257,8 @@ export default function LoginClient() {
                     </TabsContent>
 
                     <TabsContent value="register" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
-                        {settings?.students?.allowRegistration === false ? (
+                        {/* ✅ Utilisation correcte du module 'users' */}
+                        {settings?.users?.allowRegistration === false ? (
                             <div className="py-10 text-center space-y-4">
                                 <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
                                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Inscriptions suspendues</p>
