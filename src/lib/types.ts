@@ -1,8 +1,8 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.9 (STABLE)
- * ✅ Inclus : Correction critique 'isPlatformOwned' pour le build Vercel.
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.0 (STABLE)
+ * ✅ Correctif : AssignmentSubmission & Enrollment pour le Dashboard.
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -127,14 +127,11 @@ export interface Course {
   createdAt?: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
   publishedAt?: Timestamp | FieldValue | Date | null;
-  
-  // ✅ FIX CRITIQUE : Propriétés pour le rachat et la gestion plateforme
   isPlatformOwned?: boolean; 
   resaleRightsAvailable?: boolean;
   resaleRightsPrice?: number;
   buyoutStatus?: 'none' | 'requested' | 'approved';
   buyoutPrice?: number;
-  
   level?: 'beginner' | 'intermediate' | 'advanced';
   tags?: string[];
 }
@@ -173,6 +170,41 @@ export interface Coupon {
 }
 
 /* =========================
+   LEARNING & SUBMISSIONS (NEW)
+========================= */
+export interface Enrollment {
+  id: string;
+  userId: string;
+  courseId: string;
+  enrolledAt: Timestamp | FieldValue | Date;
+  progress: number;
+  completed: boolean;
+  lastAccessedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Assignment {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  courseId: string;
+  studentId: string;
+  instructorId: string;
+  contentURL?: string;
+  status: 'pending' | 'graded' | 'rejected';
+  grade?: number;
+  feedback?: string;
+  submittedAt: Timestamp | FieldValue | Date;
+  gradedAt?: Timestamp | FieldValue | Date;
+}
+
+/* =========================
    PAYMENTS, PAYOUTS & TRANSACTIONS
 ========================= */
 export interface Payment {
@@ -208,15 +240,8 @@ export interface PayoutRequest {
   processedAt?: Timestamp | FieldValue | Date;
 }
 
-export interface RequestPayoutParams {
-  instructorId: string;
-  requesterId: string;
-  amount: number;
-  method: 'mobile_money' | 'bank_transfer';
-}
-
 /* =========================
-   SETTINGS
+   SETTINGS & GEO
 ========================= */
 export interface Settings {
   general: {
@@ -224,17 +249,14 @@ export interface Settings {
     contactEmail: string;
     defaultLanguage: 'fr' | 'en' | 'sg';
   };
-
   platform?: {
     allowInstructorSignup?: boolean;
     maintenanceMode?: boolean;
     [key: string]: any;
   };
-
   instructors?: {
     autoApproval?: boolean;
   };
-
   payments: {
     paymentsEnabled: boolean;
     currency: string;
@@ -246,25 +268,12 @@ export interface Settings {
     minimumPayoutAmount: number;
     paymentMode: 'test' | 'live';
   };
-
   marketplace?: {
     minimumResalePrice?: number;
   };
-
   security: {
     maintenanceMode: boolean;
   };
-}
-
-/* =========================
-   GEO / COUNTRIES
-========================= */
-export interface PaymentMethod {
-  id: string;
-  name: string;
-  provider: PaymentProvider | string;
-  active: boolean;
-  logo?: string;
 }
 
 export interface Country {
@@ -275,7 +284,13 @@ export interface Country {
   prefix: string;
   flagEmoji: string;
   active: boolean;
-  paymentMethods: PaymentMethod[];
+  paymentMethods: {
+    id: string;
+    name: string;
+    provider: PaymentProvider | string;
+    active: boolean;
+    logo?: string;
+  }[];
 }
 
 /* =========================
