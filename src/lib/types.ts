@@ -159,6 +159,21 @@ export interface Course {
   rightsChain?: string[];
 }
 
+export interface CourseQuestion {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl?: string;
+  instructorId: string;
+  questionText: string;
+  answerText?: string;
+  status: 'pending' | 'answered';
+  createdAt: Timestamp | FieldValue | Date;
+  answeredAt?: Timestamp | FieldValue | Date;
+}
+
 export interface QuestionOption {
   text: string;
   isCorrect: boolean;
