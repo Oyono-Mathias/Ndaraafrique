@@ -3,6 +3,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 /**
  * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.2 (ULTIMATE STABLE)
  * ✅ Correctif : Expansion de l'interface Settings pour inclure tous les modules.
+ * ✅ Correctif : Ajout des préférences pédagogiques et notifications dans NdaraUser.
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -65,6 +66,24 @@ export interface NdaraUser {
   };
   payoutInfo?: {
     mobileMoneyNumber?: string;
+  };
+  pedagogicalPreferences?: {
+    aiAssistanceEnabled?: boolean;
+    aiInterventionLevel?: 'low' | 'medium' | 'high';
+  };
+  instructorNotificationPreferences?: {
+    newEnrollment?: boolean;
+    newMessage?: boolean;
+    newAssignmentSubmission?: boolean;
+    courseStatusUpdate?: boolean;
+    payoutUpdate?: boolean;
+  };
+  notificationPreferences?: {
+    newPayouts?: boolean;
+    newApplications?: boolean;
+    newSupportTickets?: boolean;
+    financialAnomalies?: boolean;
+    [key: string]: boolean | undefined;
   };
   careerGoals?: {
     currentRole?: string;
@@ -288,6 +307,12 @@ export interface Country {
 /* =========================
    SETTINGS & NOTIFICATIONS
 ========================= */
+export interface DesignSettings {
+  primaryColor: string;
+  borderRadius: 'none' | 'md' | 'lg' | 'xl';
+  fontScale: 'small' | 'medium' | 'large';
+}
+
 export interface Settings {
   general: { 
     siteName: string; 
@@ -296,6 +321,8 @@ export interface Settings {
     supportPhone?: string;
     address?: string;
     timezone?: string;
+    logoUrl?: string;
+    loginBackgroundImage?: string;
   };
   platform?: { 
     allowInstructorSignup?: boolean; 
@@ -303,8 +330,14 @@ export interface Settings {
     announcementMessage?: string;
     allowCourseBuyout?: boolean;
     allowResaleRights?: boolean;
+    ai?: {
+      autoCorrection: boolean;
+      autonomousTutor: boolean;
+      fraudDetection: boolean;
+    };
     [key: string]: any; 
   };
+  appearance?: DesignSettings;
   payments: {
     paymentsEnabled: boolean;
     currency: string;
@@ -336,40 +369,40 @@ export interface Settings {
     resaleCommissionPercent?: number;
     allowLicenseResale?: boolean;
   };
-  ai?: {
-    aiEnabled?: boolean;
-    modelName?: string;
-    maxRequestsPerUser?: number;
-    contentGenerationEnabled?: boolean;
+  ai: {
+    aiEnabled: boolean;
+    modelName: string;
+    maxRequestsPerUser: number;
+    contentGenerationEnabled: boolean;
   };
-  notifications?: {
-    emailNotifications?: boolean;
-    pushNotifications?: boolean;
-    adminAlerts?: {
-      newUser?: boolean;
-      newPayment?: boolean;
+  notifications: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    adminAlerts: {
+      newUser: boolean;
+      newPayment: boolean;
     };
   };
-  security?: {
-    maintenanceMode?: boolean;
-    enable2fa?: boolean;
-    maxLoginAttempts?: number;
+  security: {
+    maintenanceMode: boolean;
+    enable2fa: boolean;
+    maxLoginAttempts: number;
   };
-  localization?: {
-    autoDetectLanguage?: boolean;
+  localization: {
+    autoDetectLanguage: boolean;
   };
-  marketing?: {
-    globalAnnouncement?: string;
-    promoCodesEnabled?: boolean;
-    referralProgramEnabled?: boolean;
+  marketing: {
+    globalAnnouncement: string;
+    promoCodesEnabled: boolean;
+    referralProgramEnabled: boolean;
   };
-  finance?: {
-    minWithdrawal?: number;
-    withdrawalDelayDays?: number;
-    autoPayoutEnabled?: boolean;
+  finance: {
+    minWithdrawal: number;
+    withdrawalDelayDays: number;
+    autoPayoutEnabled: boolean;
   };
-  advanced?: {
-    debugMode?: boolean;
+  advanced: {
+    debugMode: boolean;
   };
   commercial?: {
     instructorShare?: number;
@@ -389,6 +422,10 @@ export interface Settings {
     instagramUrl?: string;
     youtubeUrl?: string;
     telegramUrl?: string;
+  };
+  legal?: {
+    termsOfService?: string;
+    privacyPolicy?: string;
   };
 }
 
@@ -520,6 +557,21 @@ export interface TrackingEvent {
   timestamp: Timestamp | FieldValue | Date;
 }
 
+export interface RecommendedCourseItem {
+  courseId: string;
+  title: string;
+  coverImage: string;
+  instructorId: string;
+  price: number;
+  score: number;
+}
+
+export interface UserRecommendations {
+  userId: string;
+  courses: RecommendedCourseItem[];
+  updatedAt: Timestamp | FieldValue | Date;
+}
+
 export interface NdaraPaymentDetails {
   transactionId: string;
   gatewayTransactionId?: string;
@@ -534,4 +586,15 @@ export interface NdaraPaymentDetails {
     couponId?: string;
     fraudScore?: number;
   };
+}
+
+export interface InvestorLead {
+  id: string;
+  fullName: string;
+  email: string;
+  organization?: string;
+  message?: string;
+  status: 'new' | 'contacted' | 'interested';
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
 }
