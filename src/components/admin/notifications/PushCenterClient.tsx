@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -43,7 +42,7 @@ export function PushCenterClient() {
     const { toast } = useToast();
     
     const [message, setMessage] = useState('');
-    const [target, setTarget] = useState<'all' | 'instructor' | 'student'>('all');
+    const [target, setTarget] = useState<'all' | 'instructors' | 'students'>('all');
     const [schedule, setSchedule] = useState<'now' | '1h' | 'morning'>('now');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -81,7 +80,7 @@ export function PushCenterClient() {
     return (
         <div className="space-y-10 pb-20 animate-in fade-in duration-700 relative">
             <header>
-                <div className="flex items-center gap-2 text-ndara-orange mb-1">
+                <div className="flex items-center gap-2 text-orange-500 mb-1">
                     <Radio className="h-4 w-4" />
                     <span className="text-[10px] font-black uppercase tracking-[0.3em]">Communication de Masse</span>
                 </div>
@@ -104,8 +103,8 @@ export function PushCenterClient() {
                             <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Audience Cible</label>
                             <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
                                 <TargetPill active={target === 'all'} label="TOUS" onClick={() => setTarget('all')} />
-                                <TargetPill active={target === 'instructor'} label="EXPERTS" onClick={() => setTarget('instructor')} />
-                                <TargetPill active={target === 'student'} label="NDARA" onClick={() => setTarget('student')} />
+                                <TargetPill active={target === 'instructors'} label="EXPERTS" onClick={() => setTarget('instructors')} />
+                                <TargetPill active={target === 'students'} label="NDARA" onClick={() => setTarget('students')} />
                             </div>
                         </div>
 
@@ -139,7 +138,7 @@ export function PushCenterClient() {
                         <Button 
                             onClick={handleSendPush}
                             disabled={!message.trim() || isSubmitting}
-                            className="w-full h-16 rounded-[2rem] bg-ndara-orange hover:bg-orange-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-orange-500/20 transition-all active:scale-95 animate-pulse-glow border-none"
+                            className="w-full h-16 rounded-[2rem] bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-orange-500/20 transition-all active:scale-95 animate-pulse-glow border-none"
                         >
                             {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Send className="mr-2 h-5 w-5" />}
                             Diffuser Maintenant
@@ -150,12 +149,12 @@ export function PushCenterClient() {
                 {/* --- MOBILE PREVIEW --- */}
                 <div className="space-y-6">
                     <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2 px-1">
-                        <Smartphone className="h-4 w-4 text-ndara-orange" />
+                        <Smartphone className="h-4 w-4 text-orange-500" />
                         Prévisualisation Live
                     </h2>
 
                     <div className="flex justify-center perspective-1000">
-                        <div className="w-[280px] h-[520px] bg-slate-900 rounded-[3rem] border-[6px] border-slate-800 relative overflow-hidden shadow-2xl rotate-y-[-5deg] transition-transform duration-700 hover:rotate-y-0">
+                        <div className="w-[280px] h-[520px] bg-slate-900 rounded-[3rem] border-[6px] border-slate-800 relative overflow-hidden shadow-2xl transition-transform duration-700 hover:rotate-y-0">
                             {/* Screen Background */}
                             <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-950"></div>
                             <div className="absolute inset-0 opacity-20 bg-[url('https://picsum.photos/seed/ndara-lock/400/800')] bg-cover"></div>
@@ -239,7 +238,7 @@ export function PushCenterClient() {
                                             <p className="text-white text-sm font-bold leading-relaxed line-clamp-1 italic max-w-xs md:max-w-md">"{camp.message}"</p>
                                             <div className="flex items-center gap-3 mt-1.5 text-[9px] font-black uppercase tracking-widest text-slate-600">
                                                 <Users size={10} className="text-slate-700" />
-                                                <span>{camp.target === 'all' ? 'Toute la communauté' : camp.target === 'instructor' ? 'Experts uniquement' : 'Étudiants'}</span>
+                                                <span>{camp.target === 'all' ? 'Toute la communauté' : camp.target === 'instructors' ? 'Experts uniquement' : 'Étudiants'}</span>
                                                 <span className="text-slate-800">•</span>
                                                 <span>Envoyé le {camp.createdAt && typeof (camp.createdAt as any).toDate === 'function' ? format((camp.createdAt as any).toDate(), 'dd MMM HH:mm', { locale: fr }) : '...'}</span>
                                             </div>

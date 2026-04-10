@@ -590,7 +590,7 @@ export interface Assignment {
 export interface PushCampaign {
   id: string;
   message: string;
-  target: 'all' | 'instructor' | 'student';
+  target: 'all' | 'instructors' | 'students';
   status: 'sent' | 'scheduled' | 'draft';
   scheduledFor?: Timestamp | FieldValue | Date;
   sentAt?: Timestamp | FieldValue | Date;

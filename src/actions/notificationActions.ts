@@ -3,19 +3,22 @@
 import { getAdminDb } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue, DocumentData } from 'firebase-admin/firestore';
-// ❌ Supprimé car absent ou incomplet dans @/lib/types : import type { PushCampaign, Settings } from '@/lib/types';
-import type { Settings } from '@/lib/types';
+import type { Settings, PushCampaign } from '@/lib/types';
 
 /**
- * ✅ RÉSOLU : Interface locale pour bypasser l'erreur d'exportation de @/lib/types
+ * ✅ RÉSOLU : Interface locale mise à jour pour correspondre à l'UI et au schéma v3.0.
  */
 interface LocalPushCampaign {
   id?: string;
-  title: string;
-  body: string;
-  target: 'all' | 'instructors' | 'students' | 'specific';
+  message: string;
+  target: 'all' | 'instructors' | 'students';
   status: 'draft' | 'sent' | 'scheduled';
-  link?: string;
+  scheduledFor?: any;
+  sentAt?: any;
+  stats?: {
+    delivered: number;
+    clicked: number;
+  };
   createdAt?: any;
 }
 
@@ -144,7 +147,9 @@ export async function sendAdminNotification(payload: { title: string; body: stri
   }
 }
 
-// ✅ Utilisation du type local LocalPushCampaign
+/**
+ * Crée une nouvelle campagne de notification push.
+ */
 export async function createPushCampaign(campaign: Omit<LocalPushCampaign, 'id' | 'createdAt'>) {
     try {
         const db = getAdminDb();
