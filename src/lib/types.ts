@@ -280,6 +280,15 @@ export interface Payment {
   };
 }
 
+export interface Payout {
+  id: string;
+  instructorId: string;
+  amount: number;
+  status: 'en_attente' | 'valide' | 'rejete';
+  date: Timestamp | FieldValue | Date;
+  method?: string;
+}
+
 export interface PayoutRequest {
   id: string;
   instructorId: string;
