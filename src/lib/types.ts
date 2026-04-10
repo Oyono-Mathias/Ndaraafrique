@@ -436,12 +436,17 @@ export interface Settings {
     minimumResalePrice: number;
     resaleCommissionPercent: number;
     allowLicenseResale: boolean;
+    allowCourseBuyout?: boolean;
+    allowResaleRights?: boolean;
   };
   ai: {
     aiEnabled: boolean;
     modelName: string;
     maxRequestsPerUser: number;
     contentGenerationEnabled: boolean;
+    autoCorrection?: boolean;
+    autonomousTutor?: boolean;
+    fraudDetection?: boolean;
   };
   notifications: {
     emailNotifications: boolean;
@@ -500,6 +505,7 @@ export interface Settings {
     announcementMessage?: string;
     allowYoutube?: boolean;
     allowBunny?: boolean;
+    allowInstructorSignup?: boolean;
   };
   commercial?: {
     instructorShare?: number;

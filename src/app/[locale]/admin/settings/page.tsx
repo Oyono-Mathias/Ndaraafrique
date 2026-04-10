@@ -45,6 +45,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 // Schéma de validation complet pour les 12 modules
 const settingsSchema = z.object({
@@ -66,10 +67,12 @@ const settingsSchema = z.object({
     minDeposit: z.coerce.number().min(0),
     maxDeposit: z.coerce.number().min(0),
     walletEnabled: z.boolean(),
-    operatorCommission: z.coerce.number().min(0)
+    operatorCommission: z.coerce.number().min(0),
+    paymentMode: z.enum(['test', 'live'])
   }),
   users: z.object({
     allowRegistration: z.boolean(),
+    allowInstructorSignup: z.boolean(),
     requireEmailVerification: z.boolean(),
     autoApproveInstructors: z.boolean(),
     defaultRole: z.string(),
@@ -87,13 +90,18 @@ const settingsSchema = z.object({
     enableMarketplace: z.boolean(),
     minimumResalePrice: z.coerce.number().min(0),
     resaleCommissionPercent: z.coerce.number().min(0).max(100),
-    allowLicenseResale: z.boolean()
+    allowLicenseResale: z.boolean(),
+    allowCourseBuyout: z.boolean(),
+    allowResaleRights: z.boolean()
   }),
   ai: z.object({
     aiEnabled: z.boolean(),
     modelName: z.string(),
     maxRequestsPerUser: z.coerce.number().min(0),
-    contentGenerationEnabled: z.boolean()
+    contentGenerationEnabled: z.boolean(),
+    autoCorrection: z.boolean().optional(),
+    autonomousTutor: z.boolean().optional(),
+    fraudDetection: z.boolean().optional()
   }),
   notifications: z.object({
     emailNotifications: z.boolean(),
@@ -362,6 +370,12 @@ export default function AdminSettingsPage() {
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )}/>
+                    <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <div className="space-y-0.5"><FormLabel>Recrutement Formateurs</FormLabel><FormDescription>Autoriser les experts à postuler.</FormDescription></div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
                     <FormField control={form.control} name="users.autoApproveInstructors" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
                             <div className="space-y-0.5"><FormLabel>Validation Auto Experts</FormLabel><FormDescription>Approuver les formateurs sans examen manuel.</FormDescription></div>
@@ -401,12 +415,26 @@ export default function AdminSettingsPage() {
                             <FormItem><FormLabel>Quota Quotidien / Ndara</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                         )}/>
                     </div>
-                    <FormField control={form.control} name="ai.contentGenerationEnabled" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Génération de Contenu</FormLabel><FormDescription>Aider les experts à rédiger leurs cours.</FormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                    )}/>
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <FormField control={form.control} name="ai.contentGenerationEnabled" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <div className="space-y-0.5"><FormLabel>Génération de Contenu</FormLabel><FormDescription>Aider les experts à rédiger leurs cours.</FormDescription></div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="ai.autoCorrection" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <div className="space-y-0.5"><FormLabel>Auto-Correction</FormLabel><FormDescription>Notation automatisée des devoirs.</FormDescription></div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="ai.fraudDetection" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <div className="space-y-0.5"><FormLabel>Anti-Fraude IA</FormLabel><FormDescription>Surveillance des transactions suspectes.</FormDescription></div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                    </div>
                   </Card>
                 </div>
               )}
@@ -439,7 +467,7 @@ export default function AdminSettingsPage() {
                 </div>
               )}
 
-              {/* AJOUTER ICI LES AUTRES SECTIONS SELON LE MÊME MODÈLE ... */}
+              {/* ... AJOUTER ICI LES AUTRES SECTIONS SELON LE MÊME MODÈLE ... */}
 
             </div>
 

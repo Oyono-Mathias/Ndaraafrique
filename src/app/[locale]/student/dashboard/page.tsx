@@ -36,6 +36,7 @@ export default function StudentDashboardAndroid() {
   const locale = useLocale();
   const t = useTranslations('Dashboard');
   const common = useTranslations('Common');
+  const tNav = useTranslations('Nav');
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [loadingData, setLoadingData] = useState(true);
@@ -99,7 +100,7 @@ export default function StudentDashboardAndroid() {
         {/* STATS ROW - Référence de taille */}
         <section className="grid grid-cols-2 gap-5">
           <StatCard 
-            title={nav('my_courses')} 
+            title={tNav('my_courses')} 
             value={stats.total.toString()} 
             icon={BookOpen} 
             isLoading={loadingData} 
@@ -191,9 +192,4 @@ export default function StudentDashboardAndroid() {
       </Button>
     </div>
   );
-}
-
-function nav(key: string) {
-  const t = useTranslations('Nav');
-  return t(key);
 }
