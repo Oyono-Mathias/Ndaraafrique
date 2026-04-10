@@ -35,27 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-// ❌ Supprimé pour le build : import type { Settings, SecurityLog } from '@/lib/types';
-
-/**
- * ✅ RÉSOLU : Interfaces locales pour bypasser les erreurs de build Vercel
- */
-interface Settings {
-    platform?: {
-        ai?: {
-            autoCorrection: boolean;
-            autonomousTutor: boolean;
-            fraudDetection: boolean;
-        }
-    }
-}
-
-interface SecurityLog {
-    id: string;
-    timestamp: any;
-    eventType: string;
-    details: string;
-}
+import type { Settings, SecurityLog } from '@/lib/types';
 
 export default function AdminMonitoringPage() {
     const db = getFirestore();
@@ -82,7 +62,7 @@ export default function AdminMonitoringPage() {
         if (!currentUser) return;
         try {
             await updateDoc(settingsRef, {
-                [`platform.ai.${key}`]: value
+                [`ai.${key}`]: value
             });
         } catch (e) {
             console.error("Failed to update AI setting:", e);
@@ -178,7 +158,7 @@ export default function AdminMonitoringPage() {
                                     label="Correction Auto" 
                                     desc="Devoirs & Quiz" 
                                     color="text-purple-400" 
-                                    checked={settings?.platform?.ai?.autoCorrection ?? true}
+                                    checked={settings?.ai?.autoCorrection ?? true}
                                     onChange={(v: boolean) => toggleAiFeature('autoCorrection', v)}
                                 />
                                 <AiToggleItem 
@@ -186,7 +166,7 @@ export default function AdminMonitoringPage() {
                                     label="Tuteur Autonome" 
                                     desc="Réponses 24/7" 
                                     color="text-blue-400" 
-                                    checked={settings?.platform?.ai?.autonomousTutor ?? true}
+                                    checked={settings?.ai?.autonomousTutor ?? true}
                                     onChange={(v: boolean) => toggleAiFeature('autonomousTutor', v)}
                                 />
                                 <AiToggleItem 
@@ -195,7 +175,7 @@ export default function AdminMonitoringPage() {
                                     desc="Analyse temps réel" 
                                     color="text-red-400" 
                                     isCritical
-                                    checked={settings?.platform?.ai?.fraudDetection ?? true}
+                                    checked={settings?.ai?.fraudDetection ?? true}
                                     onChange={(v: boolean) => toggleAiFeature('fraudDetection', v)}
                                 />
                             </>

@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Page de candidature pour devenir instructeur sur Ndara Afrique.
- * ✅ RÉSOLU : Interface locale pour bypasser l'erreur de build sur Settings.platform.
- * ✅ SÉCURITÉ : Vérification du paramètre 'allowInstructorSignup' avant d'autoriser l'envoi.
+ * ✅ RÉSOLU : Utilisation du nouveau schéma Settings (users.allowInstructorSignup).
  */
 
 import { useState, useEffect } from 'react';
@@ -33,21 +32,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-/**
- * ✅ RÉSOLU : Interface locale pour isoler la page du fichier @/lib/types défectueux
- */
-interface Settings {
-  platform?: {
-    allowInstructorSignup?: boolean;
-    maintenanceMode?: boolean;
-    [key: string]: any;
-  };
-  instructors?: {
-    autoApproval?: boolean;
-  };
-  [key: string]: any;
-}
+import type { Settings } from '@/lib/types';
 
 const applicationSchema = z.object({
   specialty: z.string().min(3, "Précisez votre domaine."),
@@ -95,8 +80,8 @@ export default function DevenirInstructeurPage() {
     return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
 
-  // 🛡️ SÉCURITÉ : Vérifier si le recrutement est fermé
-  if (settings && settings.platform?.allowInstructorSignup === false) {
+  // 🛡️ SÉCURITÉ : Vérifier si le recrutement est fermé (Alignement Schéma v3.0)
+  if (settings && settings.users?.allowInstructorSignup === false) {
       return (
         <div className="max-w-md mx-auto py-32 px-6 text-center space-y-8 animate-in fade-in duration-700">
             <div className="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto shadow-2xl">
@@ -151,7 +136,7 @@ export default function DevenirInstructeurPage() {
 
     try {
       const userRef = doc(db, 'users', user.uid);
-      const isAutoApprove = settings?.instructors?.autoApproval === true;
+      const isAutoApprove = settings?.courses?.autoApproval === true;
 
       const payload = {
         role: isAutoApprove ? 'instructor' : 'student',
@@ -278,4 +263,3 @@ function ValueCard({ icon: Icon, title, desc, color, badge }: any) {
         </div>
     );
 }
-

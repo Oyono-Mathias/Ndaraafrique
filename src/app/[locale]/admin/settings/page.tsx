@@ -49,6 +49,7 @@ const settingsSchema = z.object({
   }),
   users: z.object({
     allowRegistration: z.boolean(),
+    allowInstructorSignup: z.boolean(),
     requireEmailVerification: z.boolean(),
     autoApproveInstructors: z.boolean(),
     maxAccountsPerUser: z.coerce.number()
@@ -64,13 +65,18 @@ const settingsSchema = z.object({
     enableMarketplace: z.boolean(),
     minimumResalePrice: z.coerce.number(),
     resaleCommissionPercent: z.coerce.number(),
-    allowLicenseResale: z.boolean()
+    allowLicenseResale: z.boolean(),
+    allowCourseBuyout: z.boolean(),
+    allowResaleRights: z.boolean()
   }),
   ai: z.object({
     aiEnabled: z.boolean(),
     modelName: z.string(),
     maxRequestsPerUser: z.coerce.number(),
-    contentGenerationEnabled: z.boolean()
+    contentGenerationEnabled: z.boolean(),
+    autoCorrection: z.boolean(),
+    autonomousTutor: z.boolean(),
+    fraudDetection: z.boolean()
   }),
   notifications: z.object({
     emailNotifications: z.boolean(),
@@ -115,7 +121,7 @@ export default function AdminSettingsPage() {
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {} // Chargés via useEffect
+    defaultValues: {}
   });
 
   useEffect(() => {
@@ -153,7 +159,7 @@ export default function AdminSettingsPage() {
     { id: 'users', label: 'Utilisateurs', icon: Users },
     { id: 'courses', label: 'Cours', icon: BookOpen },
     { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
-    { id: 'ai', label: 'Intelligence Artificielle', icon: Cpu },
+    { id: 'ai', label: 'IA Mathias', icon: Cpu },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Sécurité', icon: Shield },
     { id: 'localization', label: 'Localisation', icon: MapPin },
@@ -169,8 +175,7 @@ export default function AdminSettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col lg:flex-row w-full">
           
-          {/* SIDEBAR DE NAVIGATION TABS */}
-          <aside className="w-full lg:w-72 bg-slate-900/50 border-r border-white/5 p-6 space-y-4">
+          <aside className="w-full lg:w-72 bg-slate-900/50 border-r border-white/5 p-6 space-y-4 overflow-y-auto">
             <div className="flex items-center gap-3 mb-8 px-2">
                 <SettingsIcon className="text-primary h-6 w-6" />
                 <h1 className="font-black uppercase text-sm tracking-tighter">Réglages Ndara</h1>
@@ -193,8 +198,7 @@ export default function AdminSettingsPage() {
             </nav>
           </aside>
 
-          {/* CONTENU PRINCIPAL */}
-          <main className="flex-1 p-8 lg:p-12 pb-32">
+          <main className="flex-1 p-8 lg:p-12 pb-32 overflow-y-auto">
             <header className="mb-10">
                 <h2 className="text-4xl font-black uppercase tracking-tighter mb-2">
                     {menuItems.find(i => i.id === activeTab)?.label}
@@ -203,7 +207,6 @@ export default function AdminSettingsPage() {
             </header>
 
             <div className="max-w-3xl">
-              {/* SECTION GENERAL */}
               {activeTab === 'general' && (
                 <Card className="bg-slate-900 border-slate-800 p-6 space-y-6">
                   <FormField control={form.control} name="general.siteName" render={({ field }) => (
@@ -217,32 +220,55 @@ export default function AdminSettingsPage() {
                       <FormItem><FormLabel>Téléphone Support</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
                     )}/>
                   </div>
-                  <FormField control={form.control} name="general.address" render={({ field }) => (
-                    <FormItem><FormLabel>Adresse physique</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                  )}/>
                 </Card>
               )}
 
-              {/* SECTION PAYMENTS */}
-              {activeTab === 'payments' && (
+              {activeTab === 'users' && (
                 <Card className="bg-slate-900 border-slate-800 p-6 space-y-6">
-                   <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
+                  <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                      <FormLabel>Activer les paiements</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-0.5">
+                        <FormLabel>Inscriptions Étudiants</FormLabel>
+                        <FormDescription>Autoriser les nouveaux comptes Ndara.</FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                   )}/>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="payments.currency" render={({ field }) => (
-                      <FormItem><FormLabel>Devise</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="payments.transactionFeePercent" render={({ field }) => (
-                      <FormItem><FormLabel>% Frais Plateforme</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                    )}/>
-                  </div>
+                  <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                      <div className="space-y-0.5">
+                        <FormLabel>Recrutement Experts</FormLabel>
+                        <FormDescription>Autoriser les candidatures de formateurs.</FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )}/>
                 </Card>
               )}
 
-              {/* SECTION AI */}
+              {activeTab === 'marketplace' && (
+                <Card className="bg-slate-900 border-slate-800 p-6 space-y-6">
+                  <FormField control={form.control} name="marketplace.allowCourseBuyout" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                      <div className="space-y-0.5">
+                        <FormLabel>Vente Directe (Rachat Ndara)</FormLabel>
+                        <FormDescription>Permettre aux experts de proposer le rachat de leur cours par la plateforme.</FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="marketplace.allowResaleRights" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                      <div className="space-y-0.5">
+                        <FormLabel>Marché Secondaire (Bourse)</FormLabel>
+                        <FormDescription>Permettre la vente de licences de revente entre experts.</FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )}/>
+                </Card>
+              )}
+
               {activeTab === 'ai' && (
                 <Card className="bg-slate-900 border-slate-800 p-6 space-y-6">
                   <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
@@ -250,27 +276,37 @@ export default function AdminSettingsPage() {
                       <FormLabel>Activer l'IA Ndara</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                   )}/>
-                  <FormField control={form.control} name="ai.modelName" render={({ field }) => (
-                    <FormItem><FormLabel>Modèle (LLM)</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                  )}/>
+                  <div className="grid grid-cols-1 gap-4">
+                    <FormField control={form.control} name="ai.autoCorrection" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                        <FormLabel>Correction Automatique</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="ai.autonomousTutor" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                        <FormLabel>Tuteur Autonome</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="ai.fraudDetection" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                        <FormLabel>Détection Fraude</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                  </div>
                 </Card>
               )}
-
-              {/* Les autres onglets suivent la même structure... */}
-              {/* Note: Pour la rapidité, j'ai mis les principaux. Tu peux dupliquer la structure Card/FormField pour les 12 sections */}
             </div>
 
-            {/* BARRE DE SAUVEGARDE FIXE */}
             <div className="fixed bottom-0 left-0 lg:left-72 right-0 p-6 bg-slate-950/80 backdrop-blur-md border-t border-white/5 z-50">
               <div className="max-w-3xl flex items-center justify-between">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Modifications en attente pour : {activeTab}</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Audit activé pour : {activeTab}</p>
                 <Button 
                   type="submit" 
                   disabled={isSaving}
                   className="bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs px-10 h-14 rounded-2xl transition-all active:scale-95"
                 >
                   {isSaving ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
-                  Sauvegarder {activeTab}
+                  Déployer {activeTab}
                 </Button>
               </div>
             </div>

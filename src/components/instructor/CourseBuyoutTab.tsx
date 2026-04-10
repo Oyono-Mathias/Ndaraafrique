@@ -40,8 +40,8 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
             if (snap.exists()) {
                 const data = snap.data() as Settings;
                 setPlatformSettings({
-                    allowBuyout: data.platform?.allowCourseBuyout ?? true,
-                    allowResale: data.platform?.allowResaleRights ?? true,
+                    allowBuyout: data.marketplace?.allowCourseBuyout ?? true,
+                    allowResale: data.marketplace?.allowResaleRights ?? true,
                 });
             }
         });

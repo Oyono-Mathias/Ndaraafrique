@@ -419,6 +419,7 @@ export interface Settings {
   };
   users: {
     allowRegistration: boolean;
+    allowInstructorSignup: boolean;
     requireEmailVerification: boolean;
     autoApproveInstructors: boolean;
     defaultRole: UserRole;
@@ -507,6 +508,42 @@ export interface Settings {
     twitterUrl?: string;
     linkedinUrl?: string;
     youtubeUrl?: string;
+  };
+  content?: {
+    landingPage?: {
+      heroBadge?: string;
+      heroTitle?: string;
+      heroSubtitle?: string;
+      heroImageUrl?: string;
+      badge_card_title?: string;
+      badge_card_subtitle?: string;
+      securitySection_imageUrl?: string;
+      showFinalCta?: boolean;
+      finalCtaTitle?: string;
+      finalCtaSubtitle?: string;
+      finalCtaButtonText?: string;
+    };
+    aboutPage?: {
+      mainTitle?: string;
+      mainSubtitle?: string;
+      historyTitle?: string;
+      historyFrench?: string;
+      historySango?: string;
+      visionTitle?: string;
+      visionFrench?: string;
+      visionSango?: string;
+      teamMembers?: TeamMember[];
+      ctaTitle?: string;
+    };
+  };
+  storage?: {
+    maxFileSizeMb: number;
+  };
+  pwa?: {
+    appName?: string;
+    shortName?: string;
+    iconUrl?: string;
+    appDescription?: string;
   };
 }
 
