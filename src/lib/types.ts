@@ -1,8 +1,8 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.1 (ULTIMATE STABLE)
- * ✅ Correctif : Export individuel de PaymentMethod pour countryActions.ts
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v3.2 (ULTIMATE STABLE)
+ * ✅ Correctif : Expansion de l'interface Settings pour inclure tous les modules.
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -95,6 +95,11 @@ export interface NdaraUser {
     canSellCourse?: boolean;
     canAccessPlatform?: boolean;
   };
+  buyoutSanctions?: {
+    isSanctioned: boolean;
+    reason: string;
+    date: Timestamp | FieldValue | Date;
+  };
   sanctions?: {
     isSanctioned: boolean;
     reason: string;
@@ -131,6 +136,8 @@ export interface Course {
   buyoutPrice?: number;
   level?: 'beginner' | 'intermediate' | 'advanced';
   tags?: string[];
+  ownerId?: string;
+  rightsChain?: string[];
 }
 
 export interface QuestionOption {
@@ -141,6 +148,7 @@ export interface QuestionOption {
 export interface Question {
   id: string;
   text: string;
+  order: number;
   options: QuestionOption[];
 }
 
@@ -149,17 +157,21 @@ export interface Quiz {
   title: string;
   description?: string;
   courseId: string;
-  questions?: Question[];
+  sectionId: string;
+  instructorId: string;
+  questionsCount?: number;
+  createdAt?: Timestamp | FieldValue | Date;
 }
 
 export interface Coupon {
   id: string;
   code: string;
+  courseTitle?: string;
   discountType: 'percentage' | 'fixed';
   discountValue: number;
   courseId: string;
   instructorId: string;
-  maxUses?: number;
+  maxUses: number;
   usedCount: number;
   isActive: boolean;
   expiresAt?: Timestamp | FieldValue | Date | null;
@@ -171,30 +183,42 @@ export interface Coupon {
 ========================= */
 export interface Enrollment {
   id: string;
-  userId: string;
+  studentId: string;
   courseId: string;
-  enrolledAt: Timestamp | FieldValue | Date;
+  instructorId: string;
+  enrollmentDate: Timestamp | FieldValue | Date;
   progress: number;
-  completed: boolean;
+  status: 'active' | 'completed' | 'suspended';
   lastAccessedAt?: Timestamp | FieldValue | Date;
+  priceAtEnrollment?: number;
 }
 
 export interface Assignment {
   id: string;
   courseId: string;
+  courseTitle?: string;
+  instructorId?: string;
   title: string;
   description: string;
+  correctionGuide?: string;
+  dueDate?: Timestamp | FieldValue | Date;
+  attachments?: { name: string; url: string; }[];
   createdAt: Timestamp | FieldValue | Date;
 }
 
 export interface AssignmentSubmission {
   id: string;
   assignmentId: string;
+  assignmentTitle: string;
   courseId: string;
+  courseTitle: string;
   studentId: string;
+  studentName: string;
+  studentAvatarUrl?: string;
   instructorId: string;
-  contentURL?: string;
-  status: 'pending' | 'graded' | 'rejected';
+  submissionContent?: string;
+  submissionUrl?: string;
+  status: 'submitted' | 'graded' | 'rejected';
   grade?: number;
   feedback?: string;
   submittedAt: Timestamp | FieldValue | Date;
@@ -210,21 +234,16 @@ export interface Payment {
   amount: number;
   currency: string;
   provider: PaymentProvider | string;
-  status: 'completed' | 'pending' | 'failed';
+  status: 'completed' | 'pending' | 'failed' | 'refunded';
   date: Timestamp | FieldValue | Date;
   metadata?: Record<string, any>;
   platformFee?: number;
-}
-
-export interface Transaction {
-  id: string;
-  userId: string;
-  amount: number;
-  type: 'deposit' | 'withdrawal' | 'purchase' | 'sale' | 'affiliate_commission' | 'refund';
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
-  description?: string;
-  createdAt: Timestamp | FieldValue | Date;
-  metadata?: Record<string, any>;
+  courseTitle?: string;
+  fraudReview?: {
+    isSuspicious: boolean;
+    riskScore: number;
+    reviewed: boolean;
+  };
 }
 
 export interface PayoutRequest {
@@ -234,13 +253,12 @@ export interface PayoutRequest {
   method: 'mobile_money' | 'bank_transfer';
   status: 'pending' | 'approved' | 'paid' | 'rejected';
   createdAt: Timestamp | FieldValue | Date;
-  processedAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
 }
 
 /* =========================
-   GEO & PAYS (FIX EXPORT)
+   GEO & PAYS
 ========================= */
-// ✅ Extraction pour permettre l'importation directe
 export interface PaymentMethod {
   id: string;
   name: string;
@@ -264,25 +282,249 @@ export interface Country {
    SETTINGS & NOTIFICATIONS
 ========================= */
 export interface Settings {
-  general: { siteName: string; contactEmail: string; defaultLanguage: 'fr' | 'en' | 'sg'; };
-  platform?: { allowInstructorSignup?: boolean; maintenanceMode?: boolean; [key: string]: any; };
+  general: { 
+    siteName: string; 
+    contactEmail: string; 
+    defaultLanguage: 'fr' | 'en' | 'sg';
+    supportPhone?: string;
+    address?: string;
+    timezone?: string;
+  };
+  platform?: { 
+    allowInstructorSignup?: boolean; 
+    maintenanceMode?: boolean; 
+    announcementMessage?: string;
+    allowCourseBuyout?: boolean;
+    allowResaleRights?: boolean;
+    [key: string]: any; 
+  };
   payments: {
     paymentsEnabled: boolean;
     currency: string;
     transactionFeePercent: number;
     minimumPayoutAmount: number;
     paymentMode: 'test' | 'live';
+    minDeposit?: number;
+    walletEnabled?: boolean;
+    operatorCommission?: number;
+    mesombEnabled?: boolean;
     [key: string]: any;
+  };
+  users?: {
+    allowRegistration?: boolean;
+    requireEmailVerification?: boolean;
+    autoApproveInstructors?: boolean;
+    maxAccountsPerUser?: number;
+  };
+  courses?: {
+    allowCourseCreation?: boolean;
+    requireAdminApproval?: boolean;
+    minimumCoursePrice?: number;
+    instructorRevenuePercent?: number;
+    certificateEnabled?: boolean;
+  };
+  marketplace?: {
+    enableMarketplace?: boolean;
+    minimumResalePrice?: number;
+    resaleCommissionPercent?: number;
+    allowLicenseResale?: boolean;
+  };
+  ai?: {
+    aiEnabled?: boolean;
+    modelName?: string;
+    maxRequestsPerUser?: number;
+    contentGenerationEnabled?: boolean;
+  };
+  notifications?: {
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+    adminAlerts?: {
+      newUser?: boolean;
+      newPayment?: boolean;
+    };
+  };
+  security?: {
+    maintenanceMode?: boolean;
+    enable2fa?: boolean;
+    maxLoginAttempts?: number;
+  };
+  localization?: {
+    autoDetectLanguage?: boolean;
+  };
+  marketing?: {
+    globalAnnouncement?: string;
+    promoCodesEnabled?: boolean;
+    referralProgramEnabled?: boolean;
+  };
+  finance?: {
+    minWithdrawal?: number;
+    withdrawalDelayDays?: number;
+    autoPayoutEnabled?: boolean;
+  };
+  advanced?: {
+    debugMode?: boolean;
+  };
+  commercial?: {
+    instructorShare?: number;
+    payoutDelayDays?: number;
+  };
+  affiliate?: {
+    commissionRate?: number;
+  };
+  content?: {
+    landingPage?: any;
+    aboutPage?: any;
+  };
+  social?: {
+    facebookUrl?: string;
+    twitterUrl?: string;
+    linkedinUrl?: string;
+    instagramUrl?: string;
+    youtubeUrl?: string;
+    telegramUrl?: string;
   };
 }
 
-export interface NdaraNotification {
+export interface Notification {
   id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'transaction' | 'course';
+  text: string;
+  link?: string;
+  type: 'info' | 'success' | 'reminder' | 'alert';
   read: boolean;
   createdAt: Timestamp | FieldValue | Date;
-  actionUrl?: string;
+}
+
+export interface CartItem {
+  id: string;
+  courseId: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  active: boolean;
+  targetRole?: string;
+  description?: string;
+}
+
+export interface Section {
+  id: string;
+  title: string;
+  order: number;
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Lecture {
+  id: string;
+  title: string;
+  type: 'video' | 'youtube' | 'text' | 'pdf';
+  contentUrl?: string;
+  textContent?: string;
+  duration?: number;
+  order: number;
+  isFreePreview?: boolean;
+}
+
+export interface Review {
+  id: string;
+  courseId: string;
+  studentId: string;
+  instructorId: string;
+  rating: number;
+  comment: string;
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface AffiliateTransaction {
+  id: string;
+  affiliateId: string;
+  buyerId: string;
+  buyerName: string;
+  courseId: string;
+  courseTitle: string;
+  amount: number;
+  commissionAmount: number;
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  createdAt: Timestamp | FieldValue | Date;
+  unlockDate: Timestamp | FieldValue | Date;
+}
+
+export interface Chat {
+  id: string;
+  participants: string[];
+  lastMessage: string;
+  updatedAt: Timestamp | FieldValue | Date;
+  unreadBy?: string[];
+  status?: 'active' | 'blocked';
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  createdAt: Timestamp | FieldValue | Date;
+  status?: 'sent' | 'read';
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  subject: string;
+  category: 'Paiement' | 'Technique' | 'Pédagogique';
+  status: 'ouvert' | 'fermé';
+  lastMessage: string;
+  courseId: string;
+  instructorId: string;
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt: Timestamp | FieldValue | Date;
+  resolution?: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  adminId: string;
+  eventType: string;
+  target: { id: string; type: string };
+  details: string;
+  timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface SecurityLog {
+  id: string;
+  userId?: string;
+  eventType: string;
+  details: string;
+  timestamp: Timestamp | FieldValue | Date;
+  status?: 'open' | 'resolved';
+  targetId?: string;
+}
+
+export interface TrackingEvent {
+  id: string;
+  eventType: string;
+  sessionId: string;
+  pageUrl: string;
+  timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface NdaraPaymentDetails {
+  transactionId: string;
+  gatewayTransactionId?: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  metadata: {
+    userId: string;
+    courseId: string;
+    type?: 'course_purchase' | 'wallet_topup';
+    affiliateId?: string;
+    couponId?: string;
+    fraudScore?: number;
+  };
 }
