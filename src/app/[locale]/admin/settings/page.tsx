@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { 
   Settings as SettingsIcon, 
   Loader2, 
@@ -322,8 +323,7 @@ export default function AdminSettingsPage() {
                                 <FormLabel className="text-base">Transactions Actives</FormLabel>
                                 <FormDescription>Autoriser les flux financiers sur la plateforme.</FormDescription>
                             </div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                        </FormItem>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormItem>
                     )}/>
                     <div className="grid md:grid-cols-3 gap-6">
                         <FormField control={form.control} name="payments.currency" render={({ field }) => (
@@ -466,8 +466,6 @@ export default function AdminSettingsPage() {
                   </Card>
                 </div>
               )}
-
-              {/* ... AJOUTER ICI LES AUTRES SECTIONS SELON LE MÊME MODÈLE ... */}
 
             </div>
 
