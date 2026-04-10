@@ -63,6 +63,7 @@ export interface NdaraUser {
     twitter?: string;
     linkedin?: string;
     youtube?: string;
+    telegramUrl?: string;
   };
   instructorApplication?: {
     specialty: string;
@@ -390,31 +391,28 @@ export interface DesignSettings {
 }
 
 /**
- * STRUCTURE DE CONFIGURATION GLOBALE NDARA
+ * STRUCTURE DE CONFIGURATION GLOBALE NDARA - v3.0 (Strict Execution)
  */
 export interface Settings {
   general: {
     siteName: string;
-    siteDescription: string;
+    logoUrl: string;
+    faviconUrl: string;
     contactEmail: string;
     supportPhone: string;
     address: string;
     defaultLanguage: 'fr' | 'en' | 'sg';
-    defaultCountry: string;
     timezone: string;
-    logoUrl?: string;
-    faviconUrl?: string;
   };
   payments: {
     paymentsEnabled: boolean;
     currency: string;
-    paymentMethods: string[]; // ex: ["mtn", "orange", "card"]
+    paymentMethods: string[];
     transactionFeePercent: number;
     minDeposit: number;
     maxDeposit: number;
     walletEnabled: boolean;
     operatorCommission: number;
-    mesombEnabled: boolean;
     paymentMode: 'test' | 'live';
   };
   users: {
@@ -422,7 +420,7 @@ export interface Settings {
     allowInstructorSignup: boolean;
     requireEmailVerification: boolean;
     autoApproveInstructors: boolean;
-    defaultRole: UserRole;
+    defaultRole: string;
     maxAccountsPerUser: number;
   };
   courses: {
@@ -432,27 +430,18 @@ export interface Settings {
     instructorRevenuePercent: number;
     allowDownload: boolean;
     certificateEnabled: boolean;
-    autoApproval: boolean;
-    maxLessons: number;
-    maxVideoDuration: number;
   };
   marketplace: {
     enableMarketplace: boolean;
     minimumResalePrice: number;
     resaleCommissionPercent: number;
     allowLicenseResale: boolean;
-    allowTeacherToTeacherResale: boolean;
-    allowCourseBuyout: boolean;
-    allowResaleRights: boolean;
   };
   ai: {
     aiEnabled: boolean;
     modelName: string;
     maxRequestsPerUser: number;
     contentGenerationEnabled: boolean;
-    autoCorrection: boolean;
-    autonomousTutor: boolean;
-    fraudDetection: boolean;
   };
   notifications: {
     emailNotifications: boolean;
@@ -470,7 +459,6 @@ export interface Settings {
     maxLoginAttempts: number;
     blockedUsers: string[];
     activityLogsEnabled: boolean;
-    accountProtectionRules?: string;
   };
   localization: {
     supportedLanguages: string[];
@@ -491,9 +479,6 @@ export interface Settings {
     minWithdrawal: number;
     withdrawalDelayDays: number;
     autoPayoutEnabled: boolean;
-    minPayoutThreshold: number;
-    withdrawalFee: number;
-    payoutDelayDays: number;
   };
   advanced: {
     apiKeys: Record<string, string>;
@@ -515,7 +500,6 @@ export interface Settings {
     announcementMessage?: string;
     allowYoutube?: boolean;
     allowBunny?: boolean;
-    allowInstructorSignup?: boolean;
   };
   commercial?: {
     instructorShare?: number;
