@@ -102,6 +102,9 @@ export interface NdaraUser {
     firstCourseTitle: string;
     firstCourseDescription: string;
     whatsappNumber: string;
+    linkedinUrl?: string;
+    youtubeUrl?: string;
+    portfolioUrl?: string;
     submittedAt: Timestamp | FieldValue | Date;
     status: 'pending' | 'accepted' | 'rejected';
     decisionDate?: Timestamp | FieldValue | Date;
