@@ -133,16 +133,23 @@ export interface Course {
   tags?: string[];
 }
 
+export interface QuestionOption {
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  options: QuestionOption[];
+}
+
 export interface Quiz {
   id: string;
   title: string;
   description?: string;
   courseId: string;
-  questions?: {
-    id: string;
-    text: string;
-    options: { text: string; isCorrect: boolean; }[];
-  }[];
+  questions?: Question[];
 }
 
 export interface Coupon {
@@ -206,6 +213,7 @@ export interface Payment {
   status: 'completed' | 'pending' | 'failed';
   date: Timestamp | FieldValue | Date;
   metadata?: Record<string, any>;
+  platformFee?: number;
 }
 
 export interface Transaction {
@@ -214,7 +222,9 @@ export interface Transaction {
   amount: number;
   type: 'deposit' | 'withdrawal' | 'purchase' | 'sale' | 'affiliate_commission' | 'refund';
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  description?: string;
   createdAt: Timestamp | FieldValue | Date;
+  metadata?: Record<string, any>;
 }
 
 export interface PayoutRequest {
@@ -224,12 +234,13 @@ export interface PayoutRequest {
   method: 'mobile_money' | 'bank_transfer';
   status: 'pending' | 'approved' | 'paid' | 'rejected';
   createdAt: Timestamp | FieldValue | Date;
+  processedAt?: Timestamp | FieldValue | Date;
 }
 
 /* =========================
    GEO & PAYS (FIX EXPORT)
 ========================= */
-// ✅ Sorti de l'interface pour être exportable individuellement
+// ✅ Extraction pour permettre l'importation directe
 export interface PaymentMethod {
   id: string;
   name: string;
@@ -270,7 +281,8 @@ export interface NdaraNotification {
   userId: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'info' | 'success' | 'warning' | 'error' | 'transaction' | 'course';
   read: boolean;
   createdAt: Timestamp | FieldValue | Date;
+  actionUrl?: string;
 }
