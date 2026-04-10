@@ -92,8 +92,8 @@ const settingsSchema = z.object({
     minimumResalePrice: z.coerce.number().min(0),
     resaleCommissionPercent: z.coerce.number().min(0).max(100),
     allowLicenseResale: z.boolean(),
-    allowCourseBuyout: z.boolean(),
-    allowResaleRights: z.boolean()
+    allowCourseBuyout: z.boolean().optional(),
+    allowResaleRights: z.boolean().optional()
   }),
   ai: z.object({
     aiEnabled: z.boolean(),
@@ -323,7 +323,8 @@ export default function AdminSettingsPage() {
                                 <FormLabel className="text-base">Transactions Actives</FormLabel>
                                 <FormDescription>Autoriser les flux financiers sur la plateforme.</FormDescription>
                             </div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormItem>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                        </FormItem>
                     )}/>
                     <div className="grid md:grid-cols-3 gap-6">
                         <FormField control={form.control} name="payments.currency" render={({ field }) => (
