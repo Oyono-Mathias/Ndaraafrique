@@ -1,7 +1,7 @@
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.6 (FIXED)
+ * SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.7 (ULTIMATE FIX)
  */
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -19,7 +19,7 @@ export type PaymentProvider =
   | 'admin_recharge';
 
 /* =========================
-   ROLES
+   ROLES & PERMISSIONS
 ========================= */
 export interface Role {
   id: string;
@@ -38,61 +38,47 @@ export interface NdaraUser {
   username: string;
   fullName: string;
   role: UserRole;
-
-  // ✅ FIX: existait dans ton code mais cassait le build
   availableRoles?: UserRole[];
-
   profilePictureURL?: string;
   status: 'active' | 'suspended' | 'deleted';
-
   balance: number;
   affiliateBalance?: number;
   pendingAffiliateBalance?: number;
   virtualBalance?: number;
-
   isInstructorApproved: boolean;
   preferredLanguage?: 'fr' | 'en' | 'sg';
   isProfileComplete: boolean;
-
   createdAt?: Timestamp | FieldValue | Date;
   lastSeen?: Timestamp | FieldValue | Date;
   lastLogin?: Timestamp | FieldValue | Date;
-
   isOnline?: boolean;
   phoneNumber?: string;
   countryName?: string;
   countryCode?: string;
-
   bio?: string;
   rating?: number;
-
   referralCode?: string;
   referredBy?: string | null;
-
   affiliateStats?: {
     clicks: number;
     registrations: number;
     sales: number;
     earnings: number;
   };
-
   payoutInfo?: {
     mobileMoneyNumber?: string;
   };
-
   careerGoals?: {
     currentRole?: string;
     interestDomain?: string;
     mainGoal?: string;
   };
-
   socialLinks?: {
     website?: string;
     twitter?: string;
     linkedin?: string;
     youtube?: string;
   };
-
   instructorApplication?: {
     specialty: string;
     professionalExperience: string;
@@ -104,7 +90,6 @@ export interface NdaraUser {
     decisionDate?: Timestamp | FieldValue | Date;
     feedback?: string;
   };
-
   restrictions?: {
     canWithdraw?: boolean;
     canSendMessage?: boolean;
@@ -112,7 +97,6 @@ export interface NdaraUser {
     canSellCourse?: boolean;
     canAccessPlatform?: boolean;
   };
-
   sanctions?: {
     isSanctioned: boolean;
     reason: string;
@@ -120,25 +104,13 @@ export interface NdaraUser {
     date: Timestamp | FieldValue | Date;
     expiresAt?: Timestamp | FieldValue | Date | null;
   };
-
   permissions?: Record<string, boolean>;
-
   badges?: string[];
   isDemoAccount?: boolean;
 }
 
 /* =========================
-   PAYOUT PARAMS (FIX)
-========================= */
-export interface RequestPayoutParams {
-  instructorId: string;
-  requesterId: string;
-  amount: number;
-  method: 'mobile_money' | 'bank_transfer';
-}
-
-/* =========================
-   COURSES
+   COURSES & QUIZZES (NOUVEAU)
 ========================= */
 export interface Course {
   id: string;
@@ -147,25 +119,40 @@ export interface Course {
   instructorId: string;
   category: string;
   price: number;
-
   status: 'Draft' | 'Published' | 'Pending Review';
-
   imageUrl?: string;
   rating?: number;
   participantsCount?: number;
-
   createdAt?: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
   publishedAt?: Timestamp | FieldValue | Date | null;
-
   resaleRightsAvailable?: boolean;
   resaleRightsPrice?: number;
   buyoutStatus?: 'none' | 'requested' | 'approved';
   buyoutPrice?: number;
 }
 
+export interface QuestionOption {
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  options: QuestionOption[];
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  courseId: string;
+  questions?: Question[];
+}
+
 /* =========================
-   PAYMENTS
+   PAYMENTS & PAYOUTS
 ========================= */
 export interface Payment {
   id: string;
@@ -174,16 +161,11 @@ export interface Payment {
   currency: string;
   provider: PaymentProvider | string;
   status: 'completed' | 'pending' | 'failed';
-
   date: Timestamp | FieldValue | Date;
-
   metadata?: Record<string, any>;
   platformFee?: number;
 }
 
-/* =========================
-   PAYOUT
-========================= */
 export interface PayoutRequest {
   id: string;
   instructorId: string;
@@ -194,8 +176,57 @@ export interface PayoutRequest {
   processedAt?: Timestamp | FieldValue | Date;
 }
 
+export interface RequestPayoutParams {
+  instructorId: string;
+  requesterId: string;
+  amount: number;
+  method: 'mobile_money' | 'bank_transfer';
+}
+
 /* =========================
-   COUNTRY / PAYMENT
+   SETTINGS (CORRIGÉ POUR LE BUILD)
+========================= */
+export interface Settings {
+  general: {
+    siteName: string;
+    contactEmail: string;
+    defaultLanguage: 'fr' | 'en' | 'sg';
+  };
+
+  // ✅ AJOUTÉ : Pour la page "Devenir Instructeur"
+  platform?: {
+    allowInstructorSignup?: boolean;
+    maintenanceMode?: boolean;
+    [key: string]: any;
+  };
+
+  instructors?: {
+    autoApproval?: boolean;
+  };
+
+  payments: {
+    paymentsEnabled: boolean;
+    currency: string;
+    transactionFeePercent: number;
+    operatorCommission: number;
+    minDeposit: number;
+    maxDeposit: number;
+    walletEnabled: boolean;
+    minimumPayoutAmount: number;
+    paymentMode: 'test' | 'live';
+  };
+
+  marketplace?: {
+    minimumResalePrice?: number;
+  };
+
+  security: {
+    maintenanceMode: boolean;
+  };
+}
+
+/* =========================
+   GEO / COUNTRIES
 ========================= */
 export interface PaymentMethod {
   id: string;
@@ -214,41 +245,4 @@ export interface Country {
   flagEmoji: string;
   active: boolean;
   paymentMethods: PaymentMethod[];
-}
-
-/* =========================
-   SETTINGS (FIX COMPLET)
-========================= */
-export interface Settings {
-  general: {
-    siteName: string;
-    contactEmail: string;
-    defaultLanguage: 'fr' | 'en' | 'sg';
-  };
-
-  payments: {
-    paymentsEnabled: boolean;
-    currency: string;
-
-    transactionFeePercent: number;
-    operatorCommission: number;
-
-    minDeposit: number;
-    maxDeposit: number;
-
-    walletEnabled: boolean;
-
-    // ✅ FIX CRITIQUE
-    minimumPayoutAmount: number;
-
-    paymentMode: 'test' | 'live';
-  };
-
-  marketplace?: {
-    minimumResalePrice?: number;
-  };
-
-  security: {
-    maintenanceMode: boolean;
-  };
 }
