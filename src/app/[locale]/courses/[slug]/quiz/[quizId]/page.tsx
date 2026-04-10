@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Secure quiz interface.
- * Standardized to use [slug] for parent course identifier.
+ * @fileOverview Interface de quiz sécurisée.
+ * ✅ RÉSOLU : Types locaux pour bypasser les erreurs de build Vercel.
+ * ✅ RÉSOLU : Correction du RadioGroup pour une sélection unique fluide.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,8 +25,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Loader2, ArrowLeft, Award } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import type { Quiz, Question } from '@/lib/types';
 import confetti from 'canvas-confetti';
+
+/**
+ * ✅ RÉSOLU : Interfaces locales pour isoler la page du fichier @/lib/types défectueux
+ */
+interface QuestionOption {
+  text: string;
+  isCorrect: boolean;
+}
+
+interface Question {
+  id: string;
+  text: string;
+  options: QuestionOption[];
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  courseId: string;
+}
 
 export default function TakeQuizPage() {
   const params = useParams();
@@ -56,19 +77,26 @@ export default function TakeQuizPage() {
     }
   }, [quiz, db, quizId]);
 
-  const handleAnswerSelect = (optionIndex: number) => {
-    const currentQuestionId = questions[currentQuestionIndex].id;
-    setAnswers(prev => ({ ...prev, [currentQuestionId]: optionIndex }));
-  };
-
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!user || questions.length === 0) return;
+    
+    // Vérifier si toutes les questions ont reçu une réponse
+    if (Object.keys(answers).length < questions.length) {
+        toast({
+            variant: "destructive",
+            title: "Quiz incomplet",
+            description: "Veuillez répondre à toutes les questions avant de soumettre."
+        });
+        return;
+    }
+
     setIsSubmitting(true);
     let score = 0;
     questions.forEach(q => {
       const correctIndex = q.options.findIndex(opt => opt.isCorrect);
       if (answers[q.id] === correctIndex) score++;
     });
+    
     const percentageScore = Math.round((score / questions.length) * 100);
     setFinalScore(percentageScore);
     
@@ -98,17 +126,20 @@ export default function TakeQuizPage() {
   if (finalScore !== null) {
     return (
         <div className="flex flex-col items-center justify-center h-screen p-4 bg-slate-950">
-            <Card className="w-full max-w-lg text-center dark:bg-slate-800 rounded-[2.5rem]">
+            <Card className="w-full max-w-lg text-center dark:bg-slate-800 rounded-[2.5rem] border-white/5 shadow-2xl">
                 <CardHeader>
                     <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
-                    <CardTitle className="text-2xl font-bold dark:text-white">Résultats</CardTitle>
-                    <CardDescription>{quiz?.title}</CardDescription>
+                    <CardTitle className="text-2xl font-bold dark:text-white uppercase tracking-tighter">Résultats</CardTitle>
+                    <CardDescription className="text-slate-400">{quiz?.title}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-6xl font-black text-primary">{finalScore}%</p>
+                    <p className="text-7xl font-black text-primary tracking-tighter">{finalScore}%</p>
+                    <p className="mt-2 text-slate-500 text-xs font-bold uppercase tracking-widest">Score Final</p>
                 </CardContent>
                 <CardFooter>
-                    <Button onClick={() => router.push(`/courses/${slug}`)} className="w-full h-14 rounded-2xl">Continuer</Button>
+                    <Button onClick={() => router.push(`/courses/${slug}`)} className="w-full h-14 rounded-2xl font-bold uppercase text-xs tracking-widest">
+                        Continuer la formation
+                    </Button>
                 </CardFooter>
             </Card>
         </div>
@@ -120,32 +151,61 @@ export default function TakeQuizPage() {
   return (
     <div className="flex flex-col h-screen p-4 bg-slate-950">
       <header className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${slug}`)} className="text-slate-400">
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${slug}`)} className="text-slate-400 hover:text-white transition-colors">
           <ArrowLeft className="h-4 w-4 mr-2" /> Retour
         </Button>
       </header>
-      <div className="w-full max-w-2xl mx-auto flex-1">
-        <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="mb-6" />
-        <Card className="dark:bg-slate-800 rounded-3xl overflow-hidden shadow-xl">
+      
+      <div className="w-full max-w-2xl mx-auto flex-1 flex flex-col justify-center">
+        <div className="mb-6">
+            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 px-1">
+                <span>Question {currentQuestionIndex + 1} / {questions.length}</span>
+                <span>{Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}%</span>
+            </div>
+            <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="h-2 bg-slate-900" />
+        </div>
+
+        <Card className="dark:bg-slate-900/50 border-white/5 rounded-[2rem] overflow-hidden shadow-2xl backdrop-blur-sm">
             <CardContent className="p-8">
-                <h2 className="text-xl font-bold mb-8 text-white leading-snug">{currentQuestion?.text}</h2>
-                <div className="space-y-4">
+                <h2 className="text-xl font-bold mb-8 text-white leading-tight">{currentQuestion?.text}</h2>
+                
+                {/* ✅ RadioGroup placé autour de la liste pour gérer l'état correctement */}
+                <RadioGroup 
+                    value={answers[currentQuestion?.id]?.toString()} 
+                    onValueChange={(v) => setAnswers(prev => ({ ...prev, [currentQuestion.id]: parseInt(v, 10) }))}
+                    className="space-y-3"
+                >
                     {currentQuestion?.options.map((opt, i) => (
-                        <div key={i} className="flex items-center space-x-3 p-4 bg-slate-900/50 rounded-xl border border-white/5">
-                            <RadioGroup onValueChange={(v) => handleAnswerSelect(parseInt(v, 10))}>
-                                <div className="flex items-center gap-2">
-                                    <RadioGroupItem value={i.toString()} id={`q-${i}`} />
-                                    <label htmlFor={`q-${i}`} className="text-slate-300 font-medium cursor-pointer">{opt.text}</label>
-                                </div>
-                            </RadioGroup>
+                        <div key={i} className={`flex items-center space-x-3 p-5 rounded-2xl border transition-all duration-200 ${
+                            answers[currentQuestion.id] === i 
+                            ? "bg-primary/10 border-primary/40" 
+                            : "bg-slate-900/50 border-white/5 hover:border-white/10"
+                        }`}>
+                            <RadioGroupItem value={i.toString()} id={`q-${i}`} className="border-slate-600" />
+                            <label htmlFor={`q-${i}`} className="text-slate-200 font-semibold cursor-pointer flex-1 py-1">
+                                {opt.text}
+                            </label>
                         </div>
                     ))}
-                </div>
+                </RadioGroup>
+
                 <div className="mt-10 flex justify-end">
                     {currentQuestionIndex < questions.length - 1 ? (
-                        <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)} className="h-12 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Suivant</Button>
+                        <Button 
+                            disabled={answers[currentQuestion?.id] === undefined}
+                            onClick={() => setCurrentQuestionIndex(prev => prev + 1)} 
+                            className="h-12 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest"
+                        >
+                            Suivant
+                        </Button>
                     ) : (
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className="h-12 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest bg-primary">Terminer</Button>
+                        <Button 
+                            onClick={handleSubmit} 
+                            disabled={isSubmitting || answers[currentQuestion?.id] === undefined} 
+                            className="h-12 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest bg-emerald-600 hover:bg-emerald-700"
+                        >
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Terminer"}
+                        </Button>
                     )}
                 </div>
             </CardContent>
