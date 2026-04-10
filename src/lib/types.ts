@@ -256,6 +256,13 @@ export interface PayoutRequest {
   updatedAt?: Timestamp | FieldValue | Date;
 }
 
+export interface RequestPayoutParams {
+  instructorId: string;
+  amount: number;
+  method: 'mobile_money' | 'bank_transfer';
+  requesterId: string;
+}
+
 /* =========================
    GEO & PAYS
 ========================= */
