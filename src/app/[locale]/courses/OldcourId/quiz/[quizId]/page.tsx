@@ -25,6 +25,7 @@ import { Loader2, ArrowLeft, Award } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import confetti from 'canvas-confetti';
+import { cn } from '@/lib/utils'; // ✅ Import ajouté pour corriger l'erreur de build
 
 /**
  * ✅ RÉSOLU : Interfaces locales pour bypasser les erreurs de build Vercel
@@ -70,7 +71,6 @@ export default function TakeQuizPage() {
       const fetchQuestions = async () => {
         const questionsQuery = query(collection(db, `quizzes/${quizId}/questions`));
         const questionsSnap = await getDocs(questionsQuery);
-        // Mapping manuel pour assurer la compatibilité avec l'interface locale
         setQuestions(questionsSnap.docs.map(d => ({ 
             id: d.id, 
             ...d.data() 
@@ -93,7 +93,6 @@ export default function TakeQuizPage() {
     let score = 0;
     
     questions.forEach(q => {
-      // On cherche l'index de l'option marquée comme correcte
       const correctIndex = q.options.findIndex(opt => opt.isCorrect);
       if (answers[q.id] === correctIndex) score++;
     });
@@ -206,7 +205,7 @@ export default function TakeQuizPage() {
                             disabled={isSubmitting || answers[currentQuestion?.id] === undefined}
                             className="rounded-xl px-10 h-12 font-black uppercase text-[10px] tracking-widest bg-emerald-600 hover:bg-emerald-700"
                         >
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Soumettre mes réponses"}
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Soumettre"}
                         </Button>
                     )}
                 </div>
