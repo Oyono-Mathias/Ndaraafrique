@@ -8,7 +8,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { UserRole } from '@/lib/types';
+import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne : Vérifie si l'appelant a réellement les droits Admin dans Firestore.
@@ -140,7 +140,7 @@ export async function debitUserWalletAction({
 /**
  * 🔒 3 & 4. Modifier le statut d'un utilisateur (Suspendre/Réactiver).
  */
-export async function updateUserStatusAction({
+export async function toggleUserStatusAction({
     adminId,
     targetUserId,
     status,
@@ -249,7 +249,85 @@ export async function changeUserRoleAction({
 }
 
 /**
- * 🎁 7. Offrir un cours (Grant Access).
+ * 🛡️ 7. Appliquer des restrictions.
+ */
+export async function applyUserRestrictionsAction({
+    adminId,
+    targetUserId,
+    restrictions,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    restrictions: NdaraUser['restrictions'];
+    reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+
+        const db = getAdminDb();
+        await db.collection('users').doc(targetUserId).update({
+            restrictions,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.restrictions.update',
+            target: { id: targetUserId, type: 'user' },
+            details: `Restrictions mises à jour. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * 🔓 8. Lever toutes les restrictions.
+ */
+export async function removeUserRestrictionsAction({
+    adminId,
+    targetUserId
+}: {
+    adminId: string;
+    targetUserId: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+
+        const db = getAdminDb();
+        const defaultRestrictions = {
+            canWithdraw: true,
+            canSendMessage: true,
+            canBuyCourse: true,
+            canSellCourse: true,
+            canAccessPlatform: true
+        };
+
+        await db.collection('users').doc(targetUserId).update({
+            restrictions: defaultRestrictions,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.restrictions.remove',
+            target: { id: targetUserId, type: 'user' },
+            details: `Toutes les restrictions ont été levées.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * 🎁 9. Offrir un cours (Grant Access).
  */
 export async function grantFreeCourseAction({
     adminId,
@@ -301,8 +379,7 @@ export async function grantFreeCourseAction({
 }
 
 /**
- * 🔍 8. Voir les transactions d'un utilisateur.
- * Note : Puisqu'il s'agit d'une lecture, on retourne les données directement.
+ * 🔍 10. Voir les transactions d'un utilisateur.
  */
 export async function getUserTransactionsAction(adminId: string, targetUserId: string) {
     try {
