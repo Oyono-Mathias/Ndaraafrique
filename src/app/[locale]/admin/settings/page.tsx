@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.6
- * ✅ RÉSOLU : Validation Zod assouplie pour permettre la sauvegarde.
- * ✅ RÉSOLU : Feedback visuel sur les erreurs de validation.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.7
+ * ✅ RÉSOLU : Validation Zod ultra-flexible pour éviter les blocages "Formulaire invalide".
+ * ✅ RÉSOLU : Feedback précis sur l'erreur de validation (nom du champ).
+ * ✅ RÉSOLU : Ajout des champs de dépôts min/max dans l'UI.
  */
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
   Settings as SettingsIcon, 
@@ -39,24 +39,25 @@ import {
   TrendingUp, 
   Landmark, 
   Zap,
-  ShieldAlert,
-  AlertCircle
+  AlertCircle,
+  Smartphone,
+  ShieldAlert
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-// Schéma de validation plus flexible pour éviter les blocages
+// Schéma de validation extrêmement flexible pour éviter les blocages sur les champs non visibles
 const settingsSchema = z.object({
   general: z.object({
-    siteName: z.string().min(2, "Nom requis"),
-    logoUrl: z.string().optional().nullable(),
-    faviconUrl: z.string().optional().nullable(),
-    contactEmail: z.string().email("Email invalide").optional().or(z.literal('')),
-    contactPhone: z.string().optional().or(z.literal('')),
-    address: z.string().optional().or(z.literal('')),
+    siteName: z.string().min(1, "Nom requis").default('Ndara Afrique'),
+    logoUrl: z.string().optional().nullable().default(''),
+    faviconUrl: z.string().optional().nullable().default(''),
+    contactEmail: z.string().optional().default(''),
+    contactPhone: z.string().optional().default(''),
+    address: z.string().optional().default(''),
     defaultLanguage: z.enum(['fr', 'en', 'sg']).default('fr'),
     timezone: z.string().default('Africa/Douala')
-  }),
+  }).default({}),
   payments: z.object({
     paymentsEnabled: z.boolean().default(true),
     currency: z.string().default('XOF'),
@@ -67,7 +68,7 @@ const settingsSchema = z.object({
     walletEnabled: z.boolean().default(true),
     operatorCommission: z.coerce.number().min(0).default(3),
     paymentMode: z.enum(['test', 'live']).default('test')
-  }),
+  }).default({}),
   users: z.object({
     allowRegistration: z.boolean().default(true),
     allowInstructorSignup: z.boolean().default(true),
@@ -75,7 +76,7 @@ const settingsSchema = z.object({
     autoApproveInstructors: z.boolean().default(false),
     defaultRole: z.string().default('student'),
     maxAccountsPerUser: z.coerce.number().min(1).default(1)
-  }),
+  }).default({}),
   courses: z.object({
     allowCourseCreation: z.boolean().default(true),
     requireAdminApproval: z.boolean().default(true),
@@ -83,13 +84,13 @@ const settingsSchema = z.object({
     instructorRevenuePercent: z.coerce.number().min(0).max(100).default(70),
     allowDownload: z.boolean().default(false),
     certificateEnabled: z.boolean().default(true)
-  }),
+  }).default({}),
   marketplace: z.object({
     enableMarketplace: z.boolean().default(false),
     minimumResalePrice: z.coerce.number().min(0).default(10000),
     resaleCommissionPercent: z.coerce.number().min(0).max(100).default(20),
     allowLicenseResale: z.boolean().default(false),
-  }),
+  }).default({}),
   ai: z.object({
     aiEnabled: z.boolean().default(true),
     modelName: z.string().default('gemini-1.5-flash'),
@@ -98,7 +99,7 @@ const settingsSchema = z.object({
     autoCorrection: z.boolean().default(true),
     autonomousTutor: z.boolean().default(true),
     fraudDetection: z.boolean().default(true)
-  }),
+  }).default({}),
   notifications: z.object({
     emailNotifications: z.boolean().default(true),
     pushNotifications: z.boolean().default(true),
@@ -107,20 +108,20 @@ const settingsSchema = z.object({
       newUser: z.boolean().default(true),
       newPayment: z.boolean().default(true),
       systemError: z.boolean().default(true)
-    })
-  }),
+    }).default({})
+  }).default({}),
   security: z.object({
     maintenanceMode: z.boolean().default(false),
     enable2fa: z.boolean().default(false),
     maxLoginAttempts: z.coerce.number().min(1).default(5),
     blockedUsers: z.array(z.string()).default([]),
     activityLogsEnabled: z.boolean().default(true)
-  }),
+  }).default({}),
   localization: z.object({
     supportedLanguages: z.array(z.string()).default(['fr', 'en', 'sg']),
     defaultLanguage: z.string().default('fr'),
     autoDetectLanguage: z.boolean().default(true)
-  }),
+  }).default({}),
   marketing: z.object({
     globalAnnouncement: z.string().default(''),
     promoCodesEnabled: z.boolean().default(true),
@@ -128,23 +129,38 @@ const settingsSchema = z.object({
     seo: z.object({
       title: z.string().default('Ndara Afrique'),
       description: z.string().default('Plateforme d\'excellence')
-    })
-  }),
+    }).default({})
+  }).default({}),
   finance: z.object({
     platformRevenuePercent: z.coerce.number().min(0).max(100).default(20),
     minWithdrawal: z.coerce.number().min(0).default(5000),
     withdrawalDelayDays: z.coerce.number().min(0).default(14),
     autoPayoutEnabled: z.boolean().default(false)
-  }),
+  }).default({}),
   advanced: z.object({
     apiKeys: z.record(z.string()).default({}),
     firebaseConfig: z.record(z.any()).default({}),
     webhookUrls: z.array(z.string()).default([]),
     debugMode: z.boolean().default(false)
-  })
+  }).default({})
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
+
+const DEFAULT_FORM_VALUES: SettingsValues = {
+    general: { siteName: 'Ndara Afrique', logoUrl: '', faviconUrl: '', contactEmail: '', contactPhone: '', address: '', defaultLanguage: 'fr', timezone: 'Africa/Douala' },
+    payments: { paymentsEnabled: true, currency: 'XOF', paymentMethods: ['mesomb'], transactionFeePercent: 10, minDeposit: 500, maxDeposit: 500000, walletEnabled: true, operatorCommission: 3, paymentMode: 'test' },
+    users: { allowRegistration: true, allowInstructorSignup: true, requireEmailVerification: false, autoApproveInstructors: false, defaultRole: 'student', maxAccountsPerUser: 1 },
+    courses: { allowCourseCreation: true, requireAdminApproval: true, minimumCoursePrice: 0, instructorRevenuePercent: 70, allowDownload: false, certificateEnabled: true },
+    marketplace: { enableMarketplace: false, minimumResalePrice: 10000, resaleCommissionPercent: 20, allowLicenseResale: false },
+    ai: { aiEnabled: true, modelName: 'gemini-1.5-flash', maxRequestsPerUser: 50, contentGenerationEnabled: true, autoCorrection: true, autonomousTutor: true, fraudDetection: true },
+    notifications: { emailNotifications: true, pushNotifications: true, smsNotifications: false, adminAlerts: { newUser: true, newPayment: true, systemError: true } },
+    security: { maintenanceMode: false, enable2fa: false, maxLoginAttempts: 5, blockedUsers: [], activityLogsEnabled: true },
+    localization: { supportedLanguages: ['fr', 'en', 'sg'], defaultLanguage: 'fr', autoDetectLanguage: true },
+    marketing: { globalAnnouncement: '', promoCodesEnabled: true, referralProgramEnabled: true, seo: { title: 'Ndara Afrique', description: 'Plateforme d\'excellence' } },
+    finance: { platformRevenuePercent: 20, minWithdrawal: 5000, withdrawalDelayDays: 14, autoPayoutEnabled: false },
+    advanced: { apiKeys: {}, firebaseConfig: {}, webhookUrls: [], debugMode: false }
+};
 
 export default function AdminSettingsPage() {
   const { currentUser } = useRole();
@@ -156,34 +172,26 @@ export default function AdminSettingsPage() {
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
-        general: { siteName: 'Ndara Afrique', defaultLanguage: 'fr', timezone: 'Africa/Douala' },
-        payments: { paymentsEnabled: true, currency: 'XOF', transactionFeePercent: 10, paymentMode: 'test' },
-        ai: { aiEnabled: true, modelName: 'gemini-1.5-flash', maxRequestsPerUser: 50 }
-    }
+    defaultValues: DEFAULT_FORM_VALUES
   });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
-        const d = snap.data() as Settings;
-        // On fusionne les données reçues avec les valeurs par défaut pour éviter les champs vides
-        form.reset(sanitizeForForm(d));
+        const d = snap.data() as any;
+        // Fusion profonde simplifiée pour les réglages
+        const mergedValues = { ...DEFAULT_FORM_VALUES };
+        Object.keys(DEFAULT_FORM_VALUES).forEach(key => {
+            if (d[key]) {
+                (mergedValues as any)[key] = { ...(DEFAULT_FORM_VALUES as any)[key], ...d[key] };
+            }
+        });
+        form.reset(mergedValues);
       }
       setIsLoading(false);
     });
     return () => unsubscribe();
   }, [db, form]);
-
-  const sanitizeForForm = (data: any) => {
-      // S'assure que les objets imbriqués existent pour éviter les erreurs React Hook Form
-      const sections = ['general', 'payments', 'users', 'courses', 'marketplace', 'ai', 'notifications', 'security', 'localization', 'marketing', 'finance', 'advanced'];
-      const sanitized = { ...data };
-      sections.forEach(s => {
-          if (!sanitized[s]) sanitized[s] = {};
-      });
-      return sanitized;
-  };
 
   const onSubmit = async (values: SettingsValues) => {
     if (!currentUser) return;
@@ -197,7 +205,7 @@ export default function AdminSettingsPage() {
       });
       
       if (result.success) {
-        toast({ title: "Modifications enregistrées", description: `Le module ${activeTab} a été mis à jour.` });
+        toast({ title: "Configuration sauvegardée", description: `Le module ${activeTab} a été mis à jour dans Firestore.` });
       } else {
         throw new Error(result.error);
       }
@@ -210,10 +218,12 @@ export default function AdminSettingsPage() {
 
   const onValidationError = (errors: any) => {
       console.error("Validation Errors:", errors);
+      // Trouver le premier message d'erreur pour aider l'admin
+      const firstErrorKey = Object.keys(errors)[0] || 'inconnu';
       toast({ 
           variant: 'destructive', 
           title: "Formulaire invalide", 
-          description: "Vérifiez les champs en rouge. Certains formats ne sont pas respectés." 
+          description: `Vérifiez les réglages. Erreur détectée dans : ${firstErrorKey}`
       });
   };
 
@@ -235,7 +245,7 @@ export default function AdminSettingsPage() {
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#0f172a]"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#0f172a] text-white -m-6 p-0">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#0f172a] text-white -m-6 p-0 font-sans">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, onValidationError)} className="flex flex-col lg:flex-row w-full">
           
@@ -332,7 +342,7 @@ export default function AdminSettingsPage() {
                           <FormItem><FormLabel>Devise</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 font-bold" /></FormControl></FormItem>
                       )}/>
                       <FormField control={form.control} name="payments.transactionFeePercent" render={({ field }) => (
-                          <FormItem><FormLabel>Frais Platforme (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 font-bold text-primary" /></FormControl></FormItem>
+                          <FormItem><FormLabel>Frais Plateforme (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 font-bold text-primary" /></FormControl></FormItem>
                       )}/>
                       <FormField control={form.control} name="payments.paymentMode" render={({ field }) => (
                           <FormItem>
@@ -347,6 +357,14 @@ export default function AdminSettingsPage() {
                           </FormItem>
                       )}/>
                   </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="payments.minDeposit" render={({ field }) => (
+                          <FormItem><FormLabel>Dépôt Minimum (XOF)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="payments.maxDeposit" render={({ field }) => (
+                          <FormItem><FormLabel>Dépôt Maximum (XOF)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
                 </Card>
               )}
 
@@ -355,19 +373,19 @@ export default function AdminSettingsPage() {
                   <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
                           <FormLabel>Inscriptions ouvertes</FormLabel>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                       </FormItem>
                   )}/>
                   <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
                           <FormLabel>Recrutement Experts</FormLabel>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                       </FormItem>
                   )}/>
                   <FormField control={form.control} name="users.autoApproveInstructors" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
                           <FormLabel>Validation automatique</FormLabel>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                       </FormItem>
                   )}/>
                 </Card>
@@ -392,6 +410,25 @@ export default function AdminSettingsPage() {
                 </Card>
               )}
 
+              {activeTab === 'marketplace' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
+                  <FormField control={form.control} name="marketplace.enableMarketplace" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-white/5">
+                          <FormLabel className="text-lg font-black text-white uppercase">Activer la Bourse</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="marketplace.minimumResalePrice" render={({ field }) => (
+                          <FormItem><FormLabel>Prix de revente min. (XOF)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="marketplace.resaleCommissionPercent" render={({ field }) => (
+                          <FormItem><FormLabel>Commission Revente (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
               {activeTab === 'security' && (
                 <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
                   <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
@@ -406,11 +443,11 @@ export default function AdminSettingsPage() {
                 </Card>
               )}
 
-              {/* Les autres onglets affichent un message de disponibilité */}
-              {!['general', 'payments', 'users', 'ai', 'security'].includes(activeTab) && (
+              {/* Message pour les onglets non encore implémentés visuellement mais gérés par le schéma */}
+              {!['general', 'payments', 'users', 'ai', 'security', 'marketplace'].includes(activeTab) && (
                   <div className="py-20 text-center space-y-4 opacity-40">
                       <AlertCircle className="h-12 w-12 mx-auto" />
-                      <p className="text-sm font-black uppercase tracking-widest">Configuration disponible prochainement</p>
+                      <p className="text-sm font-black uppercase tracking-widest">Configuration via module avancé uniquement</p>
                   </div>
               )}
 
