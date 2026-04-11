@@ -18,7 +18,7 @@ import {
   Ticket, 
   Clock, 
   ShieldCheck, 
-  ChevronRight,
+  ChevronRight, 
   Loader2,
   CheckCircle2,
   AlertCircle
@@ -47,7 +47,7 @@ export default function StudentSupportPage() {
         if (snap.exists()) {
             const data = snap.data() as Settings;
             setSupportSettings({
-                whatsapp: data.general?.supportPhone || '23675000000',
+                whatsapp: data.general?.contactPhone || '23675000000',
                 email: data.general?.contactEmail || 'support@ndara-afrique.com'
             });
         }
@@ -140,8 +140,8 @@ export default function StudentSupportPage() {
 
             {isLoading ? (
                 <div className="space-y-3">
-                    <Skeleton className="h-24 w-full rounded-3xl bg-slate-900" />
-                    <Skeleton className="h-24 w-full rounded-3xl bg-slate-900" />
+                    <Skeleton className="h-24 w-full rounded-[2.5rem] bg-slate-900" />
+                    <Skeleton className="h-24 w-full rounded-[2.5rem] bg-slate-900" />
                 </div>
             ) : tickets && tickets.length > 0 ? (
                 <div className="grid gap-3">
