@@ -2,49 +2,18 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
-import { FieldValue, DocumentData } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { Settings, PushCampaign } from '@/lib/types';
 
 /**
- * ✅ RÉSOLU : Interface locale mise à jour pour correspondre à l'UI et au schéma v3.0.
- */
-interface LocalPushCampaign {
-  id?: string;
-  message: string;
-  target: 'all' | 'instructors' | 'students';
-  status: 'draft' | 'sent' | 'scheduled';
-  scheduledFor?: any;
-  sentAt?: any;
-  stats?: {
-    delivered: number;
-    clicked: number;
-  };
-  createdAt?: any;
-}
-
-/**
  * @fileOverview Gestion des notifications Ndara Afrique.
- * ✅ RÉSOLU : Alignement sur le module 'settings.notifications' (Schéma v3).
+ * ✅ RÉSOLU : Alignement sur le module 'settings.notifications' (Schéma v3.0).
  */
 
 interface NotificationPayload {
   text: string;
   link?: string;
   type?: 'success' | 'info' | 'reminder' | 'alert';
-}
-
-const cleanupInvalidTokens = async (tokensToRemove: string[], userId: string) => {
-    if (tokensToRemove.length > 0 && userId) {
-        try {
-            const db = getAdminDb();
-            const userFcmTokensRef = db.collection('users').doc(userId).collection('fcmTokens').doc('tokens');
-            await userFcmTokensRef.update({
-                tokens: FieldValue.arrayRemove(...tokensToRemove)
-            });
-        } catch (e) {
-            console.error("Error cleaning up tokens:", e);
-        }
-    }
 }
 
 const sendPushNotification = async (tokens: string[], payload: { title: string; body: string; link?: string }): Promise<void> => {
@@ -73,21 +42,17 @@ export async function sendUserNotification(userId: string, payload: Notification
     try {
         const db = getAdminDb();
         
-        // 🛡️ 1. Charger les réglages globaux
+        // 🛡️ SÉCURITÉ NOTIFICATIONS : modules 'notifications'
         const settingsSnap = await db.collection('settings').doc('global').get();
-        // 🔄 BYPASS : Cast en 'any' pour accéder au module notifications v3.0
-        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as any;
+        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        // ✅ Alignement strict sur le nouveau schéma
-        const globalEnabled = settings.notifications?.pushNotifications ?? true;
-
-        if (!globalEnabled) {
-            return { success: false, message: "Notifications désactivées au niveau global par l'admin." };
-        }
+        // ✅ Vérification de l'activation globale du canal push
+        const pushEnabled = settings.notifications?.pushNotifications ?? true;
 
         const userDoc = await db.collection('users').doc(userId).get();
         if (!userDoc.exists) return { success: false, message: "Utilisateur introuvable." };
 
+        // Toujours enregistrer en base pour l'inbox interne
         const notificationRef = db.collection('users').doc(userId).collection('notifications').doc();
         await notificationRef.set({
             ...payload,
@@ -95,24 +60,27 @@ export async function sendUserNotification(userId: string, payload: Notification
             createdAt: FieldValue.serverTimestamp()
         });
 
-        const fcmTokensSnapshot = await db.collection('users').doc(userId).collection('fcmTokens').get();
-        if (!fcmTokensSnapshot.empty) {
-            const userTokens: string[] = [];
-            fcmTokensSnapshot.forEach(doc => {
-                const tokens = doc.data().tokens;
-                if (tokens && Array.isArray(tokens)) userTokens.push(...tokens);
-            });
-            
-            if (userTokens.length > 0) {
-                 await sendPushNotification(userTokens, {
-                    title: "Ndara Afrique",
-                    body: payload.text,
-                    link: payload.link
+        // Envoyer le push réel uniquement si activé
+        if (pushEnabled) {
+            const fcmTokensSnapshot = await db.collection('users').doc(userId).collection('fcmTokens').get();
+            if (!fcmTokensSnapshot.empty) {
+                const userTokens: string[] = [];
+                fcmTokensSnapshot.forEach(doc => {
+                    const tokens = doc.data().tokens;
+                    if (tokens && Array.isArray(tokens)) userTokens.push(...tokens);
                 });
+                
+                if (userTokens.length > 0) {
+                     await sendPushNotification(userTokens, {
+                        title: "Ndara Afrique",
+                        body: payload.text,
+                        link: payload.link
+                    });
+                }
             }
         }
         
-        return { success: true, message: "Notification envoyée." };
+        return { success: true, message: "Notification traitée." };
     } catch (error) {
         console.error(`Error sending notification to ${userId}:`, error);
         return { success: false, message: "Erreur lors de l'envoi." };
@@ -122,17 +90,22 @@ export async function sendUserNotification(userId: string, payload: Notification
 export async function sendAdminNotification(payload: { title: string; body: string; link: string; type: 'newPayouts' | 'newApplications' | 'newSupportTickets' | 'financialAnomalies' | 'general' }): Promise<{ success: boolean; message: string }> {
   try {
     const db = getAdminDb();
+    
+    // 🛡️ SÉCURITÉ ADMIN ALERTS
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+    const alertConfig = settings.notifications?.adminAlerts;
+    
+    // Vérification granulaire par type
+    if (payload.type === 'newPayouts' && alertConfig?.newPayment === false) return { success: true, message: "Ignoré" };
+    if (payload.type === 'newApplications' && alertConfig?.newUser === false) return { success: true, message: "Ignoré" };
+
     const adminsSnapshot = await db.collection('users').where('role', '==', 'admin').get();
     
     if (adminsSnapshot.empty) return { success: true, message: "Aucun administrateur trouvé." };
 
     for (const adminDoc of adminsSnapshot.docs) {
-        const adminData = adminDoc.data();
-        const prefs = adminData.notificationPreferences;
-        if (payload.type && payload.type !== 'general' && prefs && prefs[payload.type] === false) {
-            continue; 
-        }
-
         await sendUserNotification(adminDoc.id, {
             text: payload.body,
             link: payload.link,
@@ -150,7 +123,7 @@ export async function sendAdminNotification(payload: { title: string; body: stri
 /**
  * Crée une nouvelle campagne de notification push.
  */
-export async function createPushCampaign(campaign: Omit<LocalPushCampaign, 'id' | 'createdAt'>) {
+export async function createPushCampaign(campaign: Omit<PushCampaign, 'id' | 'createdAt'>) {
     try {
         const db = getAdminDb();
         const campaignRef = db.collection('push_campaigns').doc();

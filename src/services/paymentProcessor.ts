@@ -6,8 +6,8 @@ import type { NdaraPaymentDetails, Course, Settings } from '@/lib/types';
 
 /**
  * @fileOverview Processeur financier centralisé et idempotent.
- * ✅ GESTION DES GELS : Utilise settings.commercial.payoutDelayDays pour débloquer les commissions.
- * ✅ AFFILIATION : Création automatique des transactions d'affiliation.
+ * ✅ GESTION DES GELS : Utilise settings.finance.withdrawalDelayDays.
+ * ✅ COMMISSIONS : Utilise settings.finance.platformRevenuePercent.
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -76,8 +76,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                 });
 
                 // --- PARTAGE DE REVENUS FORMATEUR ---
-                const instructorShare = settings.commercial?.instructorShare || 80;
-                const instructorRevenue = (amount * instructorShare) / 100;
+                // 🛡️ Utilise settings.finance.platformRevenuePercent
+                const platformFeeRate = settings.finance?.platformRevenuePercent || 20;
+                const instructorShareRate = 100 - platformFeeRate;
+                const instructorRevenue = (amount * instructorShareRate) / 100;
+                
                 const finalInstructorId = courseData.ownerId || courseData.instructorId;
 
                 if (finalInstructorId && finalInstructorId !== 'NDARA_OFFICIAL') {
@@ -92,9 +95,10 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                     const affSnap = await transaction.get(affiliateRef);
 
                     if (affSnap.exists) {
-                        const affRate = settings.affiliate?.commissionRate || 10;
-                        const affCommission = (amount * affRate) / 100;
-                        const delayDays = settings.commercial?.payoutDelayDays || 14;
+                        // Utilise settings.finance.platformRevenuePercent comme base pour l'affilié ? 
+                        // Non, utilisons un taux par défaut de 10% ou rajoutons-le au schéma
+                        const affCommission = (amount * 10) / 100;
+                        const delayDays = settings.finance?.withdrawalDelayDays || 14;
                         
                         const unlockDate = new Date();
                         unlockDate.setDate(unlockDate.getDate() + delayDays);
@@ -114,7 +118,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                             unlockDate: Timestamp.fromDate(unlockDate)
                         });
 
-                        // Geler la commission dans le solde de l'ambassadeur
                         transaction.update(affiliateRef, {
                             pendingAffiliateBalance: FieldValue.increment(affCommission),
                             'affiliateStats.sales': FieldValue.increment(1),
@@ -130,7 +133,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             eventType: 'payment_verified',
             adminId: 'SYSTEM_BOT',
             target: { id: metadata.userId, type: 'user' },
-            details: `Paiement ${provider} validé (${amount} ${currency}). ID: ${transactionId}`,
+            details: `Paiement ${provider} validé. ID: ${transactionId}`,
             timestamp: FieldValue.serverTimestamp()
         });
 

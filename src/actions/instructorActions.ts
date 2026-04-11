@@ -5,8 +5,6 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import type { Settings, NdaraUser } from '@/lib/types';
 
-// ... (Garder CourseFormSchema identique)
-
 const CourseFormSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
@@ -36,35 +34,19 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     }
 
     const settingsSnap = await db.collection('settings').doc('global').get();
-    
-    // 🔄 BYPASS DU TYPE CHECK : On cast en 'any' pour accéder aux modules v3.0
-    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as any;
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+    // 🛡️ SÉCURITÉ ADMIN : allowCourseCreation
+    if (settings.courses?.allowCourseCreation === false) {
+        return { success: false, message: "La création de nouveaux cours est temporairement suspendue par l'administration." };
+    }
 
     const { price } = validatedFields.data;
 
-    // 🛡️ VÉRIFICATION DES PRIX (Accès sécurisé via any)
+    // 🛡️ VÉRIFICATION DU PRIX MINIMUM : minimumCoursePrice
     const minPrice = settings.courses?.minimumCoursePrice ?? 0;
-    const maxPrice = 2000000; 
-    const allowFree = settings.courses?.allowCourseCreation ?? true;
-
-    if (price === 0 && !allowFree) {
-        return { success: false, message: "Les cours gratuits sont actuellement désactivés." };
-    }
-
     if (price > 0 && price < minPrice) {
         return { success: false, message: `Le prix minimum autorisé est de ${minPrice.toLocaleString()} XOF.` };
-    }
-
-    if (price > maxPrice) {
-        return { success: false, message: `Le prix maximum autorisé est de ${maxPrice.toLocaleString()} XOF.` };
-    }
-
-    // 🛡️ VÉRIFICATION DES LIMITES
-    const maxCourses = settings.users?.maxAccountsPerUser ?? 50; 
-    const existingCoursesSnap = await db.collection('courses').where('instructorId', '==', instructorId).count().get();
-    
-    if (existingCoursesSnap.data().count >= maxCourses) {
-        return { success: false, message: `Limite maximale de ${maxCourses} formations atteinte.` };
     }
 
     const newCourseRef = db.collection('courses').doc();
@@ -81,6 +63,7 @@ export async function createCourseAction({ formData, instructorId }: { formData:
       creatorId: instructorId,
       ownerId: instructorId,
       instructorId: instructorId,
+      // 🛡️ STATUT BASÉ SUR requireAdminApproval
       status: settings.courses?.requireAdminApproval ? 'Pending Review' : 'Published',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -98,13 +81,22 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   }
 }
 
-// ... (Garder updateCourseAction identique)
 export async function updateCourseAction({ courseId, formData }: { courseId: string, formData: unknown }) {
     const validatedFields = CourseFormSchema.safeParse(formData);
     if (!validatedFields.success) return { success: false, errors: validatedFields.error.flatten().fieldErrors };
 
     try {
         const db = getAdminDb();
+        const settingsSnap = await db.collection('settings').doc('global').get();
+        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+        const { price } = validatedFields.data;
+        const minPrice = settings.courses?.minimumCoursePrice ?? 0;
+
+        if (price > 0 && price < minPrice) {
+            return { success: false, message: `Le prix minimum autorisé est de ${minPrice.toLocaleString()} XOF.` };
+        }
+
         await db.collection('courses').doc(courseId).update({
             ...(validatedFields.data),
             updatedAt: FieldValue.serverTimestamp(),

@@ -682,6 +682,9 @@ export interface NdaraPaymentDetails {
     userId: string;
     courseId: string;
     type?: string;
+    affiliateId?: string;
+    couponId?: string;
+    fraudScore?: number;
     [key: string]: any;
   };
 }

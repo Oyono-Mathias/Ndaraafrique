@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
- * ✅ VISIBILITÉ : Navigation affichée UNIQUEMENT dans les zones Dashboard/Privées.
- * ✅ RÉSOLU : Passage en imports statiques pour corriger les ChunkLoadError.
+ * ✅ SÉCURITÉ : Connecté aux modules 'security' et 'marketing' des réglages Admin.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -17,8 +16,8 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
 import { useLocale } from 'next-intl';
+import type { Settings } from '@/lib/types';
 
-// Imports statiques pour plus de stabilité dans l'environnement de build
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
@@ -73,10 +72,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
         if (snap.exists()) {
-            const data = snap.data();
+            const data = snap.data() as Settings;
             setSiteSettings({ 
-                maintenanceMode: data.platform?.maintenanceMode || false,
-                announcementMessage: data.platform?.announcementMessage || '',
+                // 🛡️ Connexion aux nouveaux modules
+                maintenanceMode: data.security?.maintenanceMode || false,
+                announcementMessage: data.marketing?.globalAnnouncement || '',
             });
         }
     });
@@ -87,7 +87,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr|sg)/, '') || '/';
   }, [pathname]);
 
-  // BottomNav Étudiant
   const showStudentBottomNav = useMemo(() => {
       const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile', '/search', '/student/annuaire', '/student/wishlist', '/student/results', '/student/mes-certificats', '/student/devoirs'];
       const isExcluded = ['/', '/login', '/register', '/student/messages'].includes(cleanPath) 
@@ -97,12 +96,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       return role === 'student' && allowedPaths.some(path => cleanPath === path || cleanPath.startsWith(path)) && !isExcluded;
   }, [cleanPath, role]);
 
-  // BottomNav Admin
   const showAdminBottomNav = useMemo(() => {
       return role === 'admin' && cleanPath.startsWith('/admin');
   }, [cleanPath, role]);
 
-  // BottomNav Formateur
   const showInstructorBottomNav = useMemo(() => {
       return role === 'instructor' && cleanPath.startsWith('/instructor');
   }, [cleanPath, role]);
@@ -132,6 +129,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, isPublicPage, isAuthPage, isFullScreen, router, locale]);
 
+  // 🛡️ SÉCURITÉ : Mode Maintenance connecté
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-[#0f172a] text-center p-6">
@@ -168,7 +166,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             {children}
           </main>
 
-          {/* Bottom Nav Logique Mobile Multi-Rôle */}
           {!!user && !isFullScreen && mounted && (
               <div className="md:hidden">
                   {showAdminBottomNav && <AdminBottomNav />}

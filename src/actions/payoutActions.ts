@@ -3,7 +3,7 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification } from './notificationActions';
-import type { NdaraUser, RequestPayoutParams } from '@/lib/types';
+import type { NdaraUser, RequestPayoutParams, Settings } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne de sécurité Admin
@@ -49,9 +49,10 @@ export async function requestPayoutAction({
         }
 
         const settingsSnap = await db.collection('settings').doc('global').get();
-        const settingsData = settingsSnap.exists ? settingsSnap.data() : {};
+        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        const minThreshold = (settingsData as any)?.payments?.minimumPayoutAmount || 5000;
+        // 🛡️ VÉRIFICATION SEUIL : minWithdrawal
+        const minThreshold = settings.finance?.minWithdrawal || 5000;
         const currentBalance = userData.balance || 0;
 
         if (currentBalance < amount) {
@@ -59,7 +60,7 @@ export async function requestPayoutAction({
         }
 
         if (amount < minThreshold) {
-            return { success: false, error: `Minimum retrait: ${minThreshold} XOF` };
+            return { success: false, error: `Le montant minimum de retrait est de ${minThreshold.toLocaleString()} XOF.` };
         }
 
         const payoutRef = db.collection('payout_requests').doc();

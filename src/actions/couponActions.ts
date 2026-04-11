@@ -3,6 +3,7 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
+import type { Settings } from '@/lib/types';
 
 /**
  * ✅ RÉSOLU : Définition locale du type Coupon pour éviter l'erreur d'export @/lib/types.
@@ -39,6 +40,14 @@ export async function createCouponAction(formData: any, instructorId: string) {
 
   try {
     const db = getAdminDb();
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+    // 🛡️ SÉCURITÉ MARKETING : promoCodesEnabled
+    if (settings.marketing?.promoCodesEnabled === false) {
+        return { success: false, error: { code: ["Le système de codes promo est actuellement désactivé."] } };
+    }
+
     const couponRef = db.collection('course_coupons').doc(validated.data.code);
     const existing = await couponRef.get();
     
@@ -81,6 +90,14 @@ export async function deleteCouponAction(code: string, instructorId: string) {
 export async function validateCouponAction(code: string, courseId: string) {
   try {
     const db = getAdminDb();
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+    // 🛡️ VÉRIFICATION GLOBALE
+    if (settings.marketing?.promoCodesEnabled === false) {
+        return { success: false, error: "Le système de codes promo est suspendu." };
+    }
+
     const couponRef = db.collection('course_coupons').doc(code.toUpperCase());
     const docSnap = await couponRef.get();
 
@@ -88,7 +105,6 @@ export async function validateCouponAction(code: string, courseId: string) {
       return { success: false, error: "Code promo invalide." };
     }
 
-    // Utilisation du type local pour la validation
     const coupon = docSnap.data() as LocalCoupon;
 
     if (coupon.courseId !== courseId) {

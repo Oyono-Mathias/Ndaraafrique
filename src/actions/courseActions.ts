@@ -74,14 +74,20 @@ export async function toggleResaleRightsAction({
 }) {
     try {
         const db = getAdminDb();
+        const settingsSnap = await db.collection('settings').doc('global').get();
+        const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+        // 🛡️ SÉCURITÉ MARKETPLACE : enableMarketplace
+        if (available && settings.marketplace?.enableMarketplace === false) {
+            return { success: false, error: 'Le marché secondaire est actuellement désactivé.' };
+        }
+
         const courseRef = db.collection('courses').doc(courseId);
         const courseDoc = await courseRef.get();
 
         if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
         
-        // ✅ CORRECTION TYPE ERROR : On cast en 'any' pour lire ownerId sans bloquer le build
         const data = courseDoc.data() as any;
-
         const currentOwner = data.ownerId || data.instructorId; 
         
         const userDoc = await db.collection('users').doc(userId).get();
@@ -92,13 +98,10 @@ export async function toggleResaleRightsAction({
         }
 
         if (available) {
-            const settingsSnap = await db.collection('settings').doc('global').get();
-            const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
-            
-            // ✅ Utilisation confirmée du module 'marketplace'
+            // 🛡️ VÉRIFICATION PRIX : minimumResalePrice
             const minPrice = settings.marketplace?.minimumResalePrice || 10000;
             if (price < minPrice) {
-                return { success: false, error: 'error.resale_min_price' };
+                return { success: false, error: `Le prix de revente minimum est de ${minPrice.toLocaleString()} XOF.` };
             }
         }
 
@@ -141,7 +144,6 @@ export async function purchaseResaleRightsAction({
             if (!courseDoc.exists) throw new Error("error.course_not_found");
             
             const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
-            // ✅ Correction type error ici aussi
             const courseData = courseDoc.data() as any;
             
             if (!courseData.resaleRightsAvailable) throw new Error("error.license_not_available");
@@ -149,8 +151,8 @@ export async function purchaseResaleRightsAction({
             const previousOwner = courseData.ownerId || courseData.instructorId;
             const price = courseData.resaleRightsPrice || 0;
 
-            // ✅ Utilisation confirmée du module 'payments'
-            const commissionRate = settings.payments?.transactionFeePercent || 20;
+            // 🛡️ COMMISSION DYNAMIQUE : resaleCommissionPercent
+            const commissionRate = settings.marketplace?.resaleCommissionPercent || 20;
             const platformRevenue = (price * commissionRate) / 100;
             const instructorRevenue = price - platformRevenue;
 
@@ -187,8 +189,6 @@ export async function purchaseResaleRightsAction({
     }
 }
 
-// ... (Le reste des fonctions est correct, j'ai juste harmonisé le typage interne)
-
 export async function requestCourseBuyoutAction({
   courseId,
   instructorId,
@@ -200,6 +200,13 @@ export async function requestCourseBuyoutAction({
 }) {
   try {
     const db = getAdminDb();
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
+
+    if (settings.marketplace?.allowCourseBuyout === false) {
+        return { success: false, error: 'Le programme de rachat Ndara est suspendu.' };
+    }
+
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
     if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
@@ -256,7 +263,6 @@ export async function approveCourseBuyoutAction({
   }
 }
 
-// ... (Gardé à l'identique car déjà fonctionnel)
 export async function sanctionInstructorForBuyoutViolation({
     userId,
     adminId,
