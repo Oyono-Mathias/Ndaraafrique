@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.0
- * ✅ EXÉCUTION STRICTE : 12 Modules de gestion indépendants.
+ * ✅ OPTIMISATION MOBILE : Menu horizontal et barre d'action repositionnée.
  * ✅ DESIGN : Architecture par onglets haute densité.
  * ✅ FONCTIONNEL : Validation Zod et Synchronisation Firestore.
  */
@@ -41,7 +41,6 @@ import {
   TrendingUp, 
   Landmark, 
   Zap,
-  Code,
   Mail,
   ShieldAlert
 } from 'lucide-react';
@@ -218,9 +217,9 @@ export default function AdminSettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col lg:flex-row w-full">
           
-          {/* NAVIGATION LATERALE HAUTE DENSITÉ */}
-          <aside className="w-full lg:w-72 bg-slate-900 border-r border-white/5 p-6 space-y-4 overflow-y-auto">
-            <div className="flex items-center gap-3 mb-10 px-2">
+          {/* NAVIGATION LATERALE / HORIZONTALE SUR MOBILE */}
+          <aside className="w-full lg:w-72 bg-slate-900 border-b lg:border-b-0 lg:border-r border-white/5 lg:h-screen lg:sticky lg:top-0 z-20">
+            <div className="p-6 lg:pb-10 hidden lg:flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                     <SettingsIcon className="h-6 w-6" />
                 </div>
@@ -230,40 +229,40 @@ export default function AdminSettingsPage() {
                 </div>
             </div>
             
-            <nav className="space-y-1">
+            <nav className="flex lg:flex-col overflow-x-auto lg:overflow-y-auto hide-scrollbar p-4 lg:p-0 lg:space-y-1">
               {menuItems.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                    "flex-shrink-0 lg:flex-shrink-1 flex items-center gap-3 px-5 py-3 lg:px-6 lg:py-3.5 rounded-2xl lg:rounded-none lg:mx-0 text-[10px] font-black uppercase tracking-widest transition-all",
                     activeTab === item.id 
-                        ? 'bg-primary text-slate-950 shadow-lg shadow-primary/20' 
-                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                        ? 'bg-primary text-slate-950 shadow-lg lg:shadow-none' 
+                        : 'text-slate-500 hover:text-slate-200'
                   )}
                 >
                   <item.icon size={16} />
-                  {item.label}
+                  <span className="whitespace-nowrap">{item.label}</span>
                 </button>
               ))}
             </nav>
           </aside>
 
           {/* ZONE DE CONTENU DYNAMIQUE */}
-          <main className="flex-1 p-8 lg:p-12 pb-32 overflow-y-auto relative bg-[#0f172a]">
+          <main className="flex-1 p-6 lg:p-12 pb-40 lg:pb-32 overflow-y-auto relative bg-[#0f172a]">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
             
-            <header className="mb-12 flex items-end justify-between border-b border-white/5 pb-8">
+            <header className="mb-10 lg:mb-12 flex items-end justify-between border-b border-white/5 pb-6 lg:pb-8">
                 <div>
-                    <h2 className="text-4xl font-black uppercase tracking-tighter mb-2">
+                    <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter mb-1">
                         {menuItems.find(i => i.id === activeTab)?.label}
                     </h2>
-                    <p className="text-slate-500 text-sm font-medium italic">
+                    <p className="text-slate-500 text-[10px] lg:text-sm font-medium italic">
                         Pilotage opérationnel du module <span className="text-primary font-bold">{activeTab}</span>.
                     </p>
                 </div>
-                <Badge variant="outline" className="border-primary/20 text-primary font-black text-[10px] px-3 py-1">SECURED</Badge>
+                <Badge variant="outline" className="border-primary/20 text-primary font-black text-[10px] px-3 py-1 hidden sm:flex">SECURED</Badge>
             </header>
 
             <div className="max-w-4xl space-y-10">
@@ -271,7 +270,7 @@ export default function AdminSettingsPage() {
               {/* SECTION GENERAL */}
               {activeTab === 'general' && (
                 <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-8 space-y-8 shadow-2xl">
+                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
                     <div className="grid md:grid-cols-2 gap-6">
                         <FormField control={form.control} name="general.siteName" render={({ field }) => (
                             <FormItem><FormLabel>Nom du site</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl><FormMessage /></FormItem>
@@ -279,7 +278,7 @@ export default function AdminSettingsPage() {
                         <FormField control={form.control} name="general.defaultLanguage" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Langue par défaut</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                     <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                         <SelectItem value="fr">Français (🇫🇷)</SelectItem>
@@ -316,12 +315,12 @@ export default function AdminSettingsPage() {
               {/* SECTION PAYMENTS */}
               {activeTab === 'payments' && (
                 <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-8 space-y-8">
+                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
                     <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-white/5">
                             <div className="space-y-1">
                                 <FormLabel className="text-base">Transactions Actives</FormLabel>
-                                <FormDescription>Autoriser les flux financiers sur la plateforme.</FormDescription>
+                                <FormDescription className="text-[10px]">Autoriser les flux financiers sur la plateforme.</FormDescription>
                             </div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                         </FormItem>
@@ -364,22 +363,22 @@ export default function AdminSettingsPage() {
               {/* SECTION USERS */}
               {activeTab === 'users' && (
                 <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-8 space-y-6">
+                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
                     <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Ouverture des inscriptions</FormLabel><FormDescription>Autoriser les nouveaux Ndara.</FormDescription></div>
+                            <div className="space-y-0.5"><FormLabel>Ouverture des inscriptions</FormLabel><FormDescription className="text-[10px]">Autoriser les nouveaux Ndara.</FormDescription></div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )}/>
                     <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Recrutement Formateurs</FormLabel><FormDescription>Autoriser les experts à postuler.</FormDescription></div>
+                            <div className="space-y-0.5"><FormLabel>Recrutement Formateurs</FormLabel><FormDescription className="text-[10px]">Autoriser les experts à postuler.</FormDescription></div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )}/>
                     <FormField control={form.control} name="users.autoApproveInstructors" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Validation Auto Experts</FormLabel><FormDescription>Approuver les formateurs sans examen manuel.</FormDescription></div>
+                            <div className="space-y-0.5"><FormLabel>Validation Auto Experts</FormLabel><FormDescription className="text-[10px]">Approuver les formateurs sans examen manuel.</FormDescription></div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )}/>
@@ -398,12 +397,12 @@ export default function AdminSettingsPage() {
               {/* SECTION AI */}
               {activeTab === 'ai' && (
                 <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-8 space-y-8">
+                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
                     <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
                             <div className="space-y-1">
                                 <FormLabel className="text-lg font-black text-primary">Moteurs MATHIAS</FormLabel>
-                                <FormDescription>Activer l'intelligence artificielle sur toute la plateforme.</FormDescription>
+                                <FormDescription className="text-[10px]">Activer l'intelligence artificielle sur toute la plateforme.</FormDescription>
                             </div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                         </FormItem>
@@ -419,19 +418,19 @@ export default function AdminSettingsPage() {
                     <div className="space-y-4 pt-4 border-t border-white/5">
                         <FormField control={form.control} name="ai.contentGenerationEnabled" render={({ field }) => (
                             <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                                <div className="space-y-0.5"><FormLabel>Génération de Contenu</FormLabel><FormDescription>Aider les experts à rédiger leurs cours.</FormDescription></div>
+                                <div className="space-y-0.5"><FormLabel>Génération de Contenu</FormLabel><FormDescription className="text-[10px]">Aider les experts à rédiger leurs cours.</FormDescription></div>
                                 <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="ai.autoCorrection" render={({ field }) => (
                             <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                                <div className="space-y-0.5"><FormLabel>Auto-Correction</FormLabel><FormDescription>Notation automatisée des devoirs.</FormDescription></div>
+                                <div className="space-y-0.5"><FormLabel>Auto-Correction</FormLabel><FormDescription className="text-[10px]">Notation automatisée des devoirs.</FormDescription></div>
                                 <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="ai.fraudDetection" render={({ field }) => (
                             <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                                <div className="space-y-0.5"><FormLabel>Anti-Fraude IA</FormLabel><FormDescription>Surveillance des transactions suspectes.</FormDescription></div>
+                                <div className="space-y-0.5"><FormLabel>Anti-Fraude IA</FormLabel><FormDescription className="text-[10px]">Surveillance des transactions suspectes.</FormDescription></div>
                                 <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
                         )}/>
@@ -443,12 +442,12 @@ export default function AdminSettingsPage() {
               {/* SECTION SECURITY */}
               {activeTab === 'security' && (
                 <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-8 space-y-8">
+                  <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
                     <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-6 bg-red-500/5 rounded-2xl border border-red-500/20 shadow-xl">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2"><ShieldAlert className="text-red-500 h-5 w-5"/><FormLabel className="text-lg font-black text-red-500 uppercase tracking-tighter">Mode Maintenance</FormLabel></div>
-                                <FormDescription className="text-red-400/60">Verrouille l'accès complet au site pour tous sauf admins.</FormDescription>
+                                <FormDescription className="text-red-400/60 text-[10px]">Verrouille l'accès complet au site pour tous sauf admins.</FormDescription>
                             </div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
                         </FormItem>
@@ -470,20 +469,20 @@ export default function AdminSettingsPage() {
 
             </div>
 
-            {/* BARRE D'ACTION FIXE */}
-            <div className="fixed bottom-0 left-0 lg:left-72 right-0 p-6 bg-slate-950/80 backdrop-blur-xl border-t border-white/5 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-              <div className="max-w-4xl mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">
+            {/* BARRE D'ACTION FIXE - ADAPTÉE AU BOTTOM NAV MOBILE */}
+            <div className="fixed bottom-20 lg:bottom-0 left-0 lg:left-72 right-0 p-4 lg:p-6 bg-slate-950/80 backdrop-blur-xl border-t border-white/5 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+              <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                <div className="hidden sm:flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">
                     <Shield className="h-3 w-3" />
-                    Audit Admin en cours
+                    Audit Admin
                 </div>
                 <Button 
                   type="submit" 
                   disabled={isSaving}
-                  className="bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs px-12 h-14 rounded-2xl transition-all active:scale-95 shadow-2xl shadow-primary/20"
+                  className="flex-1 lg:flex-none bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs px-8 lg:px-12 h-14 rounded-2xl transition-all active:scale-95 shadow-2xl shadow-primary/20"
                 >
                   {isSaving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <CheckCircle2 size={16} className="mr-2" />}
-                  Déployer le module {activeTab}
+                  Sauvegarder {activeTab}
                 </Button>
               </div>
             </div>
