@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.0
- * ✅ COMPLET : Toutes les sections (12/12) sont désormais implémentées.
- * ✅ DESIGN : Architecture par onglets haute densité avec défilement horizontal mobile.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.5
+ * ✅ COMPLET : Toutes les sections (12/12) implémentées.
+ * ✅ DESIGN : Architecture optimisée pour smartphone et desktop.
+ * ✅ SAUVEGARDE : Bouton fixe avec feedback visuel et validation ciblée.
  */
 
 import { useState, useEffect } from 'react';
@@ -15,11 +16,10 @@ import { updateGlobalSettings } from '@/actions/settingsActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,10 +40,7 @@ import {
   TrendingUp, 
   Landmark, 
   Zap,
-  Mail,
   ShieldAlert,
-  Smartphone,
-  ShieldCheck,
   Search,
   Code
 } from 'lucide-react';
@@ -57,7 +54,7 @@ const settingsSchema = z.object({
     logoUrl: z.string().url("URL invalide"),
     faviconUrl: z.string().url("URL invalide"),
     contactEmail: z.string().email("Email invalide"),
-    supportPhone: z.string().min(8, "Numéro requis"),
+    contactPhone: z.string().min(8, "Numéro requis"),
     address: z.string().min(5, "Adresse requise"),
     defaultLanguage: z.enum(['fr', 'en', 'sg']),
     timezone: z.string()
@@ -94,8 +91,6 @@ const settingsSchema = z.object({
     minimumResalePrice: z.coerce.number().min(0),
     resaleCommissionPercent: z.coerce.number().min(0).max(100),
     allowLicenseResale: z.boolean(),
-    allowCourseBuyout: z.boolean().optional(),
-    allowResaleRights: z.boolean().optional()
   }),
   ai: z.object({
     aiEnabled: z.boolean(),
@@ -228,7 +223,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div>
                     <h1 className="font-black uppercase text-sm tracking-tighter">Réglages</h1>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Configuration v3.0</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">v3.5 Secured</p>
                 </div>
             </div>
             
@@ -253,14 +248,14 @@ export default function AdminSettingsPage() {
           </aside>
 
           {/* ZONE DE CONTENU DYNAMIQUE */}
-          <main className="flex-1 p-6 lg:p-12 pb-40 lg:pb-32 overflow-y-auto relative bg-[#0f172a]">
+          <main className="flex-1 p-6 lg:p-12 pb-48 lg:pb-32 overflow-y-auto relative bg-[#0f172a]">
             <header className="mb-10 lg:mb-12 flex items-end justify-between border-b border-white/5 pb-6 lg:pb-8">
                 <div>
                     <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter mb-1">
                         {menuItems.find(i => i.id === activeTab)?.label}
                     </h2>
                     <p className="text-slate-500 text-[10px] lg:text-sm font-medium italic">
-                        Pilotage opérationnel du module <span className="text-primary font-bold">{activeTab}</span>.
+                        Pilotage opérationnel : <span className="text-primary font-bold">{activeTab}</span>.
                     </p>
                 </div>
                 <Badge variant="outline" className="border-primary/20 text-primary font-black text-[10px] px-3 py-1 hidden sm:flex">SECURED</Badge>
@@ -290,13 +285,16 @@ export default function AdminSettingsPage() {
                       )}/>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
-                      <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
-                          <FormItem><FormLabel>URL du Logo</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      <FormField control={form.control} name="general.contactPhone" render={({ field }) => (
+                          <FormItem><FormLabel>Téléphone Support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                       )}/>
                       <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
                           <FormItem><FormLabel>Email support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                       )}/>
                   </div>
+                  <FormField control={form.control} name="general.address" render={({ field }) => (
+                      <FormItem><FormLabel>Adresse Physique</FormLabel><FormControl><Textarea {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                  )}/>
                 </Card>
               )}
 
@@ -381,6 +379,26 @@ export default function AdminSettingsPage() {
                 </Card>
               )}
 
+              {/* SECTION AI */}
+              {activeTab === 'ai' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
+                          <FormLabel className="text-lg font-black text-primary">Moteurs MATHIAS</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="ai.modelName" render={({ field }) => (
+                          <FormItem><FormLabel>Modèle LLM</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="ai.maxRequestsPerUser" render={({ field }) => (
+                          <FormItem><FormLabel>Quota Quotidien</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
               {/* SECTION NOTIFICATIONS */}
               {activeTab === 'notifications' && (
                 <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
@@ -403,6 +421,29 @@ export default function AdminSettingsPage() {
                               <FormLabel className="text-xs">Nouveau Paiement</FormLabel>
                               <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                           </FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* SECTION SECURITY */}
+              {activeTab === 'security' && (
+                <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-red-500/5 rounded-2xl border border-red-500/20">
+                          <div className="flex items-center gap-2"><ShieldAlert className="text-red-500 h-5 w-5"/><FormLabel className="text-lg font-black text-red-500 uppercase">Mode Maintenance</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="security.enable2fa" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                              <FormLabel>Double Auth (2FA)</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="security.maxLoginAttempts" render={({ field }) => (
+                          <FormItem><FormLabel>Essais de connexion max</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
                       )}/>
                   </div>
                 </Card>
@@ -468,54 +509,6 @@ export default function AdminSettingsPage() {
                           Attention : Toute modification dans cette section peut affecter la stabilité critique du système.
                       </p>
                   </div>
-                </Card>
-              )}
-
-              {/* SECTIONS EXISTANTES RÉ-INJECTÉES POUR LA COHÉRENCE */}
-              {activeTab === 'users' && (
-                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
-                  <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                          <FormLabel>Inscriptions ouvertes</FormLabel>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      </FormItem>
-                  )}/>
-                  <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                          <FormLabel>Recrutement Experts</FormLabel>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      </FormItem>
-                  )}/>
-                </Card>
-              )}
-
-              {activeTab === 'ai' && (
-                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
-                  <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
-                          <FormLabel className="text-lg font-black text-primary">Moteurs MATHIAS</FormLabel>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                      </FormItem>
-                  )}/>
-                  <div className="grid md:grid-cols-2 gap-6">
-                      <FormField control={form.control} name="ai.modelName" render={({ field }) => (
-                          <FormItem><FormLabel>Modèle LLM</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="ai.maxRequestsPerUser" render={({ field }) => (
-                          <FormItem><FormLabel>Quota Quotidien</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                      )}/>
-                  </div>
-                </Card>
-              )}
-
-              {activeTab === 'security' && (
-                <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
-                  <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-6 bg-red-500/5 rounded-2xl border border-red-500/20">
-                          <div className="flex items-center gap-2"><ShieldAlert className="text-red-500 h-5 w-5"/><FormLabel className="text-lg font-black text-red-500 uppercase">Mode Maintenance</FormLabel></div>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
-                      </FormItem>
-                  )}/>
                 </Card>
               )}
 

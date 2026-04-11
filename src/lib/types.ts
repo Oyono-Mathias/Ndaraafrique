@@ -399,7 +399,7 @@ export interface Settings {
     logoUrl: string;
     faviconUrl: string;
     contactEmail: string;
-    supportPhone: string;
+    contactPhone: string;
     address: string;
     defaultLanguage: 'fr' | 'en' | 'sg';
     timezone: string;
