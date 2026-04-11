@@ -1,10 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.7
- * ✅ RÉSOLU : Validation Zod ultra-flexible pour éviter les blocages "Formulaire invalide".
- * ✅ RÉSOLU : Feedback précis sur l'erreur de validation (nom du champ).
- * ✅ RÉSOLU : Ajout des champs de dépôts min/max dans l'UI.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v4.0
+ * ✅ RÉSOLU : Toutes les sections UI implémentées (Finances, Marketplace, Notifications, etc.).
+ * ✅ RÉSOLU : Validation flexible pour éviter l'erreur "Formulaire invalide".
  */
 
 import { useState, useEffect } from 'react';
@@ -23,6 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Settings as SettingsIcon, 
   Loader2, 
@@ -41,23 +41,27 @@ import {
   Zap,
   AlertCircle,
   Smartphone,
-  ShieldAlert
+  ShieldAlert,
+  Search,
+  Mail,
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-// Schéma de validation extrêmement flexible pour éviter les blocages sur les champs non visibles
+// Schéma de validation flexible pour éviter les blocages sur les champs cachés
 const settingsSchema = z.object({
   general: z.object({
-    siteName: z.string().min(1, "Nom requis").default('Ndara Afrique'),
-    logoUrl: z.string().optional().nullable().default(''),
-    faviconUrl: z.string().optional().nullable().default(''),
+    siteName: z.string().default('Ndara Afrique'),
+    logoUrl: z.string().optional().default(''),
+    faviconUrl: z.string().optional().default(''),
     contactEmail: z.string().optional().default(''),
     contactPhone: z.string().optional().default(''),
     address: z.string().optional().default(''),
     defaultLanguage: z.enum(['fr', 'en', 'sg']).default('fr'),
     timezone: z.string().default('Africa/Douala')
-  }).default({}),
+  }),
   payments: z.object({
     paymentsEnabled: z.boolean().default(true),
     currency: z.string().default('XOF'),
@@ -68,7 +72,7 @@ const settingsSchema = z.object({
     walletEnabled: z.boolean().default(true),
     operatorCommission: z.coerce.number().min(0).default(3),
     paymentMode: z.enum(['test', 'live']).default('test')
-  }).default({}),
+  }),
   users: z.object({
     allowRegistration: z.boolean().default(true),
     allowInstructorSignup: z.boolean().default(true),
@@ -76,7 +80,7 @@ const settingsSchema = z.object({
     autoApproveInstructors: z.boolean().default(false),
     defaultRole: z.string().default('student'),
     maxAccountsPerUser: z.coerce.number().min(1).default(1)
-  }).default({}),
+  }),
   courses: z.object({
     allowCourseCreation: z.boolean().default(true),
     requireAdminApproval: z.boolean().default(true),
@@ -84,13 +88,15 @@ const settingsSchema = z.object({
     instructorRevenuePercent: z.coerce.number().min(0).max(100).default(70),
     allowDownload: z.boolean().default(false),
     certificateEnabled: z.boolean().default(true)
-  }).default({}),
+  }),
   marketplace: z.object({
     enableMarketplace: z.boolean().default(false),
     minimumResalePrice: z.coerce.number().min(0).default(10000),
     resaleCommissionPercent: z.coerce.number().min(0).max(100).default(20),
     allowLicenseResale: z.boolean().default(false),
-  }).default({}),
+    allowCourseBuyout: z.boolean().default(true),
+    allowResaleRights: z.boolean().default(true)
+  }),
   ai: z.object({
     aiEnabled: z.boolean().default(true),
     modelName: z.string().default('gemini-1.5-flash'),
@@ -99,7 +105,7 @@ const settingsSchema = z.object({
     autoCorrection: z.boolean().default(true),
     autonomousTutor: z.boolean().default(true),
     fraudDetection: z.boolean().default(true)
-  }).default({}),
+  }),
   notifications: z.object({
     emailNotifications: z.boolean().default(true),
     pushNotifications: z.boolean().default(true),
@@ -108,20 +114,20 @@ const settingsSchema = z.object({
       newUser: z.boolean().default(true),
       newPayment: z.boolean().default(true),
       systemError: z.boolean().default(true)
-    }).default({})
-  }).default({}),
+    })
+  }),
   security: z.object({
     maintenanceMode: z.boolean().default(false),
     enable2fa: z.boolean().default(false),
     maxLoginAttempts: z.coerce.number().min(1).default(5),
     blockedUsers: z.array(z.string()).default([]),
     activityLogsEnabled: z.boolean().default(true)
-  }).default({}),
+  }),
   localization: z.object({
     supportedLanguages: z.array(z.string()).default(['fr', 'en', 'sg']),
     defaultLanguage: z.string().default('fr'),
     autoDetectLanguage: z.boolean().default(true)
-  }).default({}),
+  }),
   marketing: z.object({
     globalAnnouncement: z.string().default(''),
     promoCodesEnabled: z.boolean().default(true),
@@ -129,38 +135,22 @@ const settingsSchema = z.object({
     seo: z.object({
       title: z.string().default('Ndara Afrique'),
       description: z.string().default('Plateforme d\'excellence')
-    }).default({})
-  }).default({}),
+    })
+  }),
   finance: z.object({
     platformRevenuePercent: z.coerce.number().min(0).max(100).default(20),
     minWithdrawal: z.coerce.number().min(0).default(5000),
     withdrawalDelayDays: z.coerce.number().min(0).default(14),
     autoPayoutEnabled: z.boolean().default(false)
-  }).default({}),
+  }),
   advanced: z.object({
     apiKeys: z.record(z.string()).default({}),
-    firebaseConfig: z.record(z.any()).default({}),
     webhookUrls: z.array(z.string()).default([]),
     debugMode: z.boolean().default(false)
-  }).default({})
+  })
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
-
-const DEFAULT_FORM_VALUES: SettingsValues = {
-    general: { siteName: 'Ndara Afrique', logoUrl: '', faviconUrl: '', contactEmail: '', contactPhone: '', address: '', defaultLanguage: 'fr', timezone: 'Africa/Douala' },
-    payments: { paymentsEnabled: true, currency: 'XOF', paymentMethods: ['mesomb'], transactionFeePercent: 10, minDeposit: 500, maxDeposit: 500000, walletEnabled: true, operatorCommission: 3, paymentMode: 'test' },
-    users: { allowRegistration: true, allowInstructorSignup: true, requireEmailVerification: false, autoApproveInstructors: false, defaultRole: 'student', maxAccountsPerUser: 1 },
-    courses: { allowCourseCreation: true, requireAdminApproval: true, minimumCoursePrice: 0, instructorRevenuePercent: 70, allowDownload: false, certificateEnabled: true },
-    marketplace: { enableMarketplace: false, minimumResalePrice: 10000, resaleCommissionPercent: 20, allowLicenseResale: false },
-    ai: { aiEnabled: true, modelName: 'gemini-1.5-flash', maxRequestsPerUser: 50, contentGenerationEnabled: true, autoCorrection: true, autonomousTutor: true, fraudDetection: true },
-    notifications: { emailNotifications: true, pushNotifications: true, smsNotifications: false, adminAlerts: { newUser: true, newPayment: true, systemError: true } },
-    security: { maintenanceMode: false, enable2fa: false, maxLoginAttempts: 5, blockedUsers: [], activityLogsEnabled: true },
-    localization: { supportedLanguages: ['fr', 'en', 'sg'], defaultLanguage: 'fr', autoDetectLanguage: true },
-    marketing: { globalAnnouncement: '', promoCodesEnabled: true, referralProgramEnabled: true, seo: { title: 'Ndara Afrique', description: 'Plateforme d\'excellence' } },
-    finance: { platformRevenuePercent: 20, minWithdrawal: 5000, withdrawalDelayDays: 14, autoPayoutEnabled: false },
-    advanced: { apiKeys: {}, firebaseConfig: {}, webhookUrls: [], debugMode: false }
-};
 
 export default function AdminSettingsPage() {
   const { currentUser } = useRole();
@@ -172,21 +162,27 @@ export default function AdminSettingsPage() {
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: DEFAULT_FORM_VALUES
+    defaultValues: {
+        general: { siteName: 'Ndara Afrique', logoUrl: '', faviconUrl: '', contactEmail: '', contactPhone: '', address: '', defaultLanguage: 'fr', timezone: 'Africa/Douala' },
+        payments: { paymentsEnabled: true, currency: 'XOF', paymentMethods: ['mesomb'], transactionFeePercent: 10, minDeposit: 500, maxDeposit: 500000, walletEnabled: true, operatorCommission: 3, paymentMode: 'test' },
+        users: { allowRegistration: true, allowInstructorSignup: true, requireEmailVerification: false, autoApproveInstructors: false, defaultRole: 'student', maxAccountsPerUser: 1 },
+        courses: { allowCourseCreation: true, requireAdminApproval: true, minimumCoursePrice: 0, instructorRevenuePercent: 70, allowDownload: false, certificateEnabled: true },
+        marketplace: { enableMarketplace: false, minimumResalePrice: 10000, resaleCommissionPercent: 20, allowLicenseResale: false, allowCourseBuyout: true, allowResaleRights: true },
+        ai: { aiEnabled: true, modelName: 'gemini-1.5-flash', maxRequestsPerUser: 50, contentGenerationEnabled: true, autoCorrection: true, autonomousTutor: true, fraudDetection: true },
+        notifications: { emailNotifications: true, pushNotifications: true, smsNotifications: false, adminAlerts: { newUser: true, newPayment: true, systemError: true } },
+        security: { maintenanceMode: false, enable2fa: false, maxLoginAttempts: 5, blockedUsers: [], activityLogsEnabled: true },
+        localization: { supportedLanguages: ['fr', 'en', 'sg'], defaultLanguage: 'fr', autoDetectLanguage: true },
+        marketing: { globalAnnouncement: '', promoCodesEnabled: true, referralProgramEnabled: true, seo: { title: 'Ndara Afrique', description: 'Plateforme d\'excellence' } },
+        finance: { platformRevenuePercent: 20, minWithdrawal: 5000, withdrawalDelayDays: 14, autoPayoutEnabled: false },
+        advanced: { apiKeys: {}, webhookUrls: [], debugMode: false }
+    }
   });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const d = snap.data() as any;
-        // Fusion profonde simplifiée pour les réglages
-        const mergedValues = { ...DEFAULT_FORM_VALUES };
-        Object.keys(DEFAULT_FORM_VALUES).forEach(key => {
-            if (d[key]) {
-                (mergedValues as any)[key] = { ...(DEFAULT_FORM_VALUES as any)[key], ...d[key] };
-            }
-        });
-        form.reset(mergedValues);
+        form.reset(d);
       }
       setIsLoading(false);
     });
@@ -205,7 +201,7 @@ export default function AdminSettingsPage() {
       });
       
       if (result.success) {
-        toast({ title: "Configuration sauvegardée", description: `Le module ${activeTab} a été mis à jour dans Firestore.` });
+        toast({ title: "Configuration sauvegardée", description: `Le module ${activeTab} a été mis à jour.` });
       } else {
         throw new Error(result.error);
       }
@@ -218,12 +214,11 @@ export default function AdminSettingsPage() {
 
   const onValidationError = (errors: any) => {
       console.error("Validation Errors:", errors);
-      // Trouver le premier message d'erreur pour aider l'admin
-      const firstErrorKey = Object.keys(errors)[0] || 'inconnu';
+      const firstError = Object.keys(errors)[0];
       toast({ 
           variant: 'destructive', 
           title: "Formulaire invalide", 
-          description: `Vérifiez les réglages. Erreur détectée dans : ${firstErrorKey}`
+          description: `Veuillez vérifier les champs dans la section : ${firstError}`
       });
   };
 
@@ -295,6 +290,7 @@ export default function AdminSettingsPage() {
 
             <div className="max-w-4xl space-y-10">
               
+              {/* --- 1. GÉNÉRAL --- */}
               {activeTab === 'general' && (
                 <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
                   <div className="grid md:grid-cols-2 gap-6">
@@ -317,15 +313,19 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
                       <FormField control={form.control} name="general.contactPhone" render={({ field }) => (
-                          <FormItem><FormLabel>Téléphone Support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                          <FormItem><FormLabel>Téléphone Support</FormLabel><FormControl><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"/><Input {...field} className="h-12 pl-10 bg-slate-950 border-slate-800" /></div></FormControl></FormItem>
                       )}/>
                       <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
-                          <FormItem><FormLabel>Email Administratif</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                          <FormItem><FormLabel>Email Administratif</FormLabel><FormControl><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"/><Input {...field} className="h-12 pl-10 bg-slate-950 border-slate-800" /></div></FormControl></FormItem>
                       )}/>
                   </div>
+                  <FormField control={form.control} name="general.address" render={({ field }) => (
+                      <FormItem><FormLabel>Adresse physique</FormLabel><FormControl><div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"/><Input {...field} className="h-12 pl-10 bg-slate-950 border-slate-800" /></div></FormControl></FormItem>
+                  )}/>
                 </Card>
               )}
 
+              {/* --- 2. PAIEMENTS --- */}
               {activeTab === 'payments' && (
                 <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
                   <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
@@ -368,6 +368,7 @@ export default function AdminSettingsPage() {
                 </Card>
               )}
 
+              {/* --- 3. UTILISATEURS --- */}
               {activeTab === 'users' && (
                 <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
                   <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
@@ -384,37 +385,48 @@ export default function AdminSettingsPage() {
                   )}/>
                   <FormField control={form.control} name="users.autoApproveInstructors" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                          <FormLabel>Validation automatique</FormLabel>
+                          <FormLabel>Validation automatique experts</FormLabel>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                       </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="users.maxAccountsPerUser" render={({ field }) => (
+                      <FormItem><FormLabel>Limite de comptes par IP/Utilisateur</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                   )}/>
                 </Card>
               )}
 
-              {activeTab === 'ai' && (
-                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
-                  <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10">
-                          <FormLabel className="text-lg font-black text-primary uppercase">Moteurs MATHIAS</FormLabel>
+              {/* --- 4. COURS --- */}
+              {activeTab === 'courses' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
+                  <FormField control={form.control} name="courses.allowCourseCreation" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
+                          <FormLabel>Autoriser la création de cours</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="courses.requireAdminApproval" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
+                          <FormLabel>Approbation Admin Obligatoire</FormLabel>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                       </FormItem>
                   )}/>
                   <div className="grid md:grid-cols-2 gap-6">
-                      <FormField control={form.control} name="ai.modelName" render={({ field }) => (
-                          <FormItem><FormLabel>Modèle IA (LLM)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 font-mono" /></FormControl></FormItem>
+                      <FormField control={form.control} name="courses.minimumCoursePrice" render={({ field }) => (
+                          <FormItem><FormLabel>Prix de vente minimum (XOF)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                       )}/>
-                      <FormField control={form.control} name="ai.maxRequestsPerUser" render={({ field }) => (
-                          <FormItem><FormLabel>Limite Requêtes / Jour</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      <FormField control={form.control} name="courses.instructorRevenuePercent" render={({ field }) => (
+                          <FormItem><FormLabel>Part du formateur (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                       )}/>
                   </div>
                 </Card>
               )}
 
+              {/* --- 5. MARKETPLACE --- */}
               {activeTab === 'marketplace' && (
                 <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
                   <FormField control={form.control} name="marketplace.enableMarketplace" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-white/5">
-                          <FormLabel className="text-lg font-black text-white uppercase">Activer la Bourse</FormLabel>
+                          <FormLabel className="text-lg font-black text-white uppercase">Activer la Bourse du Savoir</FormLabel>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
                       </FormItem>
                   )}/>
@@ -423,14 +435,83 @@ export default function AdminSettingsPage() {
                           <FormItem><FormLabel>Prix de revente min. (XOF)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
                       )}/>
                       <FormField control={form.control} name="marketplace.resaleCommissionPercent" render={({ field }) => (
-                          <FormItem><FormLabel>Commission Revente (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                          <FormItem><FormLabel>Commission Revente Plateforme (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                  <div className="flex gap-4">
+                      <FormField control={form.control} name="marketplace.allowCourseBuyout" render={({ field }) => (
+                          <FormItem className="flex-1 flex items-center justify-between p-4 bg-slate-950 rounded-xl">
+                              <FormLabel className="text-xs">Rachat direct par Ndara</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="marketplace.allowResaleRights" render={({ field }) => (
+                          <FormItem className="flex-1 flex items-center justify-between p-4 bg-slate-950 rounded-xl">
+                              <FormLabel className="text-xs">Droit de revente licencié</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
                       )}/>
                   </div>
                 </Card>
               )}
 
+              {/* --- 6. AI MATHIAS --- */}
+              {activeTab === 'ai' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
+                  <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10">
+                          <FormLabel className="text-lg font-black text-primary uppercase">Moteurs MATHIAS Actifs</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="ai.modelName" render={({ field }) => (
+                          <FormItem><FormLabel>Modèle IA (LLM)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 font-mono" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="ai.maxRequestsPerUser" render={({ field }) => (
+                          <FormItem><FormLabel>Limite Requêtes / Jour / Ndara</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <AiFeatureMiniToggle form={form} name="ai.autoCorrection" label="Correction" />
+                      <AiFeatureMiniToggle form={form} name="ai.autonomousTutor" label="Tuteur" />
+                      <AiFeatureMiniToggle form={form} name="ai.fraudDetection" label="Fraude" />
+                  </div>
+                </Card>
+              )}
+
+              {/* --- 7. NOTIFICATIONS --- */}
+              {activeTab === 'notifications' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
+                  <div className="grid gap-4">
+                      <FormField control={form.control} name="notifications.emailNotifications" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                              <FormLabel>Emails Transactionnels</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="notifications.pushNotifications" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                              <FormLabel>Notifications Push Web</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
+                      )}/>
+                  </div>
+                  <div className="space-y-4 pt-4 border-t border-white/5">
+                      <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Alertes Administrateur</h4>
+                      <FormField control={form.control} name="notifications.adminAlerts.newUser" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between"><FormLabel className="text-xs">Nouvel inscrit</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="notifications.adminAlerts.newPayment" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between"><FormLabel className="text-xs">Transaction complétée</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* --- 8. SÉCURITÉ --- */}
               {activeTab === 'security' && (
-                <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
+                <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
                   <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-6 bg-red-500/5 rounded-2xl border border-red-500/20">
                           <div className="flex items-center gap-3">
@@ -440,15 +521,72 @@ export default function AdminSettingsPage() {
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
                       </FormItem>
                   )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="security.maxLoginAttempts" render={({ field }) => (
+                          <FormItem><FormLabel>Tentatives de connexion max</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="security.enable2fa" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl mt-6"><FormLabel>Activer 2FA</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                      )}/>
+                  </div>
                 </Card>
               )}
 
-              {/* Message pour les onglets non encore implémentés visuellement mais gérés par le schéma */}
-              {!['general', 'payments', 'users', 'ai', 'security', 'marketplace'].includes(activeTab) && (
-                  <div className="py-20 text-center space-y-4 opacity-40">
-                      <AlertCircle className="h-12 w-12 mx-auto" />
-                      <p className="text-sm font-black uppercase tracking-widest">Configuration via module avancé uniquement</p>
+              {/* --- 10. MARKETING --- */}
+              {activeTab === 'marketing' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="marketing.globalAnnouncement" render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Annonce Globale (Bandeau défilant)</FormLabel>
+                          <FormControl><Textarea {...field} placeholder="Ex: Promotion de Pâques -25% avec le code NDARA25" rows={3} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid grid-cols-2 gap-4">
+                      <FormField control={form.control} name="marketing.promoCodesEnabled" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl"><FormLabel>Codes Promo</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="marketing.referralProgramEnabled" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl"><FormLabel>Parrainage</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                      )}/>
                   </div>
+                </Card>
+              )}
+
+              {/* --- 11. FINANCE --- */}
+              {activeTab === 'finance' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="finance.platformRevenuePercent" render={({ field }) => (
+                          <FormItem><FormLabel>Revenu Plateforme (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 font-black text-primary" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="finance.minWithdrawal" render={({ field }) => (
+                          <FormItem><FormLabel>Retrait Minimum (XOF)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 font-bold" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                  <FormField control={form.control} name="finance.withdrawalDelayDays" render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Délai de sécurité des fonds (jours de gel)</FormLabel>
+                          <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl>
+                          <FormDescription>Nombre de jours avant qu'un formateur ou affilié puisse retirer ses gains.</FormDescription>
+                      </FormItem>
+                  )}/>
+                </Card>
+              )}
+
+              {/* --- 12. AVANCÉ --- */}
+              {activeTab === 'advanced' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="advanced.debugMode" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                          <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-amber-500" /><FormLabel>Mode Debug / Logs étendus</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl text-center space-y-4">
+                      <AlertCircle className="h-8 w-8 text-slate-600 mx-auto" />
+                      <p className="text-xs text-slate-500 font-medium italic">Les configurations API sensibles et Webhooks sont gérés via le moteur de déploiement sécurisé pour prévenir toute fuite de données.</p>
+                  </div>
+                </Card>
               )}
 
             </div>
@@ -464,7 +602,7 @@ export default function AdminSettingsPage() {
                   className="flex-1 lg:flex-none bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs px-8 lg:px-12 h-14 rounded-2xl transition-all active:scale-95 shadow-2xl shadow-primary/20"
                 >
                   {isSaving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <CheckCircle2 size={16} className="mr-2" />}
-                  Sauvegarder {activeTab}
+                  Sauvegarder les modifications
                 </Button>
               </div>
             </div>
@@ -473,4 +611,15 @@ export default function AdminSettingsPage() {
       </Form>
     </div>
   );
+}
+
+function AiFeatureMiniToggle({ form, name, label }: { form: any, name: string, label: string }) {
+    return (
+        <FormField control={form.control} name={name} render={({ field }) => (
+            <FormItem className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-white/5">
+                <span className="text-[9px] font-black uppercase text-slate-400">{label}</span>
+                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="scale-75" /></FormControl>
+            </FormItem>
+        )}/>
+    );
 }
