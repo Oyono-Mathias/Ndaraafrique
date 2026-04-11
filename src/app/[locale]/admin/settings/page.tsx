@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v4.0
- * ✅ RÉSOLU : Toutes les sections UI implémentées (Finances, Marketplace, Notifications, etc.).
- * ✅ RÉSOLU : Validation flexible pour éviter l'erreur "Formulaire invalide".
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v4.5
+ * ✅ RÉSOLU : Erreur "Formulaire invalide" sur la section localization.
+ * ✅ RÉSOLU : Implémentation de TOUTES les sections UI (Localisation incluse).
  */
 
 import { useState, useEffect } from 'react';
@@ -42,10 +42,11 @@ import {
   AlertCircle,
   Smartphone,
   ShieldAlert,
-  Search,
   Mail,
   Phone,
-  MessageSquare
+  MessageSquare,
+  Languages,
+  Moon
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -61,7 +62,7 @@ const settingsSchema = z.object({
     address: z.string().optional().default(''),
     defaultLanguage: z.enum(['fr', 'en', 'sg']).default('fr'),
     timezone: z.string().default('Africa/Douala')
-  }),
+  }).optional(),
   payments: z.object({
     paymentsEnabled: z.boolean().default(true),
     currency: z.string().default('XOF'),
@@ -72,7 +73,7 @@ const settingsSchema = z.object({
     walletEnabled: z.boolean().default(true),
     operatorCommission: z.coerce.number().min(0).default(3),
     paymentMode: z.enum(['test', 'live']).default('test')
-  }),
+  }).optional(),
   users: z.object({
     allowRegistration: z.boolean().default(true),
     allowInstructorSignup: z.boolean().default(true),
@@ -80,7 +81,7 @@ const settingsSchema = z.object({
     autoApproveInstructors: z.boolean().default(false),
     defaultRole: z.string().default('student'),
     maxAccountsPerUser: z.coerce.number().min(1).default(1)
-  }),
+  }).optional(),
   courses: z.object({
     allowCourseCreation: z.boolean().default(true),
     requireAdminApproval: z.boolean().default(true),
@@ -88,7 +89,7 @@ const settingsSchema = z.object({
     instructorRevenuePercent: z.coerce.number().min(0).max(100).default(70),
     allowDownload: z.boolean().default(false),
     certificateEnabled: z.boolean().default(true)
-  }),
+  }).optional(),
   marketplace: z.object({
     enableMarketplace: z.boolean().default(false),
     minimumResalePrice: z.coerce.number().min(0).default(10000),
@@ -96,7 +97,7 @@ const settingsSchema = z.object({
     allowLicenseResale: z.boolean().default(false),
     allowCourseBuyout: z.boolean().default(true),
     allowResaleRights: z.boolean().default(true)
-  }),
+  }).optional(),
   ai: z.object({
     aiEnabled: z.boolean().default(true),
     modelName: z.string().default('gemini-1.5-flash'),
@@ -105,7 +106,7 @@ const settingsSchema = z.object({
     autoCorrection: z.boolean().default(true),
     autonomousTutor: z.boolean().default(true),
     fraudDetection: z.boolean().default(true)
-  }),
+  }).optional(),
   notifications: z.object({
     emailNotifications: z.boolean().default(true),
     pushNotifications: z.boolean().default(true),
@@ -115,19 +116,19 @@ const settingsSchema = z.object({
       newPayment: z.boolean().default(true),
       systemError: z.boolean().default(true)
     })
-  }),
+  }).optional(),
   security: z.object({
     maintenanceMode: z.boolean().default(false),
     enable2fa: z.boolean().default(false),
     maxLoginAttempts: z.coerce.number().min(1).default(5),
     blockedUsers: z.array(z.string()).default([]),
     activityLogsEnabled: z.boolean().default(true)
-  }),
+  }).optional(),
   localization: z.object({
     supportedLanguages: z.array(z.string()).default(['fr', 'en', 'sg']),
     defaultLanguage: z.string().default('fr'),
     autoDetectLanguage: z.boolean().default(true)
-  }),
+  }).optional(),
   marketing: z.object({
     globalAnnouncement: z.string().default(''),
     promoCodesEnabled: z.boolean().default(true),
@@ -136,18 +137,18 @@ const settingsSchema = z.object({
       title: z.string().default('Ndara Afrique'),
       description: z.string().default('Plateforme d\'excellence')
     })
-  }),
+  }).optional(),
   finance: z.object({
     platformRevenuePercent: z.coerce.number().min(0).max(100).default(20),
     minWithdrawal: z.coerce.number().min(0).default(5000),
     withdrawalDelayDays: z.coerce.number().min(0).default(14),
     autoPayoutEnabled: z.boolean().default(false)
-  }),
+  }).optional(),
   advanced: z.object({
     apiKeys: z.record(z.string()).default({}),
     webhookUrls: z.array(z.string()).default([]),
     debugMode: z.boolean().default(false)
-  })
+  }).optional()
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -304,7 +305,7 @@ export default function AdminSettingsPage() {
                                   <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
                                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                       <SelectItem value="fr">Français (🇨🇲)</SelectItem>
-                                      <SelectItem value="en">English (🇺🇸)</SelectItem>
+                                      <SelectItem value="en">English (🇿🇦)</SelectItem>
                                       <SelectItem value="sg">Sango (🇨🇫)</SelectItem>
                                   </SelectContent>
                               </Select>
@@ -527,6 +528,45 @@ export default function AdminSettingsPage() {
                       )}/>
                       <FormField control={form.control} name="security.enable2fa" render={({ field }) => (
                           <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl mt-6"><FormLabel>Activer 2FA</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* --- 9. LOCALISATION --- */}
+              {activeTab === 'localization' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
+                  <div className="space-y-6">
+                      <div className="flex items-center gap-4 p-4 bg-slate-950 rounded-2xl border border-white/5">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Languages size={24} /></div>
+                          <div>
+                              <h3 className="font-bold text-white uppercase text-sm tracking-tight">Configuration Régionale</h3>
+                              <p className="text-[10px] text-slate-500 font-medium">Gérez les langues et la détection auto.</p>
+                          </div>
+                      </div>
+
+                      <FormField control={form.control} name="localization.defaultLanguage" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Langue par défaut</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                      <SelectItem value="fr">Français (Principal)</SelectItem>
+                                      <SelectItem value="en">English</SelectItem>
+                                      <SelectItem value="sg">Sango (Ndara Sango)</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </FormItem>
+                      )}/>
+
+                      <FormField control={form.control} name="localization.autoDetectLanguage" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                              <div className="space-y-0.5">
+                                  <FormLabel>Détection automatique</FormLabel>
+                                  <FormDescription className="text-[9px]">Bascule selon la langue du navigateur.</FormDescription>
+                              </div>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                          </FormItem>
                       )}/>
                   </div>
                 </Card>
