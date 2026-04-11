@@ -12,6 +12,7 @@ import type { UserRole } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne : Vérifie si l'appelant a réellement les droits Admin dans Firestore.
+ * Ne fait pas confiance à l'ID seul, vérifie le statut actif et le rôle.
  */
 async function verifyAdminOrThrow(adminId: string) {
     if (!adminId) throw new Error("UNAUTHORIZED: Identifiant manquant.");
@@ -26,7 +27,7 @@ async function verifyAdminOrThrow(adminId: string) {
 }
 
 /**
- * 💰 Recharger le portefeuille d'un utilisateur.
+ * 💰 1. Recharger le portefeuille d'un utilisateur.
  */
 export async function rechargeUserWalletAction({
     adminId,
@@ -51,11 +52,13 @@ export async function rechargeUserWalletAction({
         const paymentRef = db.collection('payments').doc();
         const auditRef = db.collection('admin_audit_logs').doc();
 
+        // Mise à jour du solde
         batch.update(userRef, {
             balance: FieldValue.increment(amount),
             updatedAt: FieldValue.serverTimestamp()
         });
 
+        // Enregistrement de la transaction
         batch.set(paymentRef, {
             id: paymentRef.id,
             userId: targetUserId,
@@ -68,6 +71,7 @@ export async function rechargeUserWalletAction({
             metadata: { type: 'wallet_topup', adminId, reason }
         });
 
+        // Log d'audit
         batch.set(auditRef, {
             adminId,
             eventType: 'user.wallet.recharge',
@@ -85,7 +89,7 @@ export async function rechargeUserWalletAction({
 }
 
 /**
- * 💸 Débiter le portefeuille d'un utilisateur.
+ * 💸 2. Débiter le portefeuille d'un utilisateur.
  */
 export async function debitUserWalletAction({
     adminId,
@@ -111,6 +115,7 @@ export async function debitUserWalletAction({
         if ((userSnap.data()?.balance || 0) < amount) throw new Error("Solde insuffisant.");
 
         const batch = db.batch();
+        
         batch.update(userRef, {
             balance: FieldValue.increment(-amount),
             updatedAt: FieldValue.serverTimestamp()
@@ -133,9 +138,9 @@ export async function debitUserWalletAction({
 }
 
 /**
- * 🔒 Modifier le statut d'un utilisateur (Suspendre/Réactiver).
+ * 🔒 3 & 4. Modifier le statut d'un utilisateur (Suspendre/Réactiver).
  */
-export async function toggleUserStatusAction({
+export async function updateUserStatusAction({
     adminId,
     targetUserId,
     status,
@@ -173,68 +178,7 @@ export async function toggleUserStatusAction({
 }
 
 /**
- * 🚫 Appliquer des restrictions à un utilisateur.
- */
-export async function applyUserRestrictionsAction({
-    adminId,
-    targetUserId,
-    restrictions,
-    reason
-}: {
-    adminId: string;
-    targetUserId: string;
-    restrictions: any;
-    reason: string;
-}): Promise<{ success: boolean; error?: string }> {
-    try {
-        await verifyAdminOrThrow(adminId);
-
-        const db = getAdminDb();
-        await db.collection('users').doc(targetUserId).update({
-            restrictions,
-            sanctions: {
-                isSanctioned: true,
-                reason,
-                imposedBy: adminId,
-                date: FieldValue.serverTimestamp()
-            },
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/**
- * 🔓 Lever toutes les restrictions.
- */
-export async function removeUserRestrictionsAction({
-    adminId,
-    targetUserId
-}: {
-    adminId: string;
-    targetUserId: string;
-}): Promise<{ success: boolean; error?: string }> {
-    try {
-        await verifyAdminOrThrow(adminId);
-
-        const db = getAdminDb();
-        await db.collection('users').doc(targetUserId).update({
-            restrictions: FieldValue.delete(),
-            sanctions: FieldValue.delete(),
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/**
- * 🗑️ Suppression Logique.
+ * 🗑️ 5. Suppression Logique (Soft Delete).
  */
 export async function softDeleteUserAction({
     adminId,
@@ -255,6 +199,14 @@ export async function softDeleteUserAction({
             deletionReason: reason
         });
 
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.delete.soft',
+            target: { id: targetUserId, type: 'user' },
+            details: `Suppression logique. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
@@ -262,7 +214,7 @@ export async function softDeleteUserAction({
 }
 
 /**
- * 🎓 Changer Rôle.
+ * 🎓 6. Changer Rôle Utilisateur.
  */
 export async function changeUserRoleAction({
     adminId,
@@ -282,7 +234,90 @@ export async function changeUserRoleAction({
             updatedAt: FieldValue.serverTimestamp()
         });
 
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.role.change',
+            target: { id: targetUserId, type: 'user' },
+            details: `Rôle modifié vers '${newRole}'.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
         return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * 🎁 7. Offrir un cours (Grant Access).
+ */
+export async function grantFreeCourseAction({
+    adminId,
+    targetUserId,
+    courseId,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    courseId: string;
+    reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+
+        const db = getAdminDb();
+        const courseDoc = await db.collection('courses').doc(courseId).get();
+        if (!courseDoc.exists) throw new Error("Cours introuvable.");
+
+        const enrollmentId = `${targetUserId}_${courseId}`;
+        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
+
+        await enrollmentRef.set({
+            id: enrollmentId,
+            studentId: targetUserId,
+            courseId: courseId,
+            instructorId: courseDoc.data()?.instructorId,
+            status: 'active',
+            progress: 0,
+            enrollmentDate: FieldValue.serverTimestamp(),
+            lastAccessedAt: FieldValue.serverTimestamp(),
+            isAdminGrant: true,
+            grantReason: reason,
+            grantedBy: adminId
+        }, { merge: true });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.course.grant',
+            target: { id: targetUserId, type: 'user' },
+            details: `Accès gratuit au cours '${courseDoc.data()?.title}' accordé. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * 🔍 8. Voir les transactions d'un utilisateur.
+ * Note : Puisqu'il s'agit d'une lecture, on retourne les données directement.
+ */
+export async function getUserTransactionsAction(adminId: string, targetUserId: string) {
+    try {
+        await verifyAdminOrThrow(adminId);
+
+        const db = getAdminDb();
+        const paymentsSnap = await db.collection('payments')
+            .where('userId', '==', targetUserId)
+            .orderBy('date', 'desc')
+            .get();
+
+        return { 
+            success: true, 
+            transactions: paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) 
+        };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
