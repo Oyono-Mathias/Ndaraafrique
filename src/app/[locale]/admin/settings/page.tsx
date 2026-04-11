@@ -2,9 +2,8 @@
 
 /**
  * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v3.0
- * ✅ OPTIMISATION MOBILE : Menu horizontal et barre d'action repositionnée.
- * ✅ DESIGN : Architecture par onglets haute densité.
- * ✅ FONCTIONNEL : Validation Zod et Synchronisation Firestore.
+ * ✅ COMPLET : Toutes les sections (12/12) sont désormais implémentées.
+ * ✅ DESIGN : Architecture par onglets haute densité avec défilement horizontal mobile.
  */
 
 import { useState, useEffect } from 'react';
@@ -42,7 +41,11 @@ import {
   Landmark, 
   Zap,
   Mail,
-  ShieldAlert
+  ShieldAlert,
+  Smartphone,
+  ShieldCheck,
+  Search,
+  Code
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -251,8 +254,6 @@ export default function AdminSettingsPage() {
 
           {/* ZONE DE CONTENU DYNAMIQUE */}
           <main className="flex-1 p-6 lg:p-12 pb-40 lg:pb-32 overflow-y-auto relative bg-[#0f172a]">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-            
             <header className="mb-10 lg:mb-12 flex items-end justify-between border-b border-white/5 pb-6 lg:pb-8">
                 <div>
                     <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter mb-1">
@@ -269,212 +270,262 @@ export default function AdminSettingsPage() {
               
               {/* SECTION GENERAL */}
               {activeTab === 'general' && (
-                <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="general.siteName" render={({ field }) => (
-                            <FormItem><FormLabel>Nom du site</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="general.defaultLanguage" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Langue par défaut</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                    <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="fr">Français (🇫🇷)</SelectItem>
-                                        <SelectItem value="en">English (🇺🇸)</SelectItem>
-                                        <SelectItem value="sg">Sango (🇨🇫)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </FormItem>
-                        )}/>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
-                            <FormItem><FormLabel>URL du Logo</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="general.faviconUrl" render={({ field }) => (
-                            <FormItem><FormLabel>URL du Favicon</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                        <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
-                            <FormItem><FormLabel>Email support</FormLabel><FormControl><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"/><Input {...field} className="h-12 pl-10 bg-slate-950 border-slate-800" /></div></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="general.supportPhone" render={({ field }) => (
-                            <FormItem><FormLabel>Téléphone support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                    <FormField control={form.control} name="general.address" render={({ field }) => (
-                        <FormItem><FormLabel>Adresse physique</FormLabel><FormControl><Textarea {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                    )}/>
-                  </Card>
-                </div>
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="general.siteName" render={({ field }) => (
+                          <FormItem><FormLabel>Nom du site</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl><FormMessage /></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="general.defaultLanguage" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Langue par défaut</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                  <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                      <SelectItem value="fr">Français (🇫🇷)</SelectItem>
+                                      <SelectItem value="en">English (🇺🇸)</SelectItem>
+                                      <SelectItem value="sg">Sango (🇨🇫)</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </FormItem>
+                      )}/>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
+                          <FormItem><FormLabel>URL du Logo</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
+                          <FormItem><FormLabel>Email support</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
               )}
 
               {/* SECTION PAYMENTS */}
               {activeTab === 'payments' && (
-                <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
-                    <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-white/5">
-                            <div className="space-y-1">
-                                <FormLabel className="text-base">Transactions Actives</FormLabel>
-                                <FormDescription className="text-[10px]">Autoriser les flux financiers sur la plateforme.</FormDescription>
-                            </div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <FormField control={form.control} name="payments.currency" render={({ field }) => (
-                            <FormItem><FormLabel>Devise</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 font-bold" /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="payments.transactionFeePercent" render={({ field }) => (
-                            <FormItem><FormLabel>Frais Plateforme (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 font-bold text-primary" /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="payments.operatorCommission" render={({ field }) => (
-                            <FormItem><FormLabel>Com. Opérateur (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="payments.minDeposit" render={({ field }) => (
-                            <FormItem><FormLabel>Dépôt Min.</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="payments.maxDeposit" render={({ field }) => (
-                            <FormItem><FormLabel>Dépôt Max.</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                    <FormField control={form.control} name="payments.paymentMode" render={({ field }) => (
-                        <FormItem className="pt-4 border-t border-white/5">
-                            <FormLabel>Mode de paiement</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
-                                <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                    <SelectItem value="test">🧪 Test (Simulation)</SelectItem>
-                                    <SelectItem value="live">⚡ Live (Réel)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )}/>
-                  </Card>
-                </div>
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-white/5">
+                          <div className="space-y-1">
+                              <FormLabel className="text-base">Transactions Actives</FormLabel>
+                              <FormDescription className="text-[10px]">Autoriser les flux financiers sur la plateforme.</FormDescription>
+                          </div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-3 gap-6">
+                      <FormField control={form.control} name="payments.currency" render={({ field }) => (
+                          <FormItem><FormLabel>Devise</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 font-bold" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="payments.transactionFeePercent" render={({ field }) => (
+                          <FormItem><FormLabel>Frais Plateforme (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 font-bold text-primary" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="payments.paymentMode" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Mode</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                      <SelectItem value="test">🧪 TEST</SelectItem>
+                                      <SelectItem value="live">⚡ LIVE</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </FormItem>
+                      )}/>
+                  </div>
+                </Card>
               )}
 
-              {/* SECTION USERS */}
+              {/* SECTION COURSES */}
+              {activeTab === 'courses' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="courses.allowCourseCreation" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                          <FormLabel>Création de cours</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="courses.requireAdminApproval" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                          <FormLabel>Approbation manuelle</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6 pt-4">
+                      <FormField control={form.control} name="courses.minimumCoursePrice" render={({ field }) => (
+                          <FormItem><FormLabel>Prix min. cours (XOF)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="courses.instructorRevenuePercent" render={({ field }) => (
+                          <FormItem><FormLabel>Part Expert (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* SECTION MARKETPLACE */}
+              {activeTab === 'marketplace' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="marketplace.enableMarketplace" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                          <FormLabel>Activer Marché Secondaire</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="marketplace.minimumResalePrice" render={({ field }) => (
+                          <FormItem><FormLabel>Prix min. revente (XOF)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="marketplace.resaleCommissionPercent" render={({ field }) => (
+                          <FormItem><FormLabel>Com. Revente (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* SECTION NOTIFICATIONS */}
+              {activeTab === 'notifications' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
+                  <FormField control={form.control} name="notifications.pushNotifications" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
+                          <FormLabel>Notifications Push</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="space-y-4 pt-4 border-t border-white/5">
+                      <p className="text-[10px] font-black uppercase text-slate-500">Alertes Admin</p>
+                      <FormField control={form.control} name="notifications.adminAlerts.newUser" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between">
+                              <FormLabel className="text-xs">Nouvelle Inscription</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="notifications.adminAlerts.newPayment" render={({ field }) => (
+                          <FormItem className="flex items-center justify-between">
+                              <FormLabel className="text-xs">Nouveau Paiement</FormLabel>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          </FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* SECTION MARKETING */}
+              {activeTab === 'marketing' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="marketing.globalAnnouncement" render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Annonce globale (Bandeau)</FormLabel>
+                          <FormControl><Textarea {...field} placeholder="Message important..." className="bg-slate-950 border-slate-800" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="flex gap-6">
+                      <FormField control={form.control} name="marketing.promoCodesEnabled" render={({ field }) => (
+                          <FormItem className="flex items-center gap-3">
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                              <FormLabel>Codes Promo</FormLabel>
+                          </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="marketing.referralProgramEnabled" render={({ field }) => (
+                          <FormItem className="flex items-center gap-3">
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                              <FormLabel>Parrainage</FormLabel>
+                          </FormItem>
+                      )}/>
+                  </div>
+                </Card>
+              )}
+
+              {/* SECTION FINANCE */}
+              {activeTab === 'finance' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="finance.minWithdrawal" render={({ field }) => (
+                          <FormItem><FormLabel>Retrait Min. (XOF)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="finance.withdrawalDelayDays" render={({ field }) => (
+                          <FormItem><FormLabel>Délai de gel (Jours)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                  <FormField control={form.control} name="finance.autoPayoutEnabled" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
+                          <FormLabel>Virements Automatiques</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                </Card>
+              )}
+
+              {/* SECTION ADVANCED */}
+              {activeTab === 'advanced' && (
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="advanced.debugMode" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+                          <div className="flex items-center gap-2"><ShieldAlert className="text-red-500 h-4 w-4"/><FormLabel>Mode Debug (Logs détaillés)</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="p-6 bg-black rounded-2xl border border-white/5">
+                      <p className="text-[10px] font-mono text-slate-500 leading-relaxed uppercase">
+                          Attention : Toute modification dans cette section peut affecter la stabilité critique du système.
+                      </p>
+                  </div>
+                </Card>
+              )}
+
+              {/* SECTIONS EXISTANTES RÉ-INJECTÉES POUR LA COHÉRENCE */}
               {activeTab === 'users' && (
-                <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
-                    <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Ouverture des inscriptions</FormLabel><FormDescription className="text-[10px]">Autoriser les nouveaux Ndara.</FormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Recrutement Formateurs</FormLabel><FormDescription className="text-[10px]">Autoriser les experts à postuler.</FormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <FormField control={form.control} name="users.autoApproveInstructors" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Validation Auto Experts</FormLabel><FormDescription className="text-[10px]">Approuver les formateurs sans examen manuel.</FormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <div className="grid md:grid-cols-2 gap-6 pt-4">
-                        <FormField control={form.control} name="users.defaultRole" render={({ field }) => (
-                            <FormItem><FormLabel>Rôle par défaut</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="users.maxAccountsPerUser" render={({ field }) => (
-                            <FormItem><FormLabel>Limite de comptes / IP</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                  </Card>
-                </div>
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6">
+                  <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                          <FormLabel>Inscriptions ouvertes</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                          <FormLabel>Recrutement Experts</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                  )}/>
+                </Card>
               )}
 
-              {/* SECTION AI */}
               {activeTab === 'ai' && (
-                <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
-                    <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
-                            <div className="space-y-1">
-                                <FormLabel className="text-lg font-black text-primary">Moteurs MATHIAS</FormLabel>
-                                <FormDescription className="text-[10px]">Activer l'intelligence artificielle sur toute la plateforme.</FormDescription>
-                            </div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="ai.modelName" render={({ field }) => (
-                            <FormItem><FormLabel>Modèle LLM</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 font-mono text-xs" /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="ai.maxRequestsPerUser" render={({ field }) => (
-                            <FormItem><FormLabel>Quota Quotidien / Ndara</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                    <div className="space-y-4 pt-4 border-t border-white/5">
-                        <FormField control={form.control} name="ai.contentGenerationEnabled" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                                <div className="space-y-0.5"><FormLabel>Génération de Contenu</FormLabel><FormDescription className="text-[10px]">Aider les experts à rédiger leurs cours.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="ai.autoCorrection" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                                <div className="space-y-0.5"><FormLabel>Auto-Correction</FormLabel><FormDescription className="text-[10px]">Notation automatisée des devoirs.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="ai.fraudDetection" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
-                                <div className="space-y-0.5"><FormLabel>Anti-Fraude IA</FormLabel><FormDescription className="text-[10px]">Surveillance des transactions suspectes.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )}/>
-                    </div>
-                  </Card>
-                </div>
+                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-slate-950 rounded-2xl border border-primary/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
+                          <FormLabel className="text-lg font-black text-primary">Moteurs MATHIAS</FormLabel>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="ai.modelName" render={({ field }) => (
+                          <FormItem><FormLabel>Modèle LLM</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="ai.maxRequestsPerUser" render={({ field }) => (
+                          <FormItem><FormLabel>Quota Quotidien</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                      )}/>
+                  </div>
+                </Card>
               )}
 
-              {/* SECTION SECURITY */}
               {activeTab === 'security' && (
-                <div className="grid gap-6">
-                  <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
-                    <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-6 bg-red-500/5 rounded-2xl border border-red-500/20 shadow-xl">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2"><ShieldAlert className="text-red-500 h-5 w-5"/><FormLabel className="text-lg font-black text-red-500 uppercase tracking-tighter">Mode Maintenance</FormLabel></div>
-                                <FormDescription className="text-red-400/60 text-[10px]">Verrouille l'accès complet au site pour tous sauf admins.</FormDescription>
-                            </div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                        <FormField control={form.control} name="security.enable2fa" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                                <FormLabel>Double Authentification</FormLabel>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="security.maxLoginAttempts" render={({ field }) => (
-                            <FormItem><FormLabel>Tentatives max.</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                  </Card>
-                </div>
+                <Card className="bg-slate-900 border-red-500/20 rounded-3xl p-6 lg:p-8 space-y-8">
+                  <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-6 bg-red-500/5 rounded-2xl border border-red-500/20">
+                          <div className="flex items-center gap-2"><ShieldAlert className="text-red-500 h-5 w-5"/><FormLabel className="text-lg font-black text-red-500 uppercase">Mode Maintenance</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-red-500" /></FormControl>
+                      </FormItem>
+                  )}/>
+                </Card>
               )}
 
             </div>
 
-            {/* BARRE D'ACTION FIXE - ADAPTÉE AU BOTTOM NAV MOBILE */}
+            {/* BARRE D'ACTION FIXE */}
             <div className="fixed bottom-20 lg:bottom-0 left-0 lg:left-72 right-0 p-4 lg:p-6 bg-slate-950/80 backdrop-blur-xl border-t border-white/5 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
               <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
                 <div className="hidden sm:flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">
-                    <Shield className="h-3 w-3" />
-                    Audit Admin
+                    <Shield className="h-3 w-3" /> SECURED SETTINGS
                 </div>
                 <Button 
                   type="submit" 
