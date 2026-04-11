@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de candidature pour devenir instructeur sur Ndara Afrique.
- * ✅ RÉSOLU : Utilisation du nouveau schéma Settings (users.allowInstructorSignup).
+ * ✅ RÉSOLU : Utilisation du nouveau schéma Settings (users.allowInstructorSignup et users.autoApproveInstructors).
  */
 
 import { useState, useEffect } from 'react';
@@ -136,7 +136,7 @@ export default function DevenirInstructeurPage() {
 
     try {
       const userRef = doc(db, 'users', user.uid);
-      const isAutoApprove = settings?.courses?.autoApproval === true;
+      const isAutoApprove = settings?.users?.autoApproveInstructors === true;
 
       const payload = {
         role: isAutoApprove ? 'instructor' : 'student',
