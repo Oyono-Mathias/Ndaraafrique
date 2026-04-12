@@ -4,6 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- FONCTIONS DE SÉCURITÉ CENTRALISÉES ---
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -18,36 +19,86 @@ service cloud.firestore {
     }
 
     // --- RÈGLES PAR DÉFAUT : FERMÉ ---
+    // On interdit tout par défaut pour forcer une déclaration explicite par collection.
     match /{document=**} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if false;
     }
 
     // --- UTILISATEURS ---
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      // Un utilisateur voit son profil, l'admin voit tout.
+      allow read: if isOwner(userId) || isAdmin();
       
-      match /notifications/{notifId} { allow read, write: if isOwner(userId); }
-      match /chatHistory/{msgId} { allow read, write: if isOwner(userId); }
-      match /activity/{actId} { allow read: if isOwner(userId) || isAdmin(); }
+      // Création autorisée au signup.
+      allow create: if isOwner(userId);
+      
+      // Mise à jour : l'utilisateur ne peut pas modifier son propre rôle ou statut.
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.status == resource.data.status
+      );
+      
+      // Sous-collections privées (notifications, historique, etc.)
+      match /notifications/{id} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /chatHistory/{id} { allow read, write: if isOwner(userId); }
+      match /activity/{id} { allow read: if isOwner(userId) || isAdmin(); }
+      match /fcmTokens/{id} { allow read, write: if isOwner(userId); }
     }
 
-    // --- FINANCES & TRANSACTIONS ---
+    // --- FINANCES & TRANSACTIONS (CRITIQUE) ---
     match /payments/{paymentId} {
+      // Lecture par le bénéficiaire ou l'admin.
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if false; // Strictement réservé au serveur (Admin SDK)
+      // Écriture STRICTEMENT réservée au serveur (Admin SDK).
+      allow write: if false;
     }
 
     match /payout_requests/{payoutId} {
       allow read: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restrictions.canWithdraw == true;
+      // L'instructeur peut créer une demande, l'admin peut la mettre à jour (statut).
+      allow create: if isSignedIn() && isOwner(request.resource.data.instructorId);
       allow update: if isAdmin();
+      allow delete: if false;
     }
 
-    // --- RÉGLAGES SYSTÈME ---
+    match /affiliate_transactions/{id} {
+      allow read: if isSignedIn() && (resource.data.affiliateId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // --- SUPPORT & MESSAGERIE ---
+    match /support_tickets/{ticketId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isAdmin(); // Seul l'admin clôture ou répond officiellement.
+      
+      match /messages/{msgId} {
+        allow read: if isSignedIn() && (get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId == request.auth.uid || isAdmin());
+        allow create: if isSignedIn();
+      }
+    }
+
+    match /chats/{chatId} {
+      allow read, write: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+      }
+    }
+
+    // --- RÉGLAGES SYSTÈME (PUBLICS) ---
     match /settings/{settingId} {
+      allow read: if true; // Nécessaire pour le chargement du site (nom, logo, maintenance).
+      allow write: if isAdmin();
+    }
+
+    match /carousel_slides/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /faqs/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -55,32 +106,49 @@ service cloud.firestore {
     // --- LOGS & AUDIT (PROTECTION MAXIMUM) ---
     match /admin_audit_logs/{logId} {
       allow read: if isAdmin();
-      allow write: if false; 
+      allow write: if false; // Aucun client ne peut modifier les preuves.
     }
 
     match /security_logs/{logId} {
       allow read: if isAdmin();
-      allow write: if false; 
+      allow write: if false;
     }
 
-    match /tracking_events/{eventId} {
-      allow create: if true; // Permet le tracking anonyme
+    match /tracking_events/{id} {
+      allow create: if true; // Permet le tracking anonyme (sessions).
       allow read: if isAdmin();
-      allow write: if false;
     }
 
     // --- COURS & CONTENU ---
     match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isAdmin() || (isSignedIn() && resource.data.instructorId == request.auth.uid && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restrictions.canSellCourse == true);
+      allow read: if true; // Catalogue public.
+      allow write: if isAdmin() || (
+        isSignedIn() && 
+        resource.data.instructorId == request.auth.uid && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restrictions.canSellCourse == true
+      );
       
       match /sections/{sectionId} {
         allow read: if true;
         allow write: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid);
         
-        match /lectures/{lectureId} { allow read, write: if true; }
-        match /quizzes/{quizId} { allow read, write: if true; }
+        match /lectures/{id} { allow read, write: if true; }
+        match /quizzes/{id} { allow read, write: if true; }
+        match /assignments/{id} { allow read, write: if true; }
       }
+    }
+
+    match /enrollments/{enrollmentId} {
+      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid || isAdmin());
+      allow write: if isAdmin(); // Les inscriptions passent par le processeur serveur.
+    }
+
+    match /course_progress/{progressId} {
+      allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /user_wishlist/{wishId} {
+      allow read, write: if isOwner(request.auth.uid);
     }
   }
 }
