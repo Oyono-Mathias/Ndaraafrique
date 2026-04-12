@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * @fileOverview Modal de détails utilisateur pour les administrateurs.
+ * ✅ DESIGN : Fintech Android-First.
+ * ✅ FINANCES : Affichage des trois types de soldes (Principal, Affilié, Séquestre).
+ */
+
 import { NdaraUser } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,8 +26,6 @@ import {
     ShieldCheck,
     Quote
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 interface UserDetailsModalProps {
@@ -62,8 +66,6 @@ const BalanceCard = ({ label, value, icon: Icon, color, subLabel }: { label: str
 
 export function UserDetailsModal({ isOpen, onOpenChange, user }: UserDetailsModalProps) {
   if (!user) return null;
-
-  const createdAt = (user.createdAt as any)?.toDate?.() || null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Menu d'actions administrateur COMPLET et SÉCURISÉ.
- * Chaque bouton est relié à une Server Action avec feedback en temps réel.
  * ✅ DESIGN : Fintech Dark Android-First.
+ * ✅ RÉSOLU : Ajout de Voir Profil et Détails & Soldes.
  */
 
 import React, { useState, useTransition } from 'react';

@@ -18,7 +18,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- RÈGLE PAR DÉFAUT : FERMÉ ---
+    // --- RÈGLE PAR DÉFAUT : TOUT EST FERMÉ ---
     match /{document=**} {
       allow read, write: if false;
     }
@@ -31,11 +31,12 @@ service cloud.firestore {
       // Création lors du signup (uniquement par le propriétaire).
       allow create: if isOwner(userId);
       
-      // Mise à jour : le propriétaire ne peut pas modifier son rôle ou son statut.
+      // Mise à jour : le propriétaire ne peut pas modifier son rôle, son statut ou son solde.
       allow update: if isAdmin() || (
         isOwner(userId) && 
         request.resource.data.role == resource.data.role &&
-        request.resource.data.status == resource.data.status
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.balance == resource.data.balance
       );
       
       // Sous-collections privées
