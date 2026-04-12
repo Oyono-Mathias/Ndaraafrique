@@ -250,7 +250,7 @@ export async function grantCourseAccess({
         if (expirationInDays) {
             expiresAt = new Date(Date.now() + expirationInDays * 86400000);
         } else if (expirationMinutes) {
-            expirationMinutes = values.durationValue * 60;
+            expiresAt = new Date(Date.now() + expirationMinutes * 60000);
         }
 
         const enrollmentData = {
