@@ -4,6 +4,7 @@
  * @fileOverview Menu d'actions administrateur COMPLET et SÉCURISÉ.
  * Chaque bouton est relié à une Server Action avec feedback en temps réel.
  * ✅ DESIGN : Fintech Dark Android-First.
+ * ✅ FIX : Import manquant de CheckCircle2.
  */
 
 import React, { useState, useTransition } from 'react';
@@ -32,6 +33,7 @@ import {
     LogOut,
     LifeBuoy,
     Check,
+    CheckCircle2,
     X,
     Loader2,
     Gift,
