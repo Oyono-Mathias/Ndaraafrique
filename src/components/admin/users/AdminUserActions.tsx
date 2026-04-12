@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Menu d'actions administrateur complet (Design Android-First).
+ * @fileOverview Menu d'actions administrateur COMPLET (Design Android-First).
  * ✅ STRUCTURE : 9 sections professionnelles.
  * ✅ SÉCURITÉ : Server Actions & Confirmations Danger Zone.
  */
-
 
 import React, { useState } from 'react';
 import { useRole } from '@/context/RoleContext';
@@ -24,7 +23,6 @@ import {
     Trash2, 
     MoreVertical,
     Activity,
-    History,
     Mail,
     Smartphone,
     ArrowUpRight,
@@ -40,7 +38,9 @@ import {
     Check,
     X,
     Loader2,
-    Gift
+    Gift,
+    BadgeEuro,
+    Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -57,11 +57,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { 
@@ -94,6 +96,8 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
     const [amount, setAmount] = useState<number>(0);
     const [reason, setReason] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState("");
+    const [selectedRole, setSelectedRole] = useState<UserRole>(targetUser.role);
+    const [targetCourseId, setTargetCourseId] = useState("");
     const [restrictions, setRestrictions] = useState(targetUser.restrictions || {
         canWithdraw: true,
         canSendMessage: true,
@@ -132,7 +136,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         {
             title: "Informations",
             items: [
-                { label: "Voir profil", icon: User, onClick: () => router.push(`/admin/users?id=${targetUser.uid}`) },
+                { label: "Voir profil", icon: User, onClick: () => router.push(`/fr/instructor/${targetUser.uid}`) },
                 { label: "Voir activités", icon: Activity, onClick: () => {} },
                 { label: "Logs sécurité", icon: ShieldCheck, onClick: () => router.push(`/admin/logs?uid=${targetUser.uid}`) },
                 { label: "Tickets support", icon: LifeBuoy, onClick: () => router.push(`/admin/support?uid=${targetUser.uid}`) },
@@ -151,6 +155,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                 { label: "Recharger wallet", icon: ArrowUpRight, onClick: () => setActiveModal('credit'), color: 'text-emerald-500' },
                 { label: "Débiter wallet", icon: ArrowDownRight, onClick: () => setActiveModal('debit'), color: 'text-orange-500' },
                 { label: "Voir transactions", icon: Wallet, onClick: () => router.push(`/admin/payments?uid=${targetUser.uid}`) },
+                { label: "Commissions affilié", icon: BadgeEuro, onClick: () => router.push(`/admin/affiliations?uid=${targetUser.uid}`) },
             ]
         },
         {
@@ -162,10 +167,19 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             ]
         },
         {
+            title: "Rôles",
+            items: [
+                { label: "Changer rôle", icon: UserCheck, onClick: () => setActiveModal('role') },
+                { label: "Passer Expert", icon: ShieldCheck, onClick: () => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: 'instructor' }), "Utilisateur promu Expert"), color: 'text-primary' },
+                { label: "Retirer Expert", icon: X, onClick: () => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: 'student' }), "Statut Expert retiré"), color: 'text-red-400' },
+            ]
+        },
+        {
             title: "Restrictions",
             items: [
                 { label: "Restreindre", icon: Ban, onClick: () => setActiveModal('restrict'), color: 'text-orange-500' },
                 { label: "Lever restrictions", icon: Unlock, onClick: () => handleAction(() => removeUserRestrictionsAction({ adminId: admin!.uid, targetUserId: targetUser.uid }), "Restrictions levées"), color: 'text-emerald-500' },
+                { label: "Historique sanctions", icon: History, onClick: () => {} },
             ]
         },
         {
@@ -174,6 +188,13 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                 { label: targetUser.status === 'active' ? "Suspendre compte" : "Réactiver compte", icon: Lock, onClick: () => setActiveModal('status'), color: targetUser.status === 'active' ? 'text-red-500' : 'text-emerald-500' },
                 { label: "Reset Password", icon: Key, onClick: () => setActiveModal('password') },
                 { label: "Forcer déconnexion", icon: LogOut, onClick: () => {}, color: 'text-orange-400' },
+            ]
+        },
+        {
+            title: "Actions Avancées",
+            items: [
+                { label: targetUser.isSuspect ? "Lever statut suspect" : "Marquer comme suspect", icon: ShieldAlert, onClick: () => setActiveModal('suspect'), color: 'text-orange-500' },
+                { label: "Vérifier identité (KYC)", icon: Smartphone, onClick: () => {} },
             ]
         },
         {
@@ -257,6 +278,34 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                 </DialogContent>
             </Dialog>
 
+            {/* --- MODAL : CHANGER RÔLE --- */}
+            <Dialog open={activeModal === 'role'} onOpenChange={closeModals}>
+                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
+                    <DialogHeader><DialogTitle className="uppercase font-black">Changer le Rôle</DialogTitle></DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <Select value={selectedRole} onValueChange={(v: any) => setSelectedRole(v)}>
+                            <SelectTrigger className="h-14 bg-slate-950 border-slate-800 rounded-xl">
+                                <SelectValue placeholder="Choisir un rôle" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                <SelectItem value="student">👤 Étudiant (Student)</SelectItem>
+                                <SelectItem value="instructor">🎓 Expert (Instructor)</SelectItem>
+                                <SelectItem value="admin">🛡️ Administrateur (Admin)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            onClick={() => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: selectedRole }), "Rôle mis à jour")}
+                            disabled={isSubmitting}
+                            className="w-full h-14 rounded-2xl bg-primary font-black uppercase text-xs"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirmer le changement"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* --- MODAL : RESTRICTIONS --- */}
             <Dialog open={activeModal === 'restrict'} onOpenChange={closeModals}>
                 <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
@@ -285,6 +334,55 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                             className="w-full h-14 rounded-2xl bg-orange-600 font-black uppercase text-xs shadow-xl"
                         >
                             {isSubmitting ? <Loader2 className="animate-spin" /> : "Appliquer les mesures"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* --- MODAL : SUSPECT --- */}
+            <Dialog open={activeModal === 'suspect'} onOpenChange={closeModals}>
+                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
+                    <DialogHeader><DialogTitle className="uppercase font-black">Statut Suspect</DialogTitle></DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <p className="text-xs text-slate-400 italic">"Marquer comme suspect permet de surveiller plus étroitement les transactions de ce compte."</p>
+                        <Input placeholder="Raison de la suspicion..." value={reason} onChange={e => setReason(e.target.value)} className="bg-slate-950 border-slate-800" />
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            onClick={() => handleAction(() => toggleSuspectStatusAction({ adminId: admin!.uid, targetUserId: targetUser.uid, isSuspect: !targetUser.isSuspect, reason }), "Statut mis à jour")}
+                            disabled={isSubmitting || (!targetUser.isSuspect && !reason)}
+                            className="w-full h-14 rounded-2xl bg-orange-500 font-black uppercase text-xs"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirmer"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* --- MODAL : PASSWORD RESET --- */}
+            <Dialog open={activeModal === 'password'} onOpenChange={closeModals}>
+                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
+                    <DialogHeader><DialogTitle className="uppercase font-black">Réinitialiser Mot de Passe</DialogTitle></DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-3">
+                            <Key className="text-primary h-5 w-5 shrink-0" />
+                            <p className="text-xs text-slate-300">Ceci va générer un lien de réinitialisation sécurisé pour l'utilisateur.</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            onClick={() => handleAction(async () => {
+                                const res = await resetUserPasswordAction(admin!.uid, targetUser.uid);
+                                if (res.success) {
+                                    navigator.clipboard.writeText(res.link || '');
+                                    toast({ title: "Lien copié !", description: "Envoyez-le manuellement à l'utilisateur." });
+                                }
+                                return res;
+                            }, "Procédure de réinitialisation lancée")}
+                            disabled={isSubmitting}
+                            className="w-full h-14 rounded-2xl bg-primary font-black uppercase text-xs"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Générer le lien"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
