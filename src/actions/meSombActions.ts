@@ -2,13 +2,14 @@
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
- * ✅ RÉSOLU : Alignement sur 'settings.payments' v3.0 avec bypass TypeScript pour le build.
+ * ✅ SÉCURITÉ : Vérification stricte des clés API et mode simulation.
+ * ✅ VALIDATION : Montant minimum et format de numéro.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Settings, Country, NdaraUser } from '@/lib/types';
+import type { NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
@@ -22,95 +23,60 @@ interface MeSombPaymentParams {
   userId: string;
   type?: 'course_purchase' | 'wallet_topup';
   courseId?: string;
-  affiliateId?: string;
-  couponId?: string;
-}
-
-/** 🛡️ Limite le spam de requêtes de paiement */
-async function checkUserVelocity(db: FirebaseFirestore.Firestore, userId: string) {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const recentTxns = await db.collection('payments')
-        .where('userId', '==', userId)
-        .where('createdAt', '>=', Timestamp.fromDate(fiveMinutesAgo))
-        .count()
-        .get();
-    
-    return recentTxns.data().count < 5; 
-}
-
-/** 🇨🇲 Détecte l'opérateur camerounais basé sur le numéro */
-function detectCameroonOperator(phone: string, currentService: string): 'ORANGE' | 'MTN' {
-    const clean = phone.replace(/\D/g, '');
-    const num = clean.length === 9 ? clean : clean.slice(-9);
-    if (/^6(7|8|5[0-4])/.test(num)) return 'MTN';
-    if (/^6(9|5[5-9])/.test(num)) return 'ORANGE';
-    return currentService as 'ORANGE' | 'MTN';
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
-  const APPLICATION_KEY = process.env.MESOMB_APP_KEY;
+  const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY; // Terme officiel MeSomb
 
   try {
     const db = getAdminDb();
     
+    // 1. Charger les réglages et l'utilisateur
     const [settingsSnap, userSnap] = await Promise.all([
         db.collection('settings').doc('global').get(),
         db.collection('users').doc(params.userId).get()
     ]);
 
-    // 🔄 BYPASS : On utilise 'any' pour accéder aux modules payments v3.0 sans erreur
     const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as any;
     const userData = userSnap.data() as NdaraUser;
 
+    if (!userData) return { success: false, error: "Utilisateur introuvable." };
+
+    // 2. Vérification des restrictions
     if (userData.restrictions?.canBuyCourse === false && params.type === 'course_purchase') {
-        return { success: false, error: "RESTRICTED: Votre compte fait l'objet de restrictions." };
+        return { success: false, error: "Votre compte est restreint pour les achats." };
     }
 
-    // 🧪 MODE TEST (Vérification sécurisée)
+    // 3. Mode Simulation (Test)
     if (settings?.payments?.paymentMode === 'test') {
+        console.log(`[MeSomb Simulation] User: ${params.userId} | Amount: ${params.amount}`);
         return { 
             success: true, 
             type: 'SIMULATED', 
-            message: "Simulation : Paiement validé en mode test." 
+            message: "Simulation : Votre paiement a été validé par le système de test." 
         };
     }
 
-    if (!SECRET_KEY || !APPLICATION_KEY) {
-        return { success: false, error: "Configuration MeSomb manquante (API Keys)." };
+    // 4. Validation Configuration
+    if (!SECRET_KEY || !ACCESS_KEY) {
+        console.error("[MeSomb] Erreur : Clés API manquantes sur le serveur.");
+        return { success: false, error: "Le service de paiement est indisponible (Erreur Config)." };
     }
 
-    // 🛡️ SERVICE ACTIF ?
-    if (!settings?.payments?.mesombEnabled) {
-        return { success: false, error: "Le service de paiement est actuellement désactivé." };
+    if (params.amount < 100) {
+        return { success: false, error: "Le montant minimum est de 100 XOF." };
     }
 
-    if (userData?.countryCode) {
-        const countrySnap = await db.collection('countries').where('code', '==', userData.countryCode).limit(1).get();
-        if (!countrySnap.empty) {
-            const country = countrySnap.docs[0].data() as Country;
-            const hasMeSomb = country.paymentMethods.some(m => m.provider === 'mesomb' && m.active);
-            if (!hasMeSomb) return { success: false, error: "Mode de paiement non autorisé dans votre région." };
-        }
-    }
-
-    const isVelocityOk = await checkUserVelocity(db, params.userId);
-    if (!isVelocityOk) return { success: false, error: "Trop de tentatives." };
-
+    // 5. Préparation Transaction Firestore (Statut: pending)
     const internalRef = randomUUID();
     const secretNonce = randomBytes(32).toString('hex');
-    
     const currency = settings?.payments?.currency || 'XOF';
     
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    let finalService = params.service;
-
-    if (cleanPhone.length >= 9) {
-        const cameroonNum = cleanPhone.slice(-9);
-        if (cameroonNum.startsWith('6')) {
-            cleanPhone = '237' + cameroonNum;
-            finalService = detectCameroonOperator(cameroonNum, params.service);
-        }
+    // Standardisation Cameroun si nécessaire
+    if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
+        cleanPhone = '237' + cleanPhone;
     }
 
     await db.collection('payments').doc(internalRef).set({
@@ -123,13 +89,14 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         type: params.type || 'course_purchase',
         courseId: params.courseId || 'WALLET_TOPUP',
         createdAt: FieldValue.serverTimestamp(),
-        security: { nonce: secretNonce, attempts: 0 },
-        metadata: { affiliateId: params.affiliateId || null, couponId: params.couponId || null }
+        security: { nonce: secretNonce },
+        metadata: { source: 'web_app' }
     });
 
+    // 6. Appel API MeSomb
     const headers: HeadersInit = {
         'Authorization': `Bearer ${SECRET_KEY}`,
-        'X-MeSomb-Application': APPLICATION_KEY,
+        'X-MeSomb-Application': ACCESS_KEY,
         'Content-Type': 'application/json',
     };
 
@@ -138,7 +105,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
       headers,
       body: JSON.stringify({
         amount: params.amount,
-        service: finalService,
+        service: params.service,
         receiver: cleanPhone,
         currency,
         nonce: randomBytes(16).toString('hex'),
@@ -149,13 +116,23 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     const data = await response.json();
 
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
-      return { success: true, type: 'REAL', transactionId: internalRef, message: "Validez sur votre mobile." };
+      return { 
+        success: true, 
+        type: 'REAL', 
+        transactionId: internalRef, 
+        message: "Veuillez valider l'opération sur votre téléphone." 
+      };
     } else {
-      const errorMsg = data.detail ? String(data.detail) : "Transaction refusée.";
-      await db.collection('payments').doc(internalRef).update({ status: 'failed', error: errorMsg });
+      const errorMsg = data.detail || data.message || "Transaction refusée par l'opérateur.";
+      await db.collection('payments').doc(internalRef).update({ 
+          status: 'failed', 
+          error: errorMsg,
+          updatedAt: FieldValue.serverTimestamp()
+      });
       return { success: false, error: errorMsg };
     }
   } catch (error: any) {
-    return { success: false, error: "Connexion impossible avec la passerelle." };
+    console.error("[MeSomb Fatal Error]:", error.message);
+    return { success: false, error: "Connexion impossible avec la passerelle de paiement." };
   }
 }

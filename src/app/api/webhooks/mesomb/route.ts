@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
-import { detectFraud } from '@/ai/flows/detect-fraud-flow';
-import { getRequiredEnv } from '@/lib/env';
 
 /**
- * @fileOverview Webhook MeSomb durci pour la Production.
- * ✅ SÉCURITÉ : Double vérification API et analyse anti-fraude.
+ * @fileOverview Webhook MeSomb durci.
+ * ✅ SÉCURITÉ : Double vérification (Back-check) via l'API MeSomb.
+ * ✅ INTÉGRITÉ : Utilise le processeur de paiement centralisé.
  */
 
 export async function POST(req: Request) {
@@ -14,12 +13,16 @@ export async function POST(req: Request) {
   console.log(`[${requestId}] 📨 Webhook MeSomb reçu.`);
 
   try {
-    const SECRET_KEY = getRequiredEnv('MESOMB_SECRET_KEY');
-    const APP_KEY = getRequiredEnv('MESOMB_APP_KEY');
+    const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
+    const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY;
+
+    if (!SECRET_KEY || !ACCESS_KEY) {
+        return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 });
+    }
 
     const body = await req.json();
     
-    // MeSomb envoie les données soit dans 'transaction', soit à la racine
+    // MeSomb envoie les métadonnées dans 'transaction.extra' ou directement dans 'extra'
     const txnData = body.transaction || body;
     const extra = txnData.metadata || txnData.extra || body.extra;
     
@@ -27,88 +30,62 @@ export async function POST(req: Request) {
     const securityToken = extra?.securityToken;
 
     if (!internalRef || !securityToken) {
-        console.error(`[${requestId}] ❌ Références manquantes.`);
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        console.error(`[${requestId}] ❌ Références manquantes dans le payload.`);
+        return NextResponse.json({ error: 'Missing references' }, { status: 400 });
     }
 
     const db = getAdminDb();
     const paymentDoc = await db.collection('payments').doc(internalRef).get();
     
     if (!paymentDoc.exists) {
-        console.error(`[${requestId}] ❌ Paiement ${internalRef} non trouvé.`);
-        return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+        console.error(`[${requestId}] ❌ Paiement ${internalRef} non trouvé en base.`);
+        return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
     const storedData = paymentDoc.data();
 
     // 1. Validation du Jeton (Anti-Spoofing)
     if (storedData?.security?.nonce !== securityToken) {
-        console.error(`[${requestId}] 🚨 ALERTE: Nonce Mismatch.`);
+        console.error(`[${requestId}] 🚨 ALERTE : Nonce Mismatch. Tentative de fraude possible.`);
         await db.collection('security_logs').add({
             eventType: 'webhook_token_mismatch',
             userId: storedData?.userId,
-            details: `Tentative de spoofing détectée pour le paiement ${internalRef}`,
+            details: `Nonce mismatch pour ${internalRef}. Reçu: ${securityToken}`,
             timestamp: new Date()
         });
-        return NextResponse.json({ error: 'Invalid Token' }, { status: 403 });
+        return NextResponse.json({ error: 'Invalid security token' }, { status: 403 });
     }
 
-    // 2. DOUBLE-VÉRIFICATION API (Callback à MeSomb pour confirmation finale)
-    const gatewayId = txnData.pk || txnData.id;
-    const headers: HeadersInit = {
-        'Authorization': `Bearer ${SECRET_KEY}`,
-        'X-MeSomb-Application': APP_KEY,
-        'Content-Type': 'application/json'
-    };
-
+    // 2. DOUBLE-VÉRIFICATION API (Back-check vers MeSomb)
+    // On ne croit pas le webhook sur parole, on demande à MeSomb l'état de CETTE transaction.
+    const gatewayId = txnData.pk || txnData.id || txnData.guid;
+    
     const verifyRes = await fetch(`https://mesomb.hachther.com/api/v1.1/payment/status/?id=${gatewayId}`, {
-        headers,
-        next: { revalidate: 0 }
+        headers: {
+            'Authorization': `Bearer ${SECRET_KEY}`,
+            'X-MeSomb-Application': ACCESS_KEY,
+        }
     });
 
     if (!verifyRes.ok) {
-        return NextResponse.json({ error: 'Gateway verification failed' }, { status: 403 });
+        console.error(`[${requestId}] ❌ Impossible de vérifier le statut auprès de MeSomb.`);
+        return NextResponse.json({ error: 'MeSomb verification failed' }, { status: 403 });
     }
 
     const officialTxn = await verifyRes.json();
 
     if (officialTxn.status !== 'SUCCESS') {
+        console.log(`[${requestId}] ℹ️ Statut final non-succès : ${officialTxn.status}`);
+        await db.collection('payments').doc(internalRef).update({
+            status: 'failed',
+            error: `Statut final: ${officialTxn.status}`,
+            updatedAt: new Date()
+        });
         return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
     }
 
-    // 3. ANALYSE ANTI-FRAUDE IA (Optionnelle mais recommandée)
-    let riskScore = 0;
-    try {
-        const userDoc = await db.collection('users').doc(storedData?.userId).get();
-        const userData = userDoc.data();
-        
-        const fraudAnalysis = await detectFraud({
-            transactionId: internalRef,
-            amount: Number(officialTxn.amount),
-            courseTitle: storedData?.courseId || 'Recharge',
-            user: {
-                id: storedData?.userId,
-                accountAgeInSeconds: Math.floor((Date.now() - (userData?.createdAt?.toDate().getTime() || Date.now())) / 1000),
-                isFirstTransaction: (userData?.affiliateStats?.sales || 0) === 0,
-                emailDomain: userData?.email?.split('@')[1] || ''
-            }
-        });
-        riskScore = fraudAnalysis.riskScore;
-
-        if (riskScore > 85) {
-            await db.collection('security_logs').add({
-                eventType: 'fraud_blocked',
-                userId: storedData?.userId,
-                details: `Paiement bloqué par IA (Score: ${riskScore}). Raison: ${fraudAnalysis.reason}`,
-                timestamp: new Date()
-            });
-            return NextResponse.json({ error: 'Fraud detected' }, { status: 403 });
-        }
-    } catch (e) {
-        console.warn(`[${requestId}] ⚠️ Fraud analysis skipped:`, e);
-    }
-
-    // 4. VALIDATION FINALE ET DISTRIBUTION DES DROITS (Atomique)
+    // 3. VALIDATION FINALE ET ATTRIBUTION DES DROITS
+    // On utilise le processeur central pour garantir l'atomicité
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
@@ -119,15 +96,14 @@ export async function POST(req: Request) {
         userId: storedData?.userId,
         courseId: storedData?.courseId,
         type: storedData?.type || 'course_purchase',
-        fraudScore: riskScore
       }
     });
 
     console.log(`[${requestId}] ✅ Paiement ${internalRef} validé avec succès.`);
-    return NextResponse.json({ processed: true, riskScore });
+    return NextResponse.json({ processed: true });
 
   } catch (error: any) {
     console.error(`[${requestId}] ❌ ERREUR WEBHOOK CRITIQUE:`, error.message);
-    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
