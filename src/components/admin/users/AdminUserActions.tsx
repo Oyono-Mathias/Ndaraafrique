@@ -6,6 +6,7 @@
  * ✅ SÉCURITÉ : Server Actions & Confirmations Danger Zone.
  */
 
+import { Send, MessageSquare } from "lucide-react";
 import React, { useState } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
