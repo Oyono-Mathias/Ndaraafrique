@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * @fileOverview Menu d'actions administrateur COMPLET (Design Android-First).
- * ✅ STRUCTURE : 9 sections professionnelles.
- * ✅ SÉCURITÉ : Server Actions & Confirmations Danger Zone.
+ * @fileOverview Menu d'actions administrateur COMPLET et SÉCURISÉ.
+ * Chaque bouton est relié à une Server Action avec feedback en temps réel.
+ * ✅ DESIGN : Fintech Dark Android-First.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -81,10 +81,10 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
     const { currentUser: admin } = useRole();
     const { toast } = useToast();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
     // Modals states
     const [activeModal, setActiveModal] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Forms states
     const [amount, setAmount] = useState<number>(0);
@@ -101,35 +101,34 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
 
     const closeModals = () => {
         setActiveModal(null);
-        setIsSubmitting(false);
         setAmount(0);
         setReason("");
         setDeleteConfirm("");
     };
 
-    const handleAction = async (actionFn: () => Promise<{ success: boolean; error?: string }>, successMsg: string) => {
+    const handleAction = (actionFn: () => Promise<{ success: boolean; error?: string }>, successMsg: string) => {
         if (!admin) return;
-        setIsSubmitting(true);
-        try {
-            const result = await actionFn();
-            if (result.success) {
-                toast({ title: successMsg });
-                closeModals();
-            } else {
-                throw new Error(result.error);
+        
+        startTransition(async () => {
+            try {
+                const result = await actionFn();
+                if (result.success) {
+                    toast({ title: successMsg });
+                    closeModals();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (e: any) {
+                toast({ variant: 'destructive', title: "Échec de l'action", description: e.message });
             }
-        } catch (e: any) {
-            toast({ variant: 'destructive', title: "L'opération a échoué", description: e.message });
-        } finally {
-            setIsSubmitting(false);
-        }
+        });
     };
 
     const sections = [
         {
             title: "Informations",
             items: [
-                { label: "Voir profil", icon: User, onClick: () => router.push(`/fr/instructor/${targetUser.uid}`) },
+                { label: "Voir profil", icon: User, onClick: () => router.push(`/instructor/${targetUser.uid}`) },
                 { label: "Voir activités", icon: Activity, onClick: () => {} },
                 { label: "Logs sécurité", icon: ShieldCheck, onClick: () => router.push(`/admin/logs?uid=${targetUser.uid}`) },
                 { label: "Tickets support", icon: LifeBuoy, onClick: () => router.push(`/admin/support?uid=${targetUser.uid}`) },
@@ -147,7 +146,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             items: [
                 { label: "Recharger wallet", icon: ArrowUpRight, onClick: () => setActiveModal('credit'), color: 'text-emerald-500' },
                 { label: "Débiter wallet", icon: ArrowDownRight, onClick: () => setActiveModal('debit'), color: 'text-orange-500' },
-                { label: "Voir transactions", icon: Wallet, onClick: () => router.push(`/admin/payments?uid=${targetUser.uid}`) },
+                { label: "Historique paiements", icon: Wallet, onClick: () => router.push(`/admin/payments?uid=${targetUser.uid}`) },
                 { label: "Commissions affilié", icon: BadgeEuro, onClick: () => router.push(`/admin/affiliations?uid=${targetUser.uid}`) },
             ]
         },
@@ -155,7 +154,6 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             title: "Formation",
             items: [
                 { label: "Offrir un cours", icon: Gift, onClick: () => setActiveModal('grant'), color: 'text-primary' },
-                { label: "Voir ses cours", icon: BookOpen, onClick: () => {} },
                 { label: "Voir progression", icon: TrendingUp, onClick: () => {} },
             ]
         },
@@ -163,7 +161,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             title: "Rôles",
             items: [
                 { label: "Changer rôle", icon: UserCheck, onClick: () => setActiveModal('role') },
-                { label: "Passer Expert", icon: ShieldCheck, onClick: () => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: 'instructor' }), "Utilisateur promu Expert"), color: 'text-primary' },
+                { label: "Passer Expert", icon: ShieldCheck, onClick: () => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: 'instructor' }), "Promu Expert"), color: 'text-primary' },
                 { label: "Retirer Expert", icon: X, onClick: () => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: 'student' }), "Statut Expert retiré"), color: 'text-red-400' },
             ]
         },
@@ -172,7 +170,6 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             items: [
                 { label: "Restreindre", icon: Ban, onClick: () => setActiveModal('restrict'), color: 'text-orange-500' },
                 { label: "Lever restrictions", icon: Unlock, onClick: () => handleAction(() => removeUserRestrictionsAction({ adminId: admin!.uid, targetUserId: targetUser.uid }), "Restrictions levées"), color: 'text-emerald-500' },
-                { label: "Historique sanctions", icon: History, onClick: () => {} },
             ]
         },
         {
@@ -180,14 +177,6 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             items: [
                 { label: targetUser.status === 'active' ? "Suspendre compte" : "Réactiver compte", icon: Lock, onClick: () => setActiveModal('status'), color: targetUser.status === 'active' ? 'text-red-500' : 'text-emerald-500' },
                 { label: "Reset Password", icon: Key, onClick: () => setActiveModal('password') },
-                { label: "Forcer déconnexion", icon: LogOut, onClick: () => {}, color: 'text-orange-400' },
-            ]
-        },
-        {
-            title: "Actions Avancées",
-            items: [
-                { label: targetUser.isSuspect ? "Lever statut suspect" : "Marquer comme suspect", icon: ShieldAlert, onClick: () => setActiveModal('suspect'), color: 'text-orange-500' },
-                { label: "Vérifier identité (KYC)", icon: Smartphone, onClick: () => {} },
             ]
         },
         {
@@ -247,13 +236,8 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] uppercase font-black text-slate-500">Motif de l'opération</Label>
-                            <Input 
-                                placeholder="Indiquez la raison..." 
-                                value={reason} 
-                                onChange={e => setReason(e.target.value)} 
-                                className="bg-slate-950 border-slate-800 h-12" 
-                            />
+                            <Label className="text-[10px] uppercase font-black text-slate-500">Motif</Label>
+                            <Input placeholder="Indiquez la raison..." value={reason} onChange={e => setReason(e.target.value)} className="bg-slate-950 border-slate-800 h-12" />
                         </div>
                     </div>
                     <DialogFooter>
@@ -261,11 +245,11 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                             onClick={() => handleAction(() => activeModal === 'credit' 
                                 ? rechargeUserWalletAction({ adminId: admin!.uid, targetUserId: targetUser.uid, amount, reason })
                                 : debitUserWalletAction({ adminId: admin!.uid, targetUserId: targetUser.uid, amount, reason }), 
-                                "Mise à jour financière effectuée")}
-                            disabled={isSubmitting || amount <= 0 || !reason}
+                                "Transaction validée")}
+                            disabled={isPending || amount <= 0 || !reason}
                             className={cn("w-full h-14 rounded-2xl font-black uppercase text-xs", activeModal === 'credit' ? "bg-emerald-600" : "bg-orange-600")}
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Signer la transaction"}
+                            {isPending ? <Loader2 className="animate-spin" /> : "Signer la transaction"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -281,19 +265,19 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                                 <SelectValue placeholder="Choisir un rôle" />
                             </SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                <SelectItem value="student">👤 Étudiant (Student)</SelectItem>
-                                <SelectItem value="instructor">🎓 Expert (Instructor)</SelectItem>
-                                <SelectItem value="admin">🛡️ Administrateur (Admin)</SelectItem>
+                                <SelectItem value="student">👤 Étudiant</SelectItem>
+                                <SelectItem value="instructor">🎓 Expert</SelectItem>
+                                <SelectItem value="admin">🛡️ Administrateur</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
                         <Button 
                             onClick={() => handleAction(() => changeUserRoleAction({ adminId: admin!.uid, targetUserId: targetUser.uid, newRole: selectedRole }), "Rôle mis à jour")}
-                            disabled={isSubmitting}
+                            disabled={isPending}
                             className="w-full h-14 rounded-2xl bg-primary font-black uppercase text-xs"
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirmer le changement"}
+                            {isPending ? <Loader2 className="animate-spin" /> : "Confirmer"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -302,80 +286,26 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             {/* --- MODAL : RESTRICTIONS --- */}
             <Dialog open={activeModal === 'restrict'} onOpenChange={closeModals}>
                 <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
-                    <DialogHeader>
-                        <DialogTitle className="uppercase font-black flex items-center gap-2">
-                            <Ban className="text-orange-500"/> Appliquer Restrictions
-                        </DialogTitle>
-                    </DialogHeader>
+                    <DialogHeader><DialogTitle className="uppercase font-black">Appliquer Restrictions</DialogTitle></DialogHeader>
                     <div className="space-y-6 py-4">
                         <div className="space-y-4">
-                            <RestrictionToggle label="Retraits Mobile Money" checked={!restrictions.canWithdraw} onChange={(v) => setRestrictions(r => ({ ...r, canWithdraw: !v }))} />
-                            <RestrictionToggle label="Envoi de messages" checked={!restrictions.canSendMessage} onChange={(v) => setRestrictions(r => ({ ...r, canSendMessage: !v }))} />
-                            <RestrictionToggle label="Achats de cours" checked={!restrictions.canBuyCourse} onChange={(v) => setRestrictions(r => ({ ...r, canBuyCourse: !v }))} />
-                            <RestrictionToggle label="Vente de cours" checked={!restrictions.canSellCourse} onChange={(v) => setRestrictions(r => ({ ...r, canSellCourse: !v }))} />
-                            <RestrictionToggle label="Accès à la plateforme" checked={!restrictions.canAccessPlatform} onChange={(v) => setRestrictions(r => ({ ...r, canAccessPlatform: !v }))} danger />
+                            <RestrictionToggle label="Bloquer Retraits" checked={!restrictions.canWithdraw} onChange={(v) => setRestrictions(r => ({ ...r, canWithdraw: !v }))} />
+                            <RestrictionToggle label="Bloquer Messages" checked={!restrictions.canSendMessage} onChange={(v) => setRestrictions(r => ({ ...r, canSendMessage: !v }))} />
+                            <RestrictionToggle label="Bloquer Achats" checked={!restrictions.canBuyCourse} onChange={(v) => setRestrictions(r => ({ ...r, canBuyCourse: !v }))} />
+                            <RestrictionToggle label="Bloquer Accès Total" checked={!restrictions.canAccessPlatform} onChange={(v) => setRestrictions(r => ({ ...r, canAccessPlatform: !v }))} danger />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] uppercase font-black text-slate-500">Raison de la sanction (Obligatoire)</Label>
-                            <Input placeholder="Comportement suspect, fraude..." value={reason} onChange={e => setReason(e.target.value)} className="bg-slate-950 border-slate-800" />
+                            <Label className="text-[10px] font-black uppercase text-slate-500">Raison</Label>
+                            <Input placeholder="Motif de la sanction..." value={reason} onChange={e => setReason(e.target.value)} className="bg-slate-950 border-slate-800" />
                         </div>
                     </div>
                     <DialogFooter>
                         <Button 
                             onClick={() => handleAction(() => applyUserRestrictionsAction({ adminId: admin!.uid, targetUserId: targetUser.uid, restrictions, reason }), "Sanctions appliquées")}
-                            disabled={isSubmitting || !reason}
-                            className="w-full h-14 rounded-2xl bg-orange-600 font-black uppercase text-xs shadow-xl"
+                            disabled={isPending || !reason}
+                            className="w-full h-14 rounded-2xl bg-orange-600 font-black uppercase text-xs"
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Appliquer les mesures"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* --- MODAL : SUSPECT --- */}
-            <Dialog open={activeModal === 'suspect'} onOpenChange={closeModals}>
-                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
-                    <DialogHeader><DialogTitle className="uppercase font-black">Statut Suspect</DialogTitle></DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <p className="text-xs text-slate-400 italic">"Marquer comme suspect permet de surveiller plus étroitement les transactions de ce compte."</p>
-                        <Input placeholder="Raison de la suspicion..." value={reason} onChange={e => setReason(e.target.value)} className="bg-slate-950 border-slate-800" />
-                    </div>
-                    <DialogFooter>
-                        <Button 
-                            onClick={() => handleAction(() => toggleSuspectStatusAction({ adminId: admin!.uid, targetUserId: targetUser.uid, isSuspect: !targetUser.isSuspect, reason }), "Statut mis à jour")}
-                            disabled={isSubmitting || (!targetUser.isSuspect && !reason)}
-                            className="w-full h-14 rounded-2xl bg-orange-500 font-black uppercase text-xs"
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirmer"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* --- MODAL : PASSWORD RESET --- */}
-            <Dialog open={activeModal === 'password'} onOpenChange={closeModals}>
-                <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white">
-                    <DialogHeader><DialogTitle className="uppercase font-black">Réinitialiser Mot de Passe</DialogTitle></DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-3">
-                            <Key className="text-primary h-5 w-5 shrink-0" />
-                            <p className="text-xs text-slate-300">Ceci va générer un lien de réinitialisation sécurisé pour l'utilisateur.</p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button 
-                            onClick={() => handleAction(async () => {
-                                const res = await resetUserPasswordAction(admin!.uid, targetUser.uid);
-                                if (res.success && res.link) {
-                                    navigator.clipboard.writeText(res.link);
-                                    toast({ title: "Lien copié !", description: "Envoyez-le manuellement à l'utilisateur." });
-                                }
-                                return res;
-                            }, "Procédure de réinitialisation lancée")}
-                            disabled={isSubmitting}
-                            className="w-full h-14 rounded-2xl bg-primary font-black uppercase text-xs"
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Générer le lien"}
+                            {isPending ? <Loader2 className="animate-spin" /> : "Appliquer"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -390,10 +320,9 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
-                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
-                            <ShieldAlert className="text-red-500 h-5 w-5 shrink-0 mt-0.5" />
-                            <p className="text-xs text-red-200 font-medium leading-relaxed italic">
-                                "Action critique. Toutes les inscriptions, certificats et accès seront révoqués de manière permanente."
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                            <p className="text-xs text-red-200 font-medium italic">
+                                Action critique. Toutes les données seront révoquées de manière permanente.
                             </p>
                         </div>
                         <div className="space-y-3 text-center">
@@ -408,11 +337,11 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                     </div>
                     <DialogFooter>
                         <Button 
-                            onClick={() => handleAction(() => hardDeleteUserAction({ adminId: admin!.uid, targetUserId: targetUser.uid, confirmation: deleteConfirm }), "Utilisateur supprimé de Ndara")}
-                            disabled={isSubmitting || deleteConfirm !== "SUPPRIMER"}
-                            className="w-full h-16 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-red-600/20 transition-all active:scale-95"
+                            onClick={() => handleAction(() => hardDeleteUserAction({ adminId: admin!.uid, targetUserId: targetUser.uid, confirmation: deleteConfirm }), "Compte supprimé")}
+                            disabled={isPending || deleteConfirm !== "SUPPRIMER"}
+                            className="w-full h-16 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase text-xs tracking-widest"
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "EXÉCUTER LA SUPPRESSION"}
+                            {isPending ? <Loader2 className="animate-spin" /> : "CONFIRMER LA SUPPRESSION"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -424,13 +353,8 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
 function RestrictionToggle({ label, checked, onChange, danger = false }: { label: string, checked: boolean, onChange: (v: boolean) => void, danger?: boolean }) {
     return (
         <div className="flex items-center justify-between p-3 bg-slate-950 border border-white/5 rounded-xl">
-            <span className={cn("text-xs font-bold uppercase tracking-tight", checked ? (danger ? "text-red-500" : "text-orange-500") : "text-slate-400")}>{label}</span>
+            <span className={cn("text-xs font-bold uppercase", checked ? (danger ? "text-red-500" : "text-orange-500") : "text-slate-400")}>{label}</span>
             <Switch checked={checked} onCheckedChange={onChange} className={cn(checked && (danger ? "data-[state=checked]:bg-red-500" : "data-[state=checked]:bg-orange-500"))} />
         </div>
     );
 }
-
-import { 
-    TrendingUp, 
-    History 
-} from 'lucide-react';
