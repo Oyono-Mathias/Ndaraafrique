@@ -6,13 +6,12 @@
  * ✅ ROBUSTESSE : Retour d'un objet standard { success, error } pour le frontend.
  */
 
-import { getAdminDb } from '@/firebase/admin';
+import { getAdminDb, getAdminAuth } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne : Vérifie si l'appelant a réellement les droits Admin dans Firestore.
- * Ne fait pas confiance à l'ID seul, vérifie le statut actif et le rôle.
  */
 async function verifyAdminOrThrow(adminId: string) {
     if (!adminId) throw new Error("UNAUTHORIZED: Identifiant manquant.");
@@ -26,9 +25,7 @@ async function verifyAdminOrThrow(adminId: string) {
     }
 }
 
-/**
- * 💰 1. Recharger le portefeuille d'un utilisateur.
- */
+/** 💰 1. Recharger le portefeuille */
 export async function rechargeUserWalletAction({
     adminId,
     targetUserId,
@@ -42,23 +39,18 @@ export async function rechargeUserWalletAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         if (amount <= 0) throw new Error("Le montant doit être positif.");
-        if (!reason.trim()) throw new Error("Un motif est obligatoire.");
 
         const db = getAdminDb();
         const batch = db.batch();
         const userRef = db.collection('users').doc(targetUserId);
         const paymentRef = db.collection('payments').doc();
-        const auditRef = db.collection('admin_audit_logs').doc();
 
-        // Mise à jour du solde
         batch.update(userRef, {
             balance: FieldValue.increment(amount),
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        // Enregistrement de la transaction
         batch.set(paymentRef, {
             id: paymentRef.id,
             userId: targetUserId,
@@ -71,8 +63,7 @@ export async function rechargeUserWalletAction({
             metadata: { type: 'wallet_topup', adminId, reason }
         });
 
-        // Log d'audit
-        batch.set(auditRef, {
+        batch.set(db.collection('admin_audit_logs').doc(), {
             adminId,
             eventType: 'user.wallet.recharge',
             target: { id: targetUserId, type: 'user' },
@@ -83,14 +74,11 @@ export async function rechargeUserWalletAction({
         await batch.commit();
         return { success: true };
     } catch (e: any) {
-        console.error("[RECHARGE_ERROR]", e.message);
         return { success: false, error: e.message };
     }
 }
 
-/**
- * 💸 2. Débiter le portefeuille d'un utilisateur.
- */
+/** 💸 2. Débiter le portefeuille */
 export async function debitUserWalletAction({
     adminId,
     targetUserId,
@@ -104,7 +92,6 @@ export async function debitUserWalletAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         if (amount <= 0) throw new Error("Le montant doit être positif.");
         
         const db = getAdminDb();
@@ -115,7 +102,6 @@ export async function debitUserWalletAction({
         if ((userSnap.data()?.balance || 0) < amount) throw new Error("Solde insuffisant.");
 
         const batch = db.batch();
-        
         batch.update(userRef, {
             balance: FieldValue.increment(-amount),
             updatedAt: FieldValue.serverTimestamp()
@@ -132,14 +118,11 @@ export async function debitUserWalletAction({
         await batch.commit();
         return { success: true };
     } catch (e: any) {
-        console.error("[DEBIT_ERROR]", e.message);
         return { success: false, error: e.message };
     }
 }
 
-/**
- * 🔒 3 & 4. Modifier le statut d'un utilisateur (Suspendre/Réactiver).
- */
+/** 🔒 3. Modifier le statut (Suspendre/Réactiver) */
 export async function toggleUserStatusAction({
     adminId,
     targetUserId,
@@ -153,11 +136,9 @@ export async function toggleUserStatusAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         const db = getAdminDb();
-        const userRef = db.collection('users').doc(targetUserId);
         
-        await userRef.update({ 
+        await db.collection('users').doc(targetUserId).update({ 
             status,
             statusReason: reason,
             updatedAt: FieldValue.serverTimestamp()
@@ -177,33 +158,38 @@ export async function toggleUserStatusAction({
     }
 }
 
-/**
- * 🗑️ 5. Suppression Logique (Soft Delete).
- */
-export async function softDeleteUserAction({
+/** 🗑️ 4. Suppression définitive (Danger Zone) */
+export async function hardDeleteUserAction({
     adminId,
     targetUserId,
-    reason
+    confirmation
 }: {
     adminId: string;
     targetUserId: string;
-    reason: string;
+    confirmation: string;
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
+        if (confirmation !== 'SUPPRIMER') throw new Error("Code de confirmation incorrect.");
 
         const db = getAdminDb();
-        await db.collection('users').doc(targetUserId).update({ 
+        const auth = getAdminAuth();
+
+        // 1. Supprimer de Firebase Auth
+        await auth.deleteUser(targetUserId);
+
+        // 2. Marquer comme supprimé en DB (Audit trail preservation)
+        await db.collection('users').doc(targetUserId).update({
             status: 'deleted',
             deletedAt: FieldValue.serverTimestamp(),
-            deletionReason: reason
+            email: `deleted_${targetUserId}@ndara.africa`
         });
 
         await db.collection('admin_audit_logs').add({
             adminId,
-            eventType: 'user.delete.soft',
+            eventType: 'user.delete.hard',
             target: { id: targetUserId, type: 'user' },
-            details: `Suppression logique. Raison: ${reason}`,
+            details: `Suppression définitive du compte par l'admin ${adminId}.`,
             timestamp: FieldValue.serverTimestamp()
         });
 
@@ -213,9 +199,7 @@ export async function softDeleteUserAction({
     }
 }
 
-/**
- * 🎓 6. Changer Rôle Utilisateur.
- */
+/** 🎓 5. Changer Rôle */
 export async function changeUserRoleAction({
     adminId,
     targetUserId,
@@ -227,8 +211,8 @@ export async function changeUserRoleAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         const db = getAdminDb();
+        
         await db.collection('users').doc(targetUserId).update({ 
             role: newRole,
             updatedAt: FieldValue.serverTimestamp()
@@ -248,9 +232,7 @@ export async function changeUserRoleAction({
     }
 }
 
-/**
- * 🛡️ 7. Appliquer des restrictions.
- */
+/** 🛡️ 6. Appliquer des restrictions */
 export async function applyUserRestrictionsAction({
     adminId,
     targetUserId,
@@ -264,10 +246,14 @@ export async function applyUserRestrictionsAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         const db = getAdminDb();
+
         await db.collection('users').doc(targetUserId).update({
             restrictions,
+            'sanctions.isSanctioned': true,
+            'sanctions.reason': reason,
+            'sanctions.date': FieldValue.serverTimestamp(),
+            'sanctions.imposedBy': adminId,
             updatedAt: FieldValue.serverTimestamp()
         });
 
@@ -285,9 +271,7 @@ export async function applyUserRestrictionsAction({
     }
 }
 
-/**
- * 🔓 8. Lever toutes les restrictions.
- */
+/** 🔓 7. Lever les restrictions */
 export async function removeUserRestrictionsAction({
     adminId,
     targetUserId
@@ -297,8 +281,8 @@ export async function removeUserRestrictionsAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         const db = getAdminDb();
+
         const defaultRestrictions = {
             canWithdraw: true,
             canSendMessage: true,
@@ -309,6 +293,7 @@ export async function removeUserRestrictionsAction({
 
         await db.collection('users').doc(targetUserId).update({
             restrictions: defaultRestrictions,
+            'sanctions.isSanctioned': false,
             updatedAt: FieldValue.serverTimestamp()
         });
 
@@ -326,9 +311,7 @@ export async function removeUserRestrictionsAction({
     }
 }
 
-/**
- * 🎁 9. Offrir un cours (Grant Access).
- */
+/** 🎁 8. Offrir un cours */
 export async function grantFreeCourseAction({
     adminId,
     targetUserId,
@@ -342,15 +325,13 @@ export async function grantFreeCourseAction({
 }): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         const db = getAdminDb();
+        
         const courseDoc = await db.collection('courses').doc(courseId).get();
         if (!courseDoc.exists) throw new Error("Cours introuvable.");
 
         const enrollmentId = `${targetUserId}_${courseId}`;
-        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
-
-        await enrollmentRef.set({
+        await db.collection('enrollments').doc(enrollmentId).set({
             id: enrollmentId,
             studentId: targetUserId,
             courseId: courseId,
@@ -368,7 +349,7 @@ export async function grantFreeCourseAction({
             adminId,
             eventType: 'user.course.grant',
             target: { id: targetUserId, type: 'user' },
-            details: `Accès gratuit au cours '${courseDoc.data()?.title}' accordé. Raison: ${reason}`,
+            details: `Accès gratuit offert : ${courseDoc.data()?.title}. Raison: ${reason}`,
             timestamp: FieldValue.serverTimestamp()
         });
 
@@ -378,23 +359,62 @@ export async function grantFreeCourseAction({
     }
 }
 
-/**
- * 🔍 10. Voir les transactions d'un utilisateur.
- */
-export async function getUserTransactionsAction(adminId: string, targetUserId: string) {
+/** 🔐 9. Suspecter un compte */
+export async function toggleSuspectStatusAction({
+    adminId,
+    targetUserId,
+    isSuspect,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    isSuspect: boolean;
+    reason: string;
+}): Promise<{ success: boolean; error?: string }> {
     try {
         await verifyAdminOrThrow(adminId);
-
         const db = getAdminDb();
-        const paymentsSnap = await db.collection('payments')
-            .where('userId', '==', targetUserId)
-            .orderBy('date', 'desc')
-            .get();
 
-        return { 
-            success: true, 
-            transactions: paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) 
-        };
+        await db.collection('users').doc(targetUserId).update({
+            isSuspect,
+            suspectReason: isSuspect ? reason : FieldValue.delete(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: isSuspect ? 'user.suspect.flag' : 'user.suspect.clear',
+            target: { id: targetUserId, type: 'user' },
+            details: isSuspect ? `Marqué comme suspect. Raison: ${reason}` : `Statut suspect levé.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🔑 10. Réinitialiser Mot de Passe */
+export async function resetUserPasswordAction(adminId: string, targetUserId: string) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const auth = getAdminAuth();
+        const user = await auth.getUser(targetUserId);
+        
+        if (!user.email) throw new Error("Email utilisateur manquant.");
+
+        const link = await auth.generatePasswordResetLink(user.email);
+        
+        await getAdminDb().collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.password.reset',
+            target: { id: targetUserId, type: 'user' },
+            details: `Génération lien reset mot de passe.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true, link };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
