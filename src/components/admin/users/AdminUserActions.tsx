@@ -4,7 +4,6 @@
  * @fileOverview Menu d'actions administrateur COMPLET et SÉCURISÉ.
  * Chaque bouton est relié à une Server Action avec feedback en temps réel.
  * ✅ DESIGN : Fintech Dark Android-First.
- * ✅ FIX : Import manquant de CheckCircle2.
  */
 
 import React, { useState, useTransition } from 'react';
@@ -14,33 +13,24 @@ import { useRouter } from 'next/navigation';
 import { 
     User, 
     Send,
-    MessageSquare, 
     Wallet, 
-    BookOpen, 
     ShieldCheck, 
     Lock, 
     Unlock,
     ShieldAlert, 
     Trash2, 
     MoreVertical,
-    Activity,
-    Smartphone,
     ArrowUpRight,
     ArrowDownRight,
     Ban,
     UserCheck,
     Key,
-    LogOut,
     LifeBuoy,
-    Check,
     CheckCircle2,
-    X,
     Loader2,
     Gift,
     BadgeEuro,
-    AlertCircle,
-    Copy,
-    Link as LinkIcon
+    Eye
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -57,7 +47,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,12 +62,12 @@ import {
     changeUserRoleAction,
     applyUserRestrictionsAction,
     removeUserRestrictionsAction,
-    grantFreeCourseAction,
     toggleSuspectStatusAction,
     resetUserPasswordAction,
     hardDeleteUserAction
 } from '@/actions/adminActions';
 import { GrantCourseModal } from './GrantCourseModal';
+import { UserDetailsModal } from './UserDetailsModal';
 
 interface AdminUserActionsProps {
     user: NdaraUser;
@@ -150,7 +139,8 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         {
             title: "Informations",
             items: [
-                { label: "Voir profil", icon: User, onClick: () => router.push(`/instructor/${targetUser.uid}`) },
+                { label: "Détails & Soldes", icon: Eye, onClick: () => setActiveModal('details'), color: 'text-primary' },
+                { label: "Voir profil public", icon: User, onClick: () => router.push(`/instructor/${targetUser.uid}`) },
                 { label: "Logs sécurité", icon: ShieldCheck, onClick: () => router.push(`/admin/logs?uid=${targetUser.uid}`) },
                 { label: "Tickets support", icon: LifeBuoy, onClick: () => router.push(`/admin/support?uid=${targetUser.uid}`) },
             ]
@@ -235,6 +225,13 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                     ))}
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* --- MODAL : DETAILS --- */}
+            <UserDetailsModal 
+                isOpen={activeModal === 'details'} 
+                onOpenChange={(o) => setActiveModal(o ? 'details' : null)} 
+                user={targetUser} 
+            />
 
             {/* --- MODAL : RECHARGE / DEBIT --- */}
             <Dialog open={activeModal === 'credit' || activeModal === 'debit'} onOpenChange={closeModals}>
@@ -387,10 +384,10 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                             <code className="text-[10px] text-primary">{passwordResetLink}</code>
                         </div>
                         <Button 
-                            onClick={() => { navigator.clipboard.writeText(passwordResetLink || ''); toast({ title: "Copié !" }); }}
+                            onClick={() => { if(passwordResetLink) { navigator.clipboard.writeText(passwordResetLink); toast({ title: "Copié !" }); } }}
                             className="w-full h-12 rounded-xl bg-white/5 border border-white/10 font-bold uppercase text-[10px] tracking-widest gap-2"
                         >
-                            <Copy size={14} /> Copier le lien
+                            <Eye size={14} /> Copier le lien
                         </Button>
                     </div>
                     <DialogFooter><Button onClick={closeModals} className="w-full bg-slate-800 rounded-xl">Fermer</Button></DialogFooter>
