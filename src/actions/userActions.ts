@@ -3,13 +3,13 @@
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
- * ✅ ANTI-CORRUPTION : Plus de confiance aveugle dans l'ID passé par le client.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 import { sendUserNotification } from './notificationActions';
+import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /** 🛡️ Vérifie si l'appelant est réellement admin dans Firestore */
 async function verifyAdminOrThrow(uid: string) {
@@ -20,11 +20,7 @@ async function verifyAdminOrThrow(uid: string) {
     }
 }
 
-function sanitize(obj: any): any {
-    return JSON.parse(JSON.stringify(obj, (key, value) => value === undefined ? null : value));
-}
-
-/** RECHARGER LE WALLET RÉEL (Action Admin Sécurisée) */
+/** 💰 RECHARGER LE WALLET RÉEL (Action Admin Sécurisée) */
 export async function rechargeUserWallet({ 
     userId, 
     amount, 
@@ -37,43 +33,32 @@ export async function rechargeUserWallet({
     reason: string;
 }) {
     try {
-        await verifyAdminOrThrow(adminId); // ✅ Validation serveur
+        await verifyAdminOrThrow(adminId);
 
         if (amount <= 0) return { success: false, error: "error.amount_positive" };
 
-        const db = getAdminDb();
-        const batch = db.batch();
-        const userRef = db.collection('users').doc(userId);
-        const auditRef = db.collection('admin_audit_logs').doc();
-        const paymentRef = db.collection('payments').doc();
-
-        batch.update(userRef, {
-            balance: FieldValue.increment(amount),
-            updatedAt: FieldValue.serverTimestamp()
+        const result = await processNdaraPayment({
+            transactionId: `ADM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            provider: 'admin_recharge',
+            amount: amount,
+            currency: 'XOF',
+            metadata: { 
+                userId, 
+                type: 'wallet_topup', 
+                adminId, 
+                reason 
+            }
         });
 
-        batch.set(paymentRef, sanitize({
-            id: paymentRef.id,
-            userId,
-            amount,
-            currency: 'XOF',
-            provider: 'admin_recharge',
-            status: 'completed',
-            date: FieldValue.serverTimestamp(),
-            courseTitle: `Recharge Admin: ${reason}`,
-            metadata: { type: 'wallet_topup', adminId, reason }
-        }));
-
-        batch.set(auditRef, sanitize({
-            adminId,
-            eventType: 'user.wallet.recharge',
-            target: { id: userId, type: 'user' },
-            details: `Recharge réelle de ${amount} XOF par admin ${adminId}. Motif: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        }));
-
-        await batch.commit();
-        return { success: true, message: "success.wallet_recharged" };
+        if (result.success) {
+            await sendUserNotification(userId, {
+                text: `Votre compte a été crédité de ${amount.toLocaleString()} XOF par l'administration.`,
+                type: 'success'
+            });
+            return { success: true };
+        }
+        
+        return { success: false, error: "error.generic" };
     } catch (e: any) {
         console.error("[RECHARGE_SECURE_ERROR]:", e.message);
         return { success: false, error: "error.not_authorized" };
@@ -142,7 +127,7 @@ export async function approveInstructorApplication({
     adminId: string;
 }) {
     try {
-        await verifyAdminOrThrow(adminId); // ✅ Validation serveur
+        await verifyAdminOrThrow(adminId);
 
         const db = getAdminDb();
         const batch = db.batch();
@@ -200,7 +185,7 @@ export async function grantCourseAccess({
     expirationMinutes?: number;
 }) {
     try {
-        await verifyAdminOrThrow(adminId); // ✅ Validation serveur
+        await verifyAdminOrThrow(adminId);
 
         const db = getAdminDb();
         const courseDoc = await db.collection('courses').doc(courseId).get();
@@ -215,7 +200,7 @@ export async function grantCourseAccess({
             expiresAt = new Date(Date.now() + expirationMinutes * 60000);
         }
 
-        const enrollmentData = sanitize({
+        const enrollmentData = {
             studentId,
             courseId,
             instructorId: courseDoc.data()?.instructorId || '',
@@ -223,8 +208,10 @@ export async function grantCourseAccess({
             progress: 0,
             enrollmentDate: FieldValue.serverTimestamp(),
             lastAccessedAt: FieldValue.serverTimestamp(),
-            expiresAt: expiresAt
-        });
+            expiresAt: expiresAt,
+            grantReason: reason,
+            grantedBy: adminId
+        };
 
         await enrollmentRef.set(enrollmentData, { merge: true });
 
@@ -261,12 +248,11 @@ export async function updateUserRole({ userId, role, adminId }: { userId: string
 }
 
 export async function updateUserProfileAction({ userId, data, requesterId }: { userId: string, data: any, requesterId: string }) {
-    // Ici, on vérifie que l'utilisateur modifie SON PROPRE profil ou qu'il est admin
     if (userId !== requesterId) {
         try { await verifyAdminOrThrow(requesterId); }
         catch(e) { return { success: false, error: "error.not_authorized" }; }
     }
     const db = getAdminDb();
-    await db.collection('users').doc(userId).update(sanitize(data));
+    await db.collection('users').doc(userId).update(data);
     return { success: true, message: "success.profile_updated" };
 }

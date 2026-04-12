@@ -5,12 +5,12 @@ import { detectFraud } from '@/ai/flows/detect-fraud-flow';
 import { getRequiredEnv } from '@/lib/env';
 
 /**
- * @fileOverview Webhook MeSomb Hardened pour la Production.
- * ✅ SÉCURITÉ : Double vérification API obligatoire.
+ * @fileOverview Webhook MeSomb durci pour la Production.
+ * ✅ SÉCURITÉ : Double vérification API et analyse anti-fraude.
  */
 
 export async function POST(req: Request) {
-  const requestId = `WEBHOOK-${Date.now()}`;
+  const requestId = `WEBHOOK-MS-${Date.now()}`;
   console.log(`[${requestId}] 📨 Webhook MeSomb reçu.`);
 
   try {
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
     const paymentDoc = await db.collection('payments').doc(internalRef).get();
     
     if (!paymentDoc.exists) {
+        console.error(`[${requestId}] ❌ Paiement ${internalRef} non trouvé.`);
         return NextResponse.json({ error: 'Not Found' }, { status: 404 });
     }
 
@@ -46,13 +47,13 @@ export async function POST(req: Request) {
         await db.collection('security_logs').add({
             eventType: 'webhook_token_mismatch',
             userId: storedData?.userId,
-            details: `Spoofing détecté pour ${internalRef}`,
+            details: `Tentative de spoofing détectée pour le paiement ${internalRef}`,
             timestamp: new Date()
         });
         return NextResponse.json({ error: 'Invalid Token' }, { status: 403 });
     }
 
-    // 2. DOUBLE-VÉRIFICATION API (Callback à MeSomb)
+    // 2. DOUBLE-VÉRIFICATION API (Callback à MeSomb pour confirmation finale)
     const gatewayId = txnData.pk || txnData.id;
     const headers: HeadersInit = {
         'Authorization': `Bearer ${SECRET_KEY}`,
@@ -75,51 +76,58 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
     }
 
-    // 3. ANALYSE ANTI-FRAUDE IA
-    const userDoc = await db.collection('users').doc(storedData?.userId).get();
-    const userData = userDoc.data();
-    
-    const fraudAnalysis = await detectFraud({
-        transactionId: internalRef,
-        amount: Number(officialTxn.amount),
-        courseTitle: storedData?.courseId || 'Recharge',
-        user: {
-            id: storedData?.userId,
-            accountAgeInSeconds: Math.floor((Date.now() - (userData?.createdAt?.toDate().getTime() || Date.now())) / 1000),
-            isFirstTransaction: (userData?.affiliateStats?.sales || 0) === 0,
-            emailDomain: userData?.email?.split('@')[1] || ''
-        }
-    });
-
-    if (fraudAnalysis.riskScore > 85) {
-        await db.collection('security_logs').add({
-            eventType: 'fraud_blocked',
-            userId: storedData?.userId,
-            details: `Bloqué par IA (Score: ${fraudAnalysis.riskScore}). Raison: ${fraudAnalysis.reason}`,
-            timestamp: new Date()
+    // 3. ANALYSE ANTI-FRAUDE IA (Optionnelle mais recommandée)
+    let riskScore = 0;
+    try {
+        const userDoc = await db.collection('users').doc(storedData?.userId).get();
+        const userData = userDoc.data();
+        
+        const fraudAnalysis = await detectFraud({
+            transactionId: internalRef,
+            amount: Number(officialTxn.amount),
+            courseTitle: storedData?.courseId || 'Recharge',
+            user: {
+                id: storedData?.userId,
+                accountAgeInSeconds: Math.floor((Date.now() - (userData?.createdAt?.toDate().getTime() || Date.now())) / 1000),
+                isFirstTransaction: (userData?.affiliateStats?.sales || 0) === 0,
+                emailDomain: userData?.email?.split('@')[1] || ''
+            }
         });
-        return NextResponse.json({ error: 'Fraud detected' }, { status: 403 });
+        riskScore = fraudAnalysis.riskScore;
+
+        if (riskScore > 85) {
+            await db.collection('security_logs').add({
+                eventType: 'fraud_blocked',
+                userId: storedData?.userId,
+                details: `Paiement bloqué par IA (Score: ${riskScore}). Raison: ${fraudAnalysis.reason}`,
+                timestamp: new Date()
+            });
+            return NextResponse.json({ error: 'Fraud detected' }, { status: 403 });
+        }
+    } catch (e) {
+        console.warn(`[${requestId}] ⚠️ Fraud analysis skipped:`, e);
     }
 
-    // 4. VALIDATION FINALE (Atomique)
+    // 4. VALIDATION FINALE ET DISTRIBUTION DES DROITS (Atomique)
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
       provider: 'mesomb',
       amount: Number(officialTxn.amount),
-      currency: officialTxn.currency,
+      currency: officialTxn.currency || 'XOF',
       metadata: {
         userId: storedData?.userId,
         courseId: storedData?.courseId,
-        type: storedData?.type,
-        fraudScore: fraudAnalysis.riskScore
+        type: storedData?.type || 'course_purchase',
+        fraudScore: riskScore
       }
     });
 
-    return NextResponse.json({ processed: true, riskScore: fraudAnalysis.riskScore });
+    console.log(`[${requestId}] ✅ Paiement ${internalRef} validé avec succès.`);
+    return NextResponse.json({ processed: true, riskScore });
 
   } catch (error: any) {
-    console.error(`[${requestId}] ❌ ERREUR WEBHOOK:`, error.message);
+    console.error(`[${requestId}] ❌ ERREUR WEBHOOK CRITIQUE:`, error.message);
     return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
   }
 }
