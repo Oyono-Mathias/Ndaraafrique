@@ -128,7 +128,7 @@ export async function createEliteDemoAccountAction({ role, adminId }: { role: Us
     const password = "Password123!";
     
     try {
-        const userRecord = await auth.create({
+        const userRecord = await auth.createUser({
             email,
             password,
             displayName: `Elite Demo ${role.toUpperCase()}`,
@@ -250,7 +250,7 @@ export async function grantCourseAccess({
         if (expirationInDays) {
             expiresAt = new Date(Date.now() + expirationInDays * 86400000);
         } else if (expirationMinutes) {
-            expiresAt = new Date(Date.now() + expirationMinutes * 60000);
+            expirationMinutes = values.durationValue * 60;
         }
 
         const enrollmentData = {
