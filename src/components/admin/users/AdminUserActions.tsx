@@ -23,24 +23,19 @@ import {
     Trash2, 
     MoreVertical,
     Activity,
-    Mail,
     Smartphone,
     ArrowUpRight,
     ArrowDownRight,
-    GraduationCap,
-    TrendingUp,
     Ban,
     UserCheck,
     Key,
     LogOut,
-    Eye,
     LifeBuoy,
     Check,
     X,
     Loader2,
     Gift,
-    BadgeEuro,
-    Shield
+    BadgeEuro
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -57,7 +52,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,7 +91,6 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
     const [reason, setReason] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState("");
     const [selectedRole, setSelectedRole] = useState<UserRole>(targetUser.role);
-    const [targetCourseId, setTargetCourseId] = useState("");
     const [restrictions, setRestrictions] = useState(targetUser.restrictions || {
         canWithdraw: true,
         canSendMessage: true,
@@ -373,8 +366,8 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                         <Button 
                             onClick={() => handleAction(async () => {
                                 const res = await resetUserPasswordAction(admin!.uid, targetUser.uid);
-                                if (res.success) {
-                                    navigator.clipboard.writeText(res.link || '');
+                                if (res.success && res.link) {
+                                    navigator.clipboard.writeText(res.link);
                                     toast({ title: "Lien copié !", description: "Envoyez-le manuellement à l'utilisateur." });
                                 }
                                 return res;
@@ -436,3 +429,8 @@ function RestrictionToggle({ label, checked, onChange, danger = false }: { label
         </div>
     );
 }
+
+import { 
+    TrendingUp, 
+    History 
+} from 'lucide-react';

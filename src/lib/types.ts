@@ -26,6 +26,9 @@ export interface NdaraUser {
   role: UserRole;
   availableRoles: UserRole[];
   status: 'active' | 'suspended' | 'deleted';
+  statusReason?: string;
+  isSuspect?: boolean;
+  suspectReason?: string;
   balance: number;
   affiliateBalance?: number;
   pendingAffiliateBalance?: number;
