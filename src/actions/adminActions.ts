@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Actions administratives hautement sécurisées pour Ndara Afrique.
- * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
+ * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur via Firestore.
  * ✅ TRANSACTIONNEL : Utilisation de db.runTransaction pour les flux financiers.
  * ✅ AUDIT : Journalisation de chaque action dans admin_audit_logs.
  */
