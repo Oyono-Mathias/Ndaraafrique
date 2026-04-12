@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * @fileOverview Gestionnaire du Catalogue Admin - Design Qwen Cards Immersif.
- * ✅ MODÉRATION : Section prioritaire pour les cours "En Examen".
- * ✅ BOURSE : Indicateurs visuels des licences en vente.
+ * @fileOverview Gestionnaire du Catalogue Admin - Optimisé pour +10k cours.
+ * ✅ PAGINATION : Chargement incrémental par lots de 20.
+ * ✅ PERFORMANCE : Fenêtre de synchronisation limitée pour économiser les lectures.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, where, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where, getDocs, documentId, limit } from 'firebase/firestore';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,8 @@ import {
     AlertCircle,
     FileText,
     LayoutGrid,
-    BookOpen
+    BookOpen,
+    ChevronDown
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
 import { AssignInstructorModal } from './AssignInstructorModal';
+
+const PAGE_SIZE = 20;
 
 const CourseAdminCard = ({ 
     course, 
@@ -111,7 +114,6 @@ const CourseAdminCard = ({
             isPending ? "border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]" : "border-white/5 shadow-2xl",
             isDraft && "opacity-75"
         )}>
-            {/* Market Badge */}
             {isInMarket && (
                 <div className="absolute top-3 left-3 z-20 animate-in zoom-in duration-500">
                     <Badge className="bg-blue-600 hover:bg-blue-600 text-white border-none font-black text-[8px] uppercase px-2 py-1 flex items-center gap-1 shadow-[0_0_15px_rgba(37,99,235,0.4)]">
@@ -122,13 +124,11 @@ const CourseAdminCard = ({
             )}
 
             <div className="flex p-4 gap-4 items-center">
-                {/* Thumbnail */}
                 <div className="w-28 h-20 rounded-2xl overflow-hidden shrink-0 relative bg-slate-800 shadow-inner">
                     <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/200/150`} alt={course.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                     <div className="absolute inset-0 bg-black/20" />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0 py-1">
                     <div className="flex justify-between items-start mb-1">
                         <h3 className="font-black text-white text-[13px] leading-tight uppercase tracking-tight truncate pr-2">{course.title}</h3>
@@ -237,9 +237,15 @@ const CourseAdminCard = ({
 export function CoursesTable() {
     const db = getFirestore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const { currentUser: adminUser } = useRole();
 
-    const coursesQuery = useMemo(() => query(collection(db, 'courses'), orderBy('createdAt', 'desc')), [db]);
+    const coursesQuery = useMemo(() => query(
+        collection(db, 'courses'), 
+        orderBy('createdAt', 'desc'),
+        limit(visibleCount)
+    ), [db, visibleCount]);
+
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
@@ -265,24 +271,18 @@ export function CoursesTable() {
         fetchInstructors();
     }, [courses, db, instructorsMap]);
 
-    const { queue, rest } = useMemo(() => {
-        const filtered = (courses || []).filter(c => 
+    const filtered = useMemo(() => {
+        const list = (courses || []).filter(c => 
             c.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             instructorsMap.get(c.instructorId)?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
         );
         return {
-            queue: filtered.filter(c => c.status === 'Pending Review'),
-            rest: filtered.filter(c => c.status !== 'Pending Review')
+            queue: list.filter(c => c.status === 'Pending Review'),
+            rest: list.filter(c => c.status !== 'Pending Review')
         };
     }, [courses, searchTerm, instructorsMap]);
 
-    if (coursesLoading) {
-        return (
-            <div className="grid gap-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-[2.5rem] bg-slate-900" />)}
-            </div>
-        );
-    }
+    const handleLoadMore = () => setVisibleCount(prev => prev + PAGE_SIZE);
 
     return (
         <div className="space-y-10">
@@ -298,18 +298,16 @@ export function CoursesTable() {
                 />
             </div>
 
-            {/* --- SECTION 1 : FILE DE MODÉRATION --- */}
-            {queue.length > 0 && (
+            {filtered.queue.length > 0 && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                             <AlertCircle className="text-amber-500 h-4 w-4" />
                             File de Modération
                         </h2>
-                        <Badge className="bg-amber-500/10 text-amber-500 border-none font-black text-[9px] uppercase px-2">{queue.length} Prioritaires</Badge>
                     </div>
                     <div className="grid gap-4">
-                        {queue.map(course => (
+                        {filtered.queue.map(course => (
                             <CourseAdminCard 
                                 key={course.id} 
                                 course={course} 
@@ -321,19 +319,17 @@ export function CoursesTable() {
                 </div>
             )}
 
-            {/* --- SECTION 2 : CATALOGUE COMPLET --- */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                         <LayoutGrid className="text-slate-500 h-4 w-4" />
                         Répertoire Complet
                     </h2>
-                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{rest.length} Formations</span>
                 </div>
                 
-                {rest.length > 0 ? (
+                {filtered.rest.length > 0 ? (
                     <div className="grid gap-4">
-                        {rest.map(course => (
+                        {filtered.rest.map(course => (
                             <CourseAdminCard 
                                 key={course.id} 
                                 course={course} 
@@ -341,11 +337,24 @@ export function CoursesTable() {
                                 onAssignClick={(c) => { setSelectedCourseForAssign(c); setIsAssignModalOpen(true); }}
                             />
                         ))}
+                        
+                        {!searchTerm && courses && courses.length >= visibleCount && (
+                            <div className="flex justify-center pt-4 pb-8">
+                                <Button 
+                                    onClick={handleLoadMore}
+                                    variant="outline"
+                                    className="h-12 px-8 rounded-2xl border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest"
+                                >
+                                    {coursesLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <ChevronDown className="h-4 w-4 mr-2" />}
+                                    Afficher plus de cours
+                                </Button>
+                            </div>
+                        )}
                     </div>
-                ) : !queue.length && (
+                ) : !coursesLoading && (
                     <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
                         <BookOpen className="h-16 w-16 mx-auto mb-4 text-slate-700" />
-                        <p className="font-black uppercase tracking-widest text-xs">Le catalogue est vide</p>
+                        <p className="font-black uppercase tracking-widest text-xs">Aucune formation trouvée</p>
                     </div>
                 )}
             </div>

@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Cockpit Trésorerie & Audit Financier.
- * ✅ UI : Intégration des logos opérateurs réels.
+ * @fileOverview Cockpit Trésorerie & Audit Financier - Optimisé pour grande échelle.
+ * ✅ PAGINATION : Chargement par lots de 20 avec extension 'Load More'.
+ * ✅ RÉUSITE : Synchronisation réelle sur les dernières transactions.
  */
 
 import { useState, useMemo } from 'react';
@@ -19,7 +20,8 @@ import {
     Landmark, 
     User,
     ArrowUpRight,
-    Loader2
+    Loader2,
+    ChevronDown
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -27,19 +29,17 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
-// ❌ Supprimé pour le build : import type { Payment } from '@/lib/types';
 
-/**
- * ✅ RÉSOLU : Interface locale robuste pour le build
- */
+const PAGE_SIZE = 20;
+
 interface Payment {
     id: string;
     userId: string;
     amount: number;
     currency: string;
     status: 'pending' | 'completed' | 'failed' | 'refunded';
-    provider: string; // Ex: 'orange', 'mtn'
-    date: any; // Timestamp Firestore
+    provider: string;
+    date: any;
     courseTitle?: string;
     metadata?: {
         type?: string;
@@ -52,13 +52,13 @@ export default function AdminPaymentsPage() {
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-    // ✅ Correction : Utilisation du champ 'date' comme défini dans ton query
     const paymentsQuery = useMemo(() => query(
         collection(db, 'payments'),
         orderBy('date', 'desc'),
-        limit(100)
-    ), [db]);
+        limit(visibleCount)
+    ), [db, visibleCount]);
 
     const { data: payments, isLoading } = useCollection<Payment>(paymentsQuery);
 
@@ -70,6 +70,8 @@ export default function AdminPaymentsPage() {
             p.id.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [payments, searchTerm]);
+
+    const handleLoadMore = () => setVisibleCount(prev => prev + PAGE_SIZE);
 
     const handleManualValidate = async (payment: Payment) => {
         if (!admin || isProcessing) return;
@@ -135,16 +137,13 @@ export default function AdminPaymentsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading ? (
+                        {isLoading && !payments ? (
                             [...Array(5)].map((_, i) => (
                                 <TableRow key={i} className="border-slate-800"><TableCell colSpan={6} className="h-12 bg-slate-800/20" /></TableRow>
                             ))
                         ) : filtered.length > 0 ? (
                             filtered.map(payment => {
-                                // Extraction sécurisée de la date
-                                const date = (payment.date as any)?.toDate?.() || new Date();
                                 const isPending = payment.status === 'pending';
-                                
                                 return (
                                     <TableRow key={payment.id} className="group border-slate-800 hover:bg-slate-800/20">
                                         <TableCell>
@@ -183,7 +182,7 @@ export default function AdminPaymentsPage() {
                                                     size="sm" 
                                                     onClick={() => handleManualValidate(payment)}
                                                     disabled={!!isProcessing}
-                                                    className="h-8 rounded-xl bg-primary text-slate-950 font-black uppercase text-[9px] tracking-widest transition-all"
+                                                    className="h-8 rounded-xl bg-primary text-slate-950 font-black uppercase text-[9px] tracking-widest"
                                                 >
                                                     {isProcessing === payment.id ? <Loader2 className="h-3 w-3 animate-spin"/> : "Valider"}
                                                 </Button>
@@ -198,6 +197,19 @@ export default function AdminPaymentsPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {!searchTerm && payments && payments.length >= visibleCount && (
+                <div className="flex justify-center pt-4 pb-8">
+                    <Button 
+                        onClick={handleLoadMore}
+                        variant="outline"
+                        className="h-12 px-8 rounded-2xl border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest shadow-xl"
+                    >
+                        {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                        Afficher les transactions plus anciennes
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

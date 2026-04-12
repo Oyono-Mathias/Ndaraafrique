@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * @fileOverview Répertoire des Membres Ndara Afrique - Cockpit Admin v2.5.
- * ✅ RÉSOLU : Utilisation du composant AdminUserActions pour toutes les commandes.
- * ✅ SÉCURITÉ : Validation serveur sur chaque action critique.
+ * @fileOverview Répertoire des Membres Ndara Afrique - Optimisé pour la performance.
+ * ✅ PAGINATION : Chargement par lots de 20 avec extension dynamique.
+ * ✅ RÉEL : Toujours synchronisé en temps réel sur la fenêtre visible.
  */
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, limit } from 'firebase/firestore';
 import type { NdaraUser } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,13 +19,19 @@ import {
   Clock,
   ArrowUpRight,
   ArrowDownRight,
+  ChevronDown,
+  Loader2,
+  Users
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { africanCountries } from '@/lib/countries';
 import { AdminUserActions } from './AdminUserActions';
+
+const PAGE_SIZE = 20;
 
 const UserCard = ({ user: targetUser }: { user: NdaraUser }) => {
     const createdAt = (targetUser.createdAt as any)?.toDate?.() || null;
@@ -53,7 +59,6 @@ const UserCard = ({ user: targetUser }: { user: NdaraUser }) => {
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex items-center justify-between mb-1">
                         <h3 className="font-black text-white text-base truncate uppercase tracking-tight">{targetUser.fullName}</h3>
-                        
                         <AdminUserActions user={targetUser} />
                     </div>
                     
@@ -85,9 +90,16 @@ const UserCard = ({ user: targetUser }: { user: NdaraUser }) => {
 
 export function UsersTable() {
     const db = getFirestore();
-    const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
-    const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const usersQuery = useMemo(() => query(
+        collection(db, 'users'), 
+        orderBy('createdAt', 'desc'),
+        limit(visibleCount)
+    ), [db, visibleCount]);
+
+    const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
@@ -98,7 +110,9 @@ export function UsersTable() {
         );
     }, [users, searchTerm]);
 
-    if (isLoading) return <div className="space-y-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900" />)}</div>;
+    const handleLoadMore = () => {
+        setVisibleCount(prev => prev + PAGE_SIZE);
+    };
 
     return (
         <div className="space-y-6">
@@ -111,8 +125,33 @@ export function UsersTable() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
+
             <div className="grid gap-4">
-                {filteredUsers.map(user => <UserCard key={user.uid} user={user} />)}
+                {isLoading && !users ? (
+                    [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2.5rem] bg-slate-900" />)
+                ) : filteredUsers.length > 0 ? (
+                    <>
+                        {filteredUsers.map(user => <UserCard key={user.uid} user={user} />)}
+                        
+                        {!searchTerm && users && users.length >= visibleCount && (
+                            <div className="flex justify-center pt-4 pb-8">
+                                <Button 
+                                    onClick={handleLoadMore}
+                                    variant="outline"
+                                    className="h-12 px-8 rounded-2xl border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-primary transition-all active:scale-95"
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                                    Charger plus de membres
+                                </Button>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="py-24 text-center opacity-20">
+                        <Users className="h-16 w-16 mx-auto mb-4" />
+                        <p className="font-black uppercase tracking-widest">Aucun utilisateur trouvé</p>
+                    </div>
+                )}
             </div>
         </div>
     );
