@@ -4,7 +4,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
  * @fileOverview Webhook MeSomb durci.
- * ✅ SÉCURITÉ : Double vérification (Back-check) via l'API MeSomb.
+ * ✅ SÉCURITÉ : Double vérification (Back-check) via l'API MeSomb avec Basic Auth.
  * ✅ INTÉGRITÉ : Utilise le processeur de paiement centralisé.
  */
 
@@ -56,19 +56,20 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid security token' }, { status: 403 });
     }
 
-    // 2. DOUBLE-VÉRIFICATION API (Back-check vers MeSomb)
-    // On ne croit pas le webhook sur parole, on demande à MeSomb l'état de CETTE transaction.
+    // 2. DOUBLE-VÉRIFICATION API (Back-check vers MeSomb avec Basic Auth)
+    const credentials = `${ACCESS_KEY.trim()}:${SECRET_KEY.trim()}`;
+    const encoded = Buffer.from(credentials).toString('base64');
+
     const gatewayId = txnData.pk || txnData.id || txnData.guid;
     
     const verifyRes = await fetch(`https://mesomb.hachther.com/api/v1.1/payment/status/?id=${gatewayId}`, {
         headers: {
-            'Authorization': `Bearer ${SECRET_KEY}`,
-            'X-MeSomb-Application': ACCESS_KEY,
+            'Authorization': `Basic ${encoded}`,
         }
     });
 
     if (!verifyRes.ok) {
-        console.error(`[${requestId}] ❌ Impossible de vérifier le statut auprès de MeSomb.`);
+        console.error(`[${requestId}] ❌ Impossible de vérifier le statut auprès de MeSomb. Status: ${verifyRes.status}`);
         return NextResponse.json({ error: 'MeSomb verification failed' }, { status: 403 });
     }
 
@@ -85,7 +86,6 @@ export async function POST(req: Request) {
     }
 
     // 3. VALIDATION FINALE ET ATTRIBUTION DES DROITS
-    // On utilise le processeur central pour garantir l'atomicité
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),

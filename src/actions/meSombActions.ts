@@ -2,13 +2,13 @@
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
- * ✅ SÉCURITÉ : Vérification stricte des clés API et mode simulation.
+ * ✅ SÉCURITÉ : Authentification Basic Auth (Base64) requise par MeSomb.
  * ✅ VALIDATION : Montant minimum et format de numéro.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
@@ -27,7 +27,7 @@ interface MeSombPaymentParams {
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
-  const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY; // Terme officiel MeSomb
+  const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY;
 
   try {
     const db = getAdminDb();
@@ -68,6 +68,15 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         return { success: false, error: "Le montant minimum est de 100 XOF." };
     }
 
+    // --- CORRECTION HEADER AUTHORIZATION (Basic Auth) ---
+    const credentials = `${ACCESS_KEY.trim()}:${SECRET_KEY.trim()}`;
+    const encoded = Buffer.from(credentials).toString('base64');
+
+    const headers: HeadersInit = {
+        'Authorization': `Basic ${encoded}`,
+        'Content-Type': 'application/json',
+    };
+
     // 5. Préparation Transaction Firestore (Statut: pending)
     const internalRef = randomUUID();
     const secretNonce = randomBytes(32).toString('hex');
@@ -94,12 +103,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     });
 
     // 6. Appel API MeSomb
-    const headers: HeadersInit = {
-        'Authorization': `Bearer ${SECRET_KEY}`,
-        'X-MeSomb-Application': ACCESS_KEY,
-        'Content-Type': 'application/json',
-    };
-
     const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
       method: 'POST',
       headers,
@@ -124,6 +127,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
       };
     } else {
       const errorMsg = data.detail || data.message || "Transaction refusée par l'opérateur.";
+      console.error("[MeSomb API Error]", data);
       await db.collection('payments').doc(internalRef).update({ 
           status: 'failed', 
           error: errorMsg,
