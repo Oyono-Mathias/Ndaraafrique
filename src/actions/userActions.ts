@@ -96,6 +96,7 @@ export async function rechargeUserWallet({
             currency: 'XOF',
             metadata: { 
                 userId, 
+                courseId: 'WALLET_TOPUP',
                 type: 'wallet_topup', 
                 adminId, 
                 reason 

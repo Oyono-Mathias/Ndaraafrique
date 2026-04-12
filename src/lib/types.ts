@@ -683,7 +683,7 @@ export interface NdaraPaymentDetails {
   currency: string;
   metadata: {
     userId: string;
-    courseId: string;
+    courseId?: string;
     type?: string;
     affiliateId?: string;
     couponId?: string;
