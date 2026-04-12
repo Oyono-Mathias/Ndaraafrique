@@ -3,9 +3,9 @@ import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 /**
- * @fileOverview Webhook MeSomb durci.
- * ✅ SÉCURITÉ : Double vérification (Back-check) via l'API MeSomb avec Basic Auth.
- * ✅ INTÉGRITÉ : Utilise le processeur de paiement centralisé.
+ * @fileOverview Webhook MeSomb sécurisé.
+ * ✅ AUTH : Utilise le format Basic applicationKey:accessKey:secretKey.
+ * ✅ BACK-CHECK : Vérification systématique du statut réel.
  */
 
 export async function POST(req: Request) {
@@ -13,10 +13,11 @@ export async function POST(req: Request) {
   console.log(`[${requestId}] 📨 Webhook MeSomb reçu.`);
 
   try {
-    const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
-    const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY;
+    const APPLICATION_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
+    const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
+    const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
 
-    if (!SECRET_KEY || !ACCESS_KEY) {
+    if (!APPLICATION_KEY || !ACCESS_KEY || !SECRET_KEY) {
         return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 });
     }
 
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
 
     // 1. Validation du Jeton (Anti-Spoofing)
     if (storedData?.security?.nonce !== securityToken) {
-        console.error(`[${requestId}] 🚨 ALERTE : Nonce Mismatch. Tentative de fraude possible.`);
+        console.error(`[${requestId}] 🚨 ALERTE SÉCURITÉ : Nonce Mismatch.`);
         await db.collection('security_logs').add({
             eventType: 'webhook_token_mismatch',
             userId: storedData?.userId,
@@ -56,12 +57,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid security token' }, { status: 403 });
     }
 
-    // 2. DOUBLE-VÉRIFICATION API (Back-check vers MeSomb avec Basic Auth)
-    const credentials = `${ACCESS_KEY.trim()}:${SECRET_KEY.trim()}`;
+    // 2. DOUBLE-VÉRIFICATION API (Back-check vers MeSomb avec Basic Auth complet)
+    const credentials = `${APPLICATION_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
     const encoded = Buffer.from(credentials).toString('base64');
 
     const gatewayId = txnData.pk || txnData.id || txnData.guid;
     
+    console.log(`[${requestId}] 🔍 Vérification du statut pour ${gatewayId}...`);
+
     const verifyRes = await fetch(`https://mesomb.hachther.com/api/v1.1/payment/status/?id=${gatewayId}`, {
         headers: {
             'Authorization': `Basic ${encoded}`,
@@ -69,23 +72,23 @@ export async function POST(req: Request) {
     });
 
     if (!verifyRes.ok) {
-        console.error(`[${requestId}] ❌ Impossible de vérifier le statut auprès de MeSomb. Status: ${verifyRes.status}`);
+        console.error(`[${requestId}] ❌ Impossible de vérifier le statut. MeSomb API a répondu ${verifyRes.status}`);
         return NextResponse.json({ error: 'MeSomb verification failed' }, { status: 403 });
     }
 
     const officialTxn = await verifyRes.json();
 
     if (officialTxn.status !== 'SUCCESS') {
-        console.log(`[${requestId}] ℹ️ Statut final non-succès : ${officialTxn.status}`);
+        console.log(`[${requestId}] ℹ️ Statut final ignoré (Non-succès) : ${officialTxn.status}`);
         await db.collection('payments').doc(internalRef).update({
             status: 'failed',
-            error: `Statut final: ${officialTxn.status}`,
+            error: `Statut MeSomb: ${officialTxn.status}`,
             updatedAt: new Date()
         });
         return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
     }
 
-    // 3. VALIDATION FINALE ET ATTRIBUTION DES DROITS
+    // 3. VALIDATION FINALE ET ATTRIBUTION DES FONDS / DROITS
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
@@ -99,7 +102,7 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log(`[${requestId}] ✅ Paiement ${internalRef} validé avec succès.`);
+    console.log(`[${requestId}] ✅ Paiement ${internalRef} validé et traité.`);
     return NextResponse.json({ processed: true });
 
   } catch (error: any) {

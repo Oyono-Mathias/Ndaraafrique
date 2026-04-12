@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
- * ✅ SÉCURITÉ : Authentification Basic Auth (Base64) requise par MeSomb.
- * ✅ VALIDATION : Montant minimum et format de numéro.
+ * ✅ SÉCURITÉ : Authentification Basic Auth (Base64) stricte.
+ * ✅ FORMAT : applicationKey:accessKey:secretKey.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
@@ -26,8 +26,9 @@ interface MeSombPaymentParams {
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
-  const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
-  const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY;
+  const APPLICATION_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
+  const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
+  const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
 
   try {
     const db = getAdminDb();
@@ -43,12 +44,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     if (!userData) return { success: false, error: "Utilisateur introuvable." };
 
-    // 2. Vérification des restrictions
-    if (userData.restrictions?.canBuyCourse === false && params.type === 'course_purchase') {
-        return { success: false, error: "Votre compte est restreint pour les achats." };
-    }
-
-    // 3. Mode Simulation (Test)
+    // 2. Mode Simulation (Test)
     if (settings?.payments?.paymentMode === 'test') {
         console.log(`[MeSomb Simulation] User: ${params.userId} | Amount: ${params.amount}`);
         return { 
@@ -58,18 +54,18 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         };
     }
 
-    // 4. Validation Configuration
-    if (!SECRET_KEY || !ACCESS_KEY) {
-        console.error("[MeSomb] Erreur : Clés API manquantes sur le serveur.");
-        return { success: false, error: "Le service de paiement est indisponible (Erreur Config)." };
+    // 3. Validation Configuration
+    if (!APPLICATION_KEY || !ACCESS_KEY || !SECRET_KEY) {
+        console.error("[MeSomb] CRITICAL: Missing API Keys in environment variables.");
+        return { success: false, error: "Le service de paiement est indisponible (Erreur Config Serveur)." };
     }
 
     if (params.amount < 100) {
         return { success: false, error: "Le montant minimum est de 100 XOF." };
     }
 
-    // --- CORRECTION HEADER AUTHORIZATION (Basic Auth) ---
-    const credentials = `${ACCESS_KEY.trim()}:${SECRET_KEY.trim()}`;
+    // --- CONSTRUCTION DU HEADER AUTHORIZATION (Basic Auth) ---
+    const credentials = `${APPLICATION_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
     const encoded = Buffer.from(credentials).toString('base64');
 
     const headers: HeadersInit = {
@@ -77,18 +73,18 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         'Content-Type': 'application/json',
     };
 
-    // 5. Préparation Transaction Firestore (Statut: pending)
+    // 4. Préparation Transaction Firestore (Statut: pending)
     const internalRef = randomUUID();
     const secretNonce = randomBytes(32).toString('hex');
     const currency = settings?.payments?.currency || 'XOF';
     
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    // Standardisation Cameroun si nécessaire
+    // Standardisation Cameroun (237)
     if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
         cleanPhone = '237' + cleanPhone;
     }
 
-    await db.collection('payments').doc(internalRef).set({
+    const transactionData = {
         id: internalRef,
         userId: params.userId,
         amount: Number(params.amount),
@@ -97,28 +93,36 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         provider: 'mesomb',
         type: params.type || 'course_purchase',
         courseId: params.courseId || 'WALLET_TOPUP',
+        courseTitle: params.type === 'wallet_topup' ? 'Recharge Portefeuille' : 'Achat formation',
         createdAt: FieldValue.serverTimestamp(),
         security: { nonce: secretNonce },
-        metadata: { source: 'web_app' }
-    });
+        metadata: { source: 'web_app', env: settings?.payments?.paymentMode }
+    };
 
-    // 6. Appel API MeSomb
-    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
+    await db.collection('payments').doc(internalRef).set(transactionData);
+
+    const payload = {
         amount: params.amount,
         service: params.service,
         receiver: cleanPhone,
         currency,
         nonce: randomBytes(16).toString('hex'),
         extra: { internalReference: internalRef, securityToken: secretNonce }
-      }),
+    };
+
+    console.log(`[MeSomb Request] Sending collect request for ${internalRef}`);
+
+    // 5. Appel API MeSomb
+    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
 
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
+      console.log(`[MeSomb Success] Transaction ${internalRef} initiated.`);
       return { 
         success: true, 
         type: 'REAL', 
