@@ -23,7 +23,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- UTILISATEURS ---
+    // --- UTILISATEURS & PROFILS ---
     match /users/{userId} {
       // Un utilisateur voit ses données, l'admin voit tout.
       allow read: if isOwner(userId) || isAdmin();
@@ -32,44 +32,51 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       
       // Mise à jour : le propriétaire ne peut pas modifier son rôle ou son statut.
-      // L'admin peut tout modifier (suspension, rôle, etc.).
       allow update: if isAdmin() || (
         isOwner(userId) && 
         request.resource.data.role == resource.data.role &&
         request.resource.data.status == resource.data.status
       );
       
-      // Sous-collections privées (notifications, historique de chat, etc.)
+      // Sous-collections privées
       match /notifications/{id} { allow read, write: if isOwner(userId); }
       match /chatHistory/{id} { allow read, write: if isOwner(userId); }
       match /fcmTokens/{id} { allow read, write: if isOwner(userId); }
+      match /subscriptions/{id} { allow read: if isOwner(userId) || isAdmin(); }
+      match /activity/{id} { allow read: if isOwner(userId) || isAdmin(); }
+      match /cart/{id} { allow read, write: if isOwner(userId); }
     }
 
-    // --- FINANCES & TRANSACTIONS (CRITIQUE) ---
-    match /payments/{paymentId} {
+    // --- FINANCES & TRANSACTIONS (CRITIQUE - SERVER ONLY) ---
+    match /payments/{id} {
       // Lecture par le bénéficiaire ou l'admin pour historique.
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       // Écriture STRICTEMENT interdite au client (géré par Admin SDK côté serveur).
+      allow write: if false; 
+    }
+    
+    match /transactions/{id} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow write: if false;
     }
 
-    match /transactions/{txnId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow write: if false;
-    }
-
-    match /payout_requests/{payoutId} {
+    match /payout_requests/{id} {
       allow read: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
       // L'instructeur crée sa demande, l'admin la valide (update).
-      allow create: if isSignedIn() && isOwner(request.resource.data.instructorId);
+      allow create: if isSignedIn() && request.resource.data.instructorId == request.auth.uid;
       allow update: if isAdmin();
+    }
+
+    match /affiliate_transactions/{id} {
+      allow read: if isSignedIn() && (resource.data.affiliateId == request.auth.uid || isAdmin());
+      allow write: if false;
     }
 
     // --- SUPPORT & MESSAGERIE ---
     match /support_tickets/{ticketId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn();
-      allow update: if isAdmin(); // Seul l'admin répond ou clôture officiellement.
+      allow update: if isAdmin();
       
       match /messages/{msgId} {
         allow read: if isSignedIn() && (get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId == request.auth.uid || isAdmin());
@@ -78,31 +85,43 @@ service cloud.firestore {
     }
 
     match /chats/{chatId} {
-      allow read, write: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
       
       match /messages/{msgId} {
         allow read, write: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
       }
     }
 
-    // --- RÉGLAGES SYSTÈME (PUBLICS) ---
-    match /settings/{settingId} {
+    // --- RÉGLAGES SYSTÈME & CONTENU PUBLIC ---
+    match /settings/{id} {
       allow read: if true; // Lecture publique pour le nom du site, logos, etc.
       allow write: if isAdmin();
     }
 
-    // --- LOGS & AUDIT (VERROUILLÉS) ---
-    match /admin_audit_logs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false; // Écriture exclusive via Server Actions.
+    match /faqs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    match /security_logs/{logId} {
+    match /carousel_slides/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- LOGS & AUDIT (VERROUILLÉS - SERVER ONLY) ---
+    match /admin_audit_logs/{id} {
       allow read: if isAdmin();
       allow write: if false;
     }
 
-    // --- COURS & CONTENU ---
+    match /security_logs/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // --- COURS & PÉDAGOGIE ---
     match /courses/{courseId} {
       allow read: if true; // Catalogue public.
       allow write: if isAdmin() || (
@@ -117,9 +136,51 @@ service cloud.firestore {
       }
     }
 
-    match /enrollments/{enrollmentId} {
-      allow read: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
+    match /enrollments/{id} {
+      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid || isAdmin());
       allow write: if false; // Les inscriptions sont traitées par le processeur financier serveur.
+    }
+
+    match /course_progress/{id} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /user_wishlist/{id} {
+      allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /course_reviews/{id} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin());
+    }
+
+    match /questions/{id} {
+      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
+    }
+
+    // --- AUTRES ---
+    match /countries/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /course_coupons/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || (isSignedIn() && resource.data.instructorId == request.auth.uid);
+    }
+
+    match /investor_leads/{id} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update: if isAdmin();
+    }
+
+    match /push_campaigns/{id} {
+      allow read, write: if isAdmin();
     }
   }
 }
