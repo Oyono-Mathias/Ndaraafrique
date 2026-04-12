@@ -19,6 +19,7 @@ import {
     BookOpen, 
     ShieldCheck, 
     Lock, 
+    Unlock,
     ShieldAlert, 
     Trash2, 
     MoreVertical,
