@@ -8,7 +8,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getFirestore, updateDoc, increment, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Course, Country } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
-import { processNdaraPayment } from '@/services/paymentProcessor';
+import { purchaseCourseWithWalletAction } from '@/actions/userActions';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
@@ -86,33 +86,24 @@ function CheckoutContent() {
 
     try {
       if (activeMethod.provider === 'wallet') {
-          // 🛡️ SÉCURITÉ : Vérification solde
-          if ((currentUser?.balance || 0) < course.price) {
-              throw new Error("Solde insuffisant. Rechargez votre portefeuille.");
-          }
-
-          // 🔄 Transaction de débit et accès cours
-          const result = await processNdaraPayment({
-              transactionId: `WAL-${Date.now()}-${user.uid.substring(0,4)}`,
-              provider: 'wallet',
-              amount: course.price,
-              currency: countryData?.currency || 'XOF',
-              metadata: { 
-                  userId: user.uid, 
-                  courseId: course.id, 
-                  type: 'course_purchase' 
-              }
+          // 🛡️ SÉCURITÉ : Vérification solde & Achat via Server Action transactionnelle
+          const result = await purchaseCourseWithWalletAction({
+              userId: user.uid,
+              courseId: course.id,
+              amount: course.price
           });
 
           if (result.success) {
-              // On déduit localement (le processor s'occupe du serveur)
-              await updateDoc(doc(db, 'users', user.uid), { balance: increment(-course.price) });
               setIsSuccess(true);
           } else {
-              throw new Error("Échec du débit wallet.");
+              throw new Error(result.error || "Échec du débit wallet.");
           }
 
       } else if (activeMethod.provider === 'mesomb') {
+          if (!phoneNumber || phoneNumber.length < 8) {
+              throw new Error("Numéro de téléphone requis pour Mobile Money.");
+          }
+
           const result = await initiateMeSombPayment({
               amount: course.price,
               phoneNumber: phoneNumber,
@@ -120,10 +111,16 @@ function CheckoutContent() {
               courseId: course.id,
               userId: user.uid
           });
+          
           if (result.success) {
               if (result.type === 'SIMULATED') setIsSuccess(true);
-              else toast({ title: "Action requise sur votre mobile" });
-          } else throw new Error(result.error);
+              else toast({ title: "Action requise sur votre mobile", description: "Validez le paiement sur votre téléphone." });
+          } else {
+              throw new Error(result.error);
+          }
+      } else if (selectedMethodId === 'virtual') {
+          toast({ title: "Mode démo", description: "Simulation d'achat virtuel réussie." });
+          setIsSuccess(true);
       }
     } catch (e: any) {
       toast({ variant: 'destructive', title: "Échec du paiement", description: e.message });
@@ -140,12 +137,13 @@ function CheckoutContent() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-4">
             <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90 transition"><ArrowLeft className="h-5 w-5" /></button>
-            <h1 className="font-black text-xl text-white uppercase tracking-tight">Paiement</h1>
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">{countryData?.flagEmoji}</div>
+            <h1 className="font-black text-xl text-white uppercase tracking-tight">Finaliser l'achat</h1>
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">{countryData?.flagEmoji || '🌍'}</div>
         </div>
       </header>
 
       <main className="pt-24 px-4 max-w-md mx-auto space-y-8 animate-in fade-in duration-700">
+        {/* Résumé du ticket */}
         <div className="bg-[#FEF3C7] rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><GraduationCap size={80} className="text-[#D97706]" /></div>
             <div className="flex justify-between items-center border-b-2 border-dashed border-[#D97706]/20 pb-4 mb-4">
@@ -153,12 +151,13 @@ function CheckoutContent() {
             </div>
             <div className="flex justify-between items-end">
                 <span className="text-[#D97706]/60 text-[10px] font-black uppercase tracking-widest">Total à payer</span>
-                <span className="font-mono font-black text-[#D97706] text-3xl">{course?.price.toLocaleString()} {countryData?.currency || 'XOF'}</span>
+                <span className="font-mono font-black text-[#D97706] text-3xl">{(course?.price || 0).toLocaleString()} {countryData?.currency || 'XOF'}</span>
             </div>
         </div>
 
+        {/* Sélection Méthode */}
         <section className="space-y-4">
-            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] ml-1">Choisir un mode</h3>
+            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] ml-1">MOYEN DE PAIEMENT</h3>
             <div className="grid grid-cols-4 gap-2">
                 <button 
                     onClick={() => setSelectedMethodId('wallet')} 
@@ -196,26 +195,33 @@ function CheckoutContent() {
             </div>
         </section>
 
+        {/* Champs Contextuels */}
         <section className="space-y-6">
             {selectedMethodId === 'wallet' ? (
-                <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl text-center shadow-inner">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Votre solde actuel</p>
+                <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl text-center shadow-inner relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl" />
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Votre solde Ndara</p>
                     <p className="text-2xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {countryData?.currency || 'XOF'}</p>
                     {(currentUser?.balance || 0) < (course?.price || 0) && (
-                        <p className="text-[9px] text-red-400 font-bold mt-2 uppercase">Solde insuffisant</p>
+                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                            <p className="text-[9px] text-red-400 font-bold uppercase tracking-widest">Solde insuffisant pour cet achat</p>
+                            <Button variant="link" size="sm" onClick={() => router.push(`/${locale}/student/wallet`)} className="text-primary text-[10px] h-auto p-0 font-black uppercase mt-1">Recharger mon wallet</Button>
+                        </div>
                     )}
                 </div>
-            ) : selectedMethodId !== 'virtual' && (
+            ) : (selectedMethodId !== 'virtual' && selectedMethodId !== 'wallet') && (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Numéro Mobile Money ({countryData?.prefix})</label>
                     <div className="relative">
-                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950 flex items-center justify-center">
+                            <Smartphone className="h-4 w-4 text-primary" />
+                        </div>
                         <Input 
                             type="tel" 
                             placeholder="6xx xxx xxx" 
                             value={phoneNumber} 
                             onChange={(e) => setPhoneNumber(e.target.value)} 
-                            className="h-16 pl-12 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest" 
+                            className="h-16 pl-14 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest" 
                         />
                     </div>
                 </div>
@@ -225,16 +231,16 @@ function CheckoutContent() {
         <Button 
             onClick={handlePayment} 
             disabled={isProcessing || isSuccess || (selectedMethodId === 'wallet' && (currentUser?.balance || 0) < (course?.price || 0))} 
-            className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all"
+            className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all shadow-primary/20"
         >
             {isProcessing ? <Loader2 className="animate-spin h-5 w-5" /> : <Lock className="h-4 w-4 mr-2" />}
-            CONFIRMER LE PAIEMENT
+            {isSuccess ? "INSCRIPTION RÉUSSIE" : "CONFIRMER LE PAIEMENT"}
         </Button>
 
         <div className="bg-slate-900/50 border border-white/5 rounded-3xl p-6 flex items-start gap-4">
             <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
             <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
-                Votre achat est protégé par la garantie Ndara Afrique. Accès immédiat et illimité après validation.
+                Votre achat est protégé par la garantie Ndara Afrique. Accès immédiat et illimité au contenu après validation de la transaction.
             </p>
         </div>
       </main>
@@ -247,9 +253,9 @@ function CheckoutContent() {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-3xl font-black text-white uppercase tracking-tight">C'est validé !</h3>
-                    <p className="text-slate-400 font-medium italic">Vous êtes désormais inscrit à cette formation.</p>
+                    <p className="text-slate-400 font-medium italic">Félicitations, vous avez débloqué votre nouvelle compétence.</p>
                   </div>
-                  <Button onClick={() => router.push(`/${locale}/courses/${course?.id}`)} className="w-full h-16 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest">
+                  <Button onClick={() => router.push(`/${locale}/courses/${course?.id}`)} className="w-full h-16 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
                       Accéder à mes leçons
                   </Button>
               </div>

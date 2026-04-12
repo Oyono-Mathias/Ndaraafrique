@@ -20,6 +20,58 @@ async function verifyAdminOrThrow(uid: string) {
     }
 }
 
+/** 💰 ACHAT DE COURS VIA WALLET (Transactionnel) */
+export async function purchaseCourseWithWalletAction({
+    userId,
+    courseId,
+    amount
+}: {
+    userId: string;
+    courseId: string;
+    amount: number;
+}) {
+    try {
+        const db = getAdminDb();
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        const userData = userSnap.data() as NdaraUser;
+
+        if (userData.balance < amount) {
+            return { success: false, error: "Solde insuffisant." };
+        }
+
+        const courseSnap = await db.collection('courses').doc(courseId).get();
+        const courseData = courseSnap.data();
+
+        const result = await processNdaraPayment({
+            transactionId: `WAL-PUR-${Date.now()}-${userId.substring(0,5)}`,
+            provider: 'wallet',
+            amount: amount,
+            currency: 'XOF',
+            metadata: { 
+                userId, 
+                courseId, 
+                courseTitle: courseData?.title,
+                type: 'course_purchase' 
+            }
+        });
+
+        if (result.success) {
+            await sendUserNotification(userId, {
+                text: `Félicitations ! Vous avez acquis la formation "${courseData?.title}" via votre wallet.`,
+                type: 'success',
+                link: `/student/courses/${courseId}`
+            });
+            return { success: true };
+        }
+        
+        return { success: false, error: "Erreur lors de la transaction." };
+    } catch (e: any) {
+        console.error("[WALLET_PURCHASE_ERROR]:", e.message);
+        return { success: false, error: e.message };
+    }
+}
+
 /** 💰 RECHARGER LE WALLET RÉEL (Action Admin Sécurisée) */
 export async function rechargeUserWallet({ 
     userId, 
@@ -38,7 +90,7 @@ export async function rechargeUserWallet({
         if (amount <= 0) return { success: false, error: "error.amount_positive" };
 
         const result = await processNdaraPayment({
-            transactionId: `ADM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            transactionId: `ADM-TOP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
             provider: 'admin_recharge',
             amount: amount,
             currency: 'XOF',
@@ -75,7 +127,7 @@ export async function createEliteDemoAccountAction({ role, adminId }: { role: Us
     const password = "Password123!";
     
     try {
-        const userRecord = await auth.createUser({
+        const userRecord = await auth.create({
             email,
             password,
             displayName: `Elite Demo ${role.toUpperCase()}`,

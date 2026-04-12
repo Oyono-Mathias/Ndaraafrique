@@ -1,8 +1,8 @@
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { NdaraPaymentDetails, Course, Settings } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
+import type { NdaraPaymentDetails, Course } from '@/lib/types';
 
 /**
  * @fileOverview Processeur financier centralisé et idempotent.
@@ -28,9 +28,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         }
 
         const userRef = db.collection('users').doc(metadata.userId);
-        const [userSnap] = await Promise.all([
-            transaction.get(userRef)
-        ]);
+        const userSnap = await transaction.get(userRef);
 
         if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
 
@@ -47,6 +45,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             date: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
             gatewayTransactionId: gatewayTransactionId || transactionId,
+            courseId: metadata.courseId || 'WALLET_TOPUP',
+            courseTitle: isTopup ? 'Recharge Portefeuille' : (metadata.courseTitle || 'Achat formation'),
             metadata: { ...metadata }
         };
 
@@ -88,8 +88,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                 // Distribuer la part instructeur (si applicable)
                 if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
                     const instructorRef = db.collection('users').doc(courseData.instructorId);
-                    // On applique une commission standard de 70% (à dynamiser plus tard via settings)
-                    const instructorShare = (Number(amount) * 70) / 100;
+                    // On applique une commission standard de 70% pour l'expert
+                    const instructorShare = (Number(amount) * 0.7);
                     transaction.update(instructorRef, {
                         balance: FieldValue.increment(instructorShare)
                     });
@@ -101,7 +101,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         const auditRef = db.collection('admin_audit_logs').doc();
         transaction.set(auditRef, {
             eventType: isTopup ? 'wallet.recharge' : 'course.purchase',
-            adminId: provider === 'admin_recharge' ? metadata.adminId : 'SYSTEM',
+            adminId: provider === 'admin_recharge' ? (metadata.adminId || 'ADMIN') : 'SYSTEM',
             target: { id: metadata.userId, type: 'user' },
             details: `${isTopup ? 'Crédit' : 'Achat'} de ${amount} ${currency} via ${provider}`,
             timestamp: FieldValue.serverTimestamp()
