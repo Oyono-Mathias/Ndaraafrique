@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur MeSomb utilisant le client de signature cryptographique.
+ * @fileOverview Actions serveur pour l'intégration MeSomb via Signature HMAC.
  */
 
 import { randomUUID } from 'crypto';
@@ -25,7 +25,7 @@ interface MeSombPaymentParams {
   courseId?: string;
 }
 
-/** 💰 Récupérer le solde réel du compte marchand (Admin Only) */
+/** 💰 Récupérer le solde réel du compte marchand */
 export async function getMeSombBalanceAction(adminId: string) {
     try {
         const db = getAdminDb();
@@ -35,7 +35,7 @@ export async function getMeSombBalanceAction(adminId: string) {
             throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
         }
 
-        // Endpoint officiel pour le solde avec signature HMAC
+        // Utilise le client de signature centralisé
         const data = await fetchMeSomb('payment/balance/', 'GET');
 
         return { 
@@ -49,7 +49,7 @@ export async function getMeSombBalanceAction(adminId: string) {
     }
 }
 
-/** 💸 Initier un paiement Mobile Money (Cameroun) */
+/** 💸 Initier un paiement Mobile Money */
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
   try {
     const db = getAdminDb();
@@ -64,7 +64,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     if (!userData) return { success: false, error: "Utilisateur introuvable." };
 
-    // Mode Simulation (Aligné sur Admin Settings)
+    // Mode Simulation (Configuré en Admin)
     if (settings?.payments?.paymentMode === 'test') {
         return { 
             success: true, 
@@ -73,7 +73,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         };
     }
 
-    // Standardisation du numéro pour le Cameroun (237)
+    // Standardisation du numéro pour le Cameroun
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
         cleanPhone = '237' + cleanPhone;
@@ -93,10 +93,10 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     };
 
-    // Appel API avec signature HMAC
+    // Utilise le client de signature centralisé
     const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
-    // Enregistrement de la transaction en attente dans Firestore
+    // Enregistrement de la transaction en attente
     await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
@@ -108,18 +108,18 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         courseId: params.courseId || 'WALLET_TOPUP',
         courseTitle: params.type === 'wallet_topup' ? 'Recharge Portefeuille' : 'Achat formation',
         createdAt: FieldValue.serverTimestamp(),
-        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id }
+        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id || data.id }
     });
 
     return { 
         success: true, 
         type: 'REAL', 
         transactionId: internalRef, 
-        message: "Veuillez valider l'opération sur votre téléphone via le prompt USSD." 
+        message: "Veuillez valider l'opération sur votre téléphone." 
     };
 
   } catch (error: any) {
-    console.error("[MeSomb Payment Error]", error.message);
+    console.error("[MeSomb Payment Action Error]", error.message);
     return { success: false, error: error.message };
   }
 }

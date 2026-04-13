@@ -18,11 +18,11 @@ export async function POST(req: Request) {
     const txnData = body.transaction || body;
     const extra = txnData.metadata || txnData.extra || body.extra;
     
-    // Récupération de notre référence interne
+    // Récupération de notre référence interne stockée lors de l'initiation
     const internalRef = extra?.internalReference;
 
     if (!internalRef) {
-        console.error(`[${requestId}] Error: Missing internalReference in webhook payload.`);
+        console.error(`[${requestId}] Error: Missing internalReference in payload.`);
         return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
@@ -30,18 +30,18 @@ export async function POST(req: Request) {
     const paymentDoc = await db.collection('payments').doc(internalRef).get();
     
     if (!paymentDoc.exists) {
-        console.error(`[${requestId}] Transaction ${internalRef} introuvable dans Firestore.`);
+        console.error(`[${requestId}] Transaction ${internalRef} introuvable.`);
         return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
     const storedData = paymentDoc.data();
 
-    // 🛡️ DOUBLE-VÉRIFICATION SÉCURISÉE (Back-check API avec Signature HMAC)
+    // 🛡️ DOUBLE-VÉRIFICATION SÉCURISÉE (Signature HMAC requise ici aussi)
     const gatewayId = txnData.pk || txnData.id || txnData.guid;
     const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, 'GET');
 
     if (officialTxn.status !== 'SUCCESS') {
-        console.log(`[${requestId}] Transaction non-réussie selon l'API MeSomb : ${officialTxn.status}`);
+        console.log(`[${requestId}] Transaction non-réussie selon l'API : ${officialTxn.status}`);
         await db.collection('payments').doc(internalRef).update({
             status: 'failed',
             error: `MeSomb Status: ${officialTxn.status}`,
@@ -64,11 +64,11 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log(`[${requestId}] ✅ Paiement validé et traité.`);
+    console.log(`[${requestId}] ✅ Paiement validé avec succès.`);
     return NextResponse.json({ processed: true });
 
   } catch (error: any) {
-    console.error(`[${requestId}] Webhook Error:`, error.message);
+    console.error(`[${requestId}] Webhook Fatal Error:`, error.message);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

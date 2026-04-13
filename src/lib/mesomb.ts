@@ -2,38 +2,45 @@
 import crypto from "crypto";
 
 /**
- * @fileOverview Client MeSomb avec SIGNATURE OFFICIELLE (HMAC SHA1).
- * 🔒 Sécurisé : Exécution uniquement côté serveur.
- * 🛡️ Anti-Rejeu : Utilisation de Nonce et Timestamp.
+ * @fileOverview Client MeSomb avec SIGNATURE HMAC SHA1 OFFICIELLE.
+ * 🔒 SÉCURITÉ : Exécution uniquement côté serveur (Server-side only).
+ * 🛡️ PROTOCOLE : Conforme aux exigences de production MeSomb.
  */
 
 const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY;
 const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
 const APP_KEY = process.env.MESOMB_APPLICATION_KEY;
 
+/**
+ * Client API centralisé pour MeSomb utilisant la signature cryptographique.
+ */
 export async function fetchMeSomb(endpoint: string, method = "POST", body: any = {}) {
-  // Logs de diagnostic serveur
+  // 1. Validation de la configuration
   if (!ACCESS_KEY || !SECRET_KEY || !APP_KEY) {
-    console.error("[MeSomb] CONFIG ERROR: Missing ACCESS_KEY, SECRET_KEY or APPLICATION_KEY.");
-    throw new Error("Configuration MeSomb incomplète sur le serveur.");
+    console.error("[MeSomb] CRITICAL CONFIG ERROR: Missing keys in environment.");
+    throw new Error("Le service de paiement n'est pas configuré sur ce serveur.");
   }
 
   const cleanEndpoint = endpoint.replace(/^\/+/, "");
   const url = `https://mesomb.hachther.com/api/v1.1/${cleanEndpoint}`;
 
+  // 2. Préparation des éléments de signature
   const nonce = Math.random().toString(36).substring(2, 15);
   const date = new Date().toISOString();
-  const bodyString = method !== "GET" ? JSON.stringify(body) : "";
+  
+  // Le corps doit être vide pour les requêtes GET lors de la signature
+  const bodyString = method === "GET" ? "" : JSON.stringify(body);
 
-  // 🔐 CONSTRUCTION DE LA SIGNATURE OFFICIELLE MeSomb
-  // Format requis : METHOD\nURL\nDATE\nNONCE\nBODY
+  // 3. Construction du message de signature (Ordre strict : METHOD\nURL\nDATE\nNONCE\nBODY)
   const message = `${method}\n${url}\n${date}\n${nonce}\n${bodyString}`;
 
+  // 4. Génération de la signature HMAC SHA1
   const signature = crypto
     .createHmac("sha1", SECRET_KEY)
     .update(message)
     .digest("hex");
 
+  // 5. En-têtes de sécurité officiels
   const headers = {
     "Content-Type": "application/json",
     "Accept": "application/json",
@@ -53,12 +60,12 @@ export async function fetchMeSomb(endpoint: string, method = "POST", body: any =
       cache: "no-store",
     });
 
-    // Gestion des réponses non-JSON (erreurs serveurs MeSomb)
+    // Protection contre les réponses HTML (erreurs 404/500 du serveur distant)
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("[MeSomb ERROR] HTML/Text Response:", text.substring(0, 200));
-        throw new Error(`Réponse invalide du serveur MeSomb (Status ${response.status})`);
+        const errorText = await response.text();
+        console.error("[MeSomb ERROR] Received non-JSON response:", errorText.substring(0, 300));
+        throw new Error("Réponse invalide du serveur de paiement (Format incorrect).");
     }
 
     const data = await response.json();
