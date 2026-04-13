@@ -1,43 +1,18 @@
-
 'use server';
 
 /**
  * @fileOverview Actions serveur pour MeSomb utilisant le client de signature.
  */
 
-import { randomUUID } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { fetchMeSomb } from '@/lib/mesomb';
-import type { NdaraUser } from '@/lib/types';
+import { randomUUID } from 'crypto';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
   | { success: true; type: 'SIMULATED'; message: string }
   | { success: false; error: string };
-
-/** 💰 Récupérer le solde réel du compte marchand */
-export async function getMeSombBalanceAction(adminId: string) {
-    try {
-        const db = getAdminDb();
-        const adminDoc = await db.collection('users').doc(adminId).get();
-        
-        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-            throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
-        }
-
-        // Utilisation du client de signature centralisé
-        const data = await fetchMeSomb('payment/balance/', 'GET');
-
-        return { 
-            success: true, 
-            balance: data.balance, 
-            currency: data.currency || 'XAF' 
-        };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
 
 /** 💸 Initier un paiement Mobile Money */
 export async function initiateMeSombPayment(params: {
@@ -53,7 +28,7 @@ export async function initiateMeSombPayment(params: {
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data() as any;
 
-    // Mode Simulation (Configuré en Admin)
+    // Mode Simulation
     if (settings?.payments?.paymentMode === 'test') {
         return { 
             success: true, 
@@ -62,7 +37,7 @@ export async function initiateMeSombPayment(params: {
         };
     }
 
-    // Standardisation du numéro pour le Cameroun
+    // Standardisation du numéro
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
         cleanPhone = '237' + cleanPhone;
@@ -76,11 +51,9 @@ export async function initiateMeSombPayment(params: {
         receiver: cleanPhone,
         currency: 'XAF',
         nonce: Math.random().toString(36).substring(2, 15),
-        extra: { 
-            internalReference: internalRef,
-        }
     };
 
+    // Utilisation du client centralisé avec signature
     const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
     // Enregistrement de la transaction en attente
@@ -106,6 +79,29 @@ export async function initiateMeSombPayment(params: {
     };
 
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error("[MeSomb Action Error]", error.message);
+    return { success: false, error: error.message || "Erreur de configuration serveur." };
   }
+}
+
+/** 💰 Récupérer le solde réel du compte marchand */
+export async function getMeSombBalanceAction(adminId: string) {
+    try {
+        const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        
+        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+            throw new Error("UNAUTHORIZED");
+        }
+
+        const data = await fetchMeSomb('payment/balance/', 'GET');
+
+        return { 
+            success: true, 
+            balance: data.balance, 
+            currency: data.currency || 'XAF' 
+        };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }
