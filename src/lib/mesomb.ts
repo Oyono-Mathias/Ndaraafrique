@@ -1,3 +1,4 @@
+
 import crypto from "crypto";
 
 /**
@@ -11,23 +12,21 @@ const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
 const APP_KEY = process.env.MESOMB_APPLICATION_KEY;
 
 export async function fetchMeSomb(endpoint: string, method = "POST", body: any = {}) {
-  // Logs de diagnostic serveur (invisibles côté client)
+  // Logs de diagnostic serveur
   if (!ACCESS_KEY || !SECRET_KEY || !APP_KEY) {
-    console.error("[MeSomb] CONFIG ERROR: Missing keys in environment.");
-    throw new Error("Le service de paiement n'est pas configuré sur ce serveur (Vérifiez les clés ACCESS, SECRET et APPLICATION).");
+    console.error("[MeSomb] CONFIG ERROR: Missing ACCESS_KEY, SECRET_KEY or APPLICATION_KEY.");
+    throw new Error("Configuration MeSomb incomplète sur le serveur.");
   }
 
-  // Nettoyage de l'endpoint et construction de l'URL
   const cleanEndpoint = endpoint.replace(/^\/+/, "");
   const url = `https://mesomb.hachther.com/api/v1.1/${cleanEndpoint}`;
 
-  // Génération des éléments de sécurité
   const nonce = Math.random().toString(36).substring(2, 15);
   const date = new Date().toISOString();
   const bodyString = method !== "GET" ? JSON.stringify(body) : "";
 
   // 🔐 CONSTRUCTION DE LA SIGNATURE OFFICIELLE MeSomb
-  // Format: METHOD\nURL\nDATE\nNONCE\nBODY
+  // Format requis : METHOD\nURL\nDATE\nNONCE\nBODY
   const message = `${method}\n${url}\n${date}\n${nonce}\n${bodyString}`;
 
   const signature = crypto
@@ -54,16 +53,15 @@ export async function fetchMeSomb(endpoint: string, method = "POST", body: any =
       cache: "no-store",
     });
 
+    // Gestion des réponses non-JSON (erreurs serveurs MeSomb)
     const contentType = response.headers.get("content-type");
-    let data;
-
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      console.error("[MeSomb ERROR] Non-JSON Response:", text.substring(0, 200));
-      throw new Error(`Réponse inattendue du serveur MeSomb (Status ${response.status})`);
+    if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("[MeSomb ERROR] HTML/Text Response:", text.substring(0, 200));
+        throw new Error(`Réponse invalide du serveur MeSomb (Status ${response.status})`);
     }
+
+    const data = await response.json();
 
     if (!response.ok) {
       console.error("[MeSomb API ERROR]", data);

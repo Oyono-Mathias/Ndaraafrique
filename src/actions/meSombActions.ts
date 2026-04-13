@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -34,7 +35,7 @@ export async function getMeSombBalanceAction(adminId: string) {
             throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
         }
 
-        // Endpoint officiel pour le solde (nécessite la signature HMAC)
+        // Endpoint officiel pour le solde avec signature HMAC
         const data = await fetchMeSomb('payment/balance/', 'GET');
 
         return { 
@@ -63,7 +64,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     if (!userData) return { success: false, error: "Utilisateur introuvable." };
 
-    // Mode Simulation : Pas d'appel API, validation directe
+    // Mode Simulation (Aligné sur Admin Settings)
     if (settings?.payments?.paymentMode === 'test') {
         return { 
             success: true, 
