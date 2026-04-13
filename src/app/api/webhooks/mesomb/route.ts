@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
@@ -6,7 +5,7 @@ import { fetchMeSomb } from '@/lib/mesomb';
 
 /**
  * @fileOverview Webhook MeSomb sécurisé Ndara Afrique.
- * ✅ VALIDATION : Utilise le client de signature pour le back-check.
+ * ✅ VALIDATION : Utilise le client de signature HMAC pour vérifier le statut réel.
  */
 
 export async function POST(req: Request) {
@@ -18,10 +17,11 @@ export async function POST(req: Request) {
     const txnData = body.transaction || body;
     const extra = txnData.metadata || txnData.extra || body.extra;
     
+    // Récupération de notre référence interne
     const internalRef = extra?.internalReference;
 
     if (!internalRef) {
-        console.error(`[${requestId}] Error: Missing internalReference.`);
+        console.error(`[${requestId}] Error: Missing internalReference in webhook payload.`);
         return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
@@ -29,18 +29,18 @@ export async function POST(req: Request) {
     const paymentDoc = await db.collection('payments').doc(internalRef).get();
     
     if (!paymentDoc.exists) {
-        console.error(`[${requestId}] Transaction ${internalRef} introuvable.`);
+        console.error(`[${requestId}] Transaction ${internalRef} introuvable dans Firestore.`);
         return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
     const storedData = paymentDoc.data();
 
-    // DOUBLE-VÉRIFICATION API (Le cerveau de la sécurité)
+    // 🛡️ DOUBLE-VÉRIFICATION SÉCURISÉE (Back-check API avec Signature HMAC)
     const gatewayId = txnData.pk || txnData.id || txnData.guid;
     const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, 'GET');
 
     if (officialTxn.status !== 'SUCCESS') {
-        console.log(`[${requestId}] Transaction non-réussie : ${officialTxn.status}`);
+        console.log(`[${requestId}] Transaction non-réussie selon l'API MeSomb : ${officialTxn.status}`);
         await db.collection('payments').doc(internalRef).update({
             status: 'failed',
             error: `MeSomb Status: ${officialTxn.status}`,
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'ignored' });
     }
 
-    // DÉCLENCHEMENT DU PROCESSEUR FINANCIER
+    // ✅ DÉCLENCHEMENT DU PROCESSEUR FINANCIER NDARA
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log(`[${requestId}] ✅ Paiement validé.`);
+    console.log(`[${requestId}] ✅ Paiement validé et traité.`);
     return NextResponse.json({ processed: true });
 
   } catch (error: any) {

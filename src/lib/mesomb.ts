@@ -1,4 +1,3 @@
-
 import crypto from "crypto";
 
 /**
@@ -12,19 +11,13 @@ const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
 const APP_KEY = process.env.MESOMB_APPLICATION_KEY;
 
 export async function fetchMeSomb(endpoint: string, method = "POST", body: any = {}) {
-  // Logs de diagnostic (Server-side only)
-  console.log("MeSomb Config Check:", {
-    hasAccess: !!ACCESS_KEY,
-    hasSecret: !!SECRET_KEY,
-    hasApp: !!APP_KEY
-  });
-
+  // Logs de diagnostic serveur (invisibles côté client)
   if (!ACCESS_KEY || !SECRET_KEY || !APP_KEY) {
     console.error("[MeSomb] CONFIG ERROR: Missing keys in environment.");
-    throw new Error("Le service de paiement n'est pas configuré sur ce serveur.");
+    throw new Error("Le service de paiement n'est pas configuré sur ce serveur (Vérifiez les clés ACCESS, SECRET et APPLICATION).");
   }
 
-  // Nettoyage de l'endpoint
+  // Nettoyage de l'endpoint et construction de l'URL
   const cleanEndpoint = endpoint.replace(/^\/+/, "");
   const url = `https://mesomb.hachther.com/api/v1.1/${cleanEndpoint}`;
 
@@ -33,7 +26,7 @@ export async function fetchMeSomb(endpoint: string, method = "POST", body: any =
   const date = new Date().toISOString();
   const bodyString = method !== "GET" ? JSON.stringify(body) : "";
 
-  // 🔐 CONSTRUCTION DE LA SIGNATURE OFFICIELLE
+  // 🔐 CONSTRUCTION DE LA SIGNATURE OFFICIELLE MeSomb
   // Format: METHOD\nURL\nDATE\nNONCE\nBODY
   const message = `${method}\n${url}\n${date}\n${nonce}\n${bodyString}`;
 
@@ -69,7 +62,7 @@ export async function fetchMeSomb(endpoint: string, method = "POST", body: any =
     } else {
       const text = await response.text();
       console.error("[MeSomb ERROR] Non-JSON Response:", text.substring(0, 200));
-      throw new Error(`Réponse inattendue du serveur (Status ${response.status})`);
+      throw new Error(`Réponse inattendue du serveur MeSomb (Status ${response.status})`);
     }
 
     if (!response.ok) {
