@@ -1,10 +1,10 @@
-
-'use client';
+'use server';
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb et consultation du solde.
  * ✅ PROD : Utilisation des clés de production Mathias.
  * ✅ AUTH : Token Auth (X-MeSomb-Application + Token API_KEY).
+ * ✅ SÉCURITÉ : Directive 'use server' impérative pour les imports Node.js.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
