@@ -2,12 +2,10 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur MeSomb pour Ndara Afrique.
- * ✅ RÉSOLU : Utilisation du client centralisé fetchMeSomb.
- * ✅ RÉSOLU : Headers Token Auth standardisés.
+ * @fileOverview Actions serveur MeSomb utilisant le client de signature.
  */
 
-import { randomUUID, randomBytes } from 'crypto';
+import { randomUUID } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { fetchMeSomb } from '@/lib/mesomb';
@@ -27,10 +25,8 @@ interface MeSombPaymentParams {
   courseId?: string;
 }
 
-/**
- * 💰 Récupérer le solde réel du compte marchand MeSomb (Action Admin)
- */
-export async function getMeSombBalanceAction(adminId: string): Promise<{ success: boolean; balance?: number; currency?: string; error?: string }> {
+/** 💰 Récupérer le solde réel (Admin) */
+export async function getMeSombBalanceAction(adminId: string) {
     try {
         const db = getAdminDb();
         const adminDoc = await db.collection('users').doc(adminId).get();
@@ -39,28 +35,23 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
             throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
         }
 
-        // Appel via le client centralisé
-        const data = await fetchMeSomb('payment/balance/');
+        const data = await fetchMeSomb('payment/balance/', 'GET');
 
         return { 
             success: true, 
             balance: data.balance, 
             currency: data.currency || 'XAF' 
         };
-
     } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
 
-/**
- * 💸 Initier un paiement Mobile Money
- */
+/** 💸 Initier un paiement Mobile Money */
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
   try {
     const db = getAdminDb();
     
-    // 1. Charger les réglages
     const [settingsSnap, userSnap] = await Promise.all([
         db.collection('settings').doc('global').get(),
         db.collection('users').doc(params.userId).get()
@@ -71,7 +62,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     if (!userData) return { success: false, error: "Utilisateur introuvable." };
 
-    // 2. Mode Simulation
+    // Mode Simulation
     if (settings?.payments?.paymentMode === 'test') {
         return { 
             success: true, 
@@ -80,37 +71,29 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         };
     }
 
-    // 3. Préparation du numéro (Standard Cameroun +237)
+    // Standardisation numéro Cameroun
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
         cleanPhone = '237' + cleanPhone;
     }
 
     const internalRef = randomUUID();
-    const secretNonce = randomBytes(32).toString('hex');
     const currency = 'XAF'; 
 
-    // 4. Appel API Collect via client centralisé
     const payload = {
         amount: params.amount,
         service: params.service, 
         receiver: cleanPhone,
         currency: currency,
-        nonce: randomBytes(16).toString('hex'),
+        nonce: Math.random().toString(36).substring(2, 15),
         extra: { 
-            internalReference: internalRef, 
-            securityToken: secretNonce 
+            internalReference: internalRef,
         }
     };
 
-    console.log(`[MeSomb] Initiation transaction ${internalRef} pour ${params.amount} ${currency}`);
+    const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
-    const data = await fetchMeSomb('payment/collect/', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    });
-
-    // 5. Enregistrement de la transaction en attente
+    // Enregistrement transaction en attente
     await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
@@ -122,7 +105,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         courseId: params.courseId || 'WALLET_TOPUP',
         courseTitle: params.type === 'wallet_topup' ? 'Recharge Portefeuille' : 'Achat formation',
         createdAt: FieldValue.serverTimestamp(),
-        security: { nonce: secretNonce },
         metadata: { operator: params.service, phone: cleanPhone }
     });
 
