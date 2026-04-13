@@ -1,13 +1,15 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur pour MeSomb utilisant le client de signature.
+ * @fileOverview Actions serveur pour MeSomb utilisant le client de signature cryptographique.
+ * ✅ SÉCURITÉ : Isolation totale des clés et du moteur de signature.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { fetchMeSomb } from '@/lib/mesomb';
 import { randomUUID } from 'crypto';
+import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
   | { success: true; type: 'REAL'; transactionId: string; message: string }
@@ -28,16 +30,32 @@ export async function initiateMeSombPayment(params: {
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data() as any;
 
-    // Mode Simulation
-    if (settings?.payments?.paymentMode === 'test') {
+    const isTestMode = settings?.payments?.paymentMode === 'test';
+
+    // 🧪 MODE SIMULATION (TEST)
+    if (isTestMode) {
+        // En mode test, on déclenche quand même le processeur pour que l'user puisse voir le crédit simulé
+        await processNdaraPayment({
+            transactionId: `SIM-${Date.now()}`,
+            provider: 'simulated',
+            amount: params.amount,
+            currency: 'XAF',
+            metadata: {
+                userId: params.userId,
+                type: params.type || 'course_purchase',
+                courseId: params.courseId || 'WALLET_TOPUP',
+                isSimulated: true
+            }
+        });
+
         return { 
             success: true, 
             type: 'SIMULATED', 
-            message: "Mode TEST : Votre paiement a été simulé avec succès." 
+            message: "MODE TEST : Crédit virtuel ajouté pour vos essais." 
         };
     }
 
-    // Standardisation du numéro
+    // 🚀 MODE PRODUCTION (RÉEL)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
         cleanPhone = '237' + cleanPhone;
@@ -53,10 +71,9 @@ export async function initiateMeSombPayment(params: {
         nonce: Math.random().toString(36).substring(2, 15),
     };
 
-    // Utilisation du client centralisé avec signature
     const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
-    // Enregistrement de la transaction en attente
+    // Enregistrement de la transaction réelle en attente
     await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
@@ -66,9 +83,8 @@ export async function initiateMeSombPayment(params: {
         provider: 'mesomb',
         type: params.type || 'course_purchase',
         courseId: params.courseId || 'WALLET_TOPUP',
-        courseTitle: params.type === 'wallet_topup' ? 'Recharge Portefeuille' : 'Achat formation',
         createdAt: FieldValue.serverTimestamp(),
-        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id }
+        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id, isSimulated: false }
     });
 
     return { 
@@ -84,7 +100,7 @@ export async function initiateMeSombPayment(params: {
   }
 }
 
-/** 💰 Récupérer le solde réel du compte marchand */
+/** 💰 Récupérer le solde réel du compte marchand MeSomb */
 export async function getMeSombBalanceAction(adminId: string) {
     try {
         const db = getAdminDb();

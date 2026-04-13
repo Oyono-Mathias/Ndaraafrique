@@ -7,7 +7,7 @@ import type { NdaraPaymentDetails, Course } from '@/lib/types';
 /**
  * @fileOverview Processeur financier centralisé et idempotent.
  * ✅ SÉCURITÉ : Gère les crédits (topup) et débits (purchase) de manière atomique.
- * ✅ AUDIT : Journalise chaque succès pour une transparence totale.
+ * ✅ HYBRIDE : Distingue les flux RÉELS (balance) des flux SIMULÉS (virtualBalance).
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -22,9 +22,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         const paymentDocRef = db.collection('payments').doc(String(transactionId));
         const paymentSnap = await transaction.get(paymentDocRef);
         
-        // 🛡️ IDEMPOTENCE : Si déjà marqué "completed", on ne fait rien pour éviter les doubles crédits
+        // 🛡️ IDEMPOTENCE : Éviter les doubles crédits
         if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
-            console.log(`[Processor] Transaction ${transactionId} déjà complétée. Ignoré.`);
             return { success: true, alreadyProcessed: true };
         }
 
@@ -33,9 +32,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
         if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
 
+        // Déterminer si la transaction est réelle ou une simulation (Mode Test)
+        const isSimulated = metadata.isSimulated === true || provider === 'simulated';
         const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-        // 1. Enregistrement / Mise à jour du reçu de paiement
+        // 1. Enregistrement du reçu
         const paymentData = {
             id: String(transactionId),
             userId: metadata.userId,
@@ -43,6 +44,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             currency: currency || 'XOF',
             provider: provider,
             status: 'completed',
+            isSimulated,
             date: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
             gatewayTransactionId: gatewayTransactionId || transactionId,
@@ -54,13 +56,14 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         transaction.set(paymentDocRef, paymentData, { merge: true });
 
         if (isTopup) {
-            // 2a. CRÉDITER LE WALLET
+            // 2a. CRÉDITER LE WALLET (Séparation stricte)
+            const fieldToUpdate = isSimulated ? 'virtualBalance' : 'balance';
             transaction.update(userRef, { 
-                balance: FieldValue.increment(Number(amount)),
+                [fieldToUpdate]: FieldValue.increment(Number(amount)),
                 updatedAt: FieldValue.serverTimestamp()
             });
         } else if (metadata.courseId) {
-            // 2b. CRÉER L'INSCRIPTION AU COURS
+            // 2b. INSCRIPTION AU COURS
             const courseRef = db.collection('courses').doc(metadata.courseId);
             const courseSnap = await transaction.get(courseRef);
             
@@ -75,18 +78,18 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                     instructorId: courseData.instructorId,
                     status: 'active',
                     progress: 0,
+                    isSimulated,
                     enrollmentDate: FieldValue.serverTimestamp(),
                     lastAccessedAt: FieldValue.serverTimestamp(),
                     priceAtEnrollment: Number(amount)
                 });
 
-                // Incrémenter le compteur du cours
                 transaction.update(courseRef, {
                     participantsCount: FieldValue.increment(1)
                 });
 
-                // Rémunération automatique de l'expert (70%)
-                if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
+                // Rémunération expert (uniquement si flux RÉEL)
+                if (!isSimulated && courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
                     const instructorRef = db.collection('users').doc(courseData.instructorId);
                     const instructorShare = (Number(amount) * 0.7);
                     transaction.update(instructorRef, {
@@ -96,22 +99,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             }
         }
 
-        // 3. LOG D'AUDIT IMMUABLE
-        const auditRef = db.collection('admin_audit_logs').doc();
-        transaction.set(auditRef, {
-            eventType: isTopup ? 'wallet.recharge' : 'course.purchase',
-            userId: metadata.userId,
-            amount: Number(amount),
-            provider,
-            details: `Succès transaction ${transactionId} (${provider})`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
         return { success: true };
     });
 
   } catch (error: any) {
-    console.error("❌ [Processor] Critical Failure:", error.message);
+    console.error("❌ [Processor] Failure:", error.message);
     throw error;
   }
 }
