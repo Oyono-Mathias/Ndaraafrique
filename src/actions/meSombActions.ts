@@ -1,9 +1,9 @@
+
 'use server';
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb et consultation du solde.
- * ✅ AUDIT : Validation des clés API et logs de diagnostic.
- * ✅ FORMAT : Correction du header Authorization (Basic Base64).
+ * ✅ AUTH : Passage au format Token Auth (X-MeSomb-Application + Token API_KEY).
  * ✅ GÉO : Optimisation pour le Cameroun (+237 / XAF).
  */
 
@@ -38,21 +38,18 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
             throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
         }
 
-        const APP_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
-        const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
-        const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
+        const APP_KEY = process.env.MESOMB_APP_KEY?.trim();
+        const API_KEY = process.env.MESOMB_API_KEY?.trim();
 
-        if (!APP_KEY || !ACCESS_KEY || !SECRET_KEY) {
-            throw new Error("Configuration MeSomb manquante sur le serveur.");
+        if (!APP_KEY || !API_KEY) {
+            throw new Error("Configuration MeSomb manquante (API_KEY ou APP_KEY).");
         }
-
-        const credentials = `${APP_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
-        const encodedAuth = Buffer.from(credentials).toString('base64');
 
         const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/balance', {
             method: 'GET',
             headers: {
-                'Authorization': `Basic ${encodedAuth}`,
+                'Authorization': `Token ${API_KEY}`,
+                'X-MeSomb-Application': APP_KEY,
                 'accept': 'application/json',
             },
             cache: 'no-store'
@@ -77,16 +74,13 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
-  const APP_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
-  const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
-  const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
+  const APP_KEY = process.env.MESOMB_APP_KEY?.trim();
+  const API_KEY = process.env.MESOMB_API_KEY?.trim();
 
-  // 📡 LOGS DE DIAGNOSTIC (Visible uniquement dans les logs serveur)
-  console.log("[MeSomb Audit] Checking API Keys...", {
+  // 📡 LOGS DE DIAGNOSTIC
+  console.log("[MeSomb Migration Check]", {
     hasAppKey: !!APP_KEY,
-    hasAccessKey: !!ACCESS_KEY,
-    hasSecretKey: !!SECRET_KEY,
-    env: process.env.NODE_ENV
+    hasApiKey: !!API_KEY
   });
 
   try {
@@ -103,7 +97,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     if (!userData) return { success: false, error: "Utilisateur introuvable." };
 
-    // 2. Mode Simulation (Déterminé par les réglages Admin)
+    // 2. Mode Simulation
     if (settings?.payments?.paymentMode === 'test') {
         console.log(`[MeSomb Simulation] User: ${params.userId} | Amount: ${params.amount}`);
         return { 
@@ -113,10 +107,10 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         };
     }
 
-    // 3. Validation Configuration Critique
-    if (!APP_KEY || !ACCESS_KEY || !SECRET_KEY) {
-        console.error("[MeSomb] CRITICAL: API Keys missing in Vercel environment.");
-        return { success: false, error: "Le service de paiement est indisponible (Erreur Config Serveur)." };
+    // 3. Validation Configuration
+    if (!APP_KEY || !API_KEY) {
+        console.error("[MeSomb] CRITICAL: Keys missing in environment.");
+        return { success: false, error: "Le service de paiement est indisponible (Server Config Error)." };
     }
 
     // 4. Préparation du numéro (Standard Cameroun +237)
@@ -128,7 +122,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     // 5. Paramètres Financiers
     const internalRef = randomUUID();
     const secretNonce = randomBytes(32).toString('hex');
-    // Pour le Cameroun, on privilégie XAF si MeSomb est utilisé
     const currency = 'XAF'; 
 
     const transactionData = {
@@ -150,16 +143,12 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     };
 
-    // Enregistrement de l'intention de paiement
     await db.collection('payments').doc(internalRef).set(transactionData);
 
-    // 6. Construction de l'appel API MeSomb
-    const credentials = `${APP_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
-    const encodedAuth = Buffer.from(credentials).toString('base64');
-
+    // 6. Construction de l'appel API MeSomb (Token Auth)
     const payload = {
         amount: params.amount,
-        service: params.service, // MTN, ORANGE, WAVE
+        service: params.service, 
         receiver: cleanPhone,
         currency: currency,
         nonce: randomBytes(16).toString('hex'),
@@ -169,12 +158,11 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     };
 
-    console.log(`[MeSomb Request] Dispatching collect for ${internalRef} to ${cleanPhone}`);
-
     const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${encodedAuth}`,
+        'Authorization': `Token ${API_KEY}`,
+        'X-MeSomb-Application': APP_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
@@ -193,7 +181,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
       const errorMsg = data.detail || data.message || "La transaction a été refusée par l'opérateur.";
       console.error("[MeSomb API Error]", data);
       
-      // Mise à jour de l'échec pour l'historique
       await db.collection('payments').doc(internalRef).update({ 
           status: 'failed', 
           error: errorMsg,
@@ -204,6 +191,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     }
   } catch (error: any) {
     console.error("[MeSomb Fatal Error]:", error.message);
-    return { success: false, error: "Connexion impossible avec la passerelle de paiement. Vérifiez votre réseau." };
+    return { success: false, error: "Connexion impossible avec la passerelle de paiement." };
   }
 }

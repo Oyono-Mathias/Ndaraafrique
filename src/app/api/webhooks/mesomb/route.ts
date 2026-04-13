@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
@@ -5,7 +6,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 /**
  * @fileOverview Webhook MeSomb sécurisé.
  * ✅ BACK-CHECK : Double vérification systématique via API MeSomb.
- * ✅ AUTH : Utilisation du format Basic applicationKey:accessKey:secretKey.
+ * ✅ AUTH : Format Token Auth (Token API_KEY + X-MeSomb-Application).
  */
 
 export async function POST(req: Request) {
@@ -13,11 +14,10 @@ export async function POST(req: Request) {
   console.log(`[${requestId}] 📨 Webhook MeSomb reçu.`);
 
   try {
-    const APP_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
-    const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
-    const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
+    const APP_KEY = process.env.MESOMB_APP_KEY?.trim();
+    const API_KEY = process.env.MESOMB_API_KEY?.trim();
 
-    if (!APP_KEY || !ACCESS_KEY || !SECRET_KEY) {
+    if (!APP_KEY || !API_KEY) {
         console.error(`[${requestId}] ❌ Config serveur manquante pour validation.`);
         return NextResponse.json({ error: 'Server config error' }, { status: 500 });
     }
@@ -58,16 +58,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Security breach' }, { status: 403 });
     }
 
-    // 2. DOUBLE-VÉRIFICATION API (Le "Back-check" indispensable)
-    const credentials = `${APP_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
-    const encodedAuth = Buffer.from(credentials).toString('base64');
+    // 2. DOUBLE-VÉRIFICATION API (Back-check Token Auth)
     const gatewayId = txnData.pk || txnData.id || txnData.guid;
     
     console.log(`[${requestId}] 🔍 Lancement du back-check pour ${gatewayId}...`);
 
     const verifyRes = await fetch(`https://mesomb.hachther.com/api/v1.1/payment/status/?id=${gatewayId}`, {
         headers: {
-            'Authorization': `Basic ${encodedAuth}`,
+            'Authorization': `Token ${API_KEY}`,
+            'X-MeSomb-Application': APP_KEY,
         },
         cache: 'no-store'
     });
@@ -89,7 +88,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
     }
 
-    // 3. DÉCLENCHEMENT DU PROCESSEUR FINANCIER (Crédit/Inscription)
+    // 3. DÉCLENCHEMENT DU PROCESSEUR FINANCIER
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
