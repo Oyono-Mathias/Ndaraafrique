@@ -2,8 +2,9 @@
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb.
- * ✅ SÉCURITÉ : Authentification Basic Auth (Base64) stricte.
- * ✅ FORMAT : applicationKey:accessKey:secretKey.
+ * ✅ AUDIT : Validation des clés API et logs de diagnostic.
+ * ✅ FORMAT : Correction du header Authorization (Basic Base64).
+ * ✅ GÉO : Optimisation pour le Cameroun (+237 / XAF).
  */
 
 import { randomUUID, randomBytes } from 'crypto';
@@ -26,14 +27,22 @@ interface MeSombPaymentParams {
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
-  const APPLICATION_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
+  const APP_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
   const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
   const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
+
+  // 📡 LOGS DE DIAGNOSTIC (Visible uniquement dans les logs serveur)
+  console.log("[MeSomb Audit] Checking API Keys...", {
+    hasAppKey: !!APP_KEY,
+    hasAccessKey: !!ACCESS_KEY,
+    hasSecretKey: !!SECRET_KEY,
+    env: process.env.NODE_ENV
+  });
 
   try {
     const db = getAdminDb();
     
-    // 1. Charger les réglages et l'utilisateur
+    // 1. Charger les réglages
     const [settingsSnap, userSnap] = await Promise.all([
         db.collection('settings').doc('global').get(),
         db.collection('users').doc(params.userId).get()
@@ -44,45 +53,33 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
 
     if (!userData) return { success: false, error: "Utilisateur introuvable." };
 
-    // 2. Mode Simulation (Test)
+    // 2. Mode Simulation (Déterminé par les réglages Admin)
     if (settings?.payments?.paymentMode === 'test') {
         console.log(`[MeSomb Simulation] User: ${params.userId} | Amount: ${params.amount}`);
         return { 
             success: true, 
             type: 'SIMULATED', 
-            message: "Simulation : Votre paiement a été validé par le système de test." 
+            message: "Mode TEST : Votre paiement a été validé sans débit réel." 
         };
     }
 
-    // 3. Validation Configuration
-    if (!APPLICATION_KEY || !ACCESS_KEY || !SECRET_KEY) {
-        console.error("[MeSomb] CRITICAL: Missing API Keys in environment variables.");
+    // 3. Validation Configuration Critique
+    if (!APP_KEY || !ACCESS_KEY || !SECRET_KEY) {
+        console.error("[MeSomb] CRITICAL: API Keys missing in Vercel environment.");
         return { success: false, error: "Le service de paiement est indisponible (Erreur Config Serveur)." };
     }
 
-    if (params.amount < 100) {
-        return { success: false, error: "Le montant minimum est de 100 XOF." };
-    }
-
-    // --- CONSTRUCTION DU HEADER AUTHORIZATION (Basic Auth) ---
-    const credentials = `${APPLICATION_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
-    const encoded = Buffer.from(credentials).toString('base64');
-
-    const headers: HeadersInit = {
-        'Authorization': `Basic ${encoded}`,
-        'Content-Type': 'application/json',
-    };
-
-    // 4. Préparation Transaction Firestore (Statut: pending)
-    const internalRef = randomUUID();
-    const secretNonce = randomBytes(32).toString('hex');
-    const currency = settings?.payments?.currency || 'XOF';
-    
+    // 4. Préparation du numéro (Standard Cameroun +237)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    // Standardisation Cameroun (237)
-    if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
+    if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
         cleanPhone = '237' + cleanPhone;
     }
+
+    // 5. Paramètres Financiers
+    const internalRef = randomUUID();
+    const secretNonce = randomBytes(32).toString('hex');
+    // Pour le Cameroun, on privilégie XAF si MeSomb est utilisé
+    const currency = 'XAF'; 
 
     const transactionData = {
         id: internalRef,
@@ -96,51 +93,67 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         courseTitle: params.type === 'wallet_topup' ? 'Recharge Portefeuille' : 'Achat formation',
         createdAt: FieldValue.serverTimestamp(),
         security: { nonce: secretNonce },
-        metadata: { source: 'web_app', env: settings?.payments?.paymentMode }
+        metadata: { 
+            source: 'ndara_afrique_v2', 
+            operator: params.service,
+            phone: cleanPhone
+        }
     };
 
+    // Enregistrement de l'intention de paiement
     await db.collection('payments').doc(internalRef).set(transactionData);
+
+    // 6. Construction de l'appel API MeSomb
+    const credentials = `${APP_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
+    const encodedAuth = Buffer.from(credentials).toString('base64');
 
     const payload = {
         amount: params.amount,
-        service: params.service,
+        service: params.service, // MTN, ORANGE, WAVE
         receiver: cleanPhone,
-        currency,
+        currency: currency,
         nonce: randomBytes(16).toString('hex'),
-        extra: { internalReference: internalRef, securityToken: secretNonce }
+        extra: { 
+            internalReference: internalRef, 
+            securityToken: secretNonce 
+        }
     };
 
-    console.log(`[MeSomb Request] Sending collect request for ${internalRef}`);
+    console.log(`[MeSomb Request] Dispatching collect for ${internalRef} to ${cleanPhone}`);
 
-    // 5. Appel API MeSomb
     const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect', {
       method: 'POST',
-      headers,
+      headers: {
+        'Authorization': `Basic ${encodedAuth}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(payload),
     });
 
     const data = await response.json();
 
     if (response.ok && (data.status === 'SUCCESS' || data.status === 'PENDING')) {
-      console.log(`[MeSomb Success] Transaction ${internalRef} initiated.`);
       return { 
         success: true, 
         type: 'REAL', 
         transactionId: internalRef, 
-        message: "Veuillez valider l'opération sur votre téléphone." 
+        message: "Veuillez valider l'opération sur votre téléphone via le prompt USSD." 
       };
     } else {
-      const errorMsg = data.detail || data.message || "Transaction refusée par l'opérateur.";
+      const errorMsg = data.detail || data.message || "La transaction a été refusée par l'opérateur.";
       console.error("[MeSomb API Error]", data);
+      
+      // Mise à jour de l'échec pour l'historique
       await db.collection('payments').doc(internalRef).update({ 
           status: 'failed', 
           error: errorMsg,
           updatedAt: FieldValue.serverTimestamp()
       });
+      
       return { success: false, error: errorMsg };
     }
   } catch (error: any) {
     console.error("[MeSomb Fatal Error]:", error.message);
-    return { success: false, error: "Connexion impossible avec la passerelle de paiement." };
+    return { success: false, error: "Connexion impossible avec la passerelle de paiement. Vérifiez votre réseau." };
   }
 }
