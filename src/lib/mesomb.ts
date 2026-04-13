@@ -1,89 +1,70 @@
 // src/lib/mesomb.ts
-import { PaymentOperation, RandomGenerator } from '@hachther/mesomb';
+import crypto from "crypto";
 
-/**
- * Configuration MeSomb - Utilisation du SDK officiel
- * Exécution côté serveur uniquement
- */
+const APP_KEY = process.env.MESOMB_APPLICATION_KEY!;
+const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY!;
+const SECRET_KEY = process.env.MESOMB_SECRET_KEY!;
 
-const applicationKey = process.env.MESOMB_APPLICATION_KEY!;
-const accessKey = process.env.MESOMB_ACCESS_KEY!;
-const secretKey = process.env.MESOMB_SECRET_KEY!;
-
-if (!applicationKey || !accessKey || !secretKey) {
-  throw new Error(
-    'Variables d\'environnement MeSomb manquantes. Vérifiez : ' +
-    'MESOMB_APPLICATION_KEY, MESOMB_ACCESS_KEY, MESOMB_SECRET_KEY'
-  );
-}
-
-// Client MeSomb centralisé
-const mesombClient = new PaymentOperation(applicationKey, accessKey, secretKey);
-
-/**
- * Récupère le statut de l'application (inclut généralement le solde du compte marchand)
- * → Utilisé dans l'écran Administration
- */
-export async function getMesombStatus() {
-  try {
-    const status = await mesombClient.getStatus();
-
-    console.log('[MeSomb Status Success]', status); // ← Important pour debug
-
-    return {
-      success: true,
-      balance: status?.balance ?? 
-               status?.account_balance ?? 
-               status?.wallet?.balance ?? 
-               0,
-      currency: 'XOF',
-      lastUpdated: new Date().toISOString(),
-      rawData: status, // pour debug
-    };
-  } catch (error: any) {
-    console.error('[MeSomb Status Error]', error);
-    return {
-      success: false,
-      error: error.message || "Impossible de récupérer le solde MeSomb",
-      details: error?.message,
-    };
-  }
+if (!APP_KEY || !ACCESS_KEY || !SECRET_KEY) {
+  throw new Error("Clés MeSomb manquantes dans les variables d'environnement");
 }
 
 /**
- * Lance une transaction de collecte (Mobile Money)
- * → Utilisé dans ton écran de paiement (bouton "LANCER LA TRANSACTION")
+ * Fonction manuelle pour appeler l'API MeSomb
  */
-export async function makeMesombCollect(params: {
-  amount: number;
-  service: 'MTN' | 'ORANGE';
-  payer: string;           // Numéro avec indicatif, ex: "237653706443"
-  nonce?: string;
-  trxID?: string;          // Ton ID de transaction interne (recommandé)
-}) {
+export async function fetchMeSomb(endpoint: string, method: string = "POST", body: any = {}) {
+  const cleanEndpoint = endpoint.replace(/^\/+/, "");
+  const url = `https://mesomb.hachther.com/api/v1.1/${cleanEndpoint}`;
+
+  const date = Math.floor(Date.now() / 1000).toString();
+  const nonce = Math.random().toString(36).substring(2, 15);
+  const bodyString = method === "GET" ? "" : JSON.stringify(body);
+
+  // Construction du message pour la signature
+  const message = `\( {method}\n \){url}\n\( {date}\n \){nonce}\n${bodyString}`;
+
+  const signature = crypto
+    .createHmac("sha1", SECRET_KEY)
+    .update(message)
+    .digest("hex");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "X-MeSomb-Date": date,
+    "X-MeSomb-Nonce": nonce,
+    "X-MeSomb-Application": APP_KEY,
+    "Authorization": `Signature \( {ACCESS_KEY}: \){signature}`,
+  };
+
+  console.log(`[MeSomb Request] ${method} ${url}`);
+
   try {
-    const response = await mesombClient.makeCollect({
-      amount: params.amount,
-      service: params.service,
-      payer: params.payer,
-      nonce: params.nonce || RandomGenerator.nonce(),
-      trxID: params.trxID || `trx_${Date.now()}`,
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: method !== "GET" ? bodyString : undefined,
     });
 
-    console.log('[MeSomb Collect Success]', response);
+    const text = await response.text();
 
-    return {
-      success: true,
-      data: response,
-    };
+    // Si ce n'est pas du JSON → erreur classique (HTML)
+    if (!text.startsWith('{') && !text.startsWith('[')) {
+      console.error("[MeSomb] Réponse non-JSON reçue :", text.substring(0, 400));
+      throw new Error("Le serveur de paiement a renvoyé un format invalide (HTML).");
+    }
+
+    const data = JSON.parse(text);
+
+    if (!response.ok) {
+      console.error("[MeSomb API Error]", data);
+      throw new Error(data?.message || data?.detail || "Erreur lors de l'appel MeSomb");
+    }
+
+    console.log("[MeSomb Success]");
+    return data;
   } catch (error: any) {
-    console.error('[MeSomb Collect Error]', error);
-    return {
-      success: false,
-      error: error.message || "Échec de la transaction",
-    };
+    console.error("[MeSomb Error]", error.message);
+    throw error;
   }
 }
-
-// Export optionnel du client brut si besoin ailleurs
-export { mesombClient };
