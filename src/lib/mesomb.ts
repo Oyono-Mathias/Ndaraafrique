@@ -12,6 +12,13 @@ const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
 const APP_KEY = process.env.MESOMB_APPLICATION_KEY;
 
 export async function fetchMeSomb(endpoint: string, method = "POST", body: any = {}) {
+  // Logs de diagnostic (Server-side only)
+  console.log("MeSomb Config Check:", {
+    hasAccess: !!ACCESS_KEY,
+    hasSecret: !!SECRET_KEY,
+    hasApp: !!APP_KEY
+  });
+
   if (!ACCESS_KEY || !SECRET_KEY || !APP_KEY) {
     console.error("[MeSomb] CONFIG ERROR: Missing keys in environment.");
     throw new Error("Le service de paiement n'est pas configuré sur ce serveur.");
