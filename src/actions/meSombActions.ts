@@ -1,15 +1,16 @@
+
 'use server';
 
 /**
- * @fileOverview Initiation sécurisée des paiements MeSomb et consultation du solde.
- * ✅ PROD : Utilisation des clés de production Mathias.
- * ✅ AUTH : Token Auth (X-MeSomb-Application + Token API_KEY).
- * ✅ SÉCURITÉ : Directive 'use server' impérative pour les imports Node.js.
+ * @fileOverview Actions serveur MeSomb pour Ndara Afrique.
+ * ✅ RÉSOLU : Utilisation du client centralisé fetchMeSomb.
+ * ✅ RÉSOLU : Headers Token Auth standardisés.
  */
 
 import { randomUUID, randomBytes } from 'crypto';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { fetchMeSomb } from '@/lib/mesomb';
 import type { NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
@@ -38,36 +39,9 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
             throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
         }
 
-        const APP_KEY = process.env.MESOMB_APP_KEY?.trim();
-        const API_KEY = process.env.MESOMB_API_KEY?.trim();
+        // Appel via le client centralisé
+        const data = await fetchMeSomb('payment/balance/');
 
-        if (!APP_KEY || !API_KEY) {
-            throw new Error("Configuration MeSomb manquante sur le serveur.");
-        }
-
-        // Endpoint officiel MeSomb Balance
-        const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/balance/', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Token ${API_KEY}`,
-                'X-MeSomb-Application': APP_KEY,
-                'accept': 'application/json',
-            },
-            cache: 'no-store'
-        });
-
-        const contentType = response.headers.get('content-type');
-        
-        if (!response.ok) {
-            if (contentType && contentType.includes('application/json')) {
-                const errData = await response.json();
-                throw new Error(errData.detail || errData.message || `Erreur MeSomb (${response.status})`);
-            } else {
-                throw new Error("Impossible de joindre les serveurs MeSomb. Vérifiez vos clés.");
-            }
-        }
-
-        const data = await response.json();
         return { 
             success: true, 
             balance: data.balance, 
@@ -75,15 +49,14 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
         };
 
     } catch (error: any) {
-        console.error("[MeSomb Balance Error]:", error.message);
         return { success: false, error: error.message };
     }
 }
 
+/**
+ * 💸 Initier un paiement Mobile Money
+ */
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
-  const APP_KEY = process.env.MESOMB_APP_KEY?.trim();
-  const API_KEY = process.env.MESOMB_API_KEY?.trim();
-
   try {
     const db = getAdminDb();
     
@@ -107,12 +80,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         };
     }
 
-    // 3. Validation Configuration
-    if (!APP_KEY || !API_KEY) {
-        return { success: false, error: "Le service de paiement n'est pas configuré sur ce serveur." };
-    }
-
-    // 4. Préparation du numéro (Standard Cameroun +237)
+    // 3. Préparation du numéro (Standard Cameroun +237)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
         cleanPhone = '237' + cleanPhone;
@@ -122,7 +90,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     const secretNonce = randomBytes(32).toString('hex');
     const currency = 'XAF'; 
 
-    // 5. Appel API Collect
+    // 4. Appel API Collect via client centralisé
     const payload = {
         amount: params.amount,
         service: params.service, 
@@ -135,28 +103,14 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         }
     };
 
-    const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/collect/', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${API_KEY}`,
-        'X-MeSomb-Application': APP_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    console.log(`[MeSomb] Initiation transaction ${internalRef} pour ${params.amount} ${currency}`);
+
+    const data = await fetchMeSomb('payment/collect/', {
+        method: 'POST',
+        body: JSON.stringify(payload)
     });
 
-    const contentType = response.headers.get('content-type');
-    if (!response.ok) {
-        if (contentType && contentType.includes('application/json')) {
-            const errData = await response.json();
-            return { success: false, error: errData.detail || errData.message || "Transaction refusée." };
-        }
-        return { success: false, error: "L'appel API MeSomb a échoué." };
-    }
-
-    const data = await response.json();
-
-    // Enregistrement de la transaction en attente
+    // 5. Enregistrement de la transaction en attente
     await db.collection('payments').doc(internalRef).set({
         id: internalRef,
         userId: params.userId,
@@ -180,7 +134,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     };
 
   } catch (error: any) {
-    console.error("[MeSomb Fatal Error]:", error.message);
-    return { success: false, error: "Connexion impossible avec la passerelle de paiement." };
+    return { success: false, error: error.message };
   }
 }
