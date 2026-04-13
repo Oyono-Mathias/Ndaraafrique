@@ -3,6 +3,7 @@
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
+ * ✅ HYBRIDE : Support de la recharge réelle vs virtuelle.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -36,7 +37,11 @@ export async function purchaseCourseWithWalletAction({
         const userSnap = await userRef.get();
         const userData = userSnap.data() as NdaraUser;
 
-        if (userData.balance < amount) {
+        // On vérifie d'abord si l'utilisateur a assez de crédits virtuels, sinon on tape dans le réel
+        const hasEnoughVirtual = (userData.virtualBalance || 0) >= amount;
+        const hasEnoughReal = (userData.balance || 0) >= amount;
+
+        if (!hasEnoughVirtual && !hasEnoughReal) {
             return { success: false, error: "Solde insuffisant." };
         }
 
@@ -52,7 +57,9 @@ export async function purchaseCourseWithWalletAction({
                 userId, 
                 courseId, 
                 courseTitle: courseData?.title,
-                type: 'course_purchase' 
+                type: 'course_purchase',
+                // Si on a assez de virtuel, on marque la transaction comme simulée pour le processeur
+                isSimulated: hasEnoughVirtual 
             }
         });
 
@@ -72,17 +79,19 @@ export async function purchaseCourseWithWalletAction({
     }
 }
 
-/** 💰 RECHARGER LE WALLET RÉEL (Action Admin Sécurisée) */
+/** 💰 RECHARGER LE WALLET (Action Admin Sécurisée) */
 export async function rechargeUserWallet({ 
     userId, 
     amount, 
     adminId,
-    reason 
+    reason,
+    isSimulated = false
 }: { 
     userId: string; 
     amount: number; 
     adminId: string;
     reason: string;
+    isSimulated?: boolean;
 }) {
     try {
         await verifyAdminOrThrow(adminId);
@@ -99,13 +108,15 @@ export async function rechargeUserWallet({
                 courseId: 'WALLET_TOPUP',
                 type: 'wallet_topup', 
                 adminId, 
-                reason 
+                reason,
+                isSimulated // Transmet si c'est du virtuel ou du réel
             }
         });
 
         if (result.success) {
+            const fondsLabel = isSimulated ? "virtuel (promo)" : "réel (production)";
             await sendUserNotification(userId, {
-                text: `Votre compte a été crédité de ${amount.toLocaleString()} XOF par l'administration.`,
+                text: `Votre compte a été crédité de ${amount.toLocaleString()} XOF en solde ${fondsLabel} par l'administration.`,
                 type: 'success'
             });
             return { success: true };

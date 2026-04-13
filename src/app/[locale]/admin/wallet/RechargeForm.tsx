@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Formulaire de recharge sécurisé (Design Fintech Android).
- * ✅ REAL-TIME : Listener direct sur le bénéficiaire pour voir le crédit lander en direct.
+ * ✅ HYBRIDE : Choix explicite entre Solde Réel (Production) et Virtuel (Simulation).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -18,7 +18,8 @@ import {
     ArrowRight, 
     CheckCircle2, 
     X,
-    Activity
+    Zap,
+    ShieldCheck
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -38,10 +39,11 @@ export function RechargeForm() {
     const [searchTerm, setSearchTerm] = useState('');
     const [foundUsers, setFoundUsers] = useState<NdaraUser[]>([]);
     const [selectedUser, setSelectedUser] = useState<NdaraUser | null>(null);
-    const [liveBalance, setLiveBalance] = useState<number | null>(null);
+    const [liveBalance, setLiveBalance] = useState<{real: number, virtual: number} | null>(null);
     
     const [amount, setAmount] = useState<number>(0);
     const [reason, setReason] = useState('Recharge manuelle (Audit Admin)');
+    const [isSimulated, setIsSimulated] = useState(false); // Choix Réel vs Virtuel
     
     const [isSearching, setIsSearching] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,7 +82,11 @@ export function RechargeForm() {
         }
         const unsub = onSnapshot(doc(db, 'users', selectedUser.uid), (snap) => {
             if (snap.exists()) {
-                setLiveBalance(snap.data().balance || 0);
+                const data = snap.data();
+                setLiveBalance({
+                    real: data.balance || 0,
+                    virtual: data.virtualBalance || 0
+                });
             }
         });
         return () => unsub();
@@ -95,7 +101,8 @@ export function RechargeForm() {
                 userId: selectedUser.uid,
                 amount,
                 adminId: admin.uid,
-                reason
+                reason,
+                isSimulated // On envoie le choix au serveur
             });
 
             if (result.success) {
@@ -126,43 +133,80 @@ export function RechargeForm() {
         <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
             <div className="grain-overlay opacity-[0.03]" />
             
-            <div className="bg-primary/10 p-8 border-b border-white/5">
+            <div className={cn(
+                "p-8 border-b border-white/5 transition-colors duration-500",
+                isSimulated ? "bg-amber-500/10" : "bg-primary/10"
+            )}>
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                            <User className="text-primary h-5 w-5" />
+                        <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center border",
+                            isSimulated ? "bg-amber-500/20 border-amber-500/30" : "bg-primary/20 border-primary/30"
+                        )}>
+                            <User className={cn("h-5 w-5", isSimulated ? "text-amber-500" : "text-primary")} />
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Signataire</p>
                             <p className="text-white font-bold text-sm uppercase">{admin?.fullName?.split(' ')[0] || 'Admin'}</p>
                         </div>
                     </div>
-                    <BadgeEuroIcon />
+                    {isSimulated ? <Zap className="text-amber-500 h-5 w-5" /> : <ShieldCheck className="text-primary h-5 w-5" />}
                 </div>
                 
                 <div className="text-center py-2">
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Montant à injecter</p>
                     <h2 className="text-4xl font-black text-white tracking-tighter">
-                        {amount.toLocaleString('fr-FR')} <span className="text-lg font-bold text-primary">XOF</span>
+                        {amount.toLocaleString('fr-FR')} <span className={cn("text-lg font-bold", isSimulated ? "text-amber-500" : "text-primary")}>XOF</span>
                     </h2>
                 </div>
             </div>
 
             <div className="p-8 space-y-8 relative z-10">
+                
+                {/* TYPE DE RECHARGE */}
+                <div className="space-y-4">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Type de fonds</label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button 
+                            onClick={() => setIsSimulated(false)}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all active:scale-95",
+                                !isSimulated ? "border-primary bg-primary/10 shadow-lg" : "border-white/5 bg-slate-950 opacity-40"
+                            )}
+                        >
+                            <ShieldCheck className="h-5 w-5 text-primary mb-1" />
+                            <span className="text-[9px] font-black uppercase text-white">Production (Réel)</span>
+                        </button>
+                        <button 
+                            onClick={() => setIsSimulated(true)}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all active:scale-95",
+                                isSimulated ? "border-amber-500 bg-amber-500/10 shadow-lg" : "border-white/5 bg-slate-950 opacity-40"
+                            )}
+                        >
+                            <Zap className="h-5 w-5 text-amber-500 mb-1" />
+                            <span className="text-[9px] font-black uppercase text-white">Simulation (Virtuel)</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div className="space-y-4">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Bénéficiaire Ndara</label>
                     {selectedUser ? (
-                        <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-2xl animate-in zoom-in duration-300">
+                        <div className={cn(
+                            "flex items-center justify-between p-4 border rounded-2xl animate-in zoom-in duration-300",
+                            isSimulated ? "bg-amber-500/5 border-amber-500/20" : "bg-primary/5 border-primary/20"
+                        )}>
                             <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10 border border-primary/30">
+                                <Avatar className="h-10 w-10 border border-white/10">
                                     <AvatarImage src={selectedUser.profilePictureURL} />
                                     <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{selectedUser.fullName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0">
                                     <p className="font-bold text-white text-sm truncate uppercase">{selectedUser.fullName}</p>
-                                    <p className="text-[10px] text-primary font-black flex items-center gap-1.5 uppercase">
-                                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                                        LIVE: {(liveBalance ?? selectedUser.balance ?? 0).toLocaleString()} F
+                                    <p className={cn("text-[10px] font-black flex items-center gap-1.5 uppercase", isSimulated ? "text-amber-500" : "text-primary")}>
+                                        <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isSimulated ? "bg-amber-500" : "bg-primary")} />
+                                        LIVE: {(isSimulated ? liveBalance?.virtual : liveBalance?.real)?.toLocaleString() || '---'} F
                                     </p>
                                 </div>
                             </div>
@@ -211,7 +255,7 @@ export function RechargeForm() {
                                 onClick={() => setAmount(val)}
                                 className={cn(
                                     "py-3 rounded-xl border font-black text-[10px] tracking-widest transition-all active:scale-95",
-                                    amount === val ? "bg-primary text-slate-950 border-primary shadow-lg" : "bg-slate-950 border-white/5 text-slate-500 hover:border-primary/30"
+                                    amount === val ? (isSimulated ? "bg-amber-500 text-slate-950 border-amber-500 shadow-lg" : "bg-primary text-slate-950 border-primary shadow-lg") : "bg-slate-950 border-white/5 text-slate-500 hover:border-primary/30"
                                 )}
                             >
                                 {val.toLocaleString()}
@@ -240,22 +284,28 @@ export function RechargeForm() {
                 <Button 
                     onClick={handleRecharge}
                     disabled={!selectedUser || amount <= 0 || isSubmitting}
-                    className="w-full h-16 rounded-[2rem] bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-95 animate-pulse-glow border-none"
+                    className={cn(
+                        "w-full h-16 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl transition-all active:scale-95 animate-pulse-glow border-none",
+                        isSimulated ? "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20" : "bg-primary hover:bg-emerald-400 text-slate-950 shadow-primary/20"
+                    )}
                 >
                     {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
-                    Signer la Recharge
+                    {isSimulated ? "Signer Recharge Virtuelle" : "Signer Recharge Réelle"}
                 </Button>
             </div>
 
             {showSuccess && (
                 <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-500">
                     <div className="text-center space-y-6 animate-in zoom-in duration-700">
-                        <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto border-2 border-primary shadow-[0_0_30px_rgba(16,185,129,0.4)]">
-                            <Check className="h-10 w-10 text-primary" strokeWidth={4} />
+                        <div className={cn(
+                            "w-20 h-20 rounded-full flex items-center justify-center mx-auto border-2 shadow-2xl",
+                            isSimulated ? "bg-amber-500/20 border-amber-500 shadow-amber-500/40" : "bg-primary/20 border-primary shadow-primary/40"
+                        )}>
+                            <Check className={cn("h-10 w-10", isSimulated ? "text-amber-500" : "text-primary")} strokeWidth={4} />
                         </div>
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight">Injection Validée</h3>
-                            <p className="text-slate-400 text-sm font-medium italic">Le solde de {selectedUser?.fullName} a été crédité.</p>
+                            <p className="text-slate-400 text-sm font-medium italic">Le solde {isSimulated ? 'virtuel' : 'réel'} de {selectedUser?.fullName} a été crédité.</p>
                         </div>
                         <Button onClick={resetForm} className="w-full h-14 rounded-2xl bg-white text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl">
                             Continuer
