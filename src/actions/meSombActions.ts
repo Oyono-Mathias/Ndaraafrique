@@ -1,8 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur pour MeSomb utilisant le client de signature cryptographique.
- * ✅ SÉCURITÉ : Isolation totale des clés et du moteur de signature.
+ * Actions serveur MeSomb (version corrigée)
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -32,92 +31,96 @@ export async function initiateMeSombPayment(params: {
 
     const isTestMode = settings?.payments?.paymentMode === 'test';
 
-    // 🧪 MODE SIMULATION (TEST)
     if (isTestMode) {
-        // En mode test, on déclenche quand même le processeur pour que l'user puisse voir le crédit simulé
-        await processNdaraPayment({
-            transactionId: `SIM-${Date.now()}`,
-            provider: 'simulated',
-            amount: params.amount,
-            currency: 'XAF',
-            metadata: {
-                userId: params.userId,
-                type: params.type || 'course_purchase',
-                courseId: params.courseId || 'WALLET_TOPUP',
-                isSimulated: true
-            }
-        });
+      await processNdaraPayment({
+        transactionId: `SIM-${Date.now()}`,
+        provider: 'simulated',
+        amount: params.amount,
+        currency: 'XAF',
+        metadata: {
+          userId: params.userId,
+          type: params.type || 'course_purchase',
+          courseId: params.courseId || 'WALLET_TOPUP',
+          isSimulated: true
+        }
+      });
 
-        return { 
-            success: true, 
-            type: 'SIMULATED', 
-            message: "MODE TEST : Crédit virtuel ajouté pour vos essais." 
-        };
+      return { 
+        success: true, 
+        type: 'SIMULATED', 
+        message: "MODE TEST : Crédit virtuel ajouté." 
+      };
     }
 
-    // 🚀 MODE PRODUCTION (RÉEL)
+    // Numéro propre
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
-        cleanPhone = '237' + cleanPhone;
+      cleanPhone = '237' + cleanPhone;
     }
 
     const internalRef = randomUUID();
 
     const payload = {
-        amount: params.amount,
-        service: params.service, 
-        receiver: cleanPhone,
-        currency: 'XAF',
-        nonce: Math.random().toString(36).substring(2, 15),
+      amount: params.amount,
+      service: params.service,
+      payer: cleanPhone,           // ← CORRIGÉ : payer au lieu de receiver
+      currency: 'XAF',
+      nonce: Math.random().toString(36).substring(2, 15),
     };
 
     const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
-    // Enregistrement de la transaction réelle en attente
+    // Enregistrement en base
     await db.collection('payments').doc(internalRef).set({
-        id: internalRef,
-        userId: params.userId,
-        amount: Number(params.amount),
-        currency: 'XAF',
-        status: 'pending',
-        provider: 'mesomb',
-        type: params.type || 'course_purchase',
-        courseId: params.courseId || 'WALLET_TOPUP',
-        createdAt: FieldValue.serverTimestamp(),
-        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id, isSimulated: false }
+      id: internalRef,
+      userId: params.userId,
+      amount: Number(params.amount),
+      currency: 'XAF',
+      status: 'pending',
+      provider: 'mesomb',
+      type: params.type || 'course_purchase',
+      courseId: params.courseId || 'WALLET_TOPUP',
+      createdAt: FieldValue.serverTimestamp(),
+      metadata: { 
+        operator: params.service, 
+        phone: cleanPhone, 
+        gatewayId: data.pk || data.id 
+      }
     });
 
     return { 
-        success: true, 
-        type: 'REAL', 
-        transactionId: internalRef, 
-        message: "Veuillez valider l'opération sur votre téléphone." 
+      success: true, 
+      type: 'REAL', 
+      transactionId: internalRef, 
+      message: "Veuillez valider l'opération sur votre téléphone." 
     };
 
   } catch (error: any) {
-    console.error("[MeSomb Action Error]", error.message);
-    return { success: false, error: error.message || "Erreur de configuration serveur." };
+    console.error("[MeSomb Payment Error]", error.message);
+    return { success: false, error: error.message || "Erreur lors du paiement" };
   }
 }
 
-/** 💰 Récupérer le solde réel du compte marchand MeSomb */
+/** 💰 Récupérer le solde du compte marchand */
 export async function getMeSombBalanceAction(adminId: string) {
-    try {
-        const db = getAdminDb();
-        const adminDoc = await db.collection('users').doc(adminId).get();
-        
-        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-            throw new Error("UNAUTHORIZED");
-        }
-
-        const data = await fetchMeSomb('payment/balance/', 'GET');
-
-        return { 
-            success: true, 
-            balance: data.balance, 
-            currency: data.currency || 'XAF' 
-        };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+  try {
+    const db = getAdminDb();
+    const adminDoc = await db.collection('users').doc(adminId).get();
+    
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+      throw new Error("UNAUTHORIZED");
     }
+
+    // Endpoint corrigé (le vrai endpoint pour avoir des infos sur l'application)
+    const data = await fetchMeSomb('application/status/', 'GET');   // ← CORRIGÉ
+
+    return { 
+      success: true, 
+      balance: data?.balance ?? data?.account_balance ?? 0, 
+      currency: 'XAF' 
+    };
+  } catch (error: any) {
+    console.error("[MeSomb Balance Error]", error.message);
+    return { success: false, error: error.message };
+  }
 }
