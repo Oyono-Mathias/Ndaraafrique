@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur pour l'intégration MeSomb via Signature HMAC.
+ * @fileOverview Actions serveur pour MeSomb utilisant le client de signature.
  */
 
 import { randomUUID } from 'crypto';
@@ -16,15 +16,6 @@ export type MeSombResponse =
   | { success: true; type: 'SIMULATED'; message: string }
   | { success: false; error: string };
 
-interface MeSombPaymentParams {
-  amount: number;
-  phoneNumber: string;
-  service: 'ORANGE' | 'MTN' | 'WAVE';
-  userId: string;
-  type?: 'course_purchase' | 'wallet_topup';
-  courseId?: string;
-}
-
 /** 💰 Récupérer le solde réel du compte marchand */
 export async function getMeSombBalanceAction(adminId: string) {
     try {
@@ -35,7 +26,7 @@ export async function getMeSombBalanceAction(adminId: string) {
             throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
         }
 
-        // Utilise le client de signature centralisé
+        // Utilisation du client de signature centralisé
         const data = await fetchMeSomb('payment/balance/', 'GET');
 
         return { 
@@ -44,25 +35,23 @@ export async function getMeSombBalanceAction(adminId: string) {
             currency: data.currency || 'XAF' 
         };
     } catch (error: any) {
-        console.error("[MeSomb Balance Error]", error.message);
         return { success: false, error: error.message };
     }
 }
 
 /** 💸 Initier un paiement Mobile Money */
-export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
+export async function initiateMeSombPayment(params: {
+  amount: number;
+  phoneNumber: string;
+  service: 'ORANGE' | 'MTN' | 'WAVE';
+  userId: string;
+  type?: 'course_purchase' | 'wallet_topup';
+  courseId?: string;
+}): Promise<MeSombResponse> {
   try {
     const db = getAdminDb();
-    
-    const [settingsSnap, userSnap] = await Promise.all([
-        db.collection('settings').doc('global').get(),
-        db.collection('users').doc(params.userId).get()
-    ]);
-
-    const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as any;
-    const userData = userSnap.data() as NdaraUser;
-
-    if (!userData) return { success: false, error: "Utilisateur introuvable." };
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = settingsSnap.data() as any;
 
     // Mode Simulation (Configuré en Admin)
     if (settings?.payments?.paymentMode === 'test') {
@@ -80,20 +69,18 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     }
 
     const internalRef = randomUUID();
-    const currency = 'XAF'; 
 
     const payload = {
         amount: params.amount,
         service: params.service, 
         receiver: cleanPhone,
-        currency: currency,
+        currency: 'XAF',
         nonce: Math.random().toString(36).substring(2, 15),
         extra: { 
             internalReference: internalRef,
         }
     };
 
-    // Utilise le client de signature centralisé
     const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
     // Enregistrement de la transaction en attente
@@ -101,14 +88,14 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
         id: internalRef,
         userId: params.userId,
         amount: Number(params.amount),
-        currency,
+        currency: 'XAF',
         status: 'pending',
         provider: 'mesomb',
         type: params.type || 'course_purchase',
         courseId: params.courseId || 'WALLET_TOPUP',
         courseTitle: params.type === 'wallet_topup' ? 'Recharge Portefeuille' : 'Achat formation',
         createdAt: FieldValue.serverTimestamp(),
-        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id || data.id }
+        metadata: { operator: params.service, phone: cleanPhone, gatewayId: data.pk || data.id }
     });
 
     return { 
@@ -119,7 +106,6 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
     };
 
   } catch (error: any) {
-    console.error("[MeSomb Payment Action Error]", error.message);
     return { success: false, error: error.message };
   }
 }
