@@ -4,6 +4,7 @@
  * @fileOverview Cockpit Admin Elite - Design Qwen Immersif V2.
  * ✅ REAL-TIME : 100% branché sur onSnapshot pour une réactivité totale.
  * ✅ I18N : Intégration complète des traductions Admin (FR/EN/SG).
+ * ✅ MeSomb : Ajout du solde marchand en temps réel.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -31,6 +32,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { MeSombBalanceCard } from '@/components/admin/MeSombBalanceCard';
 import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslations } from 'next-intl';
@@ -171,6 +173,11 @@ export default function AdminDashboard() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="relative z-10 space-y-10">
+                {/* MeSomb Live Monitoring */}
+                <div className="max-w-md">
+                    <MeSombBalanceCard />
+                </div>
+
                 <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
                         title={t('stats.revenue')} 

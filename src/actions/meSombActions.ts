@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Initiation sécurisée des paiements MeSomb.
+ * @fileOverview Initiation sécurisée des paiements MeSomb et consultation du solde.
  * ✅ AUDIT : Validation des clés API et logs de diagnostic.
  * ✅ FORMAT : Correction du header Authorization (Basic Base64).
  * ✅ GÉO : Optimisation pour le Cameroun (+237 / XAF).
@@ -24,6 +24,56 @@ interface MeSombPaymentParams {
   userId: string;
   type?: 'course_purchase' | 'wallet_topup';
   courseId?: string;
+}
+
+/**
+ * 💰 Récupérer le solde réel du compte marchand MeSomb (Action Admin)
+ */
+export async function getMeSombBalanceAction(adminId: string): Promise<{ success: boolean; balance?: number; currency?: string; error?: string }> {
+    try {
+        const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        
+        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+            throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
+        }
+
+        const APP_KEY = process.env.MESOMB_APPLICATION_KEY?.trim();
+        const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY?.trim();
+        const SECRET_KEY = process.env.MESOMB_SECRET_KEY?.trim();
+
+        if (!APP_KEY || !ACCESS_KEY || !SECRET_KEY) {
+            throw new Error("Configuration MeSomb manquante sur le serveur.");
+        }
+
+        const credentials = `${APP_KEY}:${ACCESS_KEY}:${SECRET_KEY}`;
+        const encodedAuth = Buffer.from(credentials).toString('base64');
+
+        const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/balance', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Basic ${encodedAuth}`,
+                'accept': 'application/json',
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || errData.message || "Erreur lors de la récupération du solde.");
+        }
+
+        const data = await response.json();
+        return { 
+            success: true, 
+            balance: data.balance, 
+            currency: data.currency || 'XAF' 
+        };
+
+    } catch (error: any) {
+        console.error("[MeSomb Balance Error]:", error.message);
+        return { success: false, error: error.message };
+    }
 }
 
 export async function initiateMeSombPayment(params: MeSombPaymentParams): Promise<MeSombResponse> {
