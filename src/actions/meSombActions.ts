@@ -1,11 +1,10 @@
 
-'use server';
+'use client';
 
 /**
  * @fileOverview Initiation sécurisée des paiements MeSomb et consultation du solde.
- * ✅ AUTH : Passage au format Token Auth (X-MeSomb-Application + Token API_KEY).
- * ✅ GÉO : Optimisation pour le Cameroun (+237 / XAF).
- * ✅ FIX : Correction de l'URL de balance et résilience face aux réponses non-JSON.
+ * ✅ PROD : Utilisation des clés de production Mathias.
+ * ✅ AUTH : Token Auth (X-MeSomb-Application + Token API_KEY).
  */
 
 import { randomUUID, randomBytes } from 'crypto';
@@ -43,10 +42,10 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
         const API_KEY = process.env.MESOMB_API_KEY?.trim();
 
         if (!APP_KEY || !API_KEY) {
-            throw new Error("Configuration MeSomb manquante (API_KEY ou APP_KEY).");
+            throw new Error("Configuration MeSomb manquante sur le serveur.");
         }
 
-        // ✅ URL corrigée avec slash final et gestion de réponse robuste
+        // Endpoint officiel MeSomb Balance
         const response = await fetch('https://mesomb.hachther.com/api/v1.1/payment/balance/', {
             method: 'GET',
             headers: {
@@ -64,21 +63,16 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
                 const errData = await response.json();
                 throw new Error(errData.detail || errData.message || `Erreur MeSomb (${response.status})`);
             } else {
-                // Si on reçoit du HTML, c'est que les clés ou l'URL sont invalides
-                throw new Error(`Le service MeSomb est inaccessible ou vos clés API sont invalides (Erreur ${response.status}).`);
+                throw new Error("Impossible de joindre les serveurs MeSomb. Vérifiez vos clés.");
             }
         }
 
-        if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            return { 
-                success: true, 
-                balance: data.balance, 
-                currency: data.currency || 'XAF' 
-            };
-        } else {
-            throw new Error("Réponse API invalide : MeSomb n'a pas renvoyé de données JSON.");
-        }
+        const data = await response.json();
+        return { 
+            success: true, 
+            balance: data.balance, 
+            currency: data.currency || 'XAF' 
+        };
 
     } catch (error: any) {
         console.error("[MeSomb Balance Error]:", error.message);
@@ -157,7 +151,7 @@ export async function initiateMeSombPayment(params: MeSombPaymentParams): Promis
             const errData = await response.json();
             return { success: false, error: errData.detail || errData.message || "Transaction refusée." };
         }
-        return { success: false, error: "Impossible de contacter MeSomb." };
+        return { success: false, error: "L'appel API MeSomb a échoué." };
     }
 
     const data = await response.json();
