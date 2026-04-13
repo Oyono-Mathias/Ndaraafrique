@@ -23,13 +23,15 @@ Bienvenue sur la version **Elite** de **Ndara Afrique**, l'infrastructure du sav
 - **Finances Mobiles** : Suivi des ventes et demandes de retrait directes vers Mobile Money.
 - **Impact Communautaire** : Annuaire des élèves, correction de devoirs assistée par l'IA et mur des avis.
 
-## 🛠️ Stack Technique & Sécurité
-- **Framework** : Next.js 14 (App Router) - Optimisé SEO & PWA.
-- **Base de données** : Firebase Firestore (Real-time Sync).
-- **Authentification** : Firebase Auth (Multi-rôle : Admin, Expert, Ndara).
-- **IA** : Firebase Genkit & Gemini 1.5 Flash (Moteurs Mathias).
-- **Média** : Bunny.net (Stream & CDN) pour une sécurité vidéo maximale.
-- **Paiements** : Moneroo & MeSomb (Paiements Panafricains).
+## 🛠️ Stack Technique & Prestige (VS PHP)
+Ndara Afrique ne repose pas sur des technologies web traditionnelles (comme PHP/Apache). Nous utilisons une architecture **Edge-Ready** :
+
+- **Framework** : Next.js 14 (React) - Rendu ultra-rapide et SEO optimisé.
+- **Langage** : TypeScript - Sécurité maximale des transactions financières.
+- **Base de données** : Firebase Firestore - **Real-time Sync** (pas de rechargement de page).
+- **IA** : Firebase Genkit & Gemini 1.5 Flash - Moteurs Mathias intégrés nativement.
+- **Média** : Bunny.net (Stream & CDN) - Protection vidéo de niveau bancaire.
+- **Paiements** : MeSomb & Moneroo - Intégration directe des passerelles Mobile Money.
 
 ---
 **"Bara ala, Tonga na ndara."**
