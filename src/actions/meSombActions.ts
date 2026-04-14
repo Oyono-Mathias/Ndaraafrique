@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * Actions serveur MeSomb (version corrigée)
+ * @fileOverview Actions serveur MeSomb sécurisées par Signature.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -15,7 +15,6 @@ export type MeSombResponse =
   | { success: true; type: 'SIMULATED'; message: string }
   | { success: false; error: string };
 
-/** 💸 Initier un paiement Mobile Money */
 export async function initiateMeSombPayment(params: {
   amount: number;
   phoneNumber: string;
@@ -52,7 +51,7 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // Numéro propre
+    // Normalisation du numéro (Cameroun)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
@@ -63,14 +62,14 @@ export async function initiateMeSombPayment(params: {
     const payload = {
       amount: params.amount,
       service: params.service,
-      payer: cleanPhone,           // ← CORRIGÉ : payer au lieu de receiver
+      payer: cleanPhone,
       currency: 'XAF',
       nonce: Math.random().toString(36).substring(2, 15),
     };
 
+    // Appel via le client avec signature
     const data = await fetchMeSomb('payment/collect/', 'POST', payload);
 
-    // Enregistrement en base
     await db.collection('payments').doc(internalRef).set({
       id: internalRef,
       userId: params.userId,
@@ -92,16 +91,15 @@ export async function initiateMeSombPayment(params: {
       success: true, 
       type: 'REAL', 
       transactionId: internalRef, 
-      message: "Veuillez valider l'opération sur votre téléphone." 
+      message: "Veuillez valider le prompt USSD sur votre téléphone." 
     };
 
   } catch (error: any) {
-    console.error("[MeSomb Payment Error]", error.message);
-    return { success: false, error: error.message || "Erreur lors du paiement" };
+    console.error("[MeSomb Action Error]", error.message);
+    return { success: false, error: error.message || "Erreur lors de la communication avec MeSomb" };
   }
 }
 
-/** 💰 Récupérer le solde du compte marchand */
 export async function getMeSombBalanceAction(adminId: string) {
   try {
     const db = getAdminDb();
@@ -111,8 +109,7 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    // Endpoint corrigé (le vrai endpoint pour avoir des infos sur l'application)
-    const data = await fetchMeSomb('application/status/', 'GET');   // ← CORRIGÉ
+    const data = await fetchMeSomb('application/status/', 'GET');
 
     return { 
       success: true, 

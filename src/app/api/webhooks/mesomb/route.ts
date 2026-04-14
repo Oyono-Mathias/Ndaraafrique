@@ -1,12 +1,10 @@
-
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 import { fetchMeSomb } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb sécurisé.
- * ✅ VALIDATION : Utilise la signature HMAC pour vérifier le statut réel.
+ * @fileOverview Webhook MeSomb sécurisé par Double-Signature.
  */
 
 export async function POST(req: Request) {
@@ -24,7 +22,7 @@ export async function POST(req: Request) {
 
     const storedData = paymentDoc.data();
 
-    // 🛡️ DOUBLE-VÉRIFICATION SÉCURISÉE (Signature HMAC)
+    // 🛡️ VÉRIFICATION DE SÉCURITÉ : On demande au serveur MeSomb le statut via Signature
     const gatewayId = txnData.pk || txnData.id;
     const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, 'GET');
 
@@ -37,7 +35,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'ignored' });
     }
 
-    // ✅ DÉCLENCHEMENT DU PROCESSEUR FINANCIER
+    // ✅ VALIDATION ET CRÉDIT DU WALLET
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
