@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur MeSomb (Version Reset Token Auth).
+ * @fileOverview Actions serveur MeSomb avec Signature HMAC.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -51,7 +51,6 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // Normalisation du numéro (Cameroun par défaut)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
@@ -63,11 +62,10 @@ export async function initiateMeSombPayment(params: {
       amount: params.amount,
       service: params.service,
       payer: cleanPhone,
+      country: 'CM',
       currency: 'XAF',
-      nonce: Math.random().toString(36).substring(2, 15),
     };
 
-    // ✅ CORRECTION APPEL : 2 arguments (endpoint, options)
     const data = await fetchMeSomb('payment/collect/', {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -112,7 +110,6 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    // ✅ CORRECTION APPEL : 2 arguments (endpoint, options)
     const data = await fetchMeSomb('application/status/', {
       method: 'GET'
     });
