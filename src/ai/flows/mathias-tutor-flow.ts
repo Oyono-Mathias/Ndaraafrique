@@ -44,7 +44,7 @@ const getCourseCatalog = ai.defineTool(
                 }
             });
         } catch (e) {
-            console.error("MATHIAS Tool Error (getCourseCatalog):", e);
+            console.warn("MATHIAS Tool Warning (getCourseCatalog): Admin not fully initialized or no DB access.");
             return [];
         }
     }
@@ -77,7 +77,7 @@ const searchFaq = ai.defineTool(
             }
             return { answer: undefined };
         } catch(e) {
-            console.error("MATHIAS Tool Error (searchFaq):", e);
+            console.warn("MATHIAS Tool Warning (searchFaq): Admin not fully initialized or no DB access.");
             return { answer: undefined };
         }
     }
@@ -92,24 +92,17 @@ const mathiasTutorPrompt = ai.definePrompt({
   input: {schema: MathiasTutorInputSchema},
   output: {schema: MathiasTutorOutputSchema},
   tools: [getCourseCatalog, searchFaq],
-  prompt: `Tu es MATHIAS, le tuteur IA sage, bienveillant et encourageant de Ndara Afrique.
-  Ton rôle est d'accompagner les étudiants vers la réussite avec patience.
-  
-  **RÈGLES D'OR :**
-  1. Réponds EXCLUSIVEMENT en Français.
-  2. Présente-toi toujours comme MATHIAS.
-  3. Utilise 'searchFaq' si l'étudiant pose une question pratique (certificats, paiements, etc.).
-  4. Utilise 'getCourseCatalog' si l'étudiant demande quels sont les cours disponibles ou leurs prix.
-  5. Si aucun outil ne donne de réponse, utilise tes connaissances générales pour aider l'étudiant de manière pédagogique.
-  6. Ton ton doit être chaleureux et culturellement adapté à l'Afrique francophone.
-  
+  system: `Tu es MATHIAS, le tuteur IA sage, bienveillant et hautement compétent de Ndara Afrique. 
+  Ton but est d'accompagner les étudiants africains vers la réussite avec patience et clarté.
+  Réponds toujours en Français, avec un ton chaleureux et encourageant.
+  Si on te pose une question sur un cours, utilise tes outils pour vérifier les informations si nécessaire.`,
+  prompt: `
   {{#if courseContext}}
-  CONTEXTE DU COURS : {{{courseContext}}}
+  Je suis actuellement en train de regarder le cours/leçon suivant : {{{courseContext}}}
   {{/if}}
 
-  QUESTION DE L'ÉTUDIANT : {{{query}}}
-
-  RÉPONSE DE MATHIAS :`,
+  Voici ma question : {{{query}}}
+  `,
 });
 
 const mathiasTutorFlow = ai.defineFlow(
@@ -128,7 +121,7 @@ const mathiasTutorFlow = ai.defineFlow(
     } catch (error: any) {
         console.error("Mathias Flow Execution Error:", error);
         return { 
-            response: "Bara ala ! J'ai eu un petit vertige technique. Vous pouvez réessayer dans quelques secondes.",
+            response: "Bara ala ! J'ai eu un petit vertige technique. Vérifiez votre connexion ou réessayez dans quelques secondes. (Erreur: " + (error.message || "IA_TIMEOUT") + ")",
             isError: true 
         };
     }

@@ -111,6 +111,9 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                 if (viewport) viewport.scrollTop = viewport.scrollHeight;
             }
         }, 100);
+    }, (error) => {
+        console.error("Firestore Listen Error:", error);
+        setIsHistoryLoading(false);
     });
 
     return () => unsubscribe();
@@ -140,8 +143,8 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   const displayedMessages = useMemo(() => {
     const sorted = [...messages].sort((a, b) => {
-        const timeA = (a.timestamp as any)?.toDate ? (a.timestamp as any).toDate().getTime() : new Date(a.timestamp).getTime();
-        const timeB = (b.timestamp as any)?.toDate ? (b.timestamp as any).toDate().getTime() : new Date(b.timestamp).getTime();
+        const timeA = (a.timestamp as any)?.toDate ? (a.timestamp as any).toDate().getTime() : new Date(a.timestamp || 0).getTime();
+        const timeB = (b.timestamp as any)?.toDate ? (b.timestamp as any).toDate().getTime() : new Date(b.timestamp || 0).getTime();
         return timeA - timeB;
     });
     
@@ -163,27 +166,38 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     setHasError(false);
 
     try {
-      const result = await mathiasTutor({ query: messageToSend, courseContext: initialContext || undefined });
-      
+      // 1. Enregistrer le message de l'utilisateur immédiatement
       const batch = writeBatch(db);
       const userMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
-      const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
-      
       batch.set(userMsgRef, { sender: "user", text: messageToSend, timestamp: serverTimestamp() });
-      batch.set(aiMsgRef, { 
+      await batch.commit();
+
+      // 2. Appeler Mathias
+      const result = await mathiasTutor({ query: messageToSend, courseContext: initialContext || undefined });
+      
+      // 3. Enregistrer la réponse de Mathias
+      const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
+      await setDoc(aiMsgRef, { 
         sender: "ai", 
         text: result.response, 
         timestamp: serverTimestamp(),
         error: result.isError 
       });
-      await batch.commit();
 
       if (result.isError) {
           setHasError(true);
       }
-    } catch (error) {
-      console.error("Tutor error:", error);
+    } catch (error: any) {
+      console.error("Tutor communication error:", error);
       setHasError(true);
+      // Fallback message en cas d'erreur de communication serveur
+      const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
+      await setDoc(aiMsgRef, { 
+        sender: "ai", 
+        text: "Bara ala ! Je n'ai pas pu vous répondre car mon cerveau est temporairement déconnecté. Vérifiez votre clé API Gemini sur Vercel.", 
+        timestamp: serverTimestamp(),
+        error: true 
+      }).catch(console.error);
     } finally {
       setIsAiResponding(false);
     }
@@ -232,10 +246,10 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
           {displayedMessages.map((msg, idx) => {
             const isMe = msg.sender === "user";
-            const date = (msg.timestamp as any)?.toDate ? (msg.timestamp as any).toDate() : new Date(msg.timestamp);
+            const date = (msg.timestamp as any)?.toDate ? (msg.timestamp as any).toDate() : new Date(msg.timestamp || 0);
             
             const prevMsg = displayedMessages[idx - 1];
-            const prevDate = prevMsg ? ((prevMsg.timestamp as any)?.toDate ? (prevMsg.timestamp as any).toDate() : new Date(prevMsg.timestamp)) : null;
+            const prevDate = prevMsg ? ((prevMsg.timestamp as any)?.toDate ? (prevMsg.timestamp as any).toDate() : new Date(prevMsg.timestamp || 0)) : null;
             const showDateSeparator = !prevDate || !isSameDay(date, prevDate);
 
             return (
