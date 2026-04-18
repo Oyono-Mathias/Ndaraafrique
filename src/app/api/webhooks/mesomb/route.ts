@@ -4,7 +4,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 import { fetchMeSomb } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb sécurisé (Reset Token Auth).
+ * @fileOverview Webhook MeSomb sécurisé avec vérification par Signature.
  */
 
 export async function POST(req: Request) {
@@ -20,10 +20,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // 🛡️ DOUBLE VÉRIFICATION DE SÉCURITÉ
+    // 🛡️ DOUBLE VÉRIFICATION DE SÉCURITÉ (Utilise le nouveau client signé)
     console.log(`[Webhook MeSomb] Back-check de la transaction ${gatewayId}...`);
     
-    // ✅ CORRECTION APPEL : 2 arguments (endpoint, options)
     const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, {
       method: 'GET'
     });
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'User identification failed' }, { status: 400 });
     }
 
-    // VALIDATION FINALE
+    // VALIDATION FINALE DANS LE PROCESSEUR NDARA
     await processNdaraPayment({
       transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
