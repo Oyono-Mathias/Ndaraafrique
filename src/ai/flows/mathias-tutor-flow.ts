@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Implements the MATHIAS AI Tutor Chat flow for student assistance.
+ * Les instructions de personnalité (System Prompt) sont centralisées ici.
  */
 
 import {ai} from '@/ai/genkit';
@@ -9,14 +10,14 @@ import {z} from 'genkit';
 import { getAdminDb } from '@/firebase/admin';
 
 const MathiasTutorInputSchema = z.object({
-  query: z.string().describe('The student’s question or request for the AI tutor.'),
-  courseContext: z.string().optional().describe('The ID or content of the course the student is currently viewing.'),
+  query: z.string().describe('La question ou la requête de l’étudiant pour le tuteur IA.'),
+  courseContext: z.string().optional().describe('L’ID ou le contenu du cours que l’étudiant consulte actuellement.'),
 });
 export type MathiasTutorInput = z.infer<typeof MathiasTutorInputSchema>;
 
 const MathiasTutorOutputSchema = z.object({
-  response: z.string().describe('The AI tutor’s response to the student’s query.'),
-  isError: z.boolean().optional().describe('Flag indicating if the response is an error message.'),
+  response: z.string().describe('La réponse du tuteur IA à la requête de l’étudiant.'),
+  isError: z.boolean().optional().describe('Indicateur si la réponse est un message d’erreur.'),
 });
 export type MathiasTutorOutput = z.infer<typeof MathiasTutorOutputSchema>;
 
@@ -44,7 +45,7 @@ const getCourseCatalog = ai.defineTool(
                 }
             });
         } catch (e) {
-            console.warn("MATHIAS Tool Warning (getCourseCatalog): Admin not fully initialized or no DB access.");
+            console.warn("MATHIAS Tool Warning (getCourseCatalog): Pas d'accès DB.");
             return [];
         }
     }
@@ -53,7 +54,7 @@ const getCourseCatalog = ai.defineTool(
 const searchFaq = ai.defineTool(
     {
         name: 'searchFaq',
-        description: 'Recherche une réponse dans la FAQ de la plateforme.',
+        description: 'Recherche une réponse dans la base de connaissances (FAQ) de la plateforme.',
         inputSchema: z.object({
             query: z.string().describe("La question de l'utilisateur à chercher."),
         }),
@@ -77,7 +78,7 @@ const searchFaq = ai.defineTool(
             }
             return { answer: undefined };
         } catch(e) {
-            console.warn("MATHIAS Tool Warning (searchFaq): Admin not fully initialized or no DB access.");
+            console.warn("MATHIAS Tool Warning (searchFaq): Pas d'accès DB.");
             return { answer: undefined };
         }
     }
@@ -92,16 +93,25 @@ const mathiasTutorPrompt = ai.definePrompt({
   input: {schema: MathiasTutorInputSchema},
   output: {schema: MathiasTutorOutputSchema},
   tools: [getCourseCatalog, searchFaq],
-  system: `Tu es MATHIAS, le tuteur IA sage, bienveillant et hautement compétent de Ndara Afrique. 
-  Ton but est d'accompagner les étudiants africains vers la réussite avec patience et clarté.
-  Réponds toujours en Français, avec un ton chaleureux et encourageant.
-  Si on te pose une question sur un cours, utilise tes outils pour vérifier les informations si nécessaire.`,
+  system: `Tu es MATHIAS, le tuteur IA d'élite de Ndara Afrique, l'infrastructure du savoir panafricain. 
+  
+  TES DIRECTIVES DE PERSONNALITÉ :
+  1. TON : Sage, bienveillant, hautement compétent et encourageant. Tu es un mentor, pas juste une IA.
+  2. IDENTITÉ : Tu es fier de l'excellence africaine. Tu encourages l'autonomie financière et technologique du continent.
+  3. LANGUE : Tu réponds exclusivement en Français, mais tu peux utiliser des expressions de salutation comme "Bara ala" (Sango) pour renforcer la proximité.
+  4. MISSION : Accompagner les étudiants vers la réussite totale. Si un étudiant est perdu, guide-le étape par étape.
+  
+  TES DIRECTIVES TECHNIQUES :
+  - Si la question concerne un cours spécifique, utilise le contexte fourni.
+  - Si l'utilisateur demande des informations sur les prix ou le catalogue, utilise l'outil 'getCourseCatalog'.
+  - Si l'utilisateur a un problème technique ou une question générale, utilise 'searchFaq'.
+  - Ne sors JAMAIS du personnage. Tu es Mathias, 24h/24.`,
   prompt: `
   {{#if courseContext}}
-  Je suis actuellement en train de regarder le cours/leçon suivant : {{{courseContext}}}
+  CONTEXTE DU COURS ACTUEL : {{{courseContext}}}
   {{/if}}
 
-  Voici ma question : {{{query}}}
+  QUESTION DE L'ÉTUDIANT : {{{query}}}
   `,
 });
 
@@ -121,7 +131,7 @@ const mathiasTutorFlow = ai.defineFlow(
     } catch (error: any) {
         console.error("Mathias Flow Execution Error:", error);
         return { 
-            response: "Bara ala ! J'ai eu un petit vertige technique. Vérifiez votre connexion ou réessayez dans quelques secondes. (Erreur: " + (error.message || "IA_TIMEOUT") + ")",
+            response: "Bara ala ! J'ai eu un petit vertige technique. Ma connexion aux serveurs de savoir est temporairement instable. Réessaie dans quelques secondes. (Erreur: IA_CONNECT_FAIL)",
             isError: true 
         };
     }
