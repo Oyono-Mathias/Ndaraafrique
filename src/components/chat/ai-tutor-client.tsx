@@ -44,7 +44,8 @@ import {
     doc,
     writeBatch,
     serverTimestamp,
-    onSnapshot
+    onSnapshot,
+    setDoc
 } from "firebase/firestore";
 import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
