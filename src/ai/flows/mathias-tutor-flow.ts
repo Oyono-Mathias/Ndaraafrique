@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Implements the MATHIAS AI Tutor Chat flow for student assistance.
- * Les instructions de personnalité (System Prompt) sont centralisées ici.
+ * ✅ ROBUSTESSE : Gestion du fallback texte si le JSON échoue.
+ * ✅ DIAGNOSTIC : Logs détaillés pour identifier les échecs de connexion API.
  */
 
 import {ai} from '@/ai/genkit';
@@ -93,6 +94,9 @@ const mathiasTutorPrompt = ai.definePrompt({
   input: {schema: MathiasTutorInputSchema},
   output: {schema: MathiasTutorOutputSchema},
   tools: [getCourseCatalog, searchFaq],
+  config: {
+    temperature: 0.7,
+  },
   system: `Tu es MATHIAS, le tuteur IA d'élite de Ndara Afrique, l'infrastructure du savoir panafricain. 
   
   TES DIRECTIVES DE PERSONNALITÉ :
@@ -105,7 +109,7 @@ const mathiasTutorPrompt = ai.definePrompt({
   - Si la question concerne un cours spécifique, utilise le contexte fourni.
   - Si l'utilisateur demande des informations sur les prix ou le catalogue, utilise l'outil 'getCourseCatalog'.
   - Si l'utilisateur a un problème technique ou une question générale, utilise 'searchFaq'.
-  - Ne sors JAMAIS du personnage. Tu es Mathias, 24h/24.`,
+  - Réponds TOUJOURS au format JSON avec le champ "response".`,
   prompt: `
   {{#if courseContext}}
   CONTEXTE DU COURS ACTUEL : {{{courseContext}}}
@@ -123,15 +127,39 @@ const mathiasTutorFlow = ai.defineFlow(
   },
   async input => {
     try {
-        const {output} = await mathiasTutorPrompt(input);
-        if (!output || !output.response) {
-            throw new Error("L'IA n'a pas généré de contenu.");
+        console.log(`[Mathias] Appel Gemini pour : "${input.query.substring(0, 50)}..."`);
+        
+        const response = await mathiasTutorPrompt(input);
+        
+        // Tentative de récupération de la sortie structurée
+        if (response.output && response.output.response) {
+            return { response: response.output.response, isError: false };
         }
-        return { ...output, isError: false };
+        
+        // Fallback sur le texte brut si le schéma JSON a échoué
+        if (response.text) {
+            console.warn("[Mathias] L'IA n'a pas respecté le format JSON, utilisation du texte brut.");
+            return { response: response.text, isError: false };
+        }
+
+        throw new Error("Aucun contenu généré par Gemini.");
+
     } catch (error: any) {
-        console.error("Mathias Flow Execution Error:", error);
+        console.error("❌ MATHIAS_FLOW_CRITICAL_ERROR:", {
+            message: error.message,
+            stack: error.stack,
+            details: error
+        });
+
+        let errorMsg = "Bara ala ! J'ai eu un petit vertige technique. Ma connexion aux serveurs de savoir est temporairement instable. Réessaie dans quelques secondes. (Erreur: IA_CONNECT_FAIL)";
+        
+        // Message plus précis si on détecte une clé manquante
+        if (error.message?.includes('API_KEY')) {
+            errorMsg = "Bara ala ! Mon cerveau est déconnecté car la clé de savoir (API KEY) est manquante sur le serveur. Demande à l'administrateur de vérifier la configuration Vercel.";
+        }
+
         return { 
-            response: "Bara ala ! J'ai eu un petit vertige technique. Ma connexion aux serveurs de savoir est temporairement instable. Réessaie dans quelques secondes. (Erreur: IA_CONNECT_FAIL)",
+            response: errorMsg,
             isError: true 
         };
     }
