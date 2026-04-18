@@ -4,8 +4,7 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 import { fetchMeSomb } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb sécurisé.
- * Reçoit les confirmations de paiement et valide la transaction via l'API officielle.
+ * @fileOverview Webhook MeSomb sécurisé (Reset Token Auth).
  */
 
 export async function POST(req: Request) {
@@ -13,35 +12,32 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("[Webhook MeSomb] Notification reçue:", JSON.stringify(body));
 
-    // MeSomb envoie l'ID de transaction dans pk ou id
     const transaction = body.transaction || body;
     const gatewayId = transaction.pk || transaction.id;
     
-    // Récupérer la référence interne Ndara (transmise lors de l'initiation)
-    const extra = transaction.metadata || transaction.extra || body.extra;
-    const internalRef = extra?.internalReference || extra?.external_id;
-
     if (!gatewayId) {
-      console.error("[Webhook MeSomb] ID de transaction manquant dans le payload.");
+      console.error("[Webhook MeSomb] ID de transaction manquant.");
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
     // 🛡️ DOUBLE VÉRIFICATION DE SÉCURITÉ
-    // On demande directement au serveur MeSomb le statut de cette transaction
-    console.log(`[Webhook MeSomb] Vérification de la transaction ${gatewayId}...`);
-    const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, 'GET');
+    console.log(`[Webhook MeSomb] Back-check de la transaction ${gatewayId}...`);
+    
+    // ✅ CORRECTION APPEL : 2 arguments (endpoint, options)
+    const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, {
+      method: 'GET'
+    });
 
     if (officialTxn.status !== 'SUCCESS') {
-        console.warn(`[Webhook MeSomb] La transaction ${gatewayId} n'est pas marquée comme SUCCESS.`);
-        return NextResponse.json({ status: 'ignored', mesomb_status: officialTxn.status });
+        console.warn(`[Webhook MeSomb] Transaction ${gatewayId} non validée par MeSomb.`);
+        return NextResponse.json({ status: 'ignored' });
     }
 
-    // Si nous avons la référence interne, nous traitons le paiement
-    // Sinon, nous utilisons l'ID MeSomb comme fallback
-    const finalTransactionId = internalRef || `MESOMB-${gatewayId}`;
+    const extra = transaction.metadata || transaction.extra || body.extra;
+    const internalRef = extra?.internalReference || extra?.external_id || `MESOMB-${gatewayId}`;
 
     const db = getAdminDb();
-    const paymentDoc = await db.collection('payments').doc(finalTransactionId).get();
+    const paymentDoc = await db.collection('payments').doc(internalRef).get();
     
     let userId = officialTxn.customer?.id || officialTxn.external_id;
     let courseId = 'WALLET_TOPUP';
@@ -55,13 +51,12 @@ export async function POST(req: Request) {
     }
 
     if (!userId) {
-        console.error("[Webhook MeSomb] Impossible d'identifier l'utilisateur pour le crédit.");
-        return NextResponse.json({ error: 'User mapping failed' }, { status: 400 });
+        return NextResponse.json({ error: 'User identification failed' }, { status: 400 });
     }
 
-    // ✅ VALIDATION ET CRÉDIT DU WALLET VIA LE PROCESSEUR CENTRAL
+    // VALIDATION FINALE
     await processNdaraPayment({
-      transactionId: finalTransactionId,
+      transactionId: internalRef,
       gatewayTransactionId: String(gatewayId),
       provider: 'mesomb',
       amount: Number(officialTxn.amount),
@@ -74,11 +69,10 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log(`[Webhook MeSomb] Succès: Transaction ${gatewayId} traitée pour l'utilisateur ${userId}`);
     return NextResponse.json({ processed: true, transactionId: gatewayId });
 
   } catch (error: any) {
     console.error(`[Webhook MeSomb] Error:`, error.message);
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur MeSomb sécurisées par Signature.
+ * @fileOverview Actions serveur MeSomb (Version Reset Token Auth).
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -51,7 +51,7 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // Normalisation du numéro (Cameroun)
+    // Normalisation du numéro (Cameroun par défaut)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
@@ -67,8 +67,11 @@ export async function initiateMeSombPayment(params: {
       nonce: Math.random().toString(36).substring(2, 15),
     };
 
-    // Appel via le client avec signature
-    const data = await fetchMeSomb('payment/collect/', 'POST', payload);
+    // ✅ CORRECTION APPEL : 2 arguments (endpoint, options)
+    const data = await fetchMeSomb('payment/collect/', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
 
     await db.collection('payments').doc(internalRef).set({
       id: internalRef,
@@ -96,7 +99,7 @@ export async function initiateMeSombPayment(params: {
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
-    return { success: false, error: error.message || "Erreur lors de la communication avec MeSomb" };
+    return { success: false, error: error.message || "Erreur de communication avec MeSomb" };
   }
 }
 
@@ -109,7 +112,10 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    const data = await fetchMeSomb('application/status/', 'GET');
+    // ✅ CORRECTION APPEL : 2 arguments (endpoint, options)
+    const data = await fetchMeSomb('application/status/', {
+      method: 'GET'
+    });
 
     return { 
       success: true, 

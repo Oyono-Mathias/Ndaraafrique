@@ -1,56 +1,46 @@
-import crypto from "crypto";
-
 /**
- * @fileOverview Client API MeSomb avec SIGNATURE HMAC SHA1 OFFICIELLE.
+ * @fileOverview Client API MeSomb centralisé - Version Token Auth (Reset).
  * 🔒 SÉCURITÉ : Ce code s'exécute uniquement côté serveur.
  */
 
-const ACCESS_KEY = process.env.MESOMB_ACCESS_KEY;
-const SECRET_KEY = process.env.MESOMB_SECRET_KEY;
-const APP_KEY = process.env.MESOMB_APPLICATION_KEY;
+export async function fetchMeSomb(endpoint: string, options: RequestInit = {}) {
+  const apiKey = process.env.MESOMB_API_KEY;
+  const appKey = process.env.MESOMB_APP_KEY;
 
-export async function fetchMeSomb(endpoint: string, method = "POST", body: any = {}) {
-  if (!ACCESS_KEY || !SECRET_KEY || !APP_KEY) {
-    console.error("[MeSomb] CONFIG ERROR: Clés manquantes dans l'environnement.");
+  console.log("MESOMB CONFIG:", {
+    apiKey: !!apiKey,
+    appKey: !!appKey
+  });
+
+  if (!apiKey || !appKey) {
+    console.error("[MeSomb] Erreur : Clés API manquantes.");
     throw new Error("Configuration MeSomb incomplète.");
   }
 
-  // URL de production officielle
-  const url = `https://mesomb.com/en/api/v1.1/${endpoint.replace(/^\/+/, "")}`;
-
-  const nonce = Math.random().toString(36).substring(2);
-  const date = new Date().toISOString();
-  const bodyString = method === "GET" ? "" : JSON.stringify(body);
-
-  // 🔐 CONSTRUCTION DE LA SIGNATURE (Protocole MeSomb)
-  // Format : Method + "\n" + URL + "\n" + Date + "\n" + Nonce + "\n" + Body
-  const message = `${method}\n${url}\n${date}\n${nonce}\n${bodyString}`;
-
-  const signature = crypto
-    .createHmac("sha1", SECRET_KEY)
-    .update(message)
-    .digest("hex");
+  const cleanEndpoint = endpoint.replace(/^\/+/, "");
+  // Utilisation de l'URL hachther.com comme recommandé pour la stabilité
+  const url = `https://mesomb.hachther.com/api/v1.1/${cleanEndpoint}`;
 
   const headers = {
-    "Content-Type": "application/json",
-    "X-MeSomb-Date": date,
-    "X-MeSomb-Nonce": nonce,
-    "X-MeSomb-Application": APP_KEY,
-    "Authorization": `Signature ${ACCESS_KEY}:${signature}`,
+    ...(options.headers || {}),
+    'Authorization': `Token ${apiKey}`,
+    'X-MeSomb-Application': appKey,
+    'Content-Type': 'application/json',
   };
 
-  console.log(`[MeSomb] ${method} -> ${url}`);
+  console.log(`[MeSomb Request] ${options.method || 'GET'} -> ${url}`);
+  if (options.body) console.log("REQUEST BODY:", options.body);
 
   try {
-    const response = await fetch(url, {
-      method,
+    const response = await fetch(url, { 
+      ...options, 
       headers,
-      body: method !== "GET" ? bodyString : undefined,
-      cache: "no-store",
+      cache: 'no-store'
     });
 
     const text = await response.text();
     
+    // Détection si la réponse est un JSON valide
     if (!text.trim().startsWith("{") && !text.trim().startsWith("[")) {
       console.error("[MeSomb Error] Réponse non-JSON reçue.");
       throw new Error("Le serveur MeSomb a renvoyé une réponse invalide.");
@@ -59,13 +49,14 @@ export async function fetchMeSomb(endpoint: string, method = "POST", body: any =
     const data = JSON.parse(text);
 
     if (!response.ok) {
-      console.error("[MeSomb API Error]", data);
+      console.error("MESOMB API ERROR:", data);
       throw new Error(data?.detail || data?.message || `Erreur MeSomb (${response.status})`);
     }
 
+    console.log("MESOMB RESPONSE SUCCESS:", data);
     return data;
   } catch (error: any) {
-    console.error("[MeSomb Fatal]", error.message);
+    console.error("MESOMB FATAL ERROR:", error.message);
     throw error;
   }
 }
