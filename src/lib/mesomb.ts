@@ -1,4 +1,4 @@
-import { PaymentOperation, Signature } from '@hachther/mesomb';
+import { PaymentOperation } from '@hachther/mesomb';
 
 /**
  * @fileOverview Client MeSomb utilisant le SDK officiel pour garantir une signature HMAC-SHA1 parfaite.
@@ -30,5 +30,7 @@ export function getMeSombClient() {
  */
 export async function getMeSombTransactionStatus(transactionId: string) {
     const client = getMeSombClient();
-    return await client.getTransactionStatus(transactionId);
+    const response = await client.getTransactionStatus(transactionId);
+    // ✅ Correction : On retourne l'objet transaction directement
+    return (response as any).transaction; 
 }

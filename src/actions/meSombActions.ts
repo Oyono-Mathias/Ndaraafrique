@@ -73,7 +73,8 @@ export async function initiateMeSombPayment(params: {
     });
 
     if (response.isOperationSuccess()) {
-        const transaction = response.getTransaction();
+        // ✅ Correction : Accès direct à la propriété transaction
+        const transaction = (response as any).transaction; 
         
         await db.collection('payments').doc(internalRef).set({
           id: internalRef,
