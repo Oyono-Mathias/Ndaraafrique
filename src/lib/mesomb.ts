@@ -1,8 +1,8 @@
 import { createHash, createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Client MeSomb avec implémentation manuelle de MeSomb Signature V4 (SHA1).
- * Conforme aux Task 1, 2, 3 et 4 de la documentation officielle.
+ * @fileOverview Client MeSomb avec implémentation manuelle de MeSomb Signature V4 (HMAC-SHA1).
+ * Conforme aux Task 1, 2, 3 et 4 de la documentation officielle Ndara Afrique.
  */
 
 export async function fetchMeSombSigned(endpoint: string, options: RequestInit = {}) {
@@ -15,40 +15,33 @@ export async function fetchMeSombSigned(endpoint: string, options: RequestInit =
   }
 
   const method = (options.method || 'GET').toUpperCase();
-  // On s'assure que l'URL se termine par un slash si nécessaire pour le backend MeSomb
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const baseUrl = 'https://mesomb.hachther.com/api/v1.1';
   const fullUrl = new URL(`${baseUrl}${cleanEndpoint}`);
   
-  const host = fullUrl.host;
+  const host = fullUrl.host; // mesomb.hachther.com
   const path = fullUrl.pathname;
   
-  // Préparation du Query String Canonique (Task 1)
-  const queryParams = Array.from(fullUrl.searchParams.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join('&');
+  // 1. Préparation du corps compact (Task 1: HashedPayload)
+  const body = options.body ? String(options.body) : '{}';
+  const hashedPayload = createHash('sha1').update(body).digest('hex');
 
+  // 2. Gestion du Temps et du Nonce
   const now = new Date();
   const timestamp = Math.floor(now.getTime() / 1000).toString();
   const dateFormatted = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
   const nonce = randomBytes(8).toString('hex');
   const service = 'payment';
 
-  const body = options.body ? String(options.body) : '{}';
-  const hashedPayload = createHash('sha1').update(body).digest('hex');
-
-  // Headers Canoniques (Task 1)
-  // Note: Les noms doivent être en minuscule et triés
+  // 3. TASK 1: Canonical Request
+  // Headers à inclure dans la signature (Ordre alphabétique obligatoire)
   const headersToSign: Record<string, string> = {
+    'content-type': 'application/json',
     'host': host,
+    'x-mesomb-application': appKey,
     'x-mesomb-date': timestamp,
     'x-mesomb-nonce': nonce,
   };
-  
-  if (options.body) {
-    headersToSign['content-type'] = 'application/json';
-  }
 
   const signedHeadersList = Object.keys(headersToSign).sort().join(';');
   const canonicalHeaders = Object.keys(headersToSign)
@@ -56,11 +49,13 @@ export async function fetchMeSombSigned(endpoint: string, options: RequestInit =
     .map(h => `${h}:${headersToSign[h].trim()}\n`)
     .join('');
 
-  // TASK 1: Canonical Request
+  // Query String (Vide pour collect/status)
+  const canonicalQueryString = ''; 
+
   const canonicalRequest = [
     method,
     path,
-    queryParams,
+    canonicalQueryString,
     canonicalHeaders,
     signedHeadersList,
     hashedPayload
@@ -68,7 +63,7 @@ export async function fetchMeSombSigned(endpoint: string, options: RequestInit =
 
   const hashedCanonicalRequest = createHash('sha1').update(canonicalRequest).digest('hex');
 
-  // TASK 2: String to Sign
+  // 4. TASK 2: String to Sign
   const credentialScope = `${dateFormatted}/${service}/mesomb_request`;
   const stringToSign = [
     'HMAC-SHA1',
@@ -77,12 +72,12 @@ export async function fetchMeSombSigned(endpoint: string, options: RequestInit =
     hashedCanonicalRequest
   ].join('\n');
 
-  // TASK 3: Calculate Signature
+  // 5. TASK 3: Calculate Signature
   const signature = createHmac('sha1', secretKey)
     .update(stringToSign)
     .digest('hex');
 
-  // TASK 4: Authorization Header
+  // 6. TASK 4: Final Headers
   const authorizationHeader = `HMAC-SHA1 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeadersList}, Signature=${signature}`;
 
   const fetchHeaders: Record<string, string> = {
@@ -90,12 +85,9 @@ export async function fetchMeSombSigned(endpoint: string, options: RequestInit =
     'X-MeSomb-Application': appKey,
     'X-MeSomb-Date': timestamp,
     'X-MeSomb-Nonce': nonce,
+    'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
-
-  if (options.body) {
-    fetchHeaders['Content-Type'] = 'application/json';
-  }
 
   const response = await fetch(fullUrl.toString(), {
     ...options,
@@ -109,12 +101,14 @@ export async function fetchMeSombSigned(endpoint: string, options: RequestInit =
   const data = await response.json();
   
   if (!response.ok) {
-    console.error("[MeSomb API Error]", {
+    console.error("[MeSomb Bad Signature Debug]", {
         status: response.status,
-        data,
+        message: data.message,
+        canonicalRequest,
+        stringToSign,
         auth: authorizationHeader
     });
-    throw new Error(data.detail || data.message || `Erreur API MeSomb (${response.status})`);
+    throw new Error(data.detail || data.message || `Erreur MeSomb: ${response.status}`);
   }
 
   return data;
