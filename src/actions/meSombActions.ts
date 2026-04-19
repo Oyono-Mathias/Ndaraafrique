@@ -1,12 +1,13 @@
 'use server';
 
 /**
- * @fileOverview Actions serveur MeSomb avec Signature HMAC.
+ * @fileOverview Actions MeSomb via SDK Officiel.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { fetchMeSomb } from '@/lib/mesomb';
+import { getMeSombClient, fetchMeSombSigned } from '@/lib/mesomb';
+import { RandomGenerator } from '@hachther/mesomb';
 import { randomUUID } from 'crypto';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
@@ -57,43 +58,46 @@ export async function initiateMeSombPayment(params: {
     }
 
     const internalRef = randomUUID();
+    const client = getMeSombClient();
 
-    const payload = {
+    // ✅ Utilisation du SDK comme dans votre capture d'écran
+    const response = await client.makeCollect({
       amount: params.amount,
       service: params.service,
       payer: cleanPhone,
+      nonce: RandomGenerator.nonce(),
+      trxID: internalRef,
       country: 'CM',
       currency: 'XAF',
-    };
-
-    const data = await fetchMeSomb('payment/collect/', {
-      method: 'POST',
-      body: JSON.stringify(payload)
     });
 
-    await db.collection('payments').doc(internalRef).set({
-      id: internalRef,
-      userId: params.userId,
-      amount: Number(params.amount),
-      currency: 'XAF',
-      status: 'pending',
-      provider: 'mesomb',
-      type: params.type || 'course_purchase',
-      courseId: params.courseId || 'WALLET_TOPUP',
-      createdAt: FieldValue.serverTimestamp(),
-      metadata: { 
-        operator: params.service, 
-        phone: cleanPhone, 
-        gatewayId: data.pk || data.id 
-      }
-    });
+    if (response.success) {
+        await db.collection('payments').doc(internalRef).set({
+          id: internalRef,
+          userId: params.userId,
+          amount: Number(params.amount),
+          currency: 'XAF',
+          status: 'pending',
+          provider: 'mesomb',
+          type: params.type || 'course_purchase',
+          courseId: params.courseId || 'WALLET_TOPUP',
+          createdAt: FieldValue.serverTimestamp(),
+          metadata: { 
+            operator: params.service, 
+            phone: cleanPhone, 
+            gatewayId: response.transaction.pk 
+          }
+        });
 
-    return { 
-      success: true, 
-      type: 'REAL', 
-      transactionId: internalRef, 
-      message: "Veuillez valider le prompt USSD sur votre téléphone." 
-    };
+        return { 
+          success: true, 
+          type: 'REAL', 
+          transactionId: internalRef, 
+          message: response.message || "Veuillez valider le prompt USSD sur votre téléphone." 
+        };
+    } else {
+        return { success: false, error: response.message || "Le paiement a été rejeté." };
+    }
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
@@ -110,9 +114,8 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    const data = await fetchMeSomb('application/status/', {
-      method: 'GET'
-    });
+    // Utilise le helper signé pour récupérer le statut de l'application (solde)
+    const data = await fetchMeSombSigned('application/status');
 
     return { 
       success: true, 

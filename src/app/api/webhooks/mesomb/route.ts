@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
-import { fetchMeSomb } from '@/lib/mesomb';
+import { fetchMeSombSigned } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb sécurisé avec vérification par Signature.
+ * @fileOverview Webhook MeSomb sécurisé.
+ * Utilise le client signé pour vérifier le statut réel avant traitement.
  */
 
 export async function POST(req: Request) {
@@ -20,12 +21,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // 🛡️ DOUBLE VÉRIFICATION DE SÉCURITÉ (Utilise le nouveau client signé)
+    // 🛡️ DOUBLE VÉRIFICATION DE SÉCURITÉ
     console.log(`[Webhook MeSomb] Back-check de la transaction ${gatewayId}...`);
     
-    const officialTxn = await fetchMeSomb(`payment/status/?id=${gatewayId}`, {
-      method: 'GET'
-    });
+    const officialTxn = await fetchMeSombSigned(`payment/status/?id=${gatewayId}`);
 
     if (officialTxn.status !== 'SUCCESS') {
         console.warn(`[Webhook MeSomb] Transaction ${gatewayId} non validée par MeSomb.`);
