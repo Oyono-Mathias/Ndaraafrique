@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
-import { fetchMeSombSigned } from '@/lib/mesomb';
+import { getMeSombTransactionStatus } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb sécurisé par signature V4.
+ * @fileOverview Webhook MeSomb utilisant le SDK pour une vérification de statut certifiée.
  */
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("[Webhook MeSomb] Notification reçue:", JSON.stringify(body));
-
     const transaction = body.transaction || body;
     const gatewayId = transaction.pk || transaction.id;
     
@@ -19,18 +17,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // Double vérification signée Task 4
-    console.log(`[Webhook MeSomb] Vérification de la transaction ${gatewayId}...`);
-    
-    const officialTxn = await fetchMeSombSigned(`payment/status/?id=${gatewayId}`);
+    // Double vérification sécurisée via le SDK (Vérification signée par MeSomb)
+    const officialTxn = await getMeSombTransactionStatus(gatewayId);
 
     if (officialTxn.status !== 'SUCCESS') {
-        console.warn(`[Webhook MeSomb] Transaction ${gatewayId} non confirmée.`);
         return NextResponse.json({ status: 'ignored' });
     }
 
     const extra = transaction.metadata || transaction.extra || body.extra;
-    const internalRef = extra?.internalReference || extra?.external_id || `MESOMB-${gatewayId}`;
+    const internalRef = extra?.internalReference || `MESOMB-${gatewayId}`;
 
     const db = getAdminDb();
     const paymentDoc = await db.collection('payments').doc(internalRef).get();
