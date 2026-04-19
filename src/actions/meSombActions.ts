@@ -1,13 +1,12 @@
 'use server';
 
 /**
- * @fileOverview Actions MeSomb via SDK Officiel.
+ * @fileOverview Actions MeSomb utilisant le client à signature manuelle V4.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, fetchMeSombSigned } from '@/lib/mesomb';
-import { RandomGenerator } from '@hachther/mesomb';
+import { fetchMeSombSigned } from '@/lib/mesomb';
 import { randomUUID } from 'crypto';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
@@ -58,20 +57,25 @@ export async function initiateMeSombPayment(params: {
     }
 
     const internalRef = randomUUID();
-    const client = getMeSombClient();
 
-    // ✅ Utilisation du SDK comme dans votre capture d'écran
-    const response = await client.makeCollect({
-      amount: params.amount,
-      service: params.service,
-      payer: cleanPhone,
-      nonce: RandomGenerator.nonce(),
-      trxID: internalRef,
-      country: 'CM',
-      currency: 'XAF',
+    const payload = {
+        amount: params.amount,
+        service: params.service,
+        payer: cleanPhone,
+        country: 'CM',
+        currency: 'XAF',
+        extra: {
+            internalReference: internalRef
+        }
+    };
+
+    // Appel signé Task 4
+    const response = await fetchMeSombSigned('payment/collect/', {
+        method: 'POST',
+        body: JSON.stringify(payload)
     });
 
-    if (response.success) {
+    if (response.status === 'SUCCESS' || response.status === 'PENDING') {
         await db.collection('payments').doc(internalRef).set({
           id: internalRef,
           userId: params.userId,
@@ -114,8 +118,7 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    // Utilise le helper signé pour récupérer le statut de l'application (solde)
-    const data = await fetchMeSombSigned('application/status');
+    const data = await fetchMeSombSigned('application/status/');
 
     return { 
       success: true, 
