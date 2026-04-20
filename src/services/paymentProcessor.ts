@@ -5,10 +5,12 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course } from '@/lib/types';
 
 /**
- * ✅ Processeur financier sécurisé et corrigé
- * ✔ Respect strict Firestore (READ → WRITE)
- * ✔ Idempotent (pas de double paiement)
- * ✔ Compatible wallet + achat cours
+ * ✅ Processeur financier COMPLET
+ * ✔ Wallet (crédit + débit)
+ * ✔ Achat cours sécurisé
+ * ✔ Anti double paiement
+ * ✔ Idempotent
+ * ✔ Respect Firestore
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -25,12 +27,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const userRef = db.collection('users').doc(metadata.userId);
 
       // ======================
-      // ✅ 1. READS (TOUJOURS EN PREMIER)
+      // ✅ 1. TOUS LES READS
       // ======================
 
       const paymentSnap = await transaction.get(paymentRef);
 
-      // Idempotence (évite double traitement)
       if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
         return { success: true, alreadyProcessed: true };
       }
@@ -38,19 +39,27 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const userSnap = await transaction.get(userRef);
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
 
+      const userData = userSnap.data();
+
       const isSimulated = metadata.isSimulated === true || provider === 'simulated';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
       let courseSnap = null;
       let courseRef = null;
+      let enrollmentRef = null;
+      let enrollmentSnap = null;
 
       if (!isTopup && metadata.courseId) {
         courseRef = db.collection('courses').doc(metadata.courseId);
-        courseSnap = await transaction.get(courseRef); // ✅ READ AVANT WRITE
+        courseSnap = await transaction.get(courseRef);
+
+        const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
+        enrollmentRef = db.collection('enrollments').doc(enrollmentId);
+        enrollmentSnap = await transaction.get(enrollmentRef);
       }
 
       // ======================
-      // ✅ 2. WRITES (APRÈS TOUS LES READS)
+      // ✅ 2. WRITES
       // ======================
 
       const paymentData = {
@@ -74,8 +83,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       // 💾 Enregistrer paiement
       transaction.set(paymentRef, paymentData, { merge: true });
 
+      // ======================
+      // 💰 CAS 1 : RECHARGE WALLET
+      // ======================
       if (isTopup) {
-        // 💰 Recharge wallet
+
         const field = isSimulated ? 'virtualBalance' : 'balance';
 
         transaction.update(userRef, {
@@ -83,14 +95,37 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           updatedAt: FieldValue.serverTimestamp()
         });
 
-      } else if (courseSnap && courseSnap.exists && courseRef) {
+      }
+
+      // ======================
+      // 🎓 CAS 2 : ACHAT COURS
+      // ======================
+      else if (courseSnap && courseSnap.exists && courseRef && enrollmentRef) {
+
+        // 🔒 Anti double achat
+        if (enrollmentSnap && enrollmentSnap.exists) {
+          return { success: true, alreadyEnrolled: true };
+        }
 
         const courseData = courseSnap.data() as Course;
-        const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
 
-        // 🎓 Inscription cours
-        transaction.set(db.collection('enrollments').doc(enrollmentId), {
-          id: enrollmentId,
+        // 💰 Débit wallet (si réel)
+        if (!isSimulated) {
+          const currentBalance = userData.balance || 0;
+
+          if (currentBalance < Number(amount)) {
+            throw new Error("SOLDE_INSUFFISANT");
+          }
+
+          transaction.update(userRef, {
+            balance: currentBalance - Number(amount),
+            updatedAt: FieldValue.serverTimestamp()
+          });
+        }
+
+        // 🎓 Inscription
+        transaction.set(enrollmentRef, {
+          id: `${metadata.userId}_${metadata.courseId}`,
           studentId: metadata.userId,
           courseId: metadata.courseId,
           instructorId: courseData.instructorId,
@@ -102,12 +137,12 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           priceAtEnrollment: Number(amount)
         });
 
-        // 📊 Update stats cours
+        // 📊 Update cours
         transaction.update(courseRef, {
           participantsCount: FieldValue.increment(1)
         });
 
-        // 💸 Paiement formateur (70%)
+        // 💸 Paiement formateur
         if (!isSimulated && courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
           const instructorRef = db.collection('users').doc(courseData.instructorId);
           const share = Number(amount) * 0.7;
