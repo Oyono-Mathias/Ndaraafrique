@@ -73,7 +73,7 @@ export async function initiateMeSombPayment(params: {
     });
 
     if (response.isOperationSuccess()) {
-        // ✅ Correction : Accès direct à la propriété transaction
+        // ✅ Correction : Accès direct à la propriété transaction via un cast 'any'
         const transaction = (response as any).transaction; 
         
         await db.collection('payments').doc(internalRef).set({

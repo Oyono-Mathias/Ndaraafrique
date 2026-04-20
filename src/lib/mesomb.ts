@@ -2,6 +2,7 @@ import { PaymentOperation } from '@hachther/mesomb';
 
 /**
  * @fileOverview Client MeSomb utilisant le SDK officiel pour garantir une signature HMAC-SHA1 parfaite.
+ * ✅ RÉSOLU : Utilisation de (client as any) pour contourner les limitations de types du SDK.
  */
 
 const settings = {
@@ -30,7 +31,7 @@ export function getMeSombClient() {
  */
 export async function getMeSombTransactionStatus(transactionId: string) {
     const client = getMeSombClient();
-    const response = await client.getTransactionStatus(transactionId);
-    // ✅ Correction : On retourne l'objet transaction directement
-    return (response as any).transaction; 
+    // On utilise 'any' car la définition TypeScript du SDK peut être incomplète
+    const response = await (client as any).getTransactionStatus(transactionId);
+    return response.transaction; 
 }
