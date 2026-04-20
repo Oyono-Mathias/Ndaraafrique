@@ -7,7 +7,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
-export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge';
+export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated';
 
 export interface Role {
   id: string;
@@ -223,6 +223,7 @@ export interface Enrollment {
   instructorId: string;
   status: 'active' | 'completed' | 'suspended';
   progress: number;
+  isSimulated?: boolean;
   enrollmentDate: Timestamp | FieldValue | Date;
   lastAccessedAt: Timestamp | FieldValue | Date;
   priceAtEnrollment?: number;
@@ -296,12 +297,16 @@ export interface Payment {
   currency: string;
   provider: PaymentProvider | string;
   status: 'completed' | 'pending' | 'failed' | 'refunded';
+  type: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase';
+  isSimulated: boolean;
   date: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
   metadata?: {
-    type?: string;
     adminId?: string;
     reason?: string;
+    operator?: string;
+    phone?: string;
+    gatewayId?: string;
     [key: string]: any;
   };
   fraudReview?: {
@@ -311,6 +316,7 @@ export interface Payment {
     reviewed?: boolean;
   };
   platformFee?: number;
+  instructorId?: string;
 }
 
 export interface RequestPayoutParams {
@@ -393,9 +399,6 @@ export interface DesignSettings {
   fontScale: 'small' | 'medium' | 'large';
 }
 
-/**
- * STRUCTURE DE CONFIGURATION GLOBALE NDARA - v3.0 (Strict Execution)
- */
 export interface Settings {
   general: {
     siteName: string;
@@ -684,9 +687,11 @@ export interface NdaraPaymentDetails {
   metadata: {
     userId: string;
     courseId?: string;
-    type?: string;
+    type?: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase';
     affiliateId?: string;
     couponId?: string;
+    courseTitle?: string;
+    isSimulated?: boolean;
     fraudScore?: number;
     [key: string]: any;
   };

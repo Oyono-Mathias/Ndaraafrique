@@ -5,8 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.0
+ * ✅ Processeur financier SÉCURISÉ v3.1
  * Garantit le lien atomique entre Paiement et Accès au cours.
+ * ✅ TRAÇABILITÉ : Mise à jour du document de paiement existant ou création si manquant.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -34,7 +35,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const isSimulated = metadata.isSimulated === true || provider === 'simulated' || provider === 'admin_recharge_test';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-      // 💾 Enregistrement du reçu de paiement
+      // 💾 Mise à jour du reçu de paiement vers SUCCESS
       const paymentData = {
         id: String(transactionId),
         userId: metadata.userId,
@@ -43,13 +44,19 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         provider,
         status: 'completed',
         isSimulated,
-        date: FieldValue.serverTimestamp(),
+        type: metadata.type || (isTopup ? 'wallet_topup' : 'course_purchase'),
         updatedAt: FieldValue.serverTimestamp(),
         gatewayTransactionId: gatewayTransactionId || transactionId,
         courseId: metadata.courseId || 'WALLET_TOPUP',
         courseTitle: isTopup ? 'Recharge Portefeuille' : (metadata.courseTitle || 'Achat formation'),
         metadata: { ...metadata }
       };
+
+      // Si le document n'existe pas encore (cas achat direct wallet), on ajoute la date de création
+      if (!paymentSnap.exists) {
+          (paymentData as any).date = FieldValue.serverTimestamp();
+          (paymentData as any).createdAt = FieldValue.serverTimestamp();
+      }
 
       transaction.set(paymentRef, paymentData, { merge: true });
 
@@ -61,6 +68,16 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         transaction.update(userRef, {
           [targetField]: FieldValue.increment(Number(amount)),
           updatedAt: FieldValue.serverTimestamp()
+        });
+        
+        // Log de sécurité
+        const securityLogRef = db.collection('security_logs').doc();
+        transaction.set(securityLogRef, {
+            eventType: isSimulated ? 'wallet_topup_virtual' : 'wallet_topup_real',
+            userId: metadata.userId,
+            targetId: String(transactionId),
+            details: `Crédit de ${amount} ${currency} via ${provider}.`,
+            timestamp: FieldValue.serverTimestamp()
         });
       }
 
@@ -124,6 +141,16 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         // Mise à jour des statistiques du cours
         transaction.update(courseRef, {
           participantsCount: FieldValue.increment(1)
+        });
+
+        // Log de sécurité
+        const securityLogRef = db.collection('security_logs').doc();
+        transaction.set(securityLogRef, {
+            eventType: 'course_enrollment',
+            userId: metadata.userId,
+            targetId: metadata.courseId,
+            details: `Inscription au cours "${courseData.title}" validée par paiement ${provider}.`,
+            timestamp: FieldValue.serverTimestamp()
         });
       }
 

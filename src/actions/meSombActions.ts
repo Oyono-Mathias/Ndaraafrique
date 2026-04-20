@@ -3,6 +3,7 @@
 /**
  * @fileOverview Actions MeSomb utilisant le SDK officiel pour une sécurité maximale.
  * ✅ UNIFICATION : Utilise l'ID MeSomb (pk) comme ID de document Firestore.
+ * ✅ TRAÇABILITÉ : Création immédiate d'un document 'pending' pour historique.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -31,10 +32,11 @@ export async function initiateMeSombPayment(params: {
 
     const isTestMode = settings?.payments?.paymentMode === 'test';
 
-    // 1. GESTION DU MODE TEST
+    // 1. GESTION DU MODE TEST (SIMULATION)
     if (isTestMode) {
+      const simTxnId = `SIM-${Date.now()}`;
       await processNdaraPayment({
-        transactionId: `SIM-${Date.now()}`,
+        transactionId: simTxnId,
         provider: 'simulated',
         amount: params.amount,
         currency: 'XAF',
@@ -42,7 +44,8 @@ export async function initiateMeSombPayment(params: {
           userId: params.userId,
           type: params.type || 'course_purchase',
           courseId: params.courseId || 'WALLET_TOPUP',
-          isSimulated: true
+          isSimulated: true,
+          reason: 'Achat simulé (Mode Test)'
         }
       });
 
@@ -55,6 +58,7 @@ export async function initiateMeSombPayment(params: {
 
     // 2. PRÉPARATION DU PAIEMENT RÉEL (SDK)
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
+    // Normalisation Cameroun par défaut (MVP)
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
     }
@@ -77,16 +81,18 @@ export async function initiateMeSombPayment(params: {
         const transaction = (response as any).transaction; 
         const gatewayId = String(transaction.pk); // L'ID officiel MeSomb
         
-        // 💾 ENREGISTREMENT AVEC ID MESOMB POUR LE WEBHOOK
+        // 💾 ENREGISTREMENT IMMÉDIAT (STATUS: PENDING) POUR TRAÇABILITÉ
         await db.collection('payments').doc(gatewayId).set({
           id: gatewayId,
           userId: params.userId,
           amount: Number(params.amount),
           currency: 'XAF',
           status: 'pending',
-          provider: 'mesomb',
           type: params.type || 'course_purchase',
+          provider: params.service.toLowerCase(),
+          isSimulated: false,
           courseId: params.courseId || 'WALLET_TOPUP',
+          date: FieldValue.serverTimestamp(),
           createdAt: FieldValue.serverTimestamp(),
           metadata: { 
             operator: params.service, 
@@ -121,6 +127,7 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
+    // Le SDK peut avoir une méthode getSettings() ou similaire selon la version
     return { success: true, balance: 0, currency: 'XAF' };
   } catch (error: any) {
     return { success: false, error: error.message };
