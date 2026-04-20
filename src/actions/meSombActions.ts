@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Actions MeSomb utilisant le SDK officiel pour une sécurité maximale.
+ * ✅ UNIFICATION : Utilise l'ID MeSomb (pk) comme ID de document Firestore.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -73,11 +74,12 @@ export async function initiateMeSombPayment(params: {
     });
 
     if (response.isOperationSuccess()) {
-        // ✅ Correction : Accès direct à la propriété transaction via un cast 'any'
         const transaction = (response as any).transaction; 
+        const gatewayId = String(transaction.pk); // L'ID officiel MeSomb
         
-        await db.collection('payments').doc(internalRef).set({
-          id: internalRef,
+        // 💾 ENREGISTREMENT AVEC ID MESOMB POUR LE WEBHOOK
+        await db.collection('payments').doc(gatewayId).set({
+          id: gatewayId,
           userId: params.userId,
           amount: Number(params.amount),
           currency: 'XAF',
@@ -89,14 +91,15 @@ export async function initiateMeSombPayment(params: {
           metadata: { 
             operator: params.service, 
             phone: cleanPhone, 
-            gatewayId: transaction.pk 
+            gatewayId: gatewayId,
+            internalRef: internalRef
           }
         });
 
         return { 
           success: true, 
           type: 'REAL', 
-          transactionId: internalRef, 
+          transactionId: gatewayId, 
           message: "Veuillez valider le prompt USSD sur votre téléphone." 
         };
     } else {
@@ -118,8 +121,6 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    // Note: Le SDK actuel peut ne pas avoir de méthode directe pour le solde.
-    // On garde un placeholder ou on utilise l'API status de l'application si disponible.
     return { success: true, balance: 0, currency: 'XAF' };
   } catch (error: any) {
     return { success: false, error: error.message };

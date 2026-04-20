@@ -4,65 +4,79 @@ import { processNdaraPayment } from '@/services/paymentProcessor';
 import { getMeSombTransactionStatus } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb utilisant le SDK pour une vérification de statut certifiée.
+ * @fileOverview Webhook MeSomb fiabilisé pour Ndara Afrique.
+ * ✅ UNIFICATION : Cherche la transaction par ID direct.
+ * ✅ LOGS : Visibilité complète dans la console Vercel.
  */
 
 export async function POST(req: Request) {
+  const webhookId = `WH-${Date.now()}`;
+  console.log(`[${webhookId}] 📨 Webhook MeSomb reçu.`);
+
   try {
     const body = await req.json();
+    console.log(`[${webhookId}] Payload:`, JSON.stringify(body));
+
     const transaction = body.transaction || body;
-    const gatewayId = transaction.pk || transaction.id;
+    const gatewayId = String(transaction.pk || transaction.id);
     
     if (!gatewayId) {
+      console.error(`[${webhookId}] ❌ ID de transaction manquant dans le payload.`);
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // Double vérification sécurisée via le SDK (Vérification signée par MeSomb)
+    // 1. VÉRIFICATION DE SÉCURITÉ VIA SDK
+    console.log(`[${webhookId}] 🔍 Vérification statut MeSomb pour: ${gatewayId}`);
     const officialTxn = await getMeSombTransactionStatus(gatewayId);
 
     if (officialTxn.status !== 'SUCCESS') {
-        return NextResponse.json({ status: 'ignored' });
+        console.warn(`[${webhookId}] ⚠️ Transaction non réussie chez MeSomb (Statut: ${officialTxn.status}). Abandon.`);
+        return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
     }
 
-    const extra = transaction.metadata || transaction.extra || body.extra;
-    const internalRef = extra?.internalReference || `MESOMB-${gatewayId}`;
-
+    // 2. RÉCUPÉRATION DU DOCUMENT PAIEMENT
     const db = getAdminDb();
-    const paymentDoc = await db.collection('payments').doc(internalRef).get();
+    const paymentRef = db.collection('payments').doc(gatewayId);
+    const paymentDoc = await paymentRef.get();
     
-    let userId = officialTxn.customer?.id || officialTxn.external_id;
-    let courseId = 'WALLET_TOPUP';
-    let type = 'wallet_topup';
-
-    if (paymentDoc.exists) {
-        const storedData = paymentDoc.data();
-        userId = storedData?.userId;
-        courseId = storedData?.courseId;
-        type = storedData?.type || 'course_purchase';
+    if (!paymentDoc.exists) {
+        console.error(`[${webhookId}] ❌ Document paiement introuvable dans Firestore pour l'ID: ${gatewayId}`);
+        // Log de secours si l'initiation a foiré mais que l'argent est pris
+        await db.collection('security_logs').add({
+            eventType: 'payment_orphan_webhook',
+            targetId: gatewayId,
+            details: `Webhook reçu pour une transaction inconnue de ${officialTxn.amount} XAF`,
+            timestamp: new Date()
+        });
+        return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    if (!userId) {
-        return NextResponse.json({ error: 'User identification failed' }, { status: 400 });
-    }
+    const storedData = paymentDoc.data();
+    console.log(`[${webhookId}] ✅ Transaction identifiée pour l'utilisateur: ${storedData?.userId}`);
 
+    // 3. TRAITEMENT FINANCIER (Crédit wallet / Inscription cours)
+    console.log(`[${webhookId}] ⚙️ Lancement du processNdaraPayment...`);
+    
     await processNdaraPayment({
-      transactionId: internalRef,
-      gatewayTransactionId: String(gatewayId),
+      transactionId: gatewayId,
+      gatewayTransactionId: gatewayId,
       provider: 'mesomb',
       amount: Number(officialTxn.amount),
       currency: officialTxn.currency || 'XAF',
       metadata: {
-        userId,
-        courseId,
-        type,
+        ...storedData?.metadata,
+        userId: storedData?.userId,
+        courseId: storedData?.courseId || 'WALLET_TOPUP',
+        type: storedData?.type || 'wallet_topup',
         operator: officialTxn.service
       }
     });
 
+    console.log(`[${webhookId}] 🏆 Transaction ${gatewayId} finalisée avec succès.`);
     return NextResponse.json({ processed: true, transactionId: gatewayId });
 
   } catch (error: any) {
-    console.error(`[Webhook MeSomb] Error:`, error.message);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error(`[${webhookId}] 💥 ERREUR FATALE WEBHOOK:`, error.message);
+    return NextResponse.json({ error: 'Internal Server Error', message: error.message }, { status: 500 });
   }
 }
