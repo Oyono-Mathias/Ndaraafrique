@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ SÉCURITÉ : Séparation hermétique des flux réels et virtuels.
+ * ✅ SÉCURITÉ : Gestion stricte des achats de formation.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -22,7 +22,7 @@ async function verifyAdminOrThrow(uid: string) {
 
 /** 
  * 💰 ACHAT DE COURS VIA WALLET (Transactionnel) 
- * SÉCURISÉ : Utilise UNIQUEMENT le solde réel (balance).
+ * SÉCURISÉ : Vérifie l'existence, les doublons et le solde.
  */
 export async function purchaseCourseWithWalletAction({
     userId,
@@ -35,21 +35,29 @@ export async function purchaseCourseWithWalletAction({
 }) {
     try {
         const db = getAdminDb();
+        
+        // 1. Vérification d'existence du cours
+        const courseRef = db.collection('courses').doc(courseId);
+        const courseSnap = await courseRef.get();
+        if (!courseSnap.exists) return { success: false, error: "COURS_NON_TROUVÉ" };
+        const courseData = courseSnap.data();
+
+        // 2. Vérification de doublon (Déjà acheté ?)
+        const enrollmentId = `${userId}_${courseId}`;
+        const enrollmentSnap = await db.collection('enrollments').doc(enrollmentId).get();
+        if (enrollmentSnap.exists) return { success: false, error: "DEJA_ACHETE" };
+
+        // 3. Vérification du solde utilisateur
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
         const userData = userSnap.data() as NdaraUser;
-
-        // VERIFICATION STRICTE DU SOLDE RÉEL
         const currentBalance = userData.balance || 0;
 
         if (currentBalance < amount) {
-            return { success: false, error: "Solde insuffisant." };
+            return { success: false, error: "SOLDE_INSUFFISANT" };
         }
 
-        const courseSnap = await db.collection('courses').doc(courseId).get();
-        const courseData = courseSnap.data();
-
-        // Appel du processeur en MODE RÉEL (isSimulated: false)
+        // 4. Appel du processeur financier pour l'exécution atomique
         const result = await processNdaraPayment({
             transactionId: `WAL-PUR-${Date.now()}-${userId.substring(0,5)}`,
             provider: 'wallet',
@@ -60,7 +68,7 @@ export async function purchaseCourseWithWalletAction({
                 courseId, 
                 courseTitle: courseData?.title,
                 type: 'course_purchase',
-                isSimulated: false // INTERDIT d'utiliser du virtuel ici
+                isSimulated: false 
             }
         });
 
@@ -73,7 +81,7 @@ export async function purchaseCourseWithWalletAction({
             return { success: true };
         }
         
-        return { success: false, error: "Erreur lors de la transaction." };
+        return { success: false, error: "ERREUR_TRANSACTION" };
     } catch (e: any) {
         console.error("[WALLET_PURCHASE_ERROR]:", e.message);
         return { success: false, error: e.message };
@@ -82,7 +90,6 @@ export async function purchaseCourseWithWalletAction({
 
 /** 
  * 💰 RECHARGER LE WALLET (Action Admin Sécurisée)
- * Permet de choisir entre crédit réel et crédit test.
  */
 export async function rechargeUserWallet({ 
     userId, 
@@ -113,7 +120,7 @@ export async function rechargeUserWallet({
                 type: 'wallet_topup', 
                 adminId, 
                 reason,
-                isSimulated // Détermine quel champ sera impacté : balance ou virtualBalance
+                isSimulated 
             }
         });
 
@@ -160,7 +167,7 @@ export async function createEliteDemoAccountAction({ role, adminId }: { role: Us
             isInstructorApproved: role === 'instructor',
             isDemoAccount: true,
             balance: 0,
-            virtualBalance: 1000000, // Dotation initiale de test
+            virtualBalance: 1000000, 
             createdAt: FieldValue.serverTimestamp(),
             affiliateStats: { clicks: 1500, registrations: 450, sales: 85, earnings: 250000 }
         });

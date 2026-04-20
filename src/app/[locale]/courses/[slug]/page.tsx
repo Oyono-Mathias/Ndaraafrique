@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique V2 (Design Qwen Immersif).
- * ✅ RÉSOLU : Types locaux pour bypasser les erreurs de build Vercel.
+ * @fileOverview Lecteur de cours Ndara Afrique V3.
+ * ✅ SÉCURITÉ : Vérification stricte de l'enrollment avant affichage.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -38,7 +38,8 @@ import {
     ShieldCheck,
     Bookmark,
     FileVideo,
-    ArrowLeft
+    ArrowLeft,
+    Lock
 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
@@ -51,14 +52,11 @@ import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 
-/**
- * ✅ RÉSOLU : Interfaces locales pour bypasser les erreurs de build Vercel
- */
 interface Lecture {
   id: string;
   title: string;
   videoUrl?: string;
-  contentUrl?: string; // Ajouté pour correspondre à l'usage
+  contentUrl?: string;
   duration?: number;
   type: 'video' | 'text' | 'quiz' | 'youtube' | 'pdf';
   content?: string;
@@ -125,6 +123,7 @@ function CoursePlayerPageContent() {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [isCurriculumOpen, setIsCurriculumOpen] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -134,6 +133,20 @@ function CoursePlayerPageContent() {
 
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
+
+  // 🛡️ SÉCURITÉ : Vérification de l'inscription avant tout
+  useEffect(() => {
+    if (!user || !courseId) return;
+
+    const enrollmentRef = doc(db, 'enrollments', `${user.uid}_${courseId}`);
+    const unsub = onSnapshot(enrollmentRef, (snap) => {
+        setIsEnrolled(snap.exists());
+        if (!snap.exists() && !isUserLoading) {
+            // Optionnel : On laisse l'UI afficher ACCESS_DENIED au lieu d'une redirection brutale
+        }
+    });
+    return () => unsub();
+  }, [user, courseId, db]);
 
   useEffect(() => {
     if (!progressRef) return;
@@ -150,7 +163,8 @@ function CoursePlayerPageContent() {
   const { data: quizzes } = useCollection<Quiz>(quizzesQuery);
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId || isEnrolled === false) return;
+    
     const fetchCurriculum = async () => {
       setIsLoadingContent(true);
       try {
@@ -186,7 +200,7 @@ function CoursePlayerPageContent() {
       } catch (e) { console.error(e); } finally { setIsLoadingContent(false); }
     };
     fetchCurriculum();
-  }, [courseId, db, lessonIdFromUrl, courseProgress?.lastLessonId]);
+  }, [courseId, db, lessonIdFromUrl, courseProgress?.lastLessonId, isEnrolled]);
 
   const totalLecturesCount = useMemo(() => Array.from(lecturesMap.values()).reduce((acc, curr) => acc + curr.length, 0), [lecturesMap]);
 
@@ -234,9 +248,27 @@ function CoursePlayerPageContent() {
       return { section: 0, lesson: 0 };
   }, [sections, lecturesMap, activeLecture]);
 
-  const isLoading = isLoadingContent || courseLoading;
+  const isLoading = isLoadingContent || courseLoading || isEnrolled === null;
 
   if (isLoading) return <div className="h-screen bg-[#050505] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+
+  // 🛡️ ÉCRAN ACCÈS REFUSÉ
+  if (isEnrolled === false) {
+      return (
+          <div className="h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                  <Lock className="h-10 w-10 text-red-500" />
+              </div>
+              <h1 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Accès Non Autorisé</h1>
+              <p className="text-slate-500 text-sm max-w-xs mx-auto mb-8 font-medium">
+                  Vous devez acquérir cette formation pour accéder aux leçons et obtenir votre certificat.
+              </p>
+              <Button onClick={() => router.push(`/course/${courseId}`)} className="h-14 px-8 rounded-2xl bg-primary text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl">
+                  Voir la vitrine du cours
+              </Button>
+          </div>
+      );
+  }
 
   const completedLessons = courseProgress?.completedLessons || [];
 
@@ -351,7 +383,7 @@ function CoursePlayerPageContent() {
                         <Button 
                             variant="outline" 
                             onClick={() => setShowQuestionModal(true)} 
-                            className="w-full h-16 rounded-[2rem] bg-slate-900 border-white/5 font-black uppercase text-xs tracking-[0.15em] text-white gap-2"
+                            className="w-full h-16 rounded-[2rem] bg-slate-900 border border-white/5 font-black uppercase text-xs tracking-[0.15em] text-white gap-2"
                         >
                             <Bot className="h-5 w-5 text-primary" />
                             Aide Mathias
