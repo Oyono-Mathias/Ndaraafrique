@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
     Search, 
     Download, 
@@ -220,6 +221,9 @@ export default function AdminPaymentsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8 border border-white/5">
+                                                     <AvatarFallback className="bg-slate-800 text-[10px] font-black text-slate-500">U</AvatarFallback>
+                                                </Avatar>
                                                 <span className="text-[10px] font-mono text-slate-400">{payment.userId.substring(0, 12)}...</span>
                                             </div>
                                         </TableCell>
