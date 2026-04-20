@@ -5,12 +5,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier COMPLET
- * ✔ Wallet (crédit + débit)
- * ✔ Achat cours sécurisé
- * ✔ Anti double paiement
- * ✔ Idempotent
- * ✔ Respect Firestore
+ * ✅ Processeur financier SÉCURISÉ v2.0
+ * Flux hermétiques : balance (réel) vs virtualBalance (simulé)
  */
 
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
@@ -26,109 +22,105 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const paymentRef = db.collection('payments').doc(String(transactionId));
       const userRef = db.collection('users').doc(metadata.userId);
 
-      // ======================
-      // ✅ 1. TOUS LES READS
-      // ======================
-
+      // 1. VÉRIFICATION D'IDEMPOTENCE
       const paymentSnap = await transaction.get(paymentRef);
-
       if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
         return { success: true, alreadyProcessed: true };
       }
 
+      // 2. RÉCUPÉRATION UTILISATEUR
       const userSnap = await transaction.get(userRef);
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
-
-      // On force le typage ici pour le build Vercel et on garantit la présence des données
       const userData = userSnap.data() as NdaraUser;
       if (!userData) throw new Error("USER_DATA_MISSING");
 
-      const isSimulated = metadata.isSimulated === true || provider === 'simulated';
+      // DÉTERMINATION DU MODE (RÉEL VS SIMULÉ)
+      // Une transaction est simulée si metadata.isSimulated est true OU si le provider est 'simulated'
+      const isSimulated = metadata.isSimulated === true || provider === 'simulated' || provider === 'admin_recharge_test';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-      let courseSnap = null;
-      let courseRef = null;
-      let enrollmentRef = null;
-      let enrollmentSnap = null;
-
-      if (!isTopup && metadata.courseId) {
-        courseRef = db.collection('courses').doc(metadata.courseId);
-        courseSnap = await transaction.get(courseRef);
-
-        const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
-        enrollmentRef = db.collection('enrollments').doc(enrollmentId);
-        enrollmentSnap = await transaction.get(enrollmentRef);
-      }
-
-      // ======================
-      // ✅ 2. WRITES
-      // ======================
-
+      // 💾 Préparation du reçu de paiement
       const paymentData = {
         id: String(transactionId),
         userId: metadata.userId,
         amount: Number(amount),
-        currency: currency || 'XAF',
+        currency: currency || 'XOF',
         provider,
         status: 'completed',
-        isSimulated,
+        isSimulated, // Marqueur critique pour l'audit
         date: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         gatewayTransactionId: gatewayTransactionId || transactionId,
         courseId: metadata.courseId || 'WALLET_TOPUP',
-        courseTitle: isTopup
-          ? 'Recharge Portefeuille'
-          : (metadata.courseTitle || 'Achat formation'),
+        courseTitle: isTopup ? 'Recharge Portefeuille' : (metadata.courseTitle || 'Achat formation'),
         metadata: { ...metadata }
       };
 
-      // 💾 Enregistrer paiement
       transaction.set(paymentRef, paymentData, { merge: true });
 
-      // ======================
-      // 💰 CAS 1 : RECHARGE WALLET
-      // ======================
+      // =========================================================
+      // 💰 CAS 1 : RECHARGE (DÉPÔT)
+      // =========================================================
       if (isTopup) {
-
-        const field = isSimulated ? 'virtualBalance' : 'balance';
-
+        // SÉPARATION STRICTE : On ne crédite QUE le champ correspondant au mode
+        const targetField = isSimulated ? 'virtualBalance' : 'balance';
+        
         transaction.update(userRef, {
-          [field]: FieldValue.increment(Number(amount)),
+          [targetField]: FieldValue.increment(Number(amount)),
           updatedAt: FieldValue.serverTimestamp()
         });
-
       }
 
-      // ======================
-      // 🎓 CAS 2 : ACHAT COURS
-      // ======================
-      else if (courseSnap && courseSnap.exists && courseRef && enrollmentRef) {
+      // =========================================================
+      // 🎓 CAS 2 : ACHAT DE COURS
+      // =========================================================
+      else if (metadata.courseId) {
+        const courseRef = db.collection('courses').doc(metadata.courseId);
+        const courseSnap = await transaction.get(courseRef);
+        if (!courseSnap.exists) throw new Error("COURSE_NOT_FOUND");
+        const courseData = courseSnap.data() as Course;
 
-        // 🔒 Anti double achat
-        if (enrollmentSnap && enrollmentSnap.exists) {
+        const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
+        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
+        const enrollmentSnap = await transaction.get(enrollmentRef);
+
+        if (enrollmentSnap.exists) {
           return { success: true, alreadyEnrolled: true };
         }
 
-        const courseData = courseSnap.data() as Course;
-
-        // 💰 Débit wallet (si réel)
+        // SÉCURITÉ ACHAT RÉEL
         if (!isSimulated) {
-          // TS check : userData est maintenant garanti non-undefined
-          const currentBalance = (userData.balance as number) || 0;
-
+          const currentBalance = Number(userData.balance) || 0;
           if (currentBalance < Number(amount)) {
             throw new Error("SOLDE_INSUFFISANT");
           }
 
+          // DÉBIT RÉEL UNIQUEMENT
           transaction.update(userRef, {
             balance: FieldValue.increment(-Number(amount)),
             updatedAt: FieldValue.serverTimestamp()
           });
+
+          // PAIEMENT FORMATEUR (70%) - Uniquement sur achat réel
+          if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
+            const instructorRef = db.collection('users').doc(courseData.instructorId);
+            transaction.update(instructorRef, {
+              balance: FieldValue.increment(Number(amount) * 0.7)
+            });
+          }
+        } else {
+          // MODE TEST : On débite la balance virtuelle si elle existe (optionnel mais propre)
+          const currentVirtual = Number(userData.virtualBalance) || 0;
+          if (currentVirtual >= Number(amount)) {
+             transaction.update(userRef, {
+                virtualBalance: FieldValue.increment(-Number(amount))
+             });
+          }
         }
 
-        // 🎓 Inscription
+        // INSCRIPTION (Marquée comme simulée si nécessaire)
         transaction.set(enrollmentRef, {
-          id: `${metadata.userId}_${metadata.courseId}`,
+          id: enrollmentId,
           studentId: metadata.userId,
           courseId: metadata.courseId,
           instructorId: courseData.instructorId,
@@ -140,19 +132,11 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           priceAtEnrollment: Number(amount)
         });
 
-        // 📊 Update cours
-        transaction.update(courseRef, {
-          participantsCount: FieldValue.increment(1)
-        });
-
-        // 💸 Paiement formateur
-        if (!isSimulated && courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
-          const instructorRef = db.collection('users').doc(courseData.instructorId);
-          const share = Number(amount) * 0.7;
-
-          transaction.update(instructorRef, {
-            balance: FieldValue.increment(share)
-          });
+        // 📊 Mise à jour du compteur global (Uniquement pour le réel ?)
+        if (!isSimulated) {
+            transaction.update(courseRef, {
+                participantsCount: FieldValue.increment(1)
+            });
         }
       }
 

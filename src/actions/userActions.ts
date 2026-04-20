@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
- * ✅ HYBRIDE : Support de la recharge réelle vs virtuelle.
+ * ✅ SÉCURITÉ : Séparation hermétique des flux réels et virtuels.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -21,7 +20,10 @@ async function verifyAdminOrThrow(uid: string) {
     }
 }
 
-/** 💰 ACHAT DE COURS VIA WALLET (Transactionnel) */
+/** 
+ * 💰 ACHAT DE COURS VIA WALLET (Transactionnel) 
+ * SÉCURISÉ : Utilise UNIQUEMENT le solde réel (balance).
+ */
 export async function purchaseCourseWithWalletAction({
     userId,
     courseId,
@@ -37,17 +39,17 @@ export async function purchaseCourseWithWalletAction({
         const userSnap = await userRef.get();
         const userData = userSnap.data() as NdaraUser;
 
-        // On vérifie d'abord si l'utilisateur a assez de crédits virtuels, sinon on tape dans le réel
-        const hasEnoughVirtual = (userData.virtualBalance || 0) >= amount;
-        const hasEnoughReal = (userData.balance || 0) >= amount;
+        // VERIFICATION STRICTE DU SOLDE RÉEL
+        const currentBalance = userData.balance || 0;
 
-        if (!hasEnoughVirtual && !hasEnoughReal) {
+        if (currentBalance < amount) {
             return { success: false, error: "Solde insuffisant." };
         }
 
         const courseSnap = await db.collection('courses').doc(courseId).get();
         const courseData = courseSnap.data();
 
+        // Appel du processeur en MODE RÉEL (isSimulated: false)
         const result = await processNdaraPayment({
             transactionId: `WAL-PUR-${Date.now()}-${userId.substring(0,5)}`,
             provider: 'wallet',
@@ -58,8 +60,7 @@ export async function purchaseCourseWithWalletAction({
                 courseId, 
                 courseTitle: courseData?.title,
                 type: 'course_purchase',
-                // Si on a assez de virtuel, on marque la transaction comme simulée pour le processeur
-                isSimulated: hasEnoughVirtual 
+                isSimulated: false // INTERDIT d'utiliser du virtuel ici
             }
         });
 
@@ -79,7 +80,10 @@ export async function purchaseCourseWithWalletAction({
     }
 }
 
-/** 💰 RECHARGER LE WALLET (Action Admin Sécurisée) */
+/** 
+ * 💰 RECHARGER LE WALLET (Action Admin Sécurisée)
+ * Permet de choisir entre crédit réel et crédit test.
+ */
 export async function rechargeUserWallet({ 
     userId, 
     amount, 
@@ -100,7 +104,7 @@ export async function rechargeUserWallet({
 
         const result = await processNdaraPayment({
             transactionId: `ADM-TOP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-            provider: 'admin_recharge',
+            provider: isSimulated ? 'admin_recharge_test' : 'admin_recharge',
             amount: amount,
             currency: 'XOF',
             metadata: { 
@@ -109,12 +113,12 @@ export async function rechargeUserWallet({
                 type: 'wallet_topup', 
                 adminId, 
                 reason,
-                isSimulated // Transmet si c'est du virtuel ou du réel
+                isSimulated // Détermine quel champ sera impacté : balance ou virtualBalance
             }
         });
 
         if (result.success) {
-            const fondsLabel = isSimulated ? "virtuel (promo)" : "réel (production)";
+            const fondsLabel = isSimulated ? "virtuel (simulation)" : "réel (production)";
             await sendUserNotification(userId, {
                 text: `Votre compte a été crédité de ${amount.toLocaleString()} XOF en solde ${fondsLabel} par l'administration.`,
                 type: 'success'
@@ -156,7 +160,7 @@ export async function createEliteDemoAccountAction({ role, adminId }: { role: Us
             isInstructorApproved: role === 'instructor',
             isDemoAccount: true,
             balance: 0,
-            virtualBalance: 1000000,
+            virtualBalance: 1000000, // Dotation initiale de test
             createdAt: FieldValue.serverTimestamp(),
             affiliateStats: { clicks: 1500, registrations: 450, sales: 85, earnings: 250000 }
         });
