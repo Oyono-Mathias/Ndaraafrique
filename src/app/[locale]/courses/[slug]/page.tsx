@@ -111,7 +111,7 @@ function CoursePlayerPageContent() {
   const searchParams = useSearchParams();
   const lessonIdFromUrl = searchParams.get('lesson');
   
-  const { user, currentUser } = useRole();
+  const { user, currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -146,7 +146,7 @@ function CoursePlayerPageContent() {
         }
     });
     return () => unsub();
-  }, [user, courseId, db]);
+  }, [user, courseId, db, isUserLoading]);
 
   useEffect(() => {
     if (!progressRef) return;
