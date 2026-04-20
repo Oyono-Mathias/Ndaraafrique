@@ -2,7 +2,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { NdaraPaymentDetails, Course } from '@/lib/types';
+import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
  * ✅ Processeur financier COMPLET
@@ -39,8 +39,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const userSnap = await transaction.get(userRef);
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
 
-      const userData = userSnap.data();
-      // ✅ Correction build : On garantit à TS que les données existent
+      // On force le typage ici pour le build Vercel et on garantit la présence des données
+      const userData = userSnap.data() as NdaraUser;
       if (!userData) throw new Error("USER_DATA_MISSING");
 
       const isSimulated = metadata.isSimulated === true || provider === 'simulated';
@@ -113,14 +113,15 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
         // 💰 Débit wallet (si réel)
         if (!isSimulated) {
-          const currentBalance = userData.balance || 0;
+          // TS check : userData est maintenant garanti non-undefined
+          const currentBalance = (userData.balance as number) || 0;
 
           if (currentBalance < Number(amount)) {
             throw new Error("SOLDE_INSUFFISANT");
           }
 
           transaction.update(userRef, {
-            balance: currentBalance - Number(amount),
+            balance: FieldValue.increment(-Number(amount)),
             updatedAt: FieldValue.serverTimestamp()
           });
         }
