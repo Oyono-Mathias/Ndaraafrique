@@ -8,7 +8,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient } from '@/lib/mesomb';
+import { getMeSombClient, getMeSombTransactionStatus } from '@/lib/mesomb';
 import { randomUUID } from 'crypto';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
@@ -118,6 +118,73 @@ export async function initiateMeSombPayment(params: {
   }
 }
 
+/**
+ * 🛠️ ACTION ADMIN : Réconciliation des paiements bloqués
+ * Scanne Firestore pour les transactions 'pending' et vérifie leur statut réel.
+ */
+export async function reconcilePendingPaymentsAction(adminId: string) {
+    const db = getAdminDb();
+    
+    // 1. Sécurité Admin
+    const adminSnap = await db.collection('users').doc(adminId).get();
+    if (adminSnap.data()?.role !== 'admin') throw new Error("UNAUTHORIZED");
+
+    try {
+        // 2. Trouver les transactions 'pending' (Max 20 pour éviter timeout)
+        const pendingSnap = await db.collection('payments')
+            .where('status', '==', 'pending')
+            .where('isSimulated', '==', false)
+            .limit(20)
+            .get();
+
+        if (pendingSnap.empty) return { success: true, processed: 0 };
+
+        let successCount = 0;
+
+        for (const paymentDoc of pendingSnap.docs) {
+            const data = paymentDoc.data();
+            const gatewayId = paymentDoc.id;
+
+            // 3. Interroger MeSomb
+            const realTxn = await getMeSombTransactionStatus(gatewayId);
+
+            if (realTxn && realTxn.status === 'SUCCESS') {
+                // 4. Déclencher le processeur financier pour valider les fonds
+                await processNdaraPayment({
+                    transactionId: gatewayId,
+                    gatewayTransactionId: gatewayId,
+                    provider: 'reconciliation_service',
+                    amount: Number(realTxn.amount),
+                    currency: realTxn.currency || 'XAF',
+                    metadata: {
+                        ...data.metadata,
+                        userId: data.userId,
+                        type: data.type,
+                        courseId: data.courseId,
+                        reconciledBy: adminId
+                    }
+                });
+
+                // 5. Log de sécurité
+                await db.collection('security_logs').add({
+                    eventType: 'payment_reconciled',
+                    targetId: gatewayId,
+                    userId: data.userId,
+                    details: `Paiement orphelin de ${realTxn.amount} XAF récupéré via réconciliation manuelle par l'admin.`,
+                    timestamp: FieldValue.serverTimestamp()
+                });
+
+                successCount++;
+            }
+        }
+
+        return { success: true, processed: successCount };
+    } catch (e: any) {
+        console.error("Reconciliation Error:", e.message);
+        return { success: false, error: e.message };
+    }
+}
+
 export async function getMeSombBalanceAction(adminId: string) {
   try {
     const db = getAdminDb();
@@ -127,7 +194,6 @@ export async function getMeSombBalanceAction(adminId: string) {
       throw new Error("UNAUTHORIZED");
     }
 
-    // Le SDK peut avoir une méthode getSettings() ou similaire selon la version
     return { success: true, balance: 0, currency: 'XAF' };
   } catch (error: any) {
     return { success: false, error: error.message };

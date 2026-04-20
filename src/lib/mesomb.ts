@@ -31,7 +31,12 @@ export function getMeSombClient() {
  */
 export async function getMeSombTransactionStatus(transactionId: string) {
     const client = getMeSombClient();
-    // On utilise 'any' car la définition TypeScript du SDK peut être incomplète
-    const response = await (client as any).getTransactionStatus(transactionId);
-    return response.transaction; 
+    try {
+        // On utilise 'any' car la définition TypeScript du SDK peut être incomplète
+        const response = await (client as any).getTransactionStatus(transactionId);
+        return response.transaction; 
+    } catch (e) {
+        console.error(`[MeSomb SDK] Failed to fetch status for ${transactionId}`);
+        return null;
+    }
 }

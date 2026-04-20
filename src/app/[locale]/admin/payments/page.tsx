@@ -4,6 +4,7 @@
  * @fileOverview Cockpit Trésorerie & Audit Financier - Version 2.5 Elite.
  * ✅ TRAÇABILITÉ : Affiche 100% des transactions (Pending, Completed, Failed).
  * ✅ FILTRAGE : KPI en temps réel pour un audit financier rigoureux.
+ * ✅ RÉCONCILIATION : Outil de réparation des flux bloqués MeSomb.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -26,7 +27,8 @@ import {
     ShieldCheck,
     AlertCircle,
     Clock,
-    XCircle
+    XCircle,
+    Wrench
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -35,7 +37,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { StatCard } from '@/components/dashboard/StatCard';
-import type { Payment, NdaraUser } from '@/lib/types';
+import type { Payment } from '@/lib/types';
+import { reconcilePendingPaymentsAction } from '@/actions/meSombActions';
 
 const PAGE_SIZE = 20;
 
@@ -45,9 +48,9 @@ export default function AdminPaymentsPage() {
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
+    const [isReconciling, setIsReconciling] = useState(false);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     
-    // KPI financiers
     const [kpis, setKpis] = useState({
         totalRevenue: 0,
         pendingCount: 0,
@@ -63,36 +66,44 @@ export default function AdminPaymentsPage() {
 
     const { data: payments, isLoading } = useCollection<Payment>(paymentsQuery);
 
-    // Calcul des KPI en temps réel (sur toutes les données dispo)
     useEffect(() => {
         const q = collection(db, 'payments');
         const unsub = onSnapshot(q, (snap) => {
             const all = snap.docs.map(d => d.data() as Payment);
             const today = new Date().setHours(0,0,0,0);
 
-            const revenue = all.filter(p => p.status === 'completed' && !p.isSimulated).reduce((acc, p) => acc + p.amount, 0);
+            const revenue = all.filter(p => p.status === 'completed' && !p.isSimulated).reduce((acc, p) => acc + (p.amount || 0), 0);
             const pending = all.filter(p => p.status === 'pending').length;
             const failed = all.filter(p => p.status === 'failed').length;
             const daily = all.filter(p => {
                 const date = (p.date as any)?.toDate?.() || new Date(p.date as any);
                 return p.status === 'completed' && date.getTime() >= today && !p.isSimulated;
-            }).reduce((acc, p) => acc + p.amount, 0);
+            }).reduce((acc, p) => acc + (p.amount || 0), 0);
 
             setKpis({ totalRevenue: revenue, pendingCount: pending, failedCount: failed, todayRevenue: daily });
         });
         return () => unsub();
     }, [db]);
 
-    const filtered = useMemo(() => {
-        if (!payments) return [];
-        return payments.filter(p => 
-            p.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (p.courseTitle && p.courseTitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            p.id.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [payments, searchTerm]);
-
-    const handleLoadMore = () => setVisibleCount(prev => prev + PAGE_SIZE);
+    const handleReconcile = async () => {
+        if (!admin || isReconciling) return;
+        setIsReconciling(true);
+        try {
+            const result = await reconcilePendingPaymentsAction(admin.uid);
+            if (result.success) {
+                toast({ 
+                    title: "Réconciliation terminée", 
+                    description: `${result.processed} paiement(s) bloqué(s) ont été récupéré(s) et crédités.` 
+                });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Erreur réconciliation", description: e.message });
+        } finally {
+            setIsReconciling(false);
+        }
+    };
 
     const handleManualValidate = async (payment: Payment) => {
         if (!admin || isProcessing) return;
@@ -111,8 +122,7 @@ export default function AdminPaymentsPage() {
                 manualValidationBy: admin.uid 
             });
             
-            // Si c'est une recharge, on crédite manuellement le solde
-            if (payment.type === 'wallet_topup') {
+            if (payment.type === 'wallet_topup' || payment.courseId === 'WALLET_TOPUP') {
                 const targetField = payment.isSimulated ? 'virtualBalance' : 'balance';
                 await updateDoc(userRef, { [targetField]: increment(payment.amount) });
             }
@@ -125,6 +135,15 @@ export default function AdminPaymentsPage() {
         }
     };
 
+    const filtered = useMemo(() => {
+        if (!payments) return [];
+        return payments.filter(p => 
+            p.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.courseTitle && p.courseTitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            p.id.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [payments, searchTerm]);
+
     return (
         <div className="space-y-8 pb-20 animate-in fade-in duration-700">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -136,49 +155,26 @@ export default function AdminPaymentsPage() {
                     <h1 className="text-3xl font-black text-white uppercase tracking-tight">Trésorerie & Audit</h1>
                     <p className="text-slate-400 text-sm font-medium mt-1">Surveillez l'intégralité du pipeline transactionnel Ndara.</p>
                 </div>
-                <Button variant="outline" className="h-12 border-slate-800 bg-slate-900 font-bold uppercase text-[10px] tracking-widest">
-                    <Download className="mr-2 h-4 w-4" /> Exporter Registre
-                </Button>
+                <div className="flex gap-3">
+                    <Button 
+                        onClick={handleReconcile}
+                        disabled={isReconciling || kpis.pendingCount === 0}
+                        className="h-12 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-orange-500/20"
+                    >
+                        {isReconciling ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Wrench className="mr-2 h-4 w-4" />}
+                        Réparer les flux ({kpis.pendingCount})
+                    </Button>
+                    <Button variant="outline" className="h-12 border-slate-800 bg-slate-900 font-bold uppercase text-[10px] tracking-widest">
+                        <Download className="mr-2 h-4 w-4" /> Exporter
+                    </Button>
+                </div>
             </header>
 
-            {/* KPI STRATÉGIQUES */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard 
-                    title="Volume Réel (Total)" 
-                    value={kpis.totalRevenue.toLocaleString()} 
-                    unit="XOF" 
-                    icon={ShieldCheck} 
-                    isLoading={false} 
-                    trendType="up"
-                    trend="+12%"
-                />
-                <StatCard 
-                    title="Ventes du Jour" 
-                    value={kpis.todayRevenue.toLocaleString()} 
-                    unit="XOF" 
-                    icon={Activity} 
-                    isLoading={false} 
-                    trendType="neutral"
-                    trend="LIVE"
-                />
-                <StatCard 
-                    title="En attente (Audit)" 
-                    value={kpis.pendingCount.toString()} 
-                    icon={Clock} 
-                    isLoading={false} 
-                    trendType="neutral"
-                    trend="PENDING"
-                    sparklineColor="#f59e0b"
-                />
-                <StatCard 
-                    title="Échecs / Rejets" 
-                    value={kpis.failedCount.toString()} 
-                    icon={AlertCircle} 
-                    isLoading={false} 
-                    trendType="down"
-                    trend="FAILED"
-                    sparklineColor="#ef4444"
-                />
+                <StatCard title="Volume Réel (Total)" value={kpis.totalRevenue.toLocaleString()} unit="XOF" icon={ShieldCheck} isLoading={false} trendType="up" trend="+12%"/>
+                <StatCard title="Ventes du Jour" value={kpis.todayRevenue.toLocaleString()} unit="XOF" icon={Activity} isLoading={false} trendType="neutral" trend="LIVE"/>
+                <StatCard title="En attente (Audit)" value={kpis.pendingCount.toString()} icon={Clock} isLoading={false} trendType="neutral" trend="PENDING" sparklineColor="#f59e0b"/>
+                <StatCard title="Échecs / Rejets" value={kpis.failedCount.toString()} icon={AlertCircle} isLoading={false} trendType="down" trend="FAILED" sparklineColor="#ef4444"/>
             </section>
 
             <div className="relative max-w-md">
@@ -192,7 +188,6 @@ export default function AdminPaymentsPage() {
             </div>
 
             <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl relative">
-                <div className="grain-overlay opacity-[0.02]" />
                 <Table>
                     <TableHeader>
                         <TableRow className="border-slate-800 bg-slate-800/30">
@@ -212,7 +207,6 @@ export default function AdminPaymentsPage() {
                         ) : filtered.length > 0 ? (
                             filtered.map(payment => {
                                 const isPending = payment.status === 'pending';
-                                const isFailed = payment.status === 'failed';
                                 return (
                                     <TableRow key={payment.id} className="group border-slate-800 hover:bg-slate-800/20">
                                         <TableCell>
@@ -226,14 +220,11 @@ export default function AdminPaymentsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <Avatar className="h-8 w-8 border border-white/5">
-                                                    <AvatarFallback className="bg-slate-800 text-[10px] font-black text-slate-500">U</AvatarFallback>
-                                                </Avatar>
                                                 <span className="text-[10px] font-mono text-slate-400">{payment.userId.substring(0, 12)}...</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="font-black text-white">{payment.amount.toLocaleString('fr-FR')} <span className="text-[10px] opacity-40">{payment.currency}</span></span>
+                                            <span className="font-black text-white">{payment.amount.toLocaleString('fr-FR')} <span className="text-[10px] opacity-40">F</span></span>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2 text-slate-400">
@@ -245,7 +236,7 @@ export default function AdminPaymentsPage() {
                                             <Badge className={cn(
                                                 "font-black text-[8px] uppercase border-none px-2",
                                                 payment.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" :
-                                                payment.status === 'pending' ? "bg-amber-500/10 text-amber-500 animate-pulse" : 
+                                                isPending ? "bg-amber-500/10 text-amber-500 animate-pulse" : 
                                                 "bg-red-500/10 text-red-500"
                                             )}>
                                                 {payment.status === 'completed' ? 'Réussi' : isPending ? 'Audit' : 'Rejet'}
@@ -280,11 +271,7 @@ export default function AdminPaymentsPage() {
 
             {!searchTerm && payments && payments.length >= visibleCount && (
                 <div className="flex justify-center pt-4 pb-8">
-                    <Button 
-                        onClick={handleLoadMore}
-                        variant="outline"
-                        className="h-12 px-8 rounded-2xl border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest shadow-xl"
-                    >
+                    <Button onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)} variant="outline" className="h-12 px-8 rounded-2xl border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest">
                         {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
                         Anciennes écritures
                     </Button>
