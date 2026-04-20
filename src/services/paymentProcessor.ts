@@ -40,6 +40,8 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
 
       const userData = userSnap.data();
+      // ✅ Correction build : On garantit à TS que les données existent
+      if (!userData) throw new Error("USER_DATA_MISSING");
 
       const isSimulated = metadata.isSimulated === true || provider === 'simulated';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
