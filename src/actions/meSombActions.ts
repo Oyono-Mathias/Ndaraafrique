@@ -1,14 +1,14 @@
 'use server';
 
 /**
- * @fileOverview Actions MeSomb utilisant le SDK officiel pour une sécurité maximale.
- * ✅ UNIFICATION : Utilise l'ID MeSomb (pk) comme ID de document Firestore.
- * ✅ TRAÇABILITÉ : Création immédiate d'un document 'pending' pour historique.
+ * @fileOverview Actions MeSomb utilisant le moteur de signature manuel.
+ * ✅ FIABILITÉ : Utilise callMeSombApi pour un contrôle total des requêtes.
+ * ✅ TRAÇABILITÉ : Enregistre le paiement en statut 'pending' dès l'initiation.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, getMeSombTransactionStatus } from '@/lib/mesomb';
+import { callMeSombApi, getMeSombTransactionStatus } from '@/lib/mesomb';
 import { randomUUID } from 'crypto';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
@@ -32,7 +32,7 @@ export async function initiateMeSombPayment(params: {
 
     const isTestMode = settings?.payments?.paymentMode === 'test';
 
-    // 1. GESTION DU MODE TEST (SIMULATION)
+    // 1. MODE TEST
     if (isTestMode) {
       const simTxnId = `SIM-${Date.now()}`;
       await processNdaraPayment({
@@ -56,32 +56,36 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // 2. PRÉPARATION DU PAIEMENT RÉEL (SDK)
+    // 2. PAIEMENT RÉEL via API Manuelle
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
-    // Normalisation Cameroun par défaut (MVP)
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
     }
 
     const internalRef = randomUUID();
-    const client = getMeSombClient();
 
-    const response = await client.makeCollect({
-        amount: params.amount,
-        service: params.service,
-        payer: cleanPhone,
-        country: 'CM',
-        currency: 'XAF',
-        extra: {
-            internalReference: internalRef
+    const response = await callMeSombApi({
+        endpoint: '/api/v1.1/payment/collect/',
+        method: 'POST',
+        body: {
+            amount: params.amount,
+            service: params.service,
+            payer: cleanPhone,
+            country: 'CM',
+            currency: 'XAF',
+            fees: true,
+            conversion: true,
+            extra: {
+                internalReference: internalRef
+            }
         }
     });
 
-    if (response.isOperationSuccess()) {
-        const transaction = (response as any).transaction; 
-        const gatewayId = String(transaction.pk); // L'ID officiel MeSomb
+    if (response.status === 'SUCCESS' || response.status === 'PENDING') {
+        const transaction = response.transaction; 
+        const gatewayId = String(transaction.pk || transaction.id);
         
-        // 💾 ENREGISTREMENT IMMÉDIAT (STATUS: PENDING) POUR TRAÇABILITÉ
+        // Sauvegarde immédiate pour le webhook
         await db.collection('payments').doc(gatewayId).set({
           id: gatewayId,
           userId: params.userId,
@@ -109,28 +113,24 @@ export async function initiateMeSombPayment(params: {
           message: "Veuillez valider le prompt USSD sur votre téléphone." 
         };
     } else {
-        return { success: false, error: "Le paiement a été rejeté par l'opérateur." };
+        return { success: false, error: response.message || "Le paiement a été rejeté." };
     }
 
   } catch (error: any) {
-    console.error("[MeSomb SDK Error]", error.message);
-    return { success: false, error: error.message || "Erreur de communication avec MeSomb" };
+    console.error("[MeSomb Action Error]", error.message);
+    return { success: false, error: error.message };
   }
 }
 
 /**
- * 🛠️ ACTION ADMIN : Réconciliation des paiements bloqués
- * Scanne Firestore pour les transactions 'pending' et vérifie leur statut réel.
+ * ACTION ADMIN : Réconciliation des paiements bloqués
  */
 export async function reconcilePendingPaymentsAction(adminId: string) {
     const db = getAdminDb();
-    
-    // 1. Sécurité Admin
     const adminSnap = await db.collection('users').doc(adminId).get();
     if (adminSnap.data()?.role !== 'admin') throw new Error("UNAUTHORIZED");
 
     try {
-        // 2. Trouver les transactions 'pending' (Max 20 pour éviter timeout)
         const pendingSnap = await db.collection('payments')
             .where('status', '==', 'pending')
             .where('isSimulated', '==', false)
@@ -145,11 +145,9 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
             const data = paymentDoc.data();
             const gatewayId = paymentDoc.id;
 
-            // 3. Interroger MeSomb
             const realTxn = await getMeSombTransactionStatus(gatewayId);
 
             if (realTxn && realTxn.status === 'SUCCESS') {
-                // 4. Déclencher le processeur financier pour valider les fonds
                 await processNdaraPayment({
                     transactionId: gatewayId,
                     gatewayTransactionId: gatewayId,
@@ -164,23 +162,12 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
                         reconciledBy: adminId
                     }
                 });
-
-                // 5. Log de sécurité
-                await db.collection('security_logs').add({
-                    eventType: 'payment_reconciled',
-                    targetId: gatewayId,
-                    userId: data.userId,
-                    details: `Paiement orphelin de ${realTxn.amount} XAF récupéré via réconciliation manuelle par l'admin.`,
-                    timestamp: FieldValue.serverTimestamp()
-                });
-
                 successCount++;
             }
         }
 
         return { success: true, processed: successCount };
     } catch (e: any) {
-        console.error("Reconciliation Error:", e.message);
         return { success: false, error: e.message };
     }
 }
@@ -189,11 +176,7 @@ export async function getMeSombBalanceAction(adminId: string) {
   try {
     const db = getAdminDb();
     const adminDoc = await db.collection('users').doc(adminId).get();
-    
-    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-      throw new Error("UNAUTHORIZED");
-    }
-
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') throw new Error("UNAUTHORIZED");
     return { success: true, balance: 0, currency: 'XAF' };
   } catch (error: any) {
     return { success: false, error: error.message };
