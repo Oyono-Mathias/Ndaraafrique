@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - V6.5 Elite Fintech.
- * ✅ TRANSPARENCE : Affichage séparé du Solde Réel et des Crédits de Simulation.
+ * ✅ UX : Affichage immédiat des codes USSD de secours après initiation.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -20,7 +20,8 @@ import {
     SmartphoneNfc,
     Globe,
     Zap,
-    History
+    History,
+    AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -34,6 +35,18 @@ import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
+
+// Configuration des codes USSD par pays et opérateur
+const USSD_CONFIG: Record<string, Record<string, string>> = {
+  "CM": {
+    "MTN": "*126#",
+    "ORANGE": "#150*50#",
+    "WAVE": "Application Wave"
+  },
+  "CF": {
+      "ORANGE": "#150#"
+  }
+};
 
 export default function NdaraWalletPage() {
     const { user, currentUser, isUserLoading } = useRole();
@@ -101,6 +114,14 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
+    const getUssdCode = () => {
+        const countryCode = currentUser?.countryCode || "CM";
+        const opName = activeMethod?.name.toUpperCase() || "";
+        if (opName.includes("MTN")) return USSD_CONFIG[countryCode]?.["MTN"] || "*126#";
+        if (opName.includes("ORANGE")) return USSD_CONFIG[countryCode]?.["ORANGE"] || "#150*50#";
+        return null;
+    };
+
     const handleRecharge = async () => {
         if (!user || selectedAmount < 100 || !activeMethod) return;
         const cleanPhone = phoneNumber.replace(/\D/g, '');
@@ -120,8 +141,12 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
-                if (result.type === 'SIMULATED') setIsSuccess(true);
-                else setIsAwaitingUssd(true);
+                if (result.type === 'SIMULATED') {
+                    setIsSuccess(true);
+                } else {
+                    // ✅ UX FIX: On affiche immédiatement le modal USSD
+                    setIsAwaitingUssd(true);
+                }
             } else {
                 throw new Error(String(result.error));
             }
@@ -275,6 +300,7 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
+            {/* ✅ UX FIX: Modal de guidage USSD affiché immédiatement */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900 border-white/10 rounded-[3rem] p-10 text-center sm:max-w-md">
                     <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
@@ -284,11 +310,25 @@ export default function NdaraWalletPage() {
                             </div>
                             <Smartphone className="absolute -bottom-2 -right-2 h-8 w-8 text-primary bg-slate-950 rounded-full p-1.5 border border-white/10 shadow-lg" />
                         </div>
-                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Validation USSD</DialogTitle>
-                        <p className="text-slate-400 font-medium italic text-sm">
-                            Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} XOF</b> sur votre téléphone.
-                        </p>
-                        <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-4">Annuler</Button>
+                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Paiement en cours</DialogTitle>
+                        <div className="space-y-4">
+                            <p className="text-slate-300 font-medium italic text-sm">
+                                Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} XOF</b> via le prompt USSD qui va s'afficher sur votre téléphone.
+                            </p>
+                            
+                            {getUssdCode() && (
+                                <div className="p-4 bg-slate-950 rounded-2xl border border-primary/20 space-y-2">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Si rien ne s'affiche, composez :</p>
+                                    <p className="text-2xl font-black text-primary tracking-widest">{getUssdCode()}</p>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
+                                <AlertCircle className="h-4 w-4 text-blue-400 shrink-0" />
+                                <p className="text-[9px] text-slate-500 text-left leading-relaxed">Le solde sera crédité automatiquement dès la validation du code PIN sur votre mobile.</p>
+                            </div>
+                        </div>
+                        <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-4">Fermer cette fenêtre</Button>
                     </div>
                 </DialogContent>
             </Dialog>

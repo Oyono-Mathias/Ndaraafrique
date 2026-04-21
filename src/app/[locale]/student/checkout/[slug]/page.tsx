@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V5.0.
- * ✅ WALLET : Débit instantané avec vérification de solde.
- * ✅ HYBRIDE : Supporte Wallet, MeSomb et Virtuel.
+ * ✅ UX : Affichage immédiat du code USSD après initiation MeSomb.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -23,7 +22,8 @@ import {
   GraduationCap,
   Check,
   Zap,
-  Wallet
+  Wallet,
+  AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Country } from '@/lib/types';
@@ -33,6 +33,15 @@ import { purchaseCourseWithWalletAction } from '@/actions/userActions';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+// Configuration USSD de secours
+const USSD_CONFIG: Record<string, Record<string, string>> = {
+  "CM": {
+    "MTN": "*126#",
+    "ORANGE": "#150*50#"
+  }
+};
 
 function CheckoutContent() {
   const params = useParams();
@@ -45,6 +54,7 @@ function CheckoutContent() {
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const [countryData, setCountryData] = useState<Country | null>(null);
@@ -80,13 +90,20 @@ function CheckoutContent() {
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
+  const getUssdCode = () => {
+    const countryCode = currentUser?.countryCode || "CM";
+    const opName = activeMethod?.name.toUpperCase() || "";
+    if (opName.includes("MTN")) return USSD_CONFIG[countryCode]?.["MTN"];
+    if (opName.includes("ORANGE")) return USSD_CONFIG[countryCode]?.["ORANGE"];
+    return null;
+  };
+
   const handlePayment = async () => {
     if (!user || !course || !activeMethod) return;
     setIsProcessing(true);
 
     try {
       if (activeMethod.provider === 'wallet') {
-          // 🛡️ SÉCURITÉ : Vérification solde & Achat via Server Action transactionnelle
           const result = await purchaseCourseWithWalletAction({
               userId: user.uid,
               courseId: course.id,
@@ -113,13 +130,16 @@ function CheckoutContent() {
           });
           
           if (result.success) {
-              if (result.type === 'SIMULATED') setIsSuccess(true);
-              else toast({ title: "Action requise sur votre mobile", description: "Validez le paiement sur votre téléphone." });
+              if (result.type === 'SIMULATED') {
+                  setIsSuccess(true);
+              } else {
+                  // ✅ UX FIX: Affichage immédiat du modal de guidage
+                  setIsAwaitingUssd(true);
+              }
           } else {
               throw new Error(result.error);
           }
       } else if (selectedMethodId === 'virtual') {
-          toast({ title: "Mode démo", description: "Simulation d'achat virtuel réussie." });
           setIsSuccess(true);
       }
     } catch (e: any) {
@@ -143,7 +163,6 @@ function CheckoutContent() {
       </header>
 
       <main className="pt-24 px-4 max-w-md mx-auto space-y-8 animate-in fade-in duration-700">
-        {/* Résumé du ticket */}
         <div className="bg-[#FEF3C7] rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><GraduationCap size={80} className="text-[#D97706]" /></div>
             <div className="flex justify-between items-center border-b-2 border-dashed border-[#D97706]/20 pb-4 mb-4">
@@ -155,7 +174,6 @@ function CheckoutContent() {
             </div>
         </div>
 
-        {/* Sélection Méthode */}
         <section className="space-y-4">
             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] ml-1">MOYEN DE PAIEMENT</h3>
             <div className="grid grid-cols-4 gap-2">
@@ -195,7 +213,6 @@ function CheckoutContent() {
             </div>
         </section>
 
-        {/* Champs Contextuels */}
         <section className="space-y-6">
             {selectedMethodId === 'wallet' ? (
                 <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl text-center shadow-inner relative overflow-hidden">
@@ -204,8 +221,7 @@ function CheckoutContent() {
                     <p className="text-2xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {countryData?.currency || 'XOF'}</p>
                     {(currentUser?.balance || 0) < (course?.price || 0) && (
                         <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                            <p className="text-[9px] text-red-400 font-bold uppercase tracking-widest">Solde insuffisant pour cet achat</p>
-                            <Button variant="link" size="sm" onClick={() => router.push(`/${locale}/student/wallet`)} className="text-primary text-[10px] h-auto p-0 font-black uppercase mt-1">Recharger mon wallet</Button>
+                            <p className="text-[9px] text-red-400 font-bold uppercase tracking-widest">Solde insuffisant</p>
                         </div>
                     )}
                 </div>
@@ -234,21 +250,49 @@ function CheckoutContent() {
             className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all shadow-primary/20"
         >
             {isProcessing ? <Loader2 className="animate-spin h-5 w-5" /> : <Lock className="h-4 w-4 mr-2" />}
-            {isSuccess ? "INSCRIPTION RÉUSSIE" : "CONFIRMER LE PAIEMENT"}
+            <span>CONFIRMER LE PAIEMENT</span>
         </Button>
 
         <div className="bg-slate-900/50 border border-white/5 rounded-3xl p-6 flex items-start gap-4">
             <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
             <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
-                Votre achat est protégé par la garantie Ndara Afrique. Accès immédiat et illimité au contenu après validation de la transaction.
+                Accès immédiat et illimité au contenu après validation de la transaction.
             </p>
         </div>
       </main>
 
+      {/* ✅ UX FIX: Guidage USSD Immédiat */}
+      <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
+          <DialogContent className="bg-slate-900 border-white/10 rounded-[3rem] p-10 text-center sm:max-w-md z-[10005]">
+              <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
+                  <div className="relative">
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <Loader2 className="h-10 w-10 animate-spin" />
+                      </div>
+                      <Smartphone className="absolute -bottom-1 -right-1 h-7 w-7 text-primary bg-slate-950 rounded-full p-1 border border-white/10" />
+                  </div>
+                  <DialogTitle className="text-xl font-black text-white uppercase tracking-tight">Paiement en cours</DialogTitle>
+                  <div className="space-y-4">
+                      <p className="text-slate-400 font-medium italic text-sm leading-relaxed">
+                          Veuillez saisir votre code PIN sur le prompt USSD qui va s'afficher sur votre téléphone.
+                      </p>
+                      
+                      {getUssdCode() && (
+                          <div className="p-4 bg-slate-950 rounded-2xl border border-primary/20 space-y-2">
+                              <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">En cas de problème, composez :</p>
+                              <p className="text-xl font-black text-primary tracking-widest">{getUssdCode()}</p>
+                          </div>
+                      )}
+                  </div>
+                  <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-2">Fermer</Button>
+              </div>
+          </DialogContent>
+      </Dialog>
+
       {isSuccess && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
               <div className="bg-slate-900 rounded-[3rem] p-10 text-center space-y-8 max-w-sm shadow-2xl border border-primary/20">
-                  <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl animate-bounce">
+                  <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl animate-bounce shadow-primary/40">
                       <Check className="h-14 w-14 text-slate-950" strokeWidth={4} />
                   </div>
                   <div className="space-y-2">
