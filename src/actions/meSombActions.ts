@@ -1,9 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Actions MeSomb utilisant le moteur de signature manuel.
- * ✅ FIABILITÉ : Utilise callMeSombApi pour un contrôle total des requêtes.
- * ✅ TRAÇABILITÉ : Enregistre le paiement en statut 'pending' dès l'initiation.
+ * @fileOverview Actions MeSomb utilisant le moteur de signature SigV4 manuel corrigé.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -56,7 +54,7 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // 2. PAIEMENT RÉEL via API Manuelle
+    // 2. PAIEMENT RÉEL
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
@@ -64,60 +62,66 @@ export async function initiateMeSombPayment(params: {
 
     const internalRef = randomUUID();
 
-    const response = await callMeSombApi({
-        endpoint: '/api/v1.1/payment/collect/',
-        method: 'POST',
-        body: {
-            amount: params.amount,
-            service: params.service,
-            payer: cleanPhone,
-            country: 'CM',
-            currency: 'XAF',
-            fees: true,
-            conversion: true,
-            extra: {
-                internalReference: internalRef
+    try {
+        const response = await callMeSombApi({
+            endpoint: '/api/v1.1/payment/collect/',
+            method: 'POST',
+            body: {
+                amount: params.amount,
+                service: params.service,
+                payer: cleanPhone,
+                country: 'CM',
+                currency: 'XAF',
+                fees: true,
+                conversion: true,
+                extra: {
+                    internalReference: internalRef
+                }
             }
-        }
-    });
-
-    if (response.status === 'SUCCESS' || response.status === 'PENDING') {
-        const transaction = response.transaction; 
-        const gatewayId = String(transaction.pk || transaction.id);
-        
-        // Sauvegarde immédiate pour le webhook
-        await db.collection('payments').doc(gatewayId).set({
-          id: gatewayId,
-          userId: params.userId,
-          amount: Number(params.amount),
-          currency: 'XAF',
-          status: 'pending',
-          type: params.type || 'course_purchase',
-          provider: params.service.toLowerCase(),
-          isSimulated: false,
-          courseId: params.courseId || 'WALLET_TOPUP',
-          date: FieldValue.serverTimestamp(),
-          createdAt: FieldValue.serverTimestamp(),
-          metadata: { 
-            operator: params.service, 
-            phone: cleanPhone, 
-            gatewayId: gatewayId,
-            internalRef: internalRef
-          }
         });
 
-        return { 
-          success: true, 
-          type: 'REAL', 
-          transactionId: gatewayId, 
-          message: "Veuillez valider le prompt USSD sur votre téléphone." 
-        };
-    } else {
-        return { success: false, error: response.message || "Le paiement a été rejeté." };
+        if (response.status === 'SUCCESS' || response.status === 'PENDING') {
+            const transaction = response.transaction; 
+            const gatewayId = String(transaction.pk || transaction.id);
+            
+            // Sauvegarde immédiate avec l'ID réel pour le webhook
+            await db.collection('payments').doc(gatewayId).set({
+              id: gatewayId,
+              userId: params.userId,
+              amount: Number(params.amount),
+              currency: 'XAF',
+              status: 'pending',
+              type: params.type || 'course_purchase',
+              provider: params.service.toLowerCase(),
+              isSimulated: false,
+              courseId: params.courseId || 'WALLET_TOPUP',
+              date: FieldValue.serverTimestamp(),
+              createdAt: FieldValue.serverTimestamp(),
+              metadata: { 
+                operator: params.service, 
+                phone: cleanPhone, 
+                gatewayId: gatewayId,
+                internalRef: internalRef
+              }
+            });
+
+            return { 
+              success: true, 
+              type: 'REAL', 
+              transactionId: gatewayId, 
+              message: "Veuillez valider le prompt USSD sur votre téléphone." 
+            };
+        } else {
+            return { success: false, error: response.message || "Le paiement a été rejeté par MeSomb." };
+        }
+    } catch (apiError: any) {
+        // Capture spécifique de l'erreur 403 ou autre
+        console.error("MeSomb Initiation Fatal:", apiError.message);
+        return { success: false, error: `MeSomb: ${apiError.message}` };
     }
 
   } catch (error: any) {
-    console.error("[MeSomb Action Error]", error.message);
+    console.error("[Action Error]", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -177,7 +181,13 @@ export async function getMeSombBalanceAction(adminId: string) {
     const db = getAdminDb();
     const adminDoc = await db.collection('users').doc(adminId).get();
     if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') throw new Error("UNAUTHORIZED");
-    return { success: true, balance: 0, currency: 'XAF' };
+    
+    const result = await callMeSombApi({
+        endpoint: '/api/v1.1/payment/balance/',
+        method: 'GET'
+    });
+    
+    return { success: true, balance: result.balance, currency: 'XAF' };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

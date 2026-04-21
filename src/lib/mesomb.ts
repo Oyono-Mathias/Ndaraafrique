@@ -1,20 +1,34 @@
 import { createHash, createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Client MeSomb avec implémentation manuelle de la Signature V4.
- * ✅ CONFORMITÉ : Task 1 à 4 de la documentation officielle MeSomb.
- * ✅ ROBUSTESSE : Utilise fetch natif pour éviter les erreurs de dépendances SDK.
+ * @fileOverview Client MeSomb avec implémentation manuelle du protocole SigV4 (HMAC-SHA1).
+ * ✅ DÉRIVATION : Implémentation de la dérivation de clé (Date -> Service -> Request).
+ * ✅ DEBUG : Logs détaillés pour identifier l'origine exacte du rejet 403.
  */
 
 interface MeSombApiParams {
     endpoint: string;
     method: 'POST' | 'GET' | 'PUT';
     body?: any;
-    service?: 'payment' | 'wallet';
+    service?: string;
 }
 
 /**
- * Exécute une requête signée vers l'API MeSomb.
+ * Calcule le HMAC-SHA1
+ */
+function hmac(key: string | Buffer, data: string): Buffer {
+    return createHmac('sha1', key).update(data).digest();
+}
+
+/**
+ * Calcule le hachage SHA1 en hexadécimal
+ */
+function hash(data: string): string {
+    return createHash('sha1').update(data).digest('hex');
+}
+
+/**
+ * Exécute une requête signée SigV4 vers MeSomb.
  */
 export async function callMeSombApi({ endpoint, method, body = {}, service = 'payment' }: MeSombApiParams) {
     const accessKey = process.env.MESOMB_ACCESS_KEY?.trim();
@@ -22,21 +36,21 @@ export async function callMeSombApi({ endpoint, method, body = {}, service = 'pa
     const appKey = process.env.MESOMB_APPLICATION_KEY?.trim();
 
     if (!accessKey || !secretKey || !appKey) {
-        throw new Error("CONFIGURATION_INCOMPLETE: Clés MeSomb manquantes sur le serveur.");
+        throw new Error("CONFIG_MISSING: Vérifiez MESOMB_ACCESS_KEY, MESOMB_SECRET_KEY et MESOMB_APPLICATION_KEY.");
     }
 
-    const baseUrl = 'https://mesomb.hachther.com';
-    const url = `${baseUrl}${endpoint}`;
-    const uri = new URL(url);
-    const host = uri.host;
-    const path = uri.pathname;
-    
+    const host = 'mesomb.hachther.com';
+    const url = `https://${host}${endpoint}`;
     const timestamp = Math.floor(Date.now() / 1000);
+    const date = new Date(timestamp * 1000);
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
     const nonce = randomBytes(8).toString('hex');
+    
+    // Le payload doit être exactement le même pour le hash et la requête
     const payload = method === 'GET' ? '{}' : JSON.stringify(body);
-    const hashedPayload = createHash('sha1').update(payload).digest('hex');
+    const hashedPayload = hash(payload);
 
-    // 1. Task 1: Requête Canonique
+    // 1. Headers Canoniques (Triés alphabétiquement)
     const headers: Record<string, string> = {
         'content-type': 'application/json',
         'host': host,
@@ -49,32 +63,39 @@ export async function callMeSombApi({ endpoint, method, body = {}, service = 'pa
     const canonicalHeaders = sortedKeys.map(k => `${k}:${headers[k]}`).join('\n') + '\n';
     const signedHeaders = sortedKeys.join(';');
 
+    // 2. Requête Canonique
     const canonicalRequest = [
         method,
-        path,
-        '', // Query string vide
+        endpoint,
+        '', // Query string
         canonicalHeaders,
         signedHeaders,
         hashedPayload
     ].join('\n');
 
-    // 2. Task 2: Chaîne à signer
-    const dateStr = new Date(timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+    // 3. String to Sign & Derivation
     const scope = `${dateStr}/${service}/mesomb_request`;
     const stringToSign = [
         'HMAC-SHA1',
         timestamp.toString(),
         scope,
-        createHash('sha1').update(canonicalRequest).digest('hex')
+        hash(canonicalRequest)
     ].join('\n');
 
-    // 3. Task 3: Calcul de la Signature
-    const signature = createHmac('sha1', secretKey).update(stringToSign).digest('hex');
+    // Dérivation de la clé (Standard SigV4)
+    const kDate = hmac(secretKey, dateStr);
+    const kService = hmac(kDate, service);
+    const kSigning = hmac(kService, 'mesomb_request');
+    
+    // Signature finale
+    const signature = createHmac('sha1', kSigning).update(stringToSign).digest('hex');
 
-    // 4. Task 4: Header Authorization
     const authHeader = `HMAC-SHA1 Credential=${accessKey}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
     try {
+        console.log(`[MeSomb Debug] URL: ${url}`);
+        console.log(`[MeSomb Debug] AuthHeader: ${authHeader}`);
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -85,17 +106,27 @@ export async function callMeSombApi({ endpoint, method, body = {}, service = 'pa
             cache: 'no-store'
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            data = { message: responseText };
+        }
 
         if (!response.ok) {
-            console.error("[MeSomb API Error]", data);
-            throw new Error(data.message || `Erreur MeSomb ${response.status}`);
+            console.error("[MeSomb API Error]", {
+                status: response.status,
+                body: data,
+                sentBody: body
+            });
+            throw new Error(data.detail || data.message || `Erreur MeSomb ${response.status}`);
         }
 
         return data;
     } catch (error: any) {
-        console.error("[MeSomb Network Error]", error.message);
-        throw new Error(error.message === 'fetch failed' ? "Impossible de contacter MeSomb. Vérifiez votre connexion serveur." : error.message);
+        console.error("[MeSomb Network/Auth Error]", error.message);
+        throw error;
     }
 }
 
