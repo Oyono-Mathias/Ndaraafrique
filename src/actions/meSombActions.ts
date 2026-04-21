@@ -2,11 +2,13 @@
 
 /**
  * @fileOverview Actions MeSomb utilisant le SDK officiel pour garantir une signature valide.
+ * ✅ SÉCURITÉ : Signature V4 gérée nativement par le SDK.
+ * ✅ PROPRE : Suppression des préfixes hardcodés (ex: 49b59f91).
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, getMeSombTransactionStatus, generateNonce } from '@/lib/mesomb';
+import { getMeSombClient, generateNonce } from '@/lib/mesomb';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
@@ -29,9 +31,9 @@ export async function initiateMeSombPayment(params: {
 
     const isTestMode = settings?.payments?.paymentMode === 'test';
 
-    // 1. MODE TEST
+    // 1. MODE TEST : Crédit instantané via le processeur financier
     if (isTestMode) {
-      const simTxnId = `SIM-${Date.now()}`;
+      const simTxnId = `SIM-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
       await processNdaraPayment({
         transactionId: simTxnId,
         provider: 'simulated',
@@ -53,131 +55,62 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // 2. PAIEMENT RÉEL VIA SDK
+    // 2. PAIEMENT RÉEL VIA SDK OFFICIEL
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
+    // Normalisation pour le Cameroun (MeSomb standard)
     if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
       cleanPhone = '237' + cleanPhone;
     }
 
-    try {
-        const client = getMeSombClient();
+    const client = getMeSombClient();
+    
+    // Appel au SDK MeSomb (la signature est générée ici)
+    const response = await client.makeCollect({
+        amount: params.amount,
+        service: params.service,
+        payer: cleanPhone,
+        country: 'CM',
+        currency: 'XAF',
+        nonce: generateNonce()
+    });
+
+    if (response.isOperationSuccess()) {
+        const transaction = (response as any).transaction; 
+        // ✅ On utilise l'ID de MeSomb (pk) comme seule source de vérité
+        const gatewayId = String(transaction.pk || transaction.id);
         
-        // Appel au SDK MeSomb (makeCollect gère la signature nativement)
-        const response = await client.makeCollect({
-            amount: params.amount,
-            service: params.service,
-            payer: cleanPhone,
-            country: 'CM',
-            currency: 'XAF',
-            nonce: generateNonce()
+        // Création du reçu "pending" dans Firestore avec l'ID réel
+        await db.collection('payments').doc(gatewayId).set({
+          id: gatewayId,
+          userId: params.userId,
+          amount: Number(params.amount),
+          currency: 'XAF',
+          status: 'pending',
+          type: params.type || 'course_purchase',
+          provider: params.service.toLowerCase(),
+          isSimulated: false,
+          courseId: params.courseId || 'WALLET_TOPUP',
+          date: FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
+          metadata: { 
+            operator: params.service, 
+            phone: cleanPhone, 
+            gatewayId: gatewayId
+          }
         });
 
-        if (response.isOperationSuccess()) {
-            const transaction = (response as any).transaction; 
-            const gatewayId = String(transaction.pk || transaction.id);
-            
-            // Sauvegarde immédiate avec l'ID réel pour le futur Webhook
-            await db.collection('payments').doc(gatewayId).set({
-              id: gatewayId,
-              userId: params.userId,
-              amount: Number(params.amount),
-              currency: 'XAF',
-              status: 'pending',
-              type: params.type || 'course_purchase',
-              provider: params.service.toLowerCase(),
-              isSimulated: false,
-              courseId: params.courseId || 'WALLET_TOPUP',
-              date: FieldValue.serverTimestamp(),
-              createdAt: FieldValue.serverTimestamp(),
-              metadata: { 
-                operator: params.service, 
-                phone: cleanPhone, 
-                gatewayId: gatewayId
-              }
-            });
-
-            return { 
-              success: true, 
-              type: 'REAL', 
-              transactionId: gatewayId, 
-              message: "Veuillez valider le prompt USSD sur votre téléphone." 
-            };
-        } else {
-            return { success: false, error: "Le paiement a été rejeté par MeSomb." };
-        }
-    } catch (apiError: any) {
-        console.error("MeSomb SDK Error:", apiError.message);
-        return { success: false, error: `MeSomb: ${apiError.message}` };
+        return { 
+          success: true, 
+          type: 'REAL', 
+          transactionId: gatewayId, 
+          message: "Veuillez valider le prompt USSD sur votre téléphone." 
+        };
+    } else {
+        return { success: false, error: "Le paiement a été rejeté par MeSomb." };
     }
 
   } catch (error: any) {
-    console.error("[Action Error]", error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * ACTION ADMIN : Réconciliation des paiements bloqués
- */
-export async function reconcilePendingPaymentsAction(adminId: string) {
-    const db = getAdminDb();
-    const adminSnap = await db.collection('users').doc(adminId).get();
-    if (adminSnap.data()?.role !== 'admin') throw new Error("UNAUTHORIZED");
-
-    try {
-        const pendingSnap = await db.collection('payments')
-            .where('status', '==', 'pending')
-            .where('isSimulated', '==', false)
-            .limit(20)
-            .get();
-
-        if (pendingSnap.empty) return { success: true, processed: 0 };
-
-        let successCount = 0;
-
-        for (const paymentDoc of pendingSnap.docs) {
-            const data = paymentDoc.data();
-            const gatewayId = paymentDoc.id;
-
-            const realTxn = await getMeSombTransactionStatus(gatewayId);
-
-            if (realTxn && realTxn.status === 'SUCCESS') {
-                await processNdaraPayment({
-                    transactionId: gatewayId,
-                    gatewayTransactionId: gatewayId,
-                    provider: 'reconciliation_service',
-                    amount: Number(realTxn.amount),
-                    currency: realTxn.currency || 'XAF',
-                    metadata: {
-                        ...data.metadata,
-                        userId: data.userId,
-                        type: data.type,
-                        courseId: data.courseId,
-                        reconciledBy: adminId
-                    }
-                });
-                successCount++;
-            }
-        }
-
-        return { success: true, processed: successCount };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-export async function getMeSombBalanceAction(adminId: string) {
-  try {
-    const db = getAdminDb();
-    const adminDoc = await db.collection('users').doc(adminId).get();
-    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') throw new Error("UNAUTHORIZED");
-    
-    // Le SDK gère aussi la récupération du solde
-    const client = getMeSombClient();
-    const response = await (client as any).getTransactions(); // Placeholder pour balance API
-    
-    return { success: true, balance: 0, currency: 'XAF' }; // La balance nécessite un endpoint spécifique
-  } catch (error: any) {
+    console.error("[MeSomb Action Error]", error.message);
     return { success: false, error: error.message };
   }
 }
