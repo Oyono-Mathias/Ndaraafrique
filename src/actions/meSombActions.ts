@@ -3,12 +3,12 @@
 /**
  * @fileOverview Actions MeSomb utilisant le SDK officiel pour garantir une signature valide.
  * ✅ SÉCURITÉ : Signature V4 gérée nativement par le SDK.
- * ✅ PROPRE : Suppression des préfixes hardcodés (ex: 49b59f91).
+ * ✅ RÉCONCILIATION : Ajout de l'action pour réparer les flux bloqués.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, generateNonce } from '@/lib/mesomb';
+import { getMeSombClient, generateNonce, getMeSombTransactionStatus } from '@/lib/mesomb';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
@@ -64,7 +64,6 @@ export async function initiateMeSombPayment(params: {
 
     const client = getMeSombClient();
     
-    // Appel au SDK MeSomb (la signature est générée ici)
     const response = await client.makeCollect({
         amount: params.amount,
         service: params.service,
@@ -76,10 +75,8 @@ export async function initiateMeSombPayment(params: {
 
     if (response.isOperationSuccess()) {
         const transaction = (response as any).transaction; 
-        // ✅ On utilise l'ID de MeSomb (pk) comme seule source de vérité
         const gatewayId = String(transaction.pk || transaction.id);
         
-        // Création du reçu "pending" dans Firestore avec l'ID réel
         await db.collection('payments').doc(gatewayId).set({
           id: gatewayId,
           userId: params.userId,
@@ -113,4 +110,76 @@ export async function initiateMeSombPayment(params: {
     console.error("[MeSomb Action Error]", error.message);
     return { success: false, error: error.message };
   }
+}
+
+/** 🛠️ Réconcilier les paiements en attente (Action Admin) */
+export async function reconcilePendingPaymentsAction(adminId: string) {
+    try {
+        const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+            throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
+        }
+
+        const pendingSnap = await db.collection('payments').where('status', '==', 'pending').limit(20).get();
+        let processed = 0;
+
+        for (const doc of pendingSnap.docs) {
+            const paymentData = doc.data();
+            const officialTxn = await getMeSombTransactionStatus(doc.id);
+
+            if (officialTxn && officialTxn.status === 'SUCCESS') {
+                await processNdaraPayment({
+                    transactionId: doc.id,
+                    gatewayTransactionId: doc.id,
+                    provider: 'mesomb_reconciled',
+                    amount: Number(officialTxn.amount),
+                    currency: officialTxn.currency || 'XAF',
+                    metadata: {
+                        ...paymentData.metadata,
+                        userId: paymentData.userId,
+                        courseId: paymentData.courseId || 'WALLET_TOPUP',
+                        type: paymentData.type || 'wallet_topup',
+                    }
+                });
+
+                await db.collection('security_logs').add({
+                    eventType: 'payment_reconciled',
+                    userId: adminId,
+                    targetId: doc.id,
+                    details: `Réconciliation manuelle réussie pour ${paymentData.amount} XAF.`,
+                    timestamp: FieldValue.serverTimestamp()
+                });
+                
+                processed++;
+            }
+        }
+
+        return { success: true, processed };
+    } catch (e: any) {
+        console.error("[Reconcile Error]", e.message);
+        return { success: false, error: e.message };
+    }
+}
+
+/** 💰 Obtenir le solde du compte marchand (Action Admin) */
+export async function getMeSombBalanceAction(adminId: string) {
+    try {
+        const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+            throw new Error("UNAUTHORIZED");
+        }
+
+        const client = getMeSombClient();
+        const response = await (client as any).getAccount(); // Utilise 'as any' car le type SDK est parfois incomplet
+        
+        return { 
+            success: true, 
+            balance: response.balance || 0, 
+            currency: response.currency || 'XAF' 
+        };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }

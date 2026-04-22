@@ -5,9 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.1
+ * ✅ Processeur financier SÉCURISÉ v3.2
  * Garantit le lien atomique entre Paiement et Accès au cours.
- * ✅ TRAÇABILITÉ : Mise à jour du document de paiement existant ou création si manquant.
+ * ✅ RÉSOLU : Typage strict pour éviter l'erreur 'userData' possibly undefined.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -30,7 +30,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       // 2. RÉCUPÉRATION UTILISATEUR
       const userSnap = await transaction.get(userRef);
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
+      
       const userData = userSnap.data() as NdaraUser;
+      if (!userData) throw new Error("USER_DATA_MISSING");
 
       const isSimulated = metadata.isSimulated === true || provider === 'simulated' || provider === 'admin_recharge_test';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
@@ -40,7 +42,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         id: String(transactionId),
         userId: metadata.userId,
         amount: Number(amount),
-        currency: currency || 'XOF',
+        currency: currency || 'XAF',
         provider,
         status: 'completed',
         isSimulated,
@@ -52,7 +54,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         metadata: { ...metadata }
       };
 
-      // Si le document n'existe pas encore (cas achat direct wallet), on ajoute la date de création
       if (!paymentSnap.exists) {
           (paymentData as any).date = FieldValue.serverTimestamp();
           (paymentData as any).createdAt = FieldValue.serverTimestamp();
@@ -70,7 +71,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           updatedAt: FieldValue.serverTimestamp()
         });
         
-        // Log de sécurité
         const securityLogRef = db.collection('security_logs').doc();
         transaction.set(securityLogRef, {
             eventType: isSimulated ? 'wallet_topup_virtual' : 'wallet_topup_real',
@@ -98,16 +98,13 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             return { success: true, alreadyEnrolled: true };
         }
 
-        // SÉCURITÉ PAIEMENT RÉEL
         if (!isSimulated) {
           const currentBalance = Number(userData.balance) || 0;
           
-          // Vérification ultime avant débit (Wallet case)
           if (provider === 'wallet' && currentBalance < Number(amount)) {
             throw new Error("SOLDE_INSUFFISANT");
           }
 
-          // Débit du solde réel si achat via Wallet
           if (provider === 'wallet') {
             transaction.update(userRef, {
                 balance: FieldValue.increment(-Number(amount)),
@@ -115,7 +112,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             });
           }
 
-          // Rémunération Formateur (70%)
           if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
             const instructorRef = db.collection('users').doc(courseData.instructorId);
             transaction.update(instructorRef, {
@@ -124,7 +120,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           }
         }
 
-        // CRÉATION DE L'ACCÈS (ENROLLMENT)
         transaction.set(enrollmentRef, {
           id: enrollmentId,
           studentId: metadata.userId,
@@ -138,12 +133,10 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           priceAtEnrollment: Number(amount)
         });
 
-        // Mise à jour des statistiques du cours
         transaction.update(courseRef, {
           participantsCount: FieldValue.increment(1)
         });
 
-        // Log de sécurité
         const securityLogRef = db.collection('security_logs').doc();
         transaction.set(securityLogRef, {
             eventType: 'course_enrollment',
