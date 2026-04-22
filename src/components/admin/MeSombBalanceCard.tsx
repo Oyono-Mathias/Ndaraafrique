@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Carte de consultation du solde MeSomb pour le cockpit Admin.
- * Design : White Card / Professional Dashboard.
+ * ✅ DESIGN : Troncature des erreurs pour protéger le layout.
  */
 export function MeSombBalanceCard() {
     const { currentUser } = useRole();
@@ -29,10 +29,12 @@ export function MeSombBalanceCard() {
                 setBalance(result.balance ?? 0);
                 setCurrency(result.currency || 'XAF');
             } else {
-                setError(result.error || "Impossible de récupérer le solde.");
+                // Troncature de sécurité pour l'affichage
+                const msg = result.error || "Erreur de connexion MeSomb.";
+                setError(msg.length > 100 ? msg.substring(0, 100) + "..." : msg);
             }
         } catch (e) {
-            setError("Erreur technique de connexion.");
+            setError("Erreur technique fatale.");
         } finally {
             setIsLoading(false);
         }
@@ -67,21 +69,21 @@ export function MeSombBalanceCard() {
                 </div>
 
                 <div className="min-h-[60px] flex flex-col justify-center">
-                    {isLoading && !balance && (
+                    {isLoading && (
                         <div className="flex items-center gap-2 text-slate-400 italic text-sm">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Récupération des fonds...</span>
+                            <span>Interrogation MeSomb...</span>
                         </div>
                     )}
 
-                    {error && (
-                        <div className="flex items-center gap-2 text-red-500 bg-red-50 p-2 rounded-lg border border-red-100 animate-in fade-in zoom-in">
-                            <AlertCircle size={14} />
-                            <span className="text-[10px] font-bold uppercase">{error}</span>
+                    {!isLoading && error && (
+                        <div className="flex items-start gap-2 text-red-500 bg-red-50 p-3 rounded-lg border border-red-100 animate-in fade-in zoom-in">
+                            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                            <span className="text-[10px] font-bold uppercase leading-tight">{error}</span>
                         </div>
                     )}
 
-                    {balance !== null && !isLoading && (
+                    {!isLoading && balance !== null && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                             <p className="text-3xl font-black text-slate-900 tracking-tight">
                                 {balance.toLocaleString('fr-FR')} 
@@ -89,7 +91,7 @@ export function MeSombBalanceCard() {
                             </p>
                             <div className="flex items-center gap-1.5 mt-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Connecté au réseau GSM</span>
+                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Pipeline Connecté</span>
                             </div>
                         </div>
                     )}

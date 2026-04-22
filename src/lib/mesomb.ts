@@ -24,8 +24,7 @@ export function getMeSombClient() {
 
 /**
  * Récupère le solde réel du compte marchand MeSomb.
- * Cette méthode utilise une requête signée manuellement car le SDK 
- * peut ne pas exposer cette fonctionnalité sur l'objet PaymentOperation.
+ * ✅ FIX : Utilisation du sous-domaine api.mesomb.com pour éviter le 404 (WordPress).
  */
 export async function getMeSombAccountBalance() {
   const applicationKey = process.env.MESOMB_APPLICATION_KEY?.trim();
@@ -39,13 +38,14 @@ export async function getMeSombAccountBalance() {
   const nonce = randomBytes(16).toString('hex');
   const timestamp = Math.floor(Date.now() / 1000);
   const method = 'GET';
-  const endpoint = '/api/v1.1/payment/account/';
+  // L'endpoint pour la signature commence par /v1.1/... si on utilise api.mesomb.com
+  const endpoint = '/v1.1/payment/account/';
   
-  // Format de signature MeSomb V1.1 pour les requêtes GET
+  // Format de signature MeSomb V1.1
   const signString = `${method}\n${endpoint}\n${timestamp}\n${nonce}`;
   const signature = createHmac('sha1', secretKey).update(signString).digest('hex');
 
-  const url = `https://mesomb.com${endpoint}`;
+  const url = `https://api.mesomb.com${endpoint}`;
   
   try {
     const response = await fetch(url, {
@@ -59,7 +59,11 @@ export async function getMeSombAccountBalance() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`MeSomb API error (${response.status}): ${errorText}`);
+      // On ne renvoie que les 200 premiers caractères pour éviter de saturer l'UI
+      const cleanError = errorText.includes('<!DOCTYPE html>') 
+        ? "Endpoint introuvable (404). Vérifiez la configuration du compte."
+        : errorText.substring(0, 200);
+      throw new Error(cleanError);
     }
 
     return await response.json();
@@ -75,7 +79,6 @@ export async function getMeSombAccountBalance() {
 export async function getMeSombTransactionStatus(transactionId: string) {
     try {
         const client = getMeSombClient();
-        // Utilisation de getStatus qui est la méthode officielle du SDK
         const response = await (client as any).getStatus(transactionId);
         return response.transaction || (response as any).data;
     } catch (e) {
