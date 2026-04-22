@@ -3,7 +3,7 @@
 /**
  * @fileOverview Actions MeSomb utilisant le SDK officiel pour garantir une signature valide.
  * ✅ SÉCURITÉ : Signature V4 gérée nativement par le SDK.
- * ✅ RÉCONCILIATION : Ajout de l'action pour réparer les flux bloqués.
+ * ✅ DIAGNOSTIC : Retourne désormais le message d'erreur précis de MeSomb.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -57,9 +57,15 @@ export async function initiateMeSombPayment(params: {
 
     // 2. PAIEMENT RÉEL VIA SDK OFFICIEL
     let cleanPhone = params.phoneNumber.replace(/\D/g, '');
+    
     // Normalisation pour le Cameroun (MeSomb standard)
-    if (cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('2'))) {
-      cleanPhone = '237' + cleanPhone;
+    if (cleanPhone.length === 9) {
+      if (cleanPhone.startsWith('6') || cleanPhone.startsWith('2')) {
+        cleanPhone = '237' + cleanPhone;
+      }
+    } else if (cleanPhone.length === 8 && (cleanPhone.startsWith('7'))) {
+        // Cas spécifique RCA si applicable (à adapter selon pays)
+        cleanPhone = '236' + cleanPhone;
     }
 
     const client = getMeSombClient();
@@ -68,7 +74,7 @@ export async function initiateMeSombPayment(params: {
         amount: params.amount,
         service: params.service,
         payer: cleanPhone,
-        country: 'CM',
+        country: cleanPhone.startsWith('237') ? 'CM' : 'CF',
         currency: 'XAF',
         nonce: generateNonce()
     });
@@ -103,12 +109,15 @@ export async function initiateMeSombPayment(params: {
           message: "Veuillez valider le prompt USSD sur votre téléphone." 
         };
     } else {
-        return { success: false, error: "Le paiement a été rejeté par MeSomb." };
+        // ✅ Récupération du message d'erreur réel
+        const errorData = (response as any).data || {};
+        const errorMsg = errorData.message || "Le paiement a été rejeté par MeSomb. Vérifiez votre solde Mobile Money.";
+        return { success: false, error: errorMsg };
     }
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Erreur de connexion aux serveurs de paiement." };
   }
 }
 
@@ -124,14 +133,14 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
         const pendingSnap = await db.collection('payments').where('status', '==', 'pending').limit(20).get();
         let processed = 0;
 
-        for (const doc of pendingSnap.docs) {
-            const paymentData = doc.data();
-            const officialTxn = await getMeSombTransactionStatus(doc.id);
+        for (const docSnap of pendingSnap.docs) {
+            const paymentData = docSnap.data();
+            const officialTxn = await getMeSombTransactionStatus(docSnap.id);
 
             if (officialTxn && officialTxn.status === 'SUCCESS') {
                 await processNdaraPayment({
-                    transactionId: doc.id,
-                    gatewayTransactionId: doc.id,
+                    transactionId: docSnap.id,
+                    gatewayTransactionId: docSnap.id,
                     provider: 'mesomb_reconciled',
                     amount: Number(officialTxn.amount),
                     currency: officialTxn.currency || 'XAF',
@@ -146,7 +155,7 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
                 await db.collection('security_logs').add({
                     eventType: 'payment_reconciled',
                     userId: adminId,
-                    targetId: doc.id,
+                    targetId: docSnap.id,
                     details: `Réconciliation manuelle réussie pour ${paymentData.amount} XAF.`,
                     timestamp: FieldValue.serverTimestamp()
                 });
@@ -172,7 +181,7 @@ export async function getMeSombBalanceAction(adminId: string) {
         }
 
         const client = getMeSombClient();
-        const response = await (client as any).getAccount(); // Utilise 'as any' car le type SDK est parfois incomplet
+        const response = await (client as any).getAccount(); 
         
         return { 
             success: true, 

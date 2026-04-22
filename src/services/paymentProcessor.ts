@@ -5,9 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.2
+ * ✅ Processeur financier SÉCURISÉ v3.3
  * Garantit le lien atomique entre Paiement et Accès au cours.
- * ✅ RÉSOLU : Typage strict pour éviter l'erreur 'userData' possibly undefined.
+ * Harmonisation des statuts en minuscule.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -21,9 +21,10 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const paymentRef = db.collection('payments').doc(String(transactionId));
       const userRef = db.collection('users').doc(metadata.userId);
 
-      // 1. IDEMPOTENCE : Éviter les doubles traitements
+      // 1. IDEMPOTENCE : Éviter les doubles traitements (Gestion de la casse)
       const paymentSnap = await transaction.get(paymentRef);
-      if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
+      const currentStatus = paymentSnap.data()?.status?.toLowerCase();
+      if (paymentSnap.exists && currentStatus === 'completed') {
         return { success: true, alreadyProcessed: true };
       }
 
@@ -82,7 +83,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       }
 
       // =========================================================
-      // 🎓 CAS 2 : ACHAT DE COURS (TYPE course_purchase)
+      // 🎓 CAS 2 : ACHAT DE COURS
       // =========================================================
       else if (metadata.courseId) {
         const courseRef = db.collection('courses').doc(metadata.courseId);
@@ -112,6 +113,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             });
           }
 
+          // Rémunération instructeur (70%)
           if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
             const instructorRef = db.collection('users').doc(courseData.instructorId);
             transaction.update(instructorRef, {
