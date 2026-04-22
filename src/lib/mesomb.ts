@@ -1,10 +1,9 @@
 import { PaymentOperation } from '@hachther/mesomb';
-import { randomBytes } from 'crypto';
+import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Client MeSomb utilisant le SDK officiel.
- * ✅ SÉCURITÉ : La signature est gérée nativement par le SDK.
- * ✅ ROBUSTESSE : Utilise des forçages de type pour éviter les erreurs de build Vercel.
+ * @fileOverview Client MeSomb utilisant le SDK officiel et des appels API signés.
+ * ✅ SÉCURITÉ : Signature V4/V1.1 gérée selon les besoins de l'endpoint.
  */
 
 export function getMeSombClient() {
@@ -13,7 +12,7 @@ export function getMeSombClient() {
   const secretKey = process.env.MESOMB_SECRET_KEY?.trim();
 
   if (!applicationKey || !accessKey || !secretKey) {
-    throw new Error("CONFIG_MISSING: Les variables MESOMB_APPLICATION_KEY, MESOMB_ACCESS_KEY ou MESOMB_SECRET_KEY sont absentes.");
+    throw new Error("CONFIG_MISSING: Les variables MeSomb sont absentes.");
   }
 
   return new PaymentOperation({
@@ -24,16 +23,60 @@ export function getMeSombClient() {
 }
 
 /**
+ * Récupère le solde réel du compte marchand MeSomb.
+ * Cette méthode utilise une requête signée manuellement car le SDK 
+ * peut ne pas exposer cette fonctionnalité sur l'objet PaymentOperation.
+ */
+export async function getMeSombAccountBalance() {
+  const applicationKey = process.env.MESOMB_APPLICATION_KEY?.trim();
+  const accessKey = process.env.MESOMB_ACCESS_KEY?.trim();
+  const secretKey = process.env.MESOMB_SECRET_KEY?.trim();
+
+  if (!applicationKey || !accessKey || !secretKey) {
+    throw new Error("Configuration MeSomb incomplète.");
+  }
+
+  const nonce = randomBytes(16).toString('hex');
+  const timestamp = Math.floor(Date.now() / 1000);
+  const method = 'GET';
+  const endpoint = '/api/v1.1/payment/account/';
+  
+  // Format de signature MeSomb V1.1 pour les requêtes GET
+  const signString = `${method}\n${endpoint}\n${timestamp}\n${nonce}`;
+  const signature = createHmac('sha1', secretKey).update(signString).digest('hex');
+
+  const url = `https://mesomb.com${endpoint}`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-MeSomb-Application': applicationKey,
+        'Authorization': `MeSomb ${accessKey}:${signature}:${nonce}:${timestamp}`,
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`MeSomb API error (${response.status}): ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error("[MeSomb Account Fetch Error]", error.message);
+    throw error;
+  }
+}
+
+/**
  * Récupère le statut réel d'une transaction auprès de MeSomb.
- * Utilisé par le webhook et le service de réconciliation.
  */
 export async function getMeSombTransactionStatus(transactionId: string) {
     try {
         const client = getMeSombClient();
-        // Utilisation de getStatus qui est la méthode officielle du SDK v2
+        // Utilisation de getStatus qui est la méthode officielle du SDK
         const response = await (client as any).getStatus(transactionId);
-        
-        // Le SDK retourne un objet de réponse contenant la transaction
         return response.transaction || (response as any).data;
     } catch (e) {
         console.error(`[MeSomb Status Check Fail] ID: ${transactionId}`, e);

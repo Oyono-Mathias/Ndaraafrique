@@ -8,7 +8,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, generateNonce, getMeSombTransactionStatus } from '@/lib/mesomb';
+import { getMeSombClient, generateNonce, getMeSombTransactionStatus, getMeSombAccountBalance } from '@/lib/mesomb';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
@@ -180,8 +180,8 @@ export async function getMeSombBalanceAction(adminId: string) {
             throw new Error("UNAUTHORIZED");
         }
 
-        const client = getMeSombClient();
-        const response = await (client as any).getAccount(); 
+        // On utilise la fonction de récupération manuelle signée
+        const response = await getMeSombAccountBalance();
         
         return { 
             success: true, 
