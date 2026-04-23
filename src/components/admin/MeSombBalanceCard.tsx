@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Carte de consultation du solde MeSomb pour le cockpit Admin.
- * ✅ DESIGN : Troncature des erreurs pour protéger le layout.
+ * ✅ DESIGN : Affichage précis des erreurs pour faciliter le debug.
  */
 export function MeSombBalanceCard() {
     const { currentUser } = useRole();
@@ -29,12 +29,10 @@ export function MeSombBalanceCard() {
                 setBalance(result.balance ?? 0);
                 setCurrency(result.currency || 'XAF');
             } else {
-                // Troncature de sécurité pour l'affichage
-                const msg = result.error || "Erreur de connexion MeSomb.";
-                setError(msg.length > 100 ? msg.substring(0, 100) + "..." : msg);
+                setError(result.error || "Erreur de connexion MeSomb.");
             }
-        } catch (e) {
-            setError("Erreur technique fatale.");
+        } catch (e: any) {
+            setError(e.message || "Erreur technique fatale.");
         } finally {
             setIsLoading(false);
         }
@@ -83,7 +81,7 @@ export function MeSombBalanceCard() {
                         </div>
                     )}
 
-                    {!isLoading && balance !== null && (
+                    {!isLoading && !error && balance !== null && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                             <p className="text-3xl font-black text-slate-900 tracking-tight">
                                 {balance.toLocaleString('fr-FR')} 

@@ -24,7 +24,7 @@ export function getMeSombClient() {
 
 /**
  * Récupère le solde réel du compte marchand MeSomb.
- * ✅ FIX : Utilisation du sous-domaine api.mesomb.com pour éviter le 404 (WordPress).
+ * ✅ OPTIMISATION : Utilisation de la signature V1.1 compacte (Recommandée pour Account).
  */
 export async function getMeSombAccountBalance() {
   const applicationKey = process.env.MESOMB_APPLICATION_KEY?.trim();
@@ -32,17 +32,17 @@ export async function getMeSombAccountBalance() {
   const secretKey = process.env.MESOMB_SECRET_KEY?.trim();
 
   if (!applicationKey || !accessKey || !secretKey) {
-    throw new Error("Configuration MeSomb incomplète.");
+    throw new Error("Configuration MeSomb incomplète (Clés manquantes).");
   }
 
   const nonce = randomBytes(16).toString('hex');
-  const timestamp = Math.floor(Date.now() / 1000);
+  const timestamp = Math.floor(Date.now() / 1000).toString();
   const method = 'GET';
-  // L'endpoint pour la signature commence par /v1.1/... si on utilise api.mesomb.com
   const endpoint = '/v1.1/payment/account/';
   
-  // Format de signature MeSomb V1.1
-  const signString = `${method}\n${endpoint}\n${timestamp}\n${nonce}`;
+  // Format de signature MeSomb V1.1 (Compact)
+  // Note: Certaines versions de l'API préfèrent la concaténation sans \n pour cet endpoint
+  const signString = method + endpoint + timestamp + nonce;
   const signature = createHmac('sha1', secretKey).update(signString).digest('hex');
 
   const url = `https://api.mesomb.com${endpoint}`;
@@ -53,22 +53,34 @@ export async function getMeSombAccountBalance() {
       headers: {
         'X-MeSomb-Application': applicationKey,
         'Authorization': `MeSomb ${accessKey}:${signature}:${nonce}:${timestamp}`,
-        'Cache-Control': 'no-cache'
-      }
+        'Cache-Control': 'no-cache',
+        'Accept': 'application/json'
+      },
+      // Timeout court pour éviter de bloquer le thread Next.js
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      // On ne renvoie que les 200 premiers caractères pour éviter de saturer l'UI
-      const cleanError = errorText.includes('<!DOCTYPE html>') 
-        ? "Endpoint introuvable (404). Vérifiez la configuration du compte."
-        : errorText.substring(0, 200);
+      let cleanError = "Erreur MeSomb";
+      
+      try {
+          const errJson = JSON.parse(errorText);
+          cleanError = errJson.message || errJson.detail || `Erreur ${response.status}`;
+      } catch (e) {
+          cleanError = errorText.includes('<!DOCTYPE html>') 
+            ? "Service MeSomb Indisponible (404/500)" 
+            : errorText.substring(0, 100);
+      }
+      
       throw new Error(cleanError);
     }
 
     return await response.json();
   } catch (error: any) {
     console.error("[MeSomb Account Fetch Error]", error.message);
+    // On propage l'erreur pour qu'elle soit capturée par l'UI
+    if (error.name === 'TimeoutError') throw new Error("Délai de connexion dépassé (MeSomb ne répond pas).");
     throw error;
   }
 }
