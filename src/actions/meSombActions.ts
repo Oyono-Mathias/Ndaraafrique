@@ -109,9 +109,8 @@ export async function initiateMeSombPayment(params: {
           message: "Veuillez valider le prompt USSD sur votre téléphone." 
         };
     } else {
-        // ✅ Récupération du message d'erreur réel
         const errorData = (response as any).data || {};
-        const errorMsg = errorData.message || "Le paiement a été rejeté par MeSomb. Vérifiez votre solde Mobile Money.";
+        const errorMsg = errorData.message || "Le paiement a été rejeté par MeSomb.";
         return { success: false, error: errorMsg };
     }
 
@@ -174,15 +173,7 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 /** 💰 Obtenir le solde du compte marchand (Action Admin) */
 export async function getMeSombBalanceAction(adminId: string) {
     try {
-        const db = getAdminDb();
-        const adminDoc = await db.collection('users').doc(adminId).get();
-        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-            throw new Error("UNAUTHORIZED");
-        }
-
-        // On utilise la fonction de récupération manuelle signée
         const response = await getMeSombAccountBalance();
-        
         return { 
             success: true, 
             balance: response.balance || 0, 
