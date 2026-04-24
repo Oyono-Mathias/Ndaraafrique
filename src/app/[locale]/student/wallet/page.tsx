@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V6.5 Elite Fintech.
- * ✅ UX : Affichage immédiat des codes USSD de secours après initiation.
+ * @fileOverview Ndara Wallet Étudiant - V6.6 Elite Fintech.
+ * ✅ TRAÇABILITÉ : Historique synchronisé et complet (completed/failed).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -14,14 +14,12 @@ import {
     Wifi, 
     Loader2, 
     Smartphone, 
-    Receipt, 
-    CreditCard, 
     Check,
     SmartphoneNfc,
-    Globe,
     Zap,
     History,
-    AlertCircle
+    AlertCircle,
+    CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -32,27 +30,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
-
-// Configuration des codes USSD par pays et opérateur
-const USSD_CONFIG: Record<string, Record<string, string>> = {
-  "CM": {
-    "MTN": "*126#",
-    "ORANGE": "#150*50#",
-    "WAVE": "Application Wave"
-  },
-  "CF": {
-      "ORANGE": "#150#"
-  }
-};
 
 export default function NdaraWalletPage() {
     const { user, currentUser, isUserLoading } = useRole();
     const db = getFirestore();
     const { toast } = useToast();
-    const t = useTranslations('Wallet');
     
     const [liveData, setLiveData] = useState({ balance: 0, virtualBalance: 0 });
     const [transactions, setTransactions] = useState<Payment[]>([]);
@@ -105,7 +90,8 @@ export default function NdaraWalletPage() {
 
     useEffect(() => {
         if (!user?.uid) return;
-        const q = query(collection(db, 'payments'), where('userId', '==', user.uid), orderBy('date', 'desc'), limit(10));
+        // Correction : On trie par date pour s'assurer de voir les plus récents
+        const q = query(collection(db, 'payments'), where('userId', '==', user.uid), orderBy('date', 'desc'), limit(15));
         const unsub = onSnapshot(q, (snap) => {
             setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
         });
@@ -113,14 +99,6 @@ export default function NdaraWalletPage() {
     }, [user?.uid, db]);
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
-
-    const getUssdCode = () => {
-        const countryCode = currentUser?.countryCode || "CM";
-        const opName = activeMethod?.name.toUpperCase() || "";
-        if (opName.includes("MTN")) return USSD_CONFIG[countryCode]?.["MTN"] || "*126#";
-        if (opName.includes("ORANGE")) return USSD_CONFIG[countryCode]?.["ORANGE"] || "#150*50#";
-        return null;
-    };
 
     const handleRecharge = async () => {
         if (!user || selectedAmount < 100 || !activeMethod) return;
@@ -137,14 +115,14 @@ export default function NdaraWalletPage() {
                 phoneNumber: cleanPhone,
                 service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
                 userId: user.uid,
-                type: 'wallet_topup'
+                type: 'wallet_topup',
+                courseTitle: 'Recharge Portefeuille'
             });
 
             if (result.success) {
                 if (result.type === 'SIMULATED') {
                     setIsSuccess(true);
                 } else {
-                    // ✅ UX FIX: On affiche immédiatement le modal USSD
                     setIsAwaitingUssd(true);
                 }
             } else {
@@ -173,7 +151,6 @@ export default function NdaraWalletPage() {
 
                 <main className="flex-1 pt-24 px-6 space-y-8 animate-in fade-in duration-700">
                     
-                    {/* --- REAL BALANCE CARD --- */}
                     <div className="virtual-card rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
                         <div className="relative z-10">
                             <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.25em] mb-1">Solde de Production</p>
@@ -187,7 +164,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {/* --- SIMULATED / PROMO BALANCE --- */}
                     {liveData.virtualBalance > 0 && (
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-5 flex items-center justify-between shadow-xl">
                             <div className="flex items-center gap-4">
@@ -199,7 +175,6 @@ export default function NdaraWalletPage() {
                                     <p className="text-lg font-black text-white">{liveData.virtualBalance.toLocaleString()} <span className="text-[10px] opacity-40">FCFA</span></p>
                                 </div>
                             </div>
-                            <Badge className="bg-amber-500 text-slate-950 border-none font-black text-[8px] uppercase px-2">DEMO</Badge>
                         </div>
                     )}
 
@@ -222,7 +197,7 @@ export default function NdaraWalletPage() {
                         <Input 
                             type="number" 
                             placeholder="Saisir montant personnalisé..."
-                            className="h-16 bg-slate-900 border-white/5 rounded-[1.5rem] text-white font-black text-xl text-center focus-visible:ring-primary/30"
+                            className="h-16 bg-slate-900 border-white/5 rounded-[1.5rem] text-white font-black text-xl text-center"
                             value={customAmount}
                             onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(Number(e.target.value) || 0); }}
                         />
@@ -254,7 +229,7 @@ export default function NdaraWalletPage() {
                             <input 
                                 type="tel"
                                 placeholder="6xx xxx xxx"
-                                className="w-full h-16 pl-14 rounded-3xl bg-slate-900 border-white/5 font-mono text-lg text-white focus:border-primary outline-none transition-all"
+                                className="w-full h-16 pl-14 rounded-3xl bg-slate-900 border-white/5 font-mono text-lg text-white outline-none"
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
                             />
@@ -268,7 +243,7 @@ export default function NdaraWalletPage() {
                         </h2>
                         <div className="space-y-3">
                             {transactions.map(txn => (
-                                <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between">
+                                <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
                                     <div className="flex items-center gap-4">
                                         <OperatorLogo operatorName={txn.provider} size={32} />
                                         <div>
@@ -277,10 +252,15 @@ export default function NdaraWalletPage() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className={cn("font-black text-sm", txn.amount > 0 ? "text-emerald-500" : "text-red-500")}>
+                                        <p className={cn("font-black text-sm", (txn.status.toLowerCase() === 'completed') ? "text-emerald-500" : (txn.status.toLowerCase() === 'failed') ? "text-red-500" : "text-amber-500")}>
                                             {txn.amount.toLocaleString()} F
                                         </p>
-                                        <Badge className={cn("text-[7px] font-black uppercase px-1.5 py-0 border-none h-4", txn.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>{txn.status}</Badge>
+                                        <Badge className={cn(
+                                            "text-[7px] font-black uppercase px-1.5 py-0 border-none h-4", 
+                                            txn.status.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-emerald-500" : 
+                                            txn.status.toLowerCase() === 'failed' ? "bg-red-500/10 text-red-500" : 
+                                            "bg-amber-500/10 text-amber-500"
+                                        )}>{txn.status}</Badge>
                                     </div>
                                 </div>
                             ))}
@@ -300,7 +280,6 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
-            {/* ✅ UX FIX: Modal de guidage USSD affiché immédiatement */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900 border-white/10 rounded-[3rem] p-10 text-center sm:max-w-md">
                     <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
@@ -308,40 +287,12 @@ export default function NdaraWalletPage() {
                             <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                                 <Loader2 className="h-12 w-12 animate-spin" />
                             </div>
-                            <Smartphone className="absolute -bottom-2 -right-2 h-8 w-8 text-primary bg-slate-950 rounded-full p-1.5 border border-white/10 shadow-lg" />
                         </div>
                         <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Paiement en cours</DialogTitle>
-                        <div className="space-y-4">
-                            <p className="text-slate-300 font-medium italic text-sm">
-                                Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} XOF</b> via le prompt USSD qui va s'afficher sur votre téléphone.
-                            </p>
-                            
-                            {getUssdCode() && (
-                                <div className="p-4 bg-slate-950 rounded-2xl border border-primary/20 space-y-2">
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Si rien ne s'affiche, composez :</p>
-                                    <p className="text-2xl font-black text-primary tracking-widest">{getUssdCode()}</p>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
-                                <AlertCircle className="h-4 w-4 text-blue-400 shrink-0" />
-                                <p className="text-[9px] text-slate-500 text-left leading-relaxed">Le solde sera crédité automatiquement dès la validation du code PIN sur votre mobile.</p>
-                            </div>
-                        </div>
-                        <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-4">Fermer cette fenêtre</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isSuccess} onOpenChange={setIsSuccess}>
-                <DialogContent className="bg-slate-900 border-white/10 rounded-[3rem] p-10 text-center sm:max-w-md">
-                    <div className="flex flex-col items-center gap-8 animate-in zoom-in duration-700">
-                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center shadow-2xl animate-bounce shadow-primary/40">
-                            <Check className="h-14 w-14 text-slate-950" strokeWidth={4} />
-                        </div>
-                        <DialogTitle className="text-3xl font-black text-white uppercase tracking-tight">C'est fait !</DialogTitle>
-                        <p className="text-slate-400 font-medium italic">Votre portefeuille a été crédité avec succès.</p>
-                        <Button onClick={() => setIsSuccess(false)} className="w-full h-16 rounded-[2rem] bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">Continuer</Button>
+                        <p className="text-slate-300 font-medium italic text-sm">
+                            Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} XOF</b> via le prompt USSD sur votre téléphone.
+                        </p>
+                        <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-4">Fermer</Button>
                     </div>
                 </DialogContent>
             </Dialog>

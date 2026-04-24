@@ -3,6 +3,7 @@
 /**
  * @fileOverview Point d'entrée du Cockpit Admin.
  * Redirige vers le composant Dashboard Android-First.
+ * ✅ UNIFICATION : S'assure que les données traitées sont en minuscules.
  */
 
 import AdminDashboard from "@/components/dashboards/admin-dashboard";

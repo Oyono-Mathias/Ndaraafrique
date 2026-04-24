@@ -27,17 +27,15 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { Payment, Payout } from '@/lib/types';
+import type { Payment } from '@/lib/types';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 
 export default function StudentPaymentsPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
-  // 1. Récupération de TOUTES les transactions de l'utilisateur (userId)
+  // 1. Récupération de TOUTES les transactions de l'utilisateur
   const paymentsQuery = useMemo(() => 
     currentUser?.uid ? query(
         collection(db, 'payments'), 
@@ -118,7 +116,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
     pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-400 animate-pulse', icon: Clock },
     failed: { label: 'Échoué', class: 'bg-red-500/10 text-red-400', icon: XCircle },
     refunded: { label: 'Remboursé', class: 'bg-slate-800 text-slate-400', icon: AlertCircle },
-  }[payment.status] || { label: payment.status, class: 'bg-slate-800', icon: Clock };
+  }[payment.status.toLowerCase()] || { label: payment.status, class: 'bg-slate-800', icon: Clock };
 
   const typeLabel = {
     wallet_topup: 'Recharge Wallet',
@@ -136,7 +134,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
         <div className="flex items-center gap-4 min-w-0">
             <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                payment.status === 'completed' ? "bg-emerald-500/10 text-[#10b981]" : "bg-slate-800 text-slate-500"
+                payment.status.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-[#10b981]" : "bg-slate-800 text-slate-500"
             )}>
                 {payment.type === 'wallet_topup' ? <Smartphone size={20} /> : <ShoppingBag size={20} />}
             </div>
@@ -154,7 +152,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
         </div>
         
         <div className="text-right shrink-0">
-            <p className={cn("text-base font-black mb-1", payment.status === 'completed' ? "text-emerald-400" : "text-white")}>
+            <p className={cn("text-base font-black mb-1", payment.status.toLowerCase() === 'completed' ? "text-emerald-400" : "text-white")}>
                 {payment.amount.toLocaleString('fr-FR')} <span className="text-[10px] opacity-40">F</span>
             </p>
             <Badge className={cn("text-[8px] font-black uppercase border-none px-2 py-0.5 rounded-full h-4", statusConfig.class)}>
@@ -174,7 +172,7 @@ function PayoutItem({ payout }: { payout: any }) {
         approved: { label: 'Validé', class: 'bg-blue-500/10 text-blue-400' },
         paid: { label: 'Versé', class: 'bg-emerald-500/10 text-emerald-500' },
         rejected: { label: 'Rejeté', class: 'bg-red-500/10 text-red-500' },
-    }[payout.status as string] || { label: payout.status, class: 'bg-slate-800' };
+    }[payout.status.toLowerCase()] || { label: payout.status, class: 'bg-slate-800' };
 
     return (
         <Card className="bg-slate-900 border border-white/5 rounded-[2rem] overflow-hidden shadow-xl">

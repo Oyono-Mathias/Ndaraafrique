@@ -2,26 +2,21 @@
 
 /**
  * @fileOverview Reporting CEO & Analyses Ndara Afrique.
- * ✅ DESIGN : Elite Fintech (#050505).
  * ✅ RÉEL : Business Critical KPIs (CA, Top Courses, Sources).
+ * ✅ UNIFICATION : Filtre sur le statut 'completed' (minuscule).
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, limit, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
     TrendingUp, 
-    ArrowUpRight, 
     BrainCircuit, 
     Trophy, 
-    Sparkles, 
-    Lightbulb, 
     Landmark,
-    Loader2,
     PieChart,
     Smartphone,
     CreditCard,
@@ -39,18 +34,14 @@ import {
 import { format, subMonths, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-// ❌ Supprimé pour le build : import type { Payment, Course } from '@/lib/types';
 
-/**
- * ✅ RÉSOLU : Interfaces locales pour bypasser les restrictions de build
- */
 interface Payment {
     id: string;
     amount: number;
     platformFee?: number;
     courseTitle?: string;
     provider?: string;
-    date: any; // Timestamp Firestore ou string date
+    date: any;
     metadata?: {
         type?: string;
     };
@@ -71,12 +62,11 @@ export default function AdminStatsPage() {
         setIsLoading(true);
 
         const unsubPayments = onSnapshot(
-            query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc')),
+            query(collection(db, 'payments'), where('status', '==', 'completed'), orderBy('date', 'desc')),
             (snap) => {
                 const paymentsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment));
                 setPayments(paymentsData);
 
-                // Calcul Top Cours par Revenu
                 const courseMap = new Map<string, {revenue: number, count: number}>();
                 paymentsData.forEach(p => {
                     if (p.courseTitle) {
@@ -94,7 +84,6 @@ export default function AdminStatsPage() {
                     .slice(0, 5);
                 setTopAssets(sortedCourses);
 
-                // Calcul Revenus par Source
                 const providerMap = new Map<string, number>();
                 paymentsData.forEach(p => {
                     const provider = p.provider || 'Inconnu';
@@ -139,10 +128,6 @@ export default function AdminStatsPage() {
             <div className="p-6 space-y-8 bg-[#050505] min-h-screen">
                 <Skeleton className="h-12 w-1/3 bg-slate-900" />
                 <Skeleton className="h-48 w-full rounded-[2.5rem] bg-slate-900" />
-                <div className="grid grid-cols-2 gap-4">
-                    <Skeleton className="h-32 rounded-3xl bg-slate-900" />
-                    <Skeleton className="h-32 rounded-3xl bg-slate-900" />
-                </div>
             </div>
         );
     }
@@ -176,58 +161,9 @@ export default function AdminStatsPage() {
                             </h2>
                         </CardContent>
                     </Card>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-xl">
-                            <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-3">Revenus Platforme Ndara</p>
-                            <h3 className="text-3xl font-black text-ndara-gold">
-                                {stats.net.toLocaleString('fr-FR')}
-                            </h3>
-                        </div>
-                        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-xl">
-                            <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-3">Bourse des Licences</p>
-                            <h3 className="text-3xl font-black text-blue-400">
-                                {stats.marketVolume.toLocaleString('fr-FR')}
-                            </h3>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                        <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2">
-                            <BrainCircuit className="h-4 w-4 text-ndara-gold" />
-                            Historique des Flux Financiers
-                        </h2>
-                        <Badge className="bg-ndara-gold/10 text-ndara-gold border-none font-black text-[8px] uppercase px-2 py-1 rounded-full animate-pulse">Temps Réel</Badge>
-                    </div>
-
-                    <Card className="bg-slate-900/40 backdrop-blur-xl border-white/5 rounded-4xl overflow-hidden shadow-2xl p-8">
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={stats.historyData}>
-                                    <defs>
-                                        <linearGradient id="fluxGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.3}/>
-                                            <stop offset="100%" stopColor="#F59E0B" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(255,255,255,0.03)" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10, fontWeight: 'bold'}} dy={10} />
-                                    <YAxis hide />
-                                    <Tooltip 
-                                        contentStyle={{backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px'}}
-                                        itemStyle={{color: '#F59E0B', fontWeight: '900', fontSize: '12px'}}
-                                    />
-                                    <Area type="monotone" dataKey="value" stroke="#F59E0B" fillOpacity={1} fill="url(#fluxGrad)" strokeWidth={4} dot={{ r: 4, fill: '#050505', stroke: '#F59E0B', strokeWidth: 2 }} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card>
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* TOP COURSES */}
                     <section className="space-y-4">
                         <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2 px-1">
                             <Trophy className="h-4 w-4 text-ndara-gold" />
@@ -258,7 +194,6 @@ export default function AdminStatsPage() {
                         </div>
                     </section>
 
-                    {/* REVENUE SOURCES */}
                     <section className="space-y-4">
                         <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2 px-1">
                             <PieChart className="h-4 w-4 text-primary" />
@@ -285,32 +220,9 @@ export default function AdminStatsPage() {
                                     </div>
                                 )
                             })}
-                            {sourceData.length === 0 && <p className="text-center text-xs text-slate-600 uppercase font-black">Aucune donnée source</p>}
                         </div>
                     </section>
                 </div>
-
-                <section className="space-y-4 pb-12">
-                    <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2 px-1">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        Garantie de Sécurité
-                    </h2>
-                    <Card className="bg-slate-900/40 backdrop-blur-xl border-emerald-500/20 rounded-4xl overflow-hidden shadow-2xl relative group">
-                        <CardContent className="p-8 space-y-6">
-                            <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-inner shrink-0">
-                                    <ShieldCheck size={24} />
-                                </div>
-                                <div className="space-y-1 flex-1">
-                                    <h3 className="font-black text-white text-base uppercase tracking-tight">Audit Financier Ndara</h3>
-                                    <p className="text-slate-400 text-xs leading-relaxed font-medium italic">
-                                        "Toutes les données affichées ici sont issues du registre immuable de la collection <span className="text-primary font-black">payments</span>. Elles sont synchronisées en temps réel pour garantir une transparence totale au CEO."
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </section>
             </main>
         </div>
     );

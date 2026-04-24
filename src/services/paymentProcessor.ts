@@ -5,9 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.4
+ * ✅ Processeur financier SÉCURISÉ v3.5
  * Garantit le lien atomique entre Paiement et Accès au cours.
- * ✅ ACTIVITÉ : Ajoute automatiquement une trace dans le flux récent de l'utilisateur.
+ * ✅ UNIFICATION : Statuts en minuscules.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -39,7 +39,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const isSimulated = metadata.isSimulated === true || provider === 'simulated' || provider === 'admin_recharge_test';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-      // 💾 Mise à jour du reçu de paiement vers SUCCESS
+      // 💾 Mise à jour du reçu de paiement vers SUCCESS (completed en minuscules)
       const paymentData = {
         id: String(transactionId),
         userId: metadata.userId,
@@ -52,7 +52,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         updatedAt: FieldValue.serverTimestamp(),
         gatewayTransactionId: gatewayTransactionId || transactionId,
         courseId: metadata.courseId || 'WALLET_TOPUP',
-        courseTitle: isTopup ? 'Recharge Portefeuille' : (metadata.courseTitle || 'Achat formation'),
+        courseTitle: metadata.courseTitle || (isTopup ? 'Recharge Portefeuille' : 'Achat formation'),
         metadata: { ...metadata }
       };
 
@@ -73,7 +73,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           updatedAt: FieldValue.serverTimestamp()
         });
         
-        // Journal d'activité pour l'utilisateur
         transaction.set(activityRef, {
             userId: metadata.userId,
             type: 'payment',
@@ -112,7 +111,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             });
           }
 
-          // Rémunération instructeur (70%)
           if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
             const instructorRef = db.collection('users').doc(courseData.instructorId);
             transaction.update(instructorRef, {
@@ -138,7 +136,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           participantsCount: FieldValue.increment(1)
         });
 
-        // Journal d'activité pour l'utilisateur
         transaction.set(activityRef, {
             userId: metadata.userId,
             type: 'enrollment',

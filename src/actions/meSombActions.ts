@@ -3,7 +3,8 @@
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * Utilise le SDK officiel @hachther/mesomb v2.0.1.
- * ✅ TRAÇABILITÉ : Enregistre systématiquement les tentatives, même échouées.
+ * ✅ TRAÇABILITÉ : Enregistre systématiquement les tentatives avec le titre du cours.
+ * ✅ UNIFICATION : Statuts en minuscules (completed, pending, failed).
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -21,8 +22,9 @@ export async function initiateMeSombPayment(params: {
   phoneNumber: string;
   service: 'ORANGE' | 'MTN' | 'WAVE';
   userId: string;
-  type?: 'course_purchase' | 'wallet_topup';
+  type?: 'course_purchase' | 'wallet_topup' | 'license_purchase';
   courseId?: string;
+  courseTitle?: string;
 }): Promise<MeSombResponse> {
   const db = getAdminDb();
   const gatewayId = `TRY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -45,6 +47,7 @@ export async function initiateMeSombPayment(params: {
           userId: params.userId,
           type: params.type || 'course_purchase',
           courseId: params.courseId || 'WALLET_TOPUP',
+          courseTitle: params.courseTitle || (params.type === 'wallet_topup' ? 'Recharge Wallet' : 'Formation'),
           isSimulated: true,
           reason: 'Achat simulé (Mode Test)'
         }
@@ -84,6 +87,7 @@ export async function initiateMeSombPayment(params: {
       provider: params.service.toLowerCase(),
       isSimulated: false,
       courseId: params.courseId || 'WALLET_TOPUP',
+      courseTitle: params.courseTitle || (params.type === 'wallet_topup' ? 'Recharge Wallet' : 'Formation'),
       date: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
       metadata: { 
@@ -94,7 +98,7 @@ export async function initiateMeSombPayment(params: {
       }
     });
 
-    // Ajouter au flux d'activité si c'est un échec pour que l'étudiant comprenne
+    // Ajouter au flux d'activité si c'est un échec
     if (!response.isOperationSuccess()) {
         await db.collection('users').doc(params.userId).collection('activity').add({
             userId: params.userId,
@@ -121,7 +125,7 @@ export async function initiateMeSombPayment(params: {
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
     
-    // Log de l'erreur fatale (ex: réseau coupé)
+    // Log de l'erreur fatale
     await db.collection('payments').doc(gatewayId).set({
       id: gatewayId,
       userId: params.userId,
@@ -129,7 +133,8 @@ export async function initiateMeSombPayment(params: {
       currency: 'XAF',
       status: 'failed',
       type: params.type || 'course_purchase',
-      provider: params.service.toLowerCase(),
+      provider: params.service?.toLowerCase() || 'unknown',
+      courseTitle: params.courseTitle || 'Transaction Ndara',
       date: FieldValue.serverTimestamp(),
       metadata: { error: error.message }
     });
@@ -158,6 +163,7 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
                     metadata: {
                         userId: paymentData.userId,
                         courseId: paymentData.courseId,
+                        courseTitle: paymentData.courseTitle,
                         type: paymentData.type,
                     }
                 });
