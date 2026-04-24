@@ -29,9 +29,14 @@ export async function POST(req: Request) {
     console.log(`[${webhookId}] 🔍 Vérification statut MeSomb pour: ${gatewayId}`);
     const officialTxn = await getMeSombTransactionStatus(gatewayId);
 
-    if (officialTxn.status !== 'SUCCESS') {
-        console.warn(`[${webhookId}] ⚠️ Transaction non réussie chez MeSomb (Statut: ${officialTxn.status}). Abandon.`);
-        return NextResponse.json({ status: 'ignored', reason: officialTxn.status });
+    if (!officialTxn) {
+        console.error(`[${webhookId}] ❌ Impossible de vérifier le statut officiel chez MeSomb.`);
+        return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
+    }
+
+    if ((officialTxn as any).status !== 'SUCCESS') {
+        console.warn(`[${webhookId}] ⚠️ Transaction non réussie chez MeSomb (Statut: ${(officialTxn as any).status}). Abandon.`);
+        return NextResponse.json({ status: 'ignored', reason: (officialTxn as any).status });
     }
 
     // 2. RÉCUPÉRATION DU DOCUMENT PAIEMENT
@@ -45,7 +50,7 @@ export async function POST(req: Request) {
         await db.collection('security_logs').add({
             eventType: 'payment_orphan_webhook',
             targetId: gatewayId,
-            details: `Webhook reçu pour une transaction inconnue de ${officialTxn.amount} XAF`,
+            details: `Webhook reçu pour une transaction inconnue de ${(officialTxn as any).amount} ${(officialTxn as any).currency || 'XAF'}`,
             timestamp: new Date()
         });
         return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
@@ -61,14 +66,14 @@ export async function POST(req: Request) {
       transactionId: gatewayId,
       gatewayTransactionId: gatewayId,
       provider: 'mesomb',
-      amount: Number(officialTxn.amount),
-      currency: officialTxn.currency || 'XAF',
+      amount: Number((officialTxn as any).amount),
+      currency: (officialTxn as any).currency || 'XAF',
       metadata: {
         ...storedData?.metadata,
         userId: storedData?.userId,
         courseId: storedData?.courseId || 'WALLET_TOPUP',
         type: storedData?.type || 'wallet_topup',
-        operator: officialTxn.service
+        operator: (officialTxn as any).service
       }
     });
 
