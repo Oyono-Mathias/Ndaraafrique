@@ -2,12 +2,12 @@
 
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
- * Utilise le SDK Node.js comme recommandé dans la documentation pour le backend.
+ * Utilise le SDK officiel @hachther/mesomb v2.0.1.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, generateNonce, getMeSombTransactionStatus, getMeSombAccountBalance } from '@/lib/mesomb';
+import { getMeSombClient, getMeSombTransactionStatus, getMeSombAccountBalance } from '@/lib/mesomb';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
@@ -54,17 +54,17 @@ export async function initiateMeSombPayment(params: {
       };
     }
 
-    // 2. PAIEMENT RÉEL VIA SDK NODE.JS (Le "moteur" de Next.js)
+    // 2. PAIEMENT RÉEL VIA SDK OFFICIEL
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
     const client = getMeSombClient();
     
+    // Appel makeCollect tel que documenté dans le SDK v2.0.1
     const response = await client.makeCollect({
         amount: params.amount,
         service: params.service,
         payer: cleanPhone,
-        country: 'CM', // MeSomb opère principalement sur CM
-        currency: 'XAF',
-        nonce: generateNonce()
+        country: 'CM',
+        currency: 'XAF'
     });
 
     if (response.isOperationSuccess()) {
@@ -83,6 +83,7 @@ export async function initiateMeSombPayment(params: {
           isSimulated: false,
           courseId: params.courseId || 'WALLET_TOPUP',
           date: FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           metadata: { 
             operator: params.service, 
             phone: cleanPhone, 
@@ -97,13 +98,13 @@ export async function initiateMeSombPayment(params: {
           message: "Validez le prompt USSD sur votre mobile." 
         };
     } else {
-        const errorMsg = (response as any).data?.message || "Rejet par l'opérateur.";
+        const errorMsg = (response as any).message || "Le paiement a été rejeté par l'opérateur.";
         return { success: false, error: errorMsg };
     }
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
-    return { success: false, error: "Erreur de connexion aux serveurs de paiement." };
+    return { success: false, error: error.message || "Erreur de connexion aux serveurs de paiement." };
   }
 }
 
@@ -143,10 +144,11 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 export async function getMeSombBalanceAction(adminId: string) {
     try {
         const response = await getMeSombAccountBalance();
+        // Le SDK renvoie l'objet Application. On cherche le solde dans balance.
         return { 
             success: true, 
             balance: response.balance || 0, 
-            currency: response.currency || 'XAF' 
+            currency: 'XAF' 
         };
     } catch (e: any) {
         return { success: false, error: e.message };
