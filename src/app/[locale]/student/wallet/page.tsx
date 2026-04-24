@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V6.6 Elite Fintech.
- * ✅ TRAÇABILITÉ : Historique synchronisé et complet (completed/failed).
+ * @fileOverview Ndara Wallet Étudiant - V6.7 Elite Fintech.
+ * ✅ TRAÇABILITÉ : Historique résilient avec tri en mémoire pour éviter les erreurs d'index.
+ * ✅ VISIBILITÉ : Ajout d'états vides et de chargement pour l'historique.
  */
 
 import { useRole } from '@/context/RoleContext';
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, doc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, limit, onSnapshot, doc, getDocs } from 'firebase/firestore';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -19,7 +20,8 @@ import {
     Zap,
     History,
     AlertCircle,
-    CreditCard
+    CreditCard,
+    ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -31,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
 
@@ -40,7 +43,7 @@ export default function NdaraWalletPage() {
     const { toast } = useToast();
     
     const [liveData, setLiveData] = useState({ balance: 0, virtualBalance: 0 });
-    const [transactions, setTransactions] = useState<Payment[]>([]);
+    const [rawTransactions, setRawTransactions] = useState<Payment[]>([]);
     const [selectedAmount, setSelectedAmount] = useState<number>(5000);
     const [customAmount, setCustomAmount] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -51,6 +54,7 @@ export default function NdaraWalletPage() {
     const [countryData, setCountryData] = useState<Country | null>(null);
     const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
     const [isLoadingCountry, setIsLoadingCountry] = useState(true);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
     useEffect(() => {
         if (!user?.uid) return;
@@ -90,13 +94,28 @@ export default function NdaraWalletPage() {
 
     useEffect(() => {
         if (!user?.uid) return;
-        // Correction : On trie par date pour s'assurer de voir les plus récents
-        const q = query(collection(db, 'payments'), where('userId', '==', user.uid), orderBy('date', 'desc'), limit(15));
+        setIsLoadingHistory(true);
+        // On enlève orderBy pour éviter les erreurs d'index composite manquant au build
+        const q = query(collection(db, 'payments'), where('userId', '==', user.uid), limit(20));
         const unsub = onSnapshot(q, (snap) => {
-            setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
+            const txns = snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment));
+            setRawTransactions(txns);
+            setIsLoadingHistory(false);
+        }, (err) => {
+            console.error("History loading error:", err);
+            setIsLoadingHistory(false);
         });
         return () => unsub();
     }, [user?.uid, db]);
+
+    // Tri en mémoire pour garantir la visibilité immédiate sans dépendre des index Firebase
+    const sortedTransactions = useMemo(() => {
+        return [...rawTransactions].sort((a, b) => {
+            const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
+            const dateB = (b.date as any)?.toDate?.() || new Date(b.date as any || 0);
+            return dateB.getTime() - dateA.getTime();
+        });
+    }, [rawTransactions]);
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
@@ -242,37 +261,49 @@ export default function NdaraWalletPage() {
                             Dernières opérations
                         </h2>
                         <div className="space-y-3">
-                            {transactions.map(txn => (
-                                <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <OperatorLogo operatorName={txn.provider} size={32} />
-                                        <div>
-                                            <p className="font-bold text-white text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
-                                            <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">{format((txn.date as any)?.toDate?.() || new Date(), 'dd MMM • HH:mm', { locale: fr })}</p>
+                            {isLoadingHistory ? (
+                                [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl bg-slate-900" />)
+                            ) : sortedTransactions.length > 0 ? (
+                                sortedTransactions.map(txn => {
+                                    const status = (txn.status || 'pending').toLowerCase();
+                                    return (
+                                        <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <OperatorLogo operatorName={txn.provider} size={32} />
+                                                <div>
+                                                    <p className="font-bold text-white text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
+                                                    <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">{format((txn.date as any)?.toDate?.() || new Date(txn.date as any || 0), 'dd MMM • HH:mm', { locale: fr })}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className={cn("font-black text-sm", status === 'completed' ? "text-emerald-500" : status === 'failed' ? "text-red-500" : "text-amber-500")}>
+                                                    {txn.amount.toLocaleString()} F
+                                                </p>
+                                                <Badge className={cn(
+                                                    "text-[7px] font-black uppercase px-1.5 py-0 border-none h-4", 
+                                                    status === 'completed' ? "bg-emerald-500/10 text-emerald-500" : 
+                                                    status === 'failed' ? "bg-red-500/10 text-red-500" : 
+                                                    "bg-amber-500/10 text-amber-500"
+                                                )}>{status === 'completed' ? 'Réussi' : status === 'failed' ? 'Échec' : 'Audit'}</Badge>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className={cn("font-black text-sm", (txn.status.toLowerCase() === 'completed') ? "text-emerald-500" : (txn.status.toLowerCase() === 'failed') ? "text-red-500" : "text-amber-500")}>
-                                            {txn.amount.toLocaleString()} F
-                                        </p>
-                                        <Badge className={cn(
-                                            "text-[7px] font-black uppercase px-1.5 py-0 border-none h-4", 
-                                            txn.status.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-emerald-500" : 
-                                            txn.status.toLowerCase() === 'failed' ? "bg-red-500/10 text-red-500" : 
-                                            "bg-amber-500/10 text-amber-500"
-                                        )}>{txn.status}</Badge>
-                                    </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="py-12 text-center opacity-20 border-2 border-dashed border-slate-800 rounded-3xl">
+                                    <AlertCircle size={32} className="mx-auto mb-2 text-slate-600" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Aucune opération</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </section>
                 </main>
 
-                <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-slate-950 via-slate-950 to-transparent pt-10 pb-8 px-6 z-40 safe-area-pb">
+                <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent pt-10 pb-8 px-6 z-40 safe-area-pb">
                     <Button 
                         onClick={handleRecharge}
                         disabled={isProcessing || !phoneNumber || !activeMethod}
-                        className="w-full h-16 bg-primary hover:bg-emerald-400 text-slate-950 rounded-[2.5rem] font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl active:scale-95 animate-pulse-glow border-none"
+                        className="w-full h-16 bg-primary hover:bg-emerald-400 text-slate-950 rounded-[2.5rem] font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl active:scale-90 animate-pulse-glow border-none"
                     >
                         {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
                         <span>Lancer la Recharge</span>
