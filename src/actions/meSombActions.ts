@@ -145,10 +145,22 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 export async function getMeSombBalanceAction(adminId: string) {
     try {
         const response = await getMeSombAccountBalance();
-        // Le SDK renvoie l'objet Application. On force le cast en any car les types TS du SDK sont incomplets.
+        // Le SDK v2.0 renvoie l'objet Application. 
+        // Il contient souvent une liste 'balances' avec les montants par opérateur.
+        const data = response as any;
+        
+        let totalBalance = data.balance || 0;
+
+        // Si le champ 'balance' est vide ou à 0, on tente de sommer le tableau 'balances'
+        if (data.balances && Array.isArray(data.balances)) {
+            const sum = data.balances.reduce((acc: number, b: any) => acc + (Number(b.amount) || 0), 0);
+            // On prend le maximum pour éviter d'afficher 0 si un sous-compte est plein
+            if (sum > totalBalance) totalBalance = sum;
+        }
+
         return { 
             success: true, 
-            balance: (response as any).balance || 0, 
+            balance: totalBalance, 
             currency: 'XAF' 
         };
     } catch (e: any) {
