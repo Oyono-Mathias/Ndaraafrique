@@ -2,9 +2,9 @@ import { PaymentOperation } from '@hachther/mesomb';
 import { createHmac, randomBytes } from 'crypto';
 
 /**
- * @fileOverview Client MeSomb utilisant le SDK officiel et des appels API signés.
- * ✅ SÉCURITÉ : Signature V4/V1.1 gérée selon les besoins de l'endpoint.
- * ✅ OPTIMISATION : User-Agent et headers de compatibilité ajoutés.
+ * @fileOverview Client MeSomb optimisé pour Next.js (Environnement Node.js).
+ * ✅ SÉCURITÉ : Signature V4 gérée par le SDK pour les collectes.
+ * ✅ COMPATIBILITÉ : Signature V1.1 manuelle pour les endpoints de consultation (GET).
  */
 
 export function getMeSombClient() {
@@ -13,7 +13,7 @@ export function getMeSombClient() {
   const secretKey = process.env.MESOMB_SECRET_KEY?.trim();
 
   if (!applicationKey || !accessKey || !secretKey) {
-    throw new Error("CONFIG_MISSING: Les variables MeSomb sont absentes.");
+    throw new Error("CONFIG_MISSING: Les variables MeSomb sont absentes de l'environnement.");
   }
 
   return new PaymentOperation({
@@ -24,8 +24,8 @@ export function getMeSombClient() {
 }
 
 /**
- * Récupère le solde réel du compte marchand MeSomb.
- * ✅ FIABILITÉ : Utilisation d'un User-Agent et d'une signature V1.1 robuste.
+ * Récupère le solde du compte marchand.
+ * Utilise la signature V1.1 (Standard pour les requêtes GET de compte).
  */
 export async function getMeSombAccountBalance() {
   const applicationKey = process.env.MESOMB_APPLICATION_KEY?.trim();
@@ -36,70 +36,48 @@ export async function getMeSombAccountBalance() {
     throw new Error("Configuration MeSomb incomplète.");
   }
 
-  // Utilisation d'un nonce simple et efficace
   const nonce = randomBytes(8).toString('hex');
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const method = 'GET';
   const endpoint = '/v1.1/payment/account/';
   
-  // Signature V1.1 : Concaténation pure sans délimiteur
+  // Signature V1.1 compacte
   const signString = method + endpoint + timestamp + nonce;
   const signature = createHmac('sha1', secretKey).update(signString).digest('hex');
 
   const url = `https://api.mesomb.com${endpoint}`;
   
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'X-MeSomb-Application': applicationKey,
-        'Authorization': `MeSomb ${accessKey}:${signature}:${nonce}:${timestamp}`,
-        'Accept': 'application/json',
-        'User-Agent': 'NdaraAfrique/2.5 (Vercel; Serverless)',
-        'Cache-Control': 'no-cache'
-      }
-    });
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'X-MeSomb-Application': applicationKey,
+      'Authorization': `MeSomb ${accessKey}:${signature}:${nonce}:${timestamp}`,
+      'Accept': 'application/json',
+      'User-Agent': 'NdaraAfrique/2.5',
+    },
+    cache: 'no-store'
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let cleanError = `Erreur ${response.status}`;
-      
-      try {
-          const errJson = JSON.parse(errorText);
-          cleanError = errJson.message || errJson.detail || cleanError;
-      } catch (e) {
-          // Si MeSomb renvoie du HTML, on n'affiche que le début
-          cleanError = errorText.substring(0, 50);
-      }
-      
-      throw new Error(cleanError);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    console.error("[MeSomb API Critical]", error.message);
-    // On remonte l'erreur exacte pour le dashboard
-    throw new Error(error.message || "FETCH_FAILED");
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`MeSomb API Error (${response.status}): ${errorText.substring(0, 100)}`);
   }
+
+  return await response.json();
 }
 
-/**
- * Récupère le statut réel d'une transaction auprès de MeSomb.
- */
 export async function getMeSombTransactionStatus(transactionId: string) {
     try {
         const client = getMeSombClient();
-        const response = await (client as any).getStatus(transactionId);
-        return response.transaction || (response as any).data;
+        // @ts-ignore - Le SDK a parfois des types incomplets mais la méthode existe
+        const response = await client.getStatus(transactionId);
+        return response.transaction || response;
     } catch (e) {
         console.error(`[MeSomb Status Check Fail] ID: ${transactionId}`, e);
         return null;
     }
 }
 
-/**
- * Génère un nonce sécurisé pour les transactions.
- */
 export function generateNonce() {
     return randomBytes(16).toString('hex');
 }
