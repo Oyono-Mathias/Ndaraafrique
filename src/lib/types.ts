@@ -246,7 +246,7 @@ export interface CourseProgress {
 export interface UserActivity {
   id: string;
   userId: string;
-  type: 'enrollment' | 'certificate' | 'review' | 'assignment';
+  type: 'enrollment' | 'certificate' | 'review' | 'assignment' | 'payment';
   title: string;
   description?: string;
   link?: string;

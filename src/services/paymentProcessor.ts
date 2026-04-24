@@ -5,9 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.3
+ * ✅ Processeur financier SÉCURISÉ v3.4
  * Garantit le lien atomique entre Paiement et Accès au cours.
- * Harmonisation des statuts en minuscule.
+ * ✅ ACTIVITÉ : Ajoute automatiquement une trace dans le flux récent de l'utilisateur.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -20,8 +20,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
     return await db.runTransaction(async (transaction) => {
       const paymentRef = db.collection('payments').doc(String(transactionId));
       const userRef = db.collection('users').doc(metadata.userId);
+      const activityRef = userRef.collection('activity').doc();
 
-      // 1. IDEMPOTENCE : Éviter les doubles traitements (Gestion de la casse)
+      // 1. IDEMPOTENCE : Éviter les doubles traitements
       const paymentSnap = await transaction.get(paymentRef);
       const currentStatus = paymentSnap.data()?.status?.toLowerCase();
       if (paymentSnap.exists && currentStatus === 'completed') {
@@ -72,13 +73,14 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           updatedAt: FieldValue.serverTimestamp()
         });
         
-        const securityLogRef = db.collection('security_logs').doc();
-        transaction.set(securityLogRef, {
-            eventType: isSimulated ? 'wallet_topup_virtual' : 'wallet_topup_real',
+        // Journal d'activité pour l'utilisateur
+        transaction.set(activityRef, {
             userId: metadata.userId,
-            targetId: String(transactionId),
-            details: `Crédit de ${amount} ${currency} via ${provider}.`,
-            timestamp: FieldValue.serverTimestamp()
+            type: 'payment',
+            title: isSimulated ? 'Crédit Démo validé' : 'Portefeuille crédité',
+            description: `Votre compte a été alimenté de ${amount.toLocaleString()} ${currency}.`,
+            read: false,
+            createdAt: FieldValue.serverTimestamp()
         });
       }
 
@@ -101,10 +103,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
         if (!isSimulated) {
           const currentBalance = Number(userData.balance) || 0;
-          
-          if (provider === 'wallet' && currentBalance < Number(amount)) {
-            throw new Error("SOLDE_INSUFFISANT");
-          }
+          if (provider === 'wallet' && currentBalance < Number(amount)) throw new Error("SOLDE_INSUFFISANT");
 
           if (provider === 'wallet') {
             transaction.update(userRef, {
@@ -139,13 +138,15 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
           participantsCount: FieldValue.increment(1)
         });
 
-        const securityLogRef = db.collection('security_logs').doc();
-        transaction.set(securityLogRef, {
-            eventType: 'course_enrollment',
+        // Journal d'activité pour l'utilisateur
+        transaction.set(activityRef, {
             userId: metadata.userId,
-            targetId: metadata.courseId,
-            details: `Inscription au cours "${courseData.title}" validée par paiement ${provider}.`,
-            timestamp: FieldValue.serverTimestamp()
+            type: 'enrollment',
+            title: 'Nouvelle formation acquise',
+            description: `Vous avez rejoint le cours : ${courseData.title}`,
+            link: `/student/courses/${metadata.courseId}`,
+            read: false,
+            createdAt: FieldValue.serverTimestamp()
         });
       }
 

@@ -3,6 +3,7 @@
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * Utilise le SDK officiel @hachther/mesomb v2.0.1.
+ * ✅ TRAÇABILITÉ : Enregistre systématiquement les tentatives, même échouées.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -23,8 +24,10 @@ export async function initiateMeSombPayment(params: {
   type?: 'course_purchase' | 'wallet_topup';
   courseId?: string;
 }): Promise<MeSombResponse> {
+  const db = getAdminDb();
+  const gatewayId = `TRY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
   try {
-    const db = getAdminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data() as any;
 
@@ -58,7 +61,6 @@ export async function initiateMeSombPayment(params: {
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
     const client = getMeSombClient();
     
-    // Appel makeCollect tel que documenté dans le SDK v2.0.1
     const response = await client.makeCollect({
         amount: params.amount,
         service: params.service,
@@ -67,34 +69,48 @@ export async function initiateMeSombPayment(params: {
         currency: 'XAF'
     });
 
-    if (response.isOperationSuccess()) {
-        const transaction = (response as any).transaction; 
-        const gatewayId = String(transaction.pk || transaction.id);
-        
-        // Enregistrer la transaction en 'pending' pour la traçabilité
-        await db.collection('payments').doc(gatewayId).set({
-          id: gatewayId,
-          userId: params.userId,
-          amount: Number(params.amount),
-          currency: 'XAF',
-          status: 'pending',
-          type: params.type || 'course_purchase',
-          provider: params.service.toLowerCase(),
-          isSimulated: false,
-          courseId: params.courseId || 'WALLET_TOPUP',
-          date: FieldValue.serverTimestamp(),
-          createdAt: FieldValue.serverTimestamp(),
-          metadata: { 
-            operator: params.service, 
-            phone: cleanPhone, 
-            gatewayId: gatewayId
-          }
-        });
+    const realId = response.isOperationSuccess() 
+        ? String((response as any).transaction.pk || (response as any).transaction.id)
+        : gatewayId;
 
+    // Enregistrer la transaction (Succès ou Échec partiel) pour la traçabilité
+    await db.collection('payments').doc(realId).set({
+      id: realId,
+      userId: params.userId,
+      amount: Number(params.amount),
+      currency: 'XAF',
+      status: response.isOperationSuccess() ? 'pending' : 'failed',
+      type: params.type || 'course_purchase',
+      provider: params.service.toLowerCase(),
+      isSimulated: false,
+      courseId: params.courseId || 'WALLET_TOPUP',
+      date: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      metadata: { 
+        operator: params.service, 
+        phone: cleanPhone, 
+        gatewayId: realId,
+        errorMessage: !response.isOperationSuccess() ? (response as any).message : null
+      }
+    });
+
+    // Ajouter au flux d'activité si c'est un échec pour que l'étudiant comprenne
+    if (!response.isOperationSuccess()) {
+        await db.collection('users').doc(params.userId).collection('activity').add({
+            userId: params.userId,
+            type: 'payment',
+            title: 'Tentative de recharge échouée',
+            description: `Le paiement de ${params.amount} F par ${params.service} a été rejeté par l'opérateur.`,
+            read: false,
+            createdAt: FieldValue.serverTimestamp()
+        });
+    }
+
+    if (response.isOperationSuccess()) {
         return { 
           success: true, 
           type: 'REAL', 
-          transactionId: gatewayId, 
+          transactionId: realId, 
           message: "Validez le prompt USSD sur votre mobile." 
         };
     } else {
@@ -104,6 +120,20 @@ export async function initiateMeSombPayment(params: {
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
+    
+    // Log de l'erreur fatale (ex: réseau coupé)
+    await db.collection('payments').doc(gatewayId).set({
+      id: gatewayId,
+      userId: params.userId,
+      amount: Number(params.amount),
+      currency: 'XAF',
+      status: 'failed',
+      type: params.type || 'course_purchase',
+      provider: params.service.toLowerCase(),
+      date: FieldValue.serverTimestamp(),
+      metadata: { error: error.message }
+    });
+
     return { success: false, error: error.message || "Erreur de connexion aux serveurs de paiement." };
   }
 }
@@ -119,7 +149,6 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
             const paymentData = docSnap.data();
             const officialTxn = await getMeSombTransactionStatus(docSnap.id);
 
-            // Cast en any pour éviter les erreurs de build sur les propriétés de l'objet transaction
             if (officialTxn && (officialTxn as any).status === 'SUCCESS') {
                 await processNdaraPayment({
                     transactionId: docSnap.id,
@@ -145,16 +174,12 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 export async function getMeSombBalanceAction(adminId: string) {
     try {
         const response = await getMeSombAccountBalance();
-        // Le SDK v2.0 renvoie l'objet Application. 
-        // Il contient souvent une liste 'balances' avec les montants par opérateur.
         const data = response as any;
         
         let totalBalance = data.balance || 0;
 
-        // Si le champ 'balance' est vide ou à 0, on tente de sommer le tableau 'balances'
         if (data.balances && Array.isArray(data.balances)) {
             const sum = data.balances.reduce((acc: number, b: any) => acc + (Number(b.amount) || 0), 0);
-            // On prend le maximum pour éviter d'afficher 0 si un sous-compte est plein
             if (sum > totalBalance) totalBalance = sum;
         }
 
