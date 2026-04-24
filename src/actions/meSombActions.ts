@@ -119,11 +119,12 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
             const paymentData = docSnap.data();
             const officialTxn = await getMeSombTransactionStatus(docSnap.id);
 
-            if (officialTxn && officialTxn.status === 'SUCCESS') {
+            // Cast en any pour éviter les erreurs de build sur les propriétés de l'objet transaction
+            if (officialTxn && (officialTxn as any).status === 'SUCCESS') {
                 await processNdaraPayment({
                     transactionId: docSnap.id,
                     provider: 'mesomb_reconciled',
-                    amount: Number(officialTxn.amount),
+                    amount: Number((officialTxn as any).amount),
                     currency: 'XAF',
                     metadata: {
                         userId: paymentData.userId,
@@ -144,10 +145,10 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 export async function getMeSombBalanceAction(adminId: string) {
     try {
         const response = await getMeSombAccountBalance();
-        // Le SDK renvoie l'objet Application. On cherche le solde dans balance.
+        // Le SDK renvoie l'objet Application. On force le cast en any car les types TS du SDK sont incomplets.
         return { 
             success: true, 
-            balance: response.balance || 0, 
+            balance: (response as any).balance || 0, 
             currency: 'XAF' 
         };
     } catch (e: any) {
