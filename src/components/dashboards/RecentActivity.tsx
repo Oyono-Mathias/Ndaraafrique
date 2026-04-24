@@ -7,7 +7,7 @@ import { collection, query, getFirestore, orderBy, limit } from 'firebase/firest
 import type { UserActivity } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Award, BookOpen, Star, ClipboardCheck, History, CreditCard, AlertCircle } from 'lucide-react';
+import { Award, BookOpen, Star, ClipboardCheck, History, CreditCard, AlertCircle, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
