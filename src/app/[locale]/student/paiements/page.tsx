@@ -4,6 +4,7 @@
  * @fileOverview Historique financier complet de l'étudiant Ndara Afrique.
  * ✅ TRAÇABILITÉ : Affiche les transactions réussies, en attente et échouées.
  * ✅ DESIGN : Cartes immersives avec statuts colorés et logos opérateurs.
+ * ✅ FIX : Correction d'erreur de build TypeScript sur l'indexation des statuts.
  */
 
 import { useMemo, useState } from 'react';
@@ -111,12 +112,12 @@ export default function StudentPaymentsPage() {
 function PaymentItem({ payment }: { payment: Payment }) {
   const date = (payment.date as any)?.toDate?.() || new Date();
   
-  const statusConfig = {
+  const statusConfig = (({
     completed: { label: 'Réussi', class: 'bg-emerald-500/10 text-emerald-400', icon: CheckCircle2 },
     pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-400 animate-pulse', icon: Clock },
     failed: { label: 'Échoué', class: 'bg-red-500/10 text-red-400', icon: XCircle },
     refunded: { label: 'Remboursé', class: 'bg-slate-800 text-slate-400', icon: AlertCircle },
-  }[payment.status.toLowerCase()] || { label: payment.status, class: 'bg-slate-800', icon: Clock };
+  } as any)[payment.status.toLowerCase()] || { label: payment.status, class: 'bg-slate-800', icon: Clock });
 
   const typeLabel = {
     wallet_topup: 'Recharge Wallet',
@@ -167,12 +168,12 @@ function PaymentItem({ payment }: { payment: Payment }) {
 function PayoutItem({ payout }: { payout: any }) {
     const date = (payout.createdAt as any)?.toDate?.() || new Date();
     
-    const statusConfig = {
+    const statusConfig = (({
         pending: { label: 'Audit', class: 'bg-amber-500/10 text-amber-500' },
         approved: { label: 'Validé', class: 'bg-blue-500/10 text-blue-400' },
         paid: { label: 'Versé', class: 'bg-emerald-500/10 text-emerald-500' },
         rejected: { label: 'Rejeté', class: 'bg-red-500/10 text-red-500' },
-    }[payout.status.toLowerCase()] || { label: payout.status, class: 'bg-slate-800' };
+    } as any)[payout.status.toLowerCase()] || { label: payout.status, class: 'bg-slate-800' });
 
     return (
         <Card className="bg-slate-900 border border-white/5 rounded-[2rem] overflow-hidden shadow-xl">
