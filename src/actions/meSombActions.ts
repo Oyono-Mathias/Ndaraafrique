@@ -4,11 +4,12 @@
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * ✅ STANDARD BANCAIRE : Création du document AVANT l'appel API.
  * ✅ FIABILITÉ : Utilisation d'une référence externe unique.
+ * ✅ SÉCURITÉ : Vérification du rôle admin pour le solde marchand.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, getMeSombTransactionStatus } from '@/lib/mesomb';
+import { getMeSombClient, getMeSombTransactionStatus, getMeSombAccountBalance } from '@/lib/mesomb';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
@@ -16,6 +17,7 @@ export type MeSombResponse =
   | { success: true; type: 'SIMULATED'; message: string }
   | { success: false; error: string };
 
+/** 💸 1. Initier un paiement (Collect) */
 export async function initiateMeSombPayment(params: {
   amount: number;
   phoneNumber: string;
@@ -28,7 +30,6 @@ export async function initiateMeSombPayment(params: {
   courseTitle?: string;
 }): Promise<MeSombResponse> {
   const db = getAdminDb();
-  // Génération d'une référence unique NDARA avant tout appel
   const externalReference = `ND-TX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const cleanPhone = params.phoneNumber.replace(/\D/g, '');
   const country = params.country || 'CM';
@@ -40,7 +41,6 @@ export async function initiateMeSombPayment(params: {
     const isTestMode = settings?.payments?.paymentMode === 'test';
 
     // 1. PRÉ-ENREGISTREMENT SYSTÉMATIQUE (Audit Trail)
-    // On utilise l'externalReference comme ID de document pour être sûr de le retrouver
     await db.collection('payments').doc(externalReference).set({
       id: externalReference,
       userId: params.userId,
@@ -88,7 +88,6 @@ export async function initiateMeSombPayment(params: {
         payer: cleanPhone,
         country: country,
         currency: currency,
-        // CRITIQUE : On passe notre ID à MeSomb
         reference: externalReference 
     });
 
@@ -96,7 +95,6 @@ export async function initiateMeSombPayment(params: {
         const transaction = (response as any).transaction;
         const realId = String(transaction.pk || transaction.id);
         
-        // On met à jour le document avec l'ID réel de MeSomb pour la double traçabilité
         await db.collection('payments').doc(externalReference).update({
             gatewayTransactionId: realId,
             updatedAt: FieldValue.serverTimestamp()
@@ -123,7 +121,7 @@ export async function initiateMeSombPayment(params: {
   }
 }
 
-/** 🛠️ Réconciliation manuelle */
+/** 🛠️ 2. Réconciliation manuelle */
 export async function reconcilePendingPaymentsAction(adminId: string) {
     try {
         const db = getAdminDb();
@@ -132,7 +130,6 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 
         for (const docSnap of pendingSnap.docs) {
             const paymentData = docSnap.data();
-            // On cherche par le gateway ID si présent, sinon par l'ID doc
             const searchId = paymentData.gatewayTransactionId || docSnap.id;
             const officialTxn = await getMeSombTransactionStatus(searchId);
 
@@ -154,6 +151,31 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
         }
         return { success: true, processed };
     } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 💰 3. Vérifier le solde marchand MeSomb */
+export async function getMeSombBalanceAction(adminId: string): Promise<{ success: boolean; balance?: number; currency?: string; error?: string }> {
+    try {
+        const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        
+        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+            throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
+        }
+
+        const appStatus = await getMeSombAccountBalance();
+        const balances = (appStatus as any).balances || [];
+        const mainBalance = balances[0] || { value: 0, currency: 'XAF' };
+        
+        return { 
+            success: true, 
+            balance: Number(mainBalance.value), 
+            currency: mainBalance.currency || 'XAF' 
+        };
+    } catch (e: any) {
+        console.error("[MeSomb Balance API Error]", e.message);
         return { success: false, error: e.message };
     }
 }
