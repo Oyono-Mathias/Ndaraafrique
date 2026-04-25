@@ -1,6 +1,6 @@
 /**
  * @fileOverview Référentiel des logos par défaut.
- * Pointe exclusivement vers le dossier public/image/ avec des noms simplifiés.
+ * Pointe exclusivement vers le dossier public/image/ avec les noms exacts fournis.
  */
 
 export interface MobileOperator {
@@ -13,12 +13,12 @@ export const MOBILE_OPERATORS: Record<string, MobileOperator> = {
   mtn: {
     id: 'mtn',
     name: 'MTN MoMo',
-    logoUrl: '/image/mtn.png',
+    logoUrl: '/image/mtn-momo.png',
   },
   orange: {
     id: 'orange',
     name: 'Orange Money',
-    logoUrl: '/image/orange.png',
+    logoUrl: '/image/orange-money.png',
   },
   wave: {
     id: 'wave',

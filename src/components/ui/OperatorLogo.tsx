@@ -15,28 +15,27 @@ interface OperatorLogoProps {
 /**
  * @fileOverview Affiche le logo officiel de l'opérateur.
  * ✅ ROBUSTESSE : Utilise une balise img standard pour les ressources locales public/image/.
+ * ✅ DYNAMIQUE : Priorité au fichier logo s'il est spécifié, sinon normalisation.
  */
 export function OperatorLogo({ operatorName, logo, className, size = 32 }: OperatorLogoProps) {
   const [hasError, setHasError] = useState(false);
 
-  // 1. Normalisation de la clé (mtn, orange, wave, etc.)
-  const key = normalizeOperator(logo || operatorName);
-  
-  // 2. Détermination de la source
+  // 1. Détermination de la source
   let finalSrc = '';
   
-  if (logo && logo.includes('.')) {
-      // Si on a déjà un nom de fichier complet (ex: mtn.png)
+  // Si le logo passé est déjà un nom de fichier (contient un point d'extension)
+  if (logo && (logo.includes('.png') || logo.includes('.jpg') || logo.includes('.svg'))) {
       finalSrc = logo.startsWith('/') ? logo : `/image/${logo}`;
   } else {
-      // Sinon on utilise le mapping standard basé sur la clé normalisée
+      // Sinon on normalise le nom pour trouver la clé correspondante dans notre dictionnaire
+      const key = normalizeOperator(logo || operatorName);
       const operatorConfig = MOBILE_OPERATORS[key];
       if (operatorConfig) {
           finalSrc = operatorConfig.logoUrl;
       }
   }
 
-  // 3. Rendu du Fallback (Logo Ndara) si l'image est absente ou brisée
+  // 2. Rendu du Fallback (Logo Ndara) si l'image est absente ou brisée
   if (!finalSrc || hasError) {
     return (
       <div 
@@ -56,14 +55,14 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative flex items-center justify-center shrink-0 overflow-hidden rounded-xl bg-white/5",
+        "relative flex items-center justify-center shrink-0 overflow-hidden rounded-xl bg-transparent",
         className
       )}
     >
       <img
         src={finalSrc}
-        alt={operatorName || key}
-        className="w-full h-full object-contain p-0.5"
+        alt={operatorName || "Logo Opérateur"}
+        className="w-full h-full object-contain"
         onError={() => setHasError(true)}
       />
     </div>
