@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V5.1.
- * ✅ UNIFICATION : Utilisation de 'completed' en minuscules.
- * ✅ CONTEXTE : Enregistrement du titre du cours dès l'initiation.
+ * ✅ LOGOS : Utilisation dynamique des logos par pays.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -107,7 +106,7 @@ function CheckoutContent() {
           const result = await initiateMeSombPayment({
               amount: course.price,
               phoneNumber: phoneNumber,
-              service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : 'ORANGE',
+              service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
               courseId: course.id,
               courseTitle: course.title,
               userId: user.uid
@@ -162,7 +161,10 @@ function CheckoutContent() {
             <div className="grid grid-cols-4 gap-2">
                 <button onClick={() => setSelectedMethodId('wallet')} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95", selectedMethodId === 'wallet' ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><Wallet className="h-5 w-5 text-primary mb-1"/><span className="text-[8px] font-black uppercase text-white">Wallet</span></button>
                 {countryData?.paymentMethods.filter(m => m.active).map(m => (
-                    <button key={m.id} onClick={() => setSelectedMethodId(m.id)} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95", selectedMethodId === m.id ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><OperatorLogo operatorName={m.provider} size={24} className="mb-1"/><span className="text-[8px] font-black uppercase text-white truncate w-full text-center">{m.name}</span></button>
+                    <button key={m.id} onClick={() => setSelectedMethodId(m.id)} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95", selectedMethodId === m.id ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}>
+                        <OperatorLogo logo={m.logo} operatorName={m.provider} size={24} className="mb-1"/>
+                        <span className="text-[8px] font-black uppercase text-white truncate w-full text-center">{m.name}</span>
+                    </button>
                 ))}
                 <button onClick={() => setSelectedMethodId('virtual')} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95", selectedMethodId === 'virtual' ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><Zap className="h-5 w-5 text-primary mb-1"/><span className="text-[8px] font-black uppercase text-white">Virtuel</span></button>
             </div>

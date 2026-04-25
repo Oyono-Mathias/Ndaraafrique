@@ -61,7 +61,7 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
         fill
         className="object-contain"
         sizes={`${size}px`}
-        unoptimized // Évite les problèmes de redimensionnement sur les logos locaux
+        unoptimized // ✅ Crucial pour les logos locaux dans public/image
       />
     </div>
   );

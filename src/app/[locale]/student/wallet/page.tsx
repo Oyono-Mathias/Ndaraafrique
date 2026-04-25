@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - V6.9 Elite Fintech.
- * ✅ TRAÇABILITÉ : Historique ultra-robuste avec tri en mémoire.
- * ✅ VISIBILITÉ : Affiche systématiquement les échecs de recharge.
+ * ✅ LOGOS : Utilisation dynamique des logos par pays.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -101,8 +100,6 @@ export default function NdaraWalletPage() {
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
-        
-        // On récupère les 20 dernières sans tri forcé Firestore pour éviter les blocages d'index
         const q = query(collection(db, 'payments'), where('userId', '==', user.uid), limit(50));
         
         const unsub = onSnapshot(q, (snap) => {
@@ -116,7 +113,7 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
-    // 4. Tri en mémoire pour plus de résilience
+    // 4. Tri en mémoire
     const sortedTransactions = useMemo(() => {
         return [...rawTransactions].sort((a, b) => {
             const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
@@ -195,20 +192,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
-                    {liveData.virtualBalance > 0 && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-5 flex items-center justify-between shadow-xl">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
-                                    <Zap size={20} className="fill-current" />
-                                </div>
-                                <div>
-                                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Crédits de Simulation</p>
-                                    <p className="text-lg font-black text-white">{liveData.virtualBalance.toLocaleString()} <span className="text-[10px] opacity-40">{currencySymbol}</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     <section className="space-y-4">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Recharger le solde réel</label>
                         <div className="grid grid-cols-2 gap-3">
@@ -246,7 +229,7 @@ export default function NdaraWalletPage() {
                                         selectedMethodId === method.id ? "border-primary bg-primary/5" : "border-white/5"
                                     )}
                                 >
-                                    <OperatorLogo operatorName={method.provider} size={32} />
+                                    <OperatorLogo logo={method.logo} operatorName={method.provider} size={32} />
                                     <span className="text-white text-[9px] font-black uppercase text-center truncate w-full">{method.name}</span>
                                 </button>
                             ))}
