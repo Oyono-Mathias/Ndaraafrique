@@ -5,9 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.5
+ * ✅ Processeur financier SÉCURISÉ v3.6
  * Garantit le lien atomique entre Paiement et Accès au cours.
- * ✅ UNIFICATION : Statuts en minuscules.
+ * ✅ INTELLIGENCE : Détecte l'opérateur réel dans les métadonnées pour le logo.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -39,13 +39,15 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const isSimulated = metadata.isSimulated === true || provider === 'simulated' || provider === 'admin_recharge_test';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-      // 💾 Mise à jour du reçu de paiement vers SUCCESS (completed en minuscules)
+      // 💾 Détermination de l'opérateur final pour le logo (Priorité au spécifique)
+      const finalProvider = (metadata.operator || metadata.service || provider || 'wallet').toLowerCase();
+
       const paymentData = {
         id: String(transactionId),
         userId: metadata.userId,
         amount: Number(amount),
         currency: currency || 'XAF',
-        provider,
+        provider: finalProvider,
         status: 'completed',
         isSimulated,
         type: metadata.type || (isTopup ? 'wallet_topup' : 'course_purchase'),

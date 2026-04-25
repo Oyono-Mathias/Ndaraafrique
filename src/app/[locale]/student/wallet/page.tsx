@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - V6.9 Elite Fintech.
- * ✅ LOGOS : Utilisation dynamique des logos par pays.
+ * ✅ LOGOS : Utilisation dynamique des logos par pays et métadonnées.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -261,10 +261,12 @@ export default function NdaraWalletPage() {
                             ) : sortedTransactions.length > 0 ? (
                                 sortedTransactions.map(txn => {
                                     const status = (txn.status || 'pending').toLowerCase();
+                                    // ✅ Intelligence : Utilise l'opérateur des métadonnées si présent
+                                    const opName = txn.metadata?.operator || txn.provider;
                                     return (
                                         <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
                                             <div className="flex items-center gap-4">
-                                                <OperatorLogo operatorName={txn.provider} size={42} className="bg-slate-950 p-1" />
+                                                <OperatorLogo operatorName={opName} size={42} className="bg-slate-950 p-1" />
                                                 <div>
                                                     <p className="font-bold text-white text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Recharge'}</p>
                                                     <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">{format((txn.date as any)?.toDate?.() || new Date(txn.date as any || 0), 'dd MMM • HH:mm', { locale: fr })}</p>
