@@ -37,7 +37,7 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative rounded-full overflow-hidden flex items-center justify-center shadow-md shrink-0",
+        "relative rounded-full overflow-hidden flex items-center justify-center shadow-md shrink-0 border border-white/5",
         operator.color,
         className
       )}
@@ -46,7 +46,7 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
         src={operator.logoUrl}
         alt={operator.name}
         fill
-        className="object-contain z-10"
+        className="object-contain z-10 p-1"
         sizes={`${size}px`}
         onError={(e) => {
           const target = e.target as HTMLImageElement;
@@ -58,7 +58,7 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
       <span className={cn(
         "font-black uppercase select-none absolute inset-0 flex items-center justify-center pointer-events-none",
         operator.textColor,
-        size < 35 ? "text-[10px]" : "text-xs"
+        size < 35 ? "text-[8px]" : "text-[10px]"
       )}>
         {operator.name.substring(0, 2).toUpperCase()}
       </span>

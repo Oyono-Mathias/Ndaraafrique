@@ -3,7 +3,7 @@
 /**
  * @fileOverview Cockpit Géographique & Paiements.
  * ✅ GESTION : Pays, devises et méthodes de paiement par pays.
- * ✅ REAL-TIME : Branché sur Firestore.
+ * ✅ DESIGN : Utilisation des logos opérateurs dans la liste.
  */
 
 import { useState, useMemo } from 'react';
@@ -15,15 +15,8 @@ import {
     Plus, 
     Search, 
     Trash2, 
-    Edit3, 
-    CheckCircle2, 
-    XCircle, 
     Loader2, 
-    ShieldCheck,
-    Coins,
-    Smartphone,
-    CreditCard,
-    MoreVertical,
+    Smartphone, 
     Settings2
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,11 +25,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { addCountryAction, updateCountryAction, deleteCountryAction, toggleCountryStatusAction, updateCountryPaymentMethods } from '@/actions/countryActions';
+import { addCountryAction, deleteCountryAction, toggleCountryStatusAction, updateCountryPaymentMethods } from '@/actions/countryActions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Country, PaymentMethod, PaymentProvider } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { OperatorLogo } from '@/components/ui/OperatorLogo';
 
 export default function AdminCountriesPage() {
     const db = getFirestore();
@@ -172,19 +166,19 @@ export default function AdminCountriesPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input 
                     placeholder="Chercher un pays..." 
-                    className="h-12 pl-12 bg-slate-900 border-white/5 rounded-xl text-white"
+                    className="h-12 pl-12 bg-slate-900 border-white/5 rounded-xl text-white shadow-inner"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
+            <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl relative">
                 <Table>
                     <TableHeader>
                         <TableRow className="border-slate-800 bg-slate-800/30">
                             <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Pays</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Devise / Préfixe</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Paiements</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Canaux Actifs</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
                             <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Configuration</TableHead>
                         </TableRow>
@@ -200,7 +194,7 @@ export default function AdminCountriesPage() {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl">{country.flagEmoji}</span>
-                                            <span className="font-bold text-sm text-white uppercase">{country.name}</span>
+                                            <span className="font-bold text-sm text-white uppercase tracking-tight">{country.name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -210,13 +204,11 @@ export default function AdminCountriesPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex gap-1.5 flex-wrap">
-                                            {country.paymentMethods?.map(m => (
-                                                <Badge key={m.id} className={cn("text-[7px] font-black uppercase border-none h-4", m.active ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-600")}>
-                                                    {m.name}
-                                                </Badge>
+                                        <div className="flex -space-x-2">
+                                            {country.paymentMethods?.filter(m => m.active).map(m => (
+                                                <OperatorLogo key={m.id} operatorName={m.name} size={26} className="border-2 border-slate-900" />
                                             ))}
-                                            {(!country.paymentMethods || country.paymentMethods.length === 0) && <span className="text-[9px] text-slate-600 italic">Aucun moyen</span>}
+                                            {(!country.paymentMethods || country.paymentMethods.filter(m => m.active).length === 0) && <span className="text-[9px] text-slate-600 italic">Zéro canal</span>}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -230,7 +222,7 @@ export default function AdminCountriesPage() {
                                         <div className="flex justify-end gap-2">
                                             <button 
                                                 onClick={() => { setSelectedCountry(country); setIsMethodsModalOpen(true); }}
-                                                className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary transition shadow-xl active:scale-90"
+                                                className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-slate-950 transition shadow-xl active:scale-90"
                                             >
                                                 <Settings2 size={14} />
                                             </button>
@@ -256,22 +248,19 @@ export default function AdminCountriesPage() {
                 <DialogContent className="bg-slate-900 border-slate-800 rounded-[2rem] text-white sm:max-w-xl">
                     <DialogHeader>
                         <DialogTitle className="uppercase font-black tracking-tight flex items-center gap-3">
-                            <Smartphone className="text-primary"/> Paiements : {selectedCountry?.name}
+                            <Smartphone className="text-primary"/> Canaux : {selectedCountry?.name}
                         </DialogTitle>
                     </DialogHeader>
                     
                     <div className="space-y-6 py-4">
-                        {/* Méthodes Actives */}
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Méthodes configurées</label>
                             <div className="grid gap-2">
                                 {selectedCountry?.paymentMethods?.map(m => (
-                                    <div key={m.id} className="flex items-center justify-between p-3 bg-slate-950 border border-white/5 rounded-xl">
+                                    <div key={m.id} className="flex items-center justify-between p-3 bg-slate-950 border border-white/5 rounded-2xl shadow-inner">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-800 overflow-hidden relative">
-                                                {m.logo ? <img src={m.logo} alt={m.name} className="object-contain" /> : <div className="flex h-full w-full items-center justify-center text-[10px] font-black uppercase">{m.name.charAt(0)}</div>}
-                                            </div>
-                                            <span className="font-bold text-sm">{m.name}</span>
+                                            <OperatorLogo operatorName={m.name} size={32} />
+                                            <span className="font-bold text-sm uppercase tracking-tight">{m.name}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Switch 
@@ -286,13 +275,12 @@ export default function AdminCountriesPage() {
                             </div>
                         </div>
 
-                        {/* Formulaire ajout méthode */}
-                        <div className="p-5 bg-slate-950/50 border border-dashed border-slate-800 rounded-2xl space-y-4">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Ajouter une méthode</label>
+                        <div className="p-6 bg-slate-950/50 border border-dashed border-slate-800 rounded-[2rem] space-y-4">
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Ajouter un nouveau canal</label>
                             <div className="grid grid-cols-2 gap-3">
-                                <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800" />
+                                <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800 h-12" />
                                 <Select value={newMethod.provider} onValueChange={(v: any) => setNewMethod({...newMethod, provider: v})}>
-                                    <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="bg-slate-950 border-slate-800 h-12"><SelectValue /></SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                         <SelectItem value="mesomb">MeSomb (Orange/MTN)</SelectItem>
                                         <SelectItem value="moneroo">Moneroo (Global)</SelectItem>
