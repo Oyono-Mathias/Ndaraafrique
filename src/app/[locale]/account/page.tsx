@@ -25,6 +25,7 @@ import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useRouter } from 'next/navigation';
 import { africanCountries } from '@/lib/countries';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/, "Lettres, chiffres et _ uniquement."),
