@@ -3,8 +3,7 @@
 /**
  * @fileOverview Mon Profil - Identification & Bio Ndara Afrique.
  * ✅ DESIGN : Forest & Wealth (Android-First).
- * ✅ FONCTIONNEL : ImageCropper & Firestore Sync.
- * ✅ GÉO : Sélecteur de pays avec mise à jour automatique du drapeau.
+ * ✅ SÉCURITÉ : Certification des numéros Mobile Money (Vérrouillage Admin).
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,13 +17,14 @@ import { updateUserProfileAction } from '@/actions/userActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, Briefcase, ArrowLeft, Linkedin, Globe, MapPin } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, Briefcase, ArrowLeft, Linkedin, Globe, MapPin, Lock, ShieldAlert } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useRouter } from 'next/navigation';
 import { africanCountries } from '@/lib/countries';
+import { Badge } from '@/components/ui/badge';
 
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/, "Lettres, chiffres et _ uniquement."),
@@ -35,6 +35,13 @@ const accountSchema = z.object({
   countryCode: z.string().min(2, "Pays requis."),
   linkedinUrl: z.string().url("Lien invalide").optional().nullable().or(z.literal('')),
   portfolioUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
+  // 🔐 Numéros certifiés
+  momo_cm: z.string().optional().nullable(),
+  momo_ci: z.string().optional().nullable(),
+  momo_rw: z.string().optional().nullable(),
+  momo_ug: z.string().optional().nullable(),
+  momo_ke: z.string().optional().nullable(),
+  momo_bj: z.string().optional().nullable(),
 });
 
 export default function AccountPage() {
@@ -57,6 +64,12 @@ export default function AccountPage() {
         countryCode: '',
         linkedinUrl: '',
         portfolioUrl: '',
+        momo_cm: '',
+        momo_ci: '',
+        momo_rw: '',
+        momo_ug: '',
+        momo_ke: '',
+        momo_bj: '',
     }
   });
 
@@ -71,6 +84,12 @@ export default function AccountPage() {
         interestDomain: currentUser.careerGoals?.interestDomain || '',
         linkedinUrl: currentUser.socialLinks?.linkedin || '',
         portfolioUrl: currentUser.socialLinks?.website || '',
+        momo_cm: currentUser.certifiedMobileNumbers?.CM || '',
+        momo_ci: currentUser.certifiedMobileNumbers?.CI || '',
+        momo_rw: currentUser.certifiedMobileNumbers?.RW || '',
+        momo_ug: currentUser.certifiedMobileNumbers?.UG || '',
+        momo_ke: currentUser.certifiedMobileNumbers?.KE || '',
+        momo_bj: currentUser.certifiedMobileNumbers?.BJ || '',
       });
     }
   }, [currentUser, form]);
@@ -127,6 +146,14 @@ export default function AccountPage() {
                 'careerGoals.interestDomain': values.interestDomain,
                 'socialLinks.linkedin': values.linkedinUrl || '',
                 'socialLinks.website': values.portfolioUrl || '',
+                certifiedMobileNumbers: {
+                    CM: values.momo_cm || currentUser.certifiedMobileNumbers?.CM || '',
+                    CI: values.momo_ci || currentUser.certifiedMobileNumbers?.CI || '',
+                    RW: values.momo_rw || currentUser.certifiedMobileNumbers?.RW || '',
+                    UG: values.momo_ug || currentUser.certifiedMobileNumbers?.UG || '',
+                    KE: values.momo_ke || currentUser.certifiedMobileNumbers?.KE || '',
+                    BJ: values.momo_bj || currentUser.certifiedMobileNumbers?.BJ || '',
+                },
                 isProfileComplete: true
             },
             requesterId: currentUser.uid
@@ -143,6 +170,8 @@ export default function AccountPage() {
   if (isUserLoading || !currentUser) {
     return <div className="flex h-screen items-center justify-center bg-[#0f172a]"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
   }
+
+  const isCert = (code: string) => !!currentUser.certifiedMobileNumbers?.[code];
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f172a] relative flex flex-col font-sans">
@@ -170,10 +199,9 @@ export default function AccountPage() {
       <main className="flex-1 overflow-y-auto hide-scrollbar pt-32 pb-40">
         <div className="px-6 space-y-10 animate-in fade-in duration-700">
             
-            {/* --- AVATAR ZONE --- */}
             <div className="flex flex-col items-center">
                 <div className="relative group avatar-upload" onClick={() => fileInputRef.current?.click()}>
-                    <div className="p-1 rounded-full bg-gradient-to-tr from-primary to-blue-500 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-pulse-glow">
+                    <div className="p-1 rounded-full bg-gradient-to-tr from-primary to-blue-500 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
                         <Avatar className="h-32 w-32 border-4 border-[#0f172a] shadow-2xl overflow-hidden relative">
                             <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
                             <AvatarFallback className="bg-slate-800 text-4xl font-black text-slate-500">{currentUser.fullName?.charAt(0)}</AvatarFallback>
@@ -200,7 +228,7 @@ export default function AccountPage() {
                             <FormItem className="space-y-2">
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom Complet</FormLabel>
                                 <FormControl>
-                                    <Input {...field} value={field.value ?? ''} className="h-14 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-bold" placeholder="Ex: Jean Dupont" />
+                                    <Input {...field} value={field.value ?? ''} className="h-14 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-bold" placeholder="Jean Ndara" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -243,19 +271,29 @@ export default function AccountPage() {
                                 <FormMessage />
                             </FormItem>
                         )}/>
+                    </div>
 
-                        <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                            <FormItem className="space-y-2">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">WhatsApp Professionnel</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 text-lg"><Smartphone size={18}/></div>
-                                        <Input placeholder="+236..." {...field} value={field.value ?? ''} className="h-14 pl-12 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-bold" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
+                    {/* 🛡️ SECTION SÉCURITÉ PAIEMENTS */}
+                    <div className="bg-[#1e293b] rounded-4xl p-6 border border-emerald-500/20 shadow-xl space-y-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5"><Lock size={80} /></div>
+                        
+                        <div className="flex items-center gap-3 mb-2 border-b border-white/5 pb-2">
+                            <ShieldAlert className="h-4 w-4 text-emerald-500" />
+                            <h3 className="font-black text-emerald-500 text-[10px] uppercase tracking-[0.3em]">Comptes de Paiement Certifiés</h3>
+                        </div>
+
+                        <FormDescription className="text-[10px] text-slate-400 italic leading-relaxed">
+                            "Pour votre sécurité, enregistrez vos numéros Mobile Money. Une fois certifiés, ils ne pourront être modifiés que par l'administration."
+                        </FormDescription>
+
+                        <div className="grid gap-4">
+                            <CertifiedInput form={form} name="momo_cm" flag="🇨🇲" label="Cameroun" isCert={isCert('CM')} />
+                            <CertifiedInput form={form} name="momo_ci" flag="🇨🇮" label="Côte d'Ivoire" isCert={isCert('CI')} />
+                            <CertifiedInput form={form} name="momo_rw" flag="🇷🇼" label="Rwanda" isCert={isCert('RW')} />
+                            <CertifiedInput form={form} name="momo_ug" flag="🇺🇬" label="Ouganda" isCert={isCert('UG')} />
+                            <CertifiedInput form={form} name="momo_ke" flag="🇰🇪" label="Kenya" isCert={isCert('KE')} />
+                            <CertifiedInput form={form} name="momo_bj" flag="🇧🇯" label="Bénin" isCert={isCert('BJ')} />
+                        </div>
                     </div>
 
                     <div className="bg-[#1e293b] rounded-4xl p-6 border border-white/5 shadow-xl space-y-6">
@@ -280,38 +318,10 @@ export default function AccountPage() {
                                         value={field.value ?? ''} 
                                         rows={6} 
                                         className="bg-[#0f172a] border-white/5 rounded-[1.5rem] text-gray-200 resize-none p-4 leading-relaxed italic font-serif" 
-                                        placeholder="Racontez votre histoire, votre mission et pourquoi les étudiants devraient vous suivre..."
+                                        placeholder="Racontez votre histoire..."
                                     />
                                 </FormControl>
                                 <FormMessage />
-                            </FormItem>
-                        )}/>
-                    </div>
-
-                    <div className="bg-[#1e293b] rounded-4xl p-6 border border-white/5 shadow-xl space-y-6">
-                        <h3 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.3em] mb-2 border-b border-white/5 pb-2">Liens Externes</h3>
-                        
-                        <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
-                            <FormItem className="space-y-2">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">LinkedIn</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500"><Linkedin size={18}/></div>
-                                        <Input placeholder="linkedin.com/in/..." {...field} value={field.value ?? ''} className="h-14 pl-12 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white" />
-                                    </div>
-                                </FormControl>
-                            </FormItem>
-                        )}/>
-
-                        <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
-                            <FormItem className="space-y-2">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Site Web / Portfolio</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"><Globe size={18}/></div>
-                                        <Input placeholder="votre-site.com" {...field} value={field.value ?? ''} className="h-14 pl-12 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white" />
-                                    </div>
-                                </FormControl>
                             </FormItem>
                         )}/>
                     </div>
@@ -331,4 +341,37 @@ export default function AccountPage() {
       </main>
     </div>
   );
+}
+
+function CertifiedInput({ form, name, flag, label, isCert }: { form: any, name: string, flag: string, label: string, isCert: boolean }) {
+    return (
+        <FormField control={form.control} name={name} render={({ field }) => (
+            <FormItem className="space-y-1">
+                <div className="flex justify-between items-center px-1">
+                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 flex items-center gap-1.5">
+                        <span className="text-sm">{flag}</span> {label}
+                    </FormLabel>
+                    {isCert && (
+                        <div className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 size={10} /> Certifié
+                        </div>
+                    )}
+                </div>
+                <FormControl>
+                    <div className="relative">
+                        <Input 
+                            {...field} 
+                            disabled={isCert} 
+                            placeholder="+2xx ..."
+                            className={cn(
+                                "h-12 bg-[#0f172a] border-white/5 rounded-xl font-mono text-sm",
+                                isCert ? "opacity-60 text-slate-400 border-emerald-500/20" : "text-white"
+                            )} 
+                        />
+                        {isCert && <div className="absolute inset-0 bg-transparent z-10 cursor-not-allowed" />}
+                    </div>
+                </FormControl>
+            </FormItem>
+        )}/>
+    );
 }

@@ -47,6 +47,10 @@ export interface NdaraUser {
   rating?: number;
   referralCode?: string;
   referredBy?: string | null;
+  /** 🛡️ Numéros de téléphone certifiés pour le paiement (Vérrouillés après saisie) */
+  certifiedMobileNumbers?: {
+    [countryCode: string]: string;
+  };
   affiliateStats?: {
     clicks: number;
     registrations: number;

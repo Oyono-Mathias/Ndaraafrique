@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V7.5 Elite Fintech.
- * ✅ UX : Écoute en temps réel de Firestore pour basculer en succès dès validation USSD.
+ * @fileOverview Ndara Wallet Étudiant - V8.0 Elite Fintech.
+ * ✅ SÉCURITÉ : Restriction stricte aux numéros de téléphone certifiés.
+ * ✅ UX : Écoute en temps réel de Firestore pour validation automatique.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -25,7 +26,9 @@ import {
     ShieldCheck,
     PhoneCall,
     RefreshCw,
-    XCircle
+    XCircle,
+    ShieldAlert,
+    ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -38,6 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
 
@@ -50,7 +54,6 @@ export default function NdaraWalletPage() {
     const [rawTransactions, setRawTransactions] = useState<Payment[]>([]);
     const [selectedAmount, setSelectedAmount] = useState<number>(5000);
     const [customAmount, setCustomAmount] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -130,6 +133,12 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
+    // 🛡️ REQUISITION DU NUMÉRO CERTIFIÉ
+    const certifiedNumber = useMemo(() => {
+        if (!currentUser || !currentUser.countryCode) return null;
+        return currentUser.certifiedMobileNumbers?.[currentUser.countryCode] || null;
+    }, [currentUser]);
+
     const ussdInstruction = useMemo(() => {
         if (!activeMethod) return "Veuillez valider le paiement sur votre téléphone";
         const op = activeMethod.name.toUpperCase();
@@ -139,10 +148,8 @@ export default function NdaraWalletPage() {
     }, [activeMethod]);
 
     const handleRecharge = async () => {
-        if (!user || selectedAmount < 100 || !activeMethod || !countryData) return;
-        const cleanPhone = phoneNumber.replace(/\D/g, '');
-        if (cleanPhone.length < 8) {
-            toast({ variant: 'destructive', title: "Numéro invalide" });
+        if (!user || selectedAmount < 100 || !activeMethod || !countryData || !certifiedNumber) {
+            if (!certifiedNumber) toast({ variant: 'destructive', title: "Certification requise", description: "Veuillez enregistrer votre numéro Mobile Money dans votre profil." });
             return;
         }
         
@@ -152,7 +159,7 @@ export default function NdaraWalletPage() {
         try {
             const result = await initiateMeSombPayment({
                 amount: selectedAmount,
-                phoneNumber: cleanPhone,
+                phoneNumber: certifiedNumber,
                 service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
                 userId: user.uid,
                 country: countryData.code,
@@ -166,7 +173,6 @@ export default function NdaraWalletPage() {
                     setIsAwaitingUssd(false);
                     setIsSuccess(true);
                 } else if (result.type === 'REAL' && result.transactionId) {
-                    // ✅ ÉCOUTE EN TEMPS RÉEL DU DOCUMENT FIRESTORE
                     const paymentRef = doc(db, 'payments', result.transactionId);
                     const unsubscribe = onSnapshot(paymentRef, (snap) => {
                         if (snap.exists()) {
@@ -192,23 +198,7 @@ export default function NdaraWalletPage() {
             }
         } catch (e: any) {
             setIsAwaitingUssd(false);
-            const errorMsg = String(e.message).toLowerCase();
-            
-            let finalMessage = "Erreur de connexion. Vérifiez votre réseau et réessayez.";
-            let finalTitle = "Erreur de connexion";
-
-            if (errorMsg.includes('balance') || errorMsg.includes('solde')) {
-                finalMessage = "Solde insuffisant. Veuillez recharger votre compte Mobile Money puis réessayer.";
-                finalTitle = "Solde Insuffisant";
-            } else if (errorMsg.includes('cancel') || errorMsg.includes('annulé')) {
-                finalMessage = "Paiement annulé. Vous pouvez réessayer à tout moment.";
-                finalTitle = "Paiement Annulé";
-            } else if (errorMsg.includes('timeout') || errorMsg.includes('expiré')) {
-                finalMessage = "Délai expiré. Veuillez relancer la recharge.";
-                finalTitle = "Délai Expiré";
-            }
-
-            setErrorModal({ isOpen: true, message: finalMessage, title: finalTitle });
+            setErrorModal({ isOpen: true, message: e.message || "Erreur de connexion.", title: "Erreur de paiement" });
         } finally {
             setIsProcessing(false);
         }
@@ -246,7 +236,7 @@ export default function NdaraWalletPage() {
                     </div>
 
                     <section className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Recharger le solde réel</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Montant à recharger</label>
                         <div className="grid grid-cols-2 gap-3">
                             {PRESET_AMOUNTS.map(val => (
                                 <button 
@@ -261,13 +251,6 @@ export default function NdaraWalletPage() {
                                 </button>
                             ))}
                         </div>
-                        <Input 
-                            type="number" 
-                            placeholder="Saisir montant personnalisé..."
-                            className="h-16 bg-slate-900 border-white/5 rounded-[1.5rem] text-white font-black text-xl text-center"
-                            value={customAmount}
-                            onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(Number(e.target.value) || 0); }}
-                        />
                     </section>
 
                     <section className="space-y-4">
@@ -289,18 +272,42 @@ export default function NdaraWalletPage() {
                         </div>
                     </section>
 
+                    {/* 🛡️ SECTION NUMÉRO CERTIFIÉ */}
                     <section className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Numéro Mobile Money ({countryData?.prefix})</label>
-                        <div className="relative">
-                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-primary"><SmartphoneNfc size={20} /></div>
-                            <input 
-                                type="tel"
-                                placeholder="6xx xxx xxx"
-                                className="w-full h-16 pl-14 rounded-3xl bg-slate-900 border-white/5 font-mono text-lg text-white outline-none"
-                                value={phoneNumber}
-                                onChange={(e) => setPhoneNumber(e.target.value)}
-                            />
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Compte de débit certifié</label>
+                        
+                        {certifiedNumber ? (
+                            <div className="p-5 bg-[#10b981]/5 border border-[#10b981]/20 rounded-3xl flex items-center justify-between shadow-inner group">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-[#10b981]/10 flex items-center justify-center text-[#10b981]">
+                                        <Smartphone size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="font-mono text-lg font-black text-white tracking-widest">{certifiedNumber}</p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <ShieldCheck size={12} className="text-[#10b981]" />
+                                            <span className="text-[8px] font-black text-[#10b981] uppercase tracking-widest">Numéro Certifié Ndara</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-900 rounded-lg text-slate-700">
+                                    <Lock size={16} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl flex flex-col items-center text-center space-y-4 animate-pulse">
+                                <ShieldAlert className="h-10 w-10 text-red-500" />
+                                <div className="space-y-1">
+                                    <p className="text-white font-bold text-sm uppercase">Numéro non certifié</p>
+                                    <p className="text-slate-500 text-[10px] font-medium leading-relaxed italic">
+                                        Vous devez enregistrer votre numéro Mobile Money dans votre profil avant de pouvoir recharger.
+                                    </p>
+                                </div>
+                                <Button asChild className="h-11 rounded-xl bg-slate-900 border border-white/5 text-xs font-black uppercase tracking-widest">
+                                    <Link href="/account">Certifier mon numéro <ExternalLink size={12} className="ml-2" /></Link>
+                                </Button>
+                            </div>
+                        )}
                     </section>
 
                     <section className="space-y-4">
@@ -351,7 +358,7 @@ export default function NdaraWalletPage() {
                 <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent pt-10 pb-8 px-6 z-40 safe-area-pb">
                     <Button 
                         onClick={handleRecharge}
-                        disabled={isProcessing || !phoneNumber || !activeMethod}
+                        disabled={isProcessing || !certifiedNumber || !activeMethod}
                         className="w-full h-16 bg-primary hover:bg-emerald-400 text-slate-950 rounded-[2.5rem] font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl active:scale-90 animate-pulse-glow border-none"
                     >
                         {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}

@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V5.7.
- * ✅ TEMPS RÉEL : Écoute du statut de la transaction Firestore pour une validation automatique.
+ * @fileOverview Tunnel de paiement Ndara Afrique V5.8.
+ * ✅ SÉCURITÉ : Restriction stricte aux numéros de téléphone certifiés.
+ * ✅ TEMPS RÉEL : Écoute du statut de la transaction Firestore.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -25,7 +26,9 @@ import {
   X,
   PhoneCall,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  ShieldAlert,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Country } from '@/lib/types';
@@ -37,6 +40,7 @@ import { useLocale } from 'next-intl';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 function CheckoutContent() {
   const params = useParams();
@@ -47,12 +51,10 @@ function CheckoutContent() {
   const { toast } = useToast();
   const db = getFirestore();
 
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Gestion des Erreurs
   const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string; title: string }>({
     isOpen: false,
     message: '',
@@ -92,6 +94,12 @@ function CheckoutContent() {
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
+  // 🛡️ RÉCUPÉRATION DU NUMÉRO CERTIFIÉ
+  const certifiedNumber = useMemo(() => {
+    if (!currentUser || !currentUser.countryCode) return null;
+    return currentUser.certifiedMobileNumbers?.[currentUser.countryCode] || null;
+  }, [currentUser]);
+
   const ussdInstruction = useMemo(() => {
     if (!activeMethod || activeMethod.provider !== 'mesomb') return "Veuillez valider le paiement sur votre téléphone";
     const op = activeMethod.name.toUpperCase();
@@ -119,8 +127,8 @@ function CheckoutContent() {
           }
 
       } else if (activeMethod.provider === 'mesomb') {
-          if (!phoneNumber || phoneNumber.length < 8) {
-              toast({ variant: 'destructive', title: "Numéro requis" });
+          if (!certifiedNumber) {
+              toast({ variant: 'destructive', title: "Numéro non certifié", description: "Veuillez enregistrer votre numéro Mobile Money dans votre profil." });
               return;
           }
 
@@ -129,7 +137,7 @@ function CheckoutContent() {
 
           const result = await initiateMeSombPayment({
               amount: course.price,
-              phoneNumber: phoneNumber,
+              phoneNumber: certifiedNumber,
               service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
               courseId: course.id,
               courseTitle: course.title,
@@ -141,7 +149,6 @@ function CheckoutContent() {
                   setIsAwaitingUssd(false);
                   setIsSuccess(true);
               } else if (result.type === 'REAL' && result.transactionId) {
-                  // ✅ ÉCOUTE EN TEMPS RÉEL DU DOCUMENT FIRESTORE (RELIÉ AU WEBHOOK)
                   const paymentRef = doc(db, 'payments', result.transactionId);
                   const unsubscribe = onSnapshot(paymentRef, (snap) => {
                       if (snap.exists()) {
@@ -170,23 +177,7 @@ function CheckoutContent() {
       }
     } catch (e: any) {
       setIsAwaitingUssd(false);
-      const errorMsg = String(e.message).toLowerCase();
-      
-      let finalMessage = "Erreur de connexion. Vérifiez votre réseau et réessayez.";
-      let finalTitle = "Erreur de connexion";
-
-      if (errorMsg.includes('balance') || errorMsg.includes('solde')) {
-          finalMessage = "Solde insuffisant. Veuillez recharger votre compte Mobile Money puis réessayer.";
-          finalTitle = "Solde Insuffisant";
-      } else if (errorMsg.includes('cancel') || errorMsg.includes('annulé')) {
-          finalMessage = "Paiement annulé. Vous pouvez réessayer à tout moment.";
-          finalTitle = "Paiement Annulé";
-      } else if (errorMsg.includes('timeout') || errorMsg.includes('expiré')) {
-          finalMessage = "Délai expiré. Veuillez relancer la recharge.";
-          finalTitle = "Délai Expiré";
-      }
-
-      setErrorModal({ isOpen: true, message: finalMessage, title: finalTitle });
+      setErrorModal({ isOpen: true, message: e.message || "Erreur de connexion.", title: "Erreur de paiement" });
     } finally {
       setIsProcessing(false);
     }
@@ -241,18 +232,49 @@ function CheckoutContent() {
                 </div>
             ) : (selectedMethodId !== 'virtual') && (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Numéro Mobile Money ({countryData?.prefix})</label>
-                    <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950 flex items-center justify-center">
-                            <Smartphone className="h-4 w-4 text-primary" />
+                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Compte de débit certifié</label>
+                    
+                    {certifiedNumber ? (
+                        <div className="p-5 bg-[#10b981]/5 border border-[#10b981]/20 rounded-3xl flex items-center justify-between shadow-inner">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-2xl bg-[#10b981]/10 flex items-center justify-center text-[#10b981]">
+                                    <Smartphone size={20} />
+                                </div>
+                                <div>
+                                    <p className="font-mono text-lg font-black text-white tracking-widest">{certifiedNumber}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <ShieldCheck size={12} className="text-[#10b981]" />
+                                        <span className="text-[8px] font-black text-[#10b981] uppercase tracking-widest">Numéro Certifié</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-2 bg-slate-950 rounded-lg text-slate-700">
+                                <Lock size={16} />
+                            </div>
                         </div>
-                        <Input type="tel" placeholder="6xx xxx xxx" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="h-16 pl-14 bg-slate-900 border-white/5 rounded-3xl text-white font-mono text-xl tracking-widest" />
-                    </div>
+                    ) : (
+                        <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl flex flex-col items-center text-center space-y-4">
+                            <ShieldAlert className="h-10 w-10 text-red-500" />
+                            <div className="space-y-1">
+                                <p className="text-white font-bold text-sm uppercase">Numéro non certifié</p>
+                                <p className="text-slate-500 text-[10px] font-medium leading-relaxed italic">
+                                    Vous devez enregistrer votre numéro Mobile Money dans votre profil pour acheter cette formation.
+                                </p>
+                            </div>
+                            <Button asChild className="h-11 rounded-xl bg-slate-900 border border-white/5 text-xs font-black uppercase tracking-widest">
+                                <Link href="/account">Certifier mon numéro <ExternalLink size={12} className="ml-2" /></Link>
+                            </Button>
+                        </div>
+                    )}
                 </div>
             )}
         </section>
 
-        <Button onClick={handlePayment} disabled={isProcessing || isSuccess || (selectedMethodId === 'wallet' && (currentUser?.balance || 0) < (course?.price || 0))} className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all">
+        <Button 
+            onClick={handlePayment} 
+            disabled={isProcessing || isSuccess || !certifiedNumber && selectedMethodId !== 'wallet' && selectedMethodId !== 'virtual' || (selectedMethodId === 'wallet' && (currentUser?.balance || 0) < (course?.price || 0))} 
+            className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all"
+        >
             {isProcessing ? <Loader2 className="animate-spin h-5 w-5" /> : <Lock className="h-4 w-4 mr-2" />}
             <span>CONFIRMER LE PAIEMENT</span>
         </Button>
