@@ -2,53 +2,54 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Smartphone } from 'lucide-react';
 import { normalizeOperator } from '@/utils/normalizeOperator';
 import { MOBILE_OPERATORS } from '@/constants/mobileOperators';
 
 interface OperatorLogoProps {
   operatorName?: string;
-  logo?: string; // Nom exact du fichier (ex: orange.png)
+  logo?: string; // Nom exact du fichier
   className?: string;
   size?: number;
 }
 
 /**
- * @fileOverview Affiche le logo officiel depuis public/image/.
- * ✅ DESIGN : Suppression des fonds forcés pour laisser place au logo pur.
- * ✅ FIABILITÉ : Utilise img standard avec fallback intelligent.
+ * @fileOverview Affiche le logo officiel de l'opérateur.
+ * Utilise la normalisation pour garantir l'affichage même avec des noms de providers variés.
  */
 export function OperatorLogo({ operatorName, logo, className, size = 32 }: OperatorLogoProps) {
   const [hasError, setHasError] = useState(false);
 
-  // 1. Détermination du chemin source
+  // 1. Détermination de la source de l'image
   let finalSrc = '';
 
   if (logo) {
-    // Si c'est un nom de fichier, on pointe vers /image/
+    // Si un nom de fichier spécifique est fourni (via config pays)
     finalSrc = logo.startsWith('/') ? logo : `/image/${logo}`;
-  } else if (operatorName) {
-    // Fallback sur le catalogue par défaut via le nom de l'opérateur
-    const code = normalizeOperator(operatorName);
-    const operator = MOBILE_OPERATORS[code];
-    if (operator) {
-      finalSrc = operator.logoUrl;
+  } else {
+    // Sinon, normalisation du nom de l'opérateur/provider
+    const key = normalizeOperator(operatorName);
+    const operatorConfig = MOBILE_OPERATORS[key];
+    if (operatorConfig) {
+      finalSrc = operatorConfig.logoUrl;
     }
   }
 
-  // 2. Rendu du Fallback (si pas de source ou si l'image est brisée)
+  // 2. Rendu du Fallback (Logo Ndara) si l'image est absente ou brisée
   if (!finalSrc || hasError) {
     return (
       <div 
         style={{ width: size, height: size }}
-        className={cn("rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-500 shrink-0 border border-white/5", className)}
+        className={cn("rounded-lg bg-slate-900 flex items-center justify-center shrink-0 border border-white/5 p-1", className)}
       >
-        <Smartphone size={size * 0.6} />
+        <img
+          src="/logo.png"
+          alt="Ndara"
+          className="w-full h-full object-contain opacity-50"
+        />
       </div>
     );
   }
 
-  // 3. Rendu de l'image (standard img pour la robustesse sur mobile)
   return (
     <div 
       style={{ width: size, height: size }}
@@ -59,7 +60,7 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
     >
       <img
         src={finalSrc}
-        alt={operatorName || "Logo"}
+        alt={operatorName || "Opérateur"}
         className="w-full h-full object-contain"
         onError={() => setHasError(true)}
       />

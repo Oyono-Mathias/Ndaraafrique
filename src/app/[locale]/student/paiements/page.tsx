@@ -2,9 +2,7 @@
 
 /**
  * @fileOverview Historique financier complet de l'étudiant Ndara Afrique.
- * ✅ TRAÇABILITÉ : Affiche les transactions réussies, en attente et échouées avec les bons logos.
- * ✅ PERFORMANCE : Tri en mémoire pour éviter les erreurs d'index Firestore.
- * ✅ UNIFICATION : Utilisation de 'completed' en minuscules.
+ * ✅ TRAÇABILITÉ : Affiche les logos via détection intelligente des métadonnées.
  */
 
 import { useMemo, useState } from 'react';
@@ -23,8 +21,7 @@ import {
     ShoppingBag, 
     BadgeEuro, 
     Clock,
-    AlertCircle,
-    Smartphone
+    AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -36,7 +33,6 @@ export default function StudentPaymentsPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
-  // 1. Récupération de TOUTES les transactions de l'utilisateur (sans orderBy pour éviter les index manquants)
   const paymentsQuery = useMemo(() => 
     currentUser?.uid ? query(
         collection(db, 'payments'), 
@@ -46,7 +42,6 @@ export default function StudentPaymentsPage() {
   );
   const { data: rawPayments, isLoading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
 
-  // 2. Récupération des retraits (Payouts)
   const payoutsQuery = useMemo(() => 
     currentUser?.uid ? query(
         collection(db, 'payout_requests'), 
@@ -56,7 +51,6 @@ export default function StudentPaymentsPage() {
   );
   const { data: rawPayouts, isLoading: payoutsLoading } = useCollection<any>(payoutsQuery);
 
-  // 💎 TRI ET FILTRAGE EN MÉMOIRE
   const payments = useMemo(() => {
     if (!rawPayments) return [];
     return [...rawPayments].sort((a, b) => {
@@ -136,14 +130,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
     refunded: { label: 'Remboursé', class: 'bg-slate-800 text-slate-400', icon: AlertCircle },
   } as any)[payment.status?.toLowerCase() || 'pending'] || { label: payment.status, class: 'bg-slate-800', icon: Clock });
 
-  const typeLabel = {
-    wallet_topup: 'Recharge Wallet',
-    course_purchase: 'Achat de formation',
-    license_purchase: 'Licence Bourse',
-    payout: 'Retrait expert'
-  }[payment.type] || 'Transaction';
-
-  // ✅ Intelligence : Utilise l'opérateur des métadonnées si présent
+  // ✅ LOGIQUE FINTECH : Détection intelligente de l'opérateur via métadonnées
   const opName = payment.metadata?.operator || payment.provider;
 
   return (
@@ -153,15 +140,12 @@ function PaymentItem({ payment }: { payment: Payment }) {
     )}>
       <CardContent className="p-5 flex justify-between items-center">
         <div className="flex items-center gap-4 min-w-0">
-            <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                payment.status?.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-[#10b981]" : "bg-slate-800 text-slate-500"
-            )}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
                 <OperatorLogo operatorName={opName} size={42} className="bg-slate-950 p-1" />
             </div>
             <div className="min-w-0">
                 <h3 className="text-[13px] font-black text-white uppercase truncate tracking-tight">
-                    {payment.courseTitle || typeLabel}
+                    {payment.courseTitle || (payment.type === 'wallet_topup' ? 'Recharge Wallet' : 'Transaction')}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
