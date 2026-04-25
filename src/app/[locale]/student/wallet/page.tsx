@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V6.7 Elite Fintech.
- * ✅ TRAÇABILITÉ : Historique résilient avec tri en mémoire pour éviter les erreurs d'index.
- * ✅ VISIBILITÉ : Ajout d'états vides et de chargement pour l'historique.
+ * @fileOverview Ndara Wallet Étudiant - V6.8 Elite Fintech.
+ * ✅ DYNAMIQUE : Utilise les réglages pays pour le paiement MeSomb.
+ * ✅ TRAÇABILITÉ : Historique résilient avec tri en mémoire.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -81,7 +81,10 @@ export default function NdaraWalletPage() {
                 if (!snap.empty) {
                     const data = { id: snap.docs[0].id, ...snap.docs[0].data() } as Country;
                     setCountryData(data);
-                    if (data.paymentMethods.length > 0) setSelectedMethodId(data.paymentMethods[0].id);
+                    if (data.paymentMethods.length > 0) {
+                        const firstActive = data.paymentMethods.find(m => m.active);
+                        if (firstActive) setSelectedMethodId(firstActive.id);
+                    }
                 }
             } catch (e) {
                 console.error(e);
@@ -95,7 +98,6 @@ export default function NdaraWalletPage() {
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
-        // On enlève orderBy pour éviter les erreurs d'index composite manquant au build
         const q = query(collection(db, 'payments'), where('userId', '==', user.uid), limit(20));
         const unsub = onSnapshot(q, (snap) => {
             const txns = snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment));
@@ -108,7 +110,6 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
-    // Tri en mémoire pour garantir la visibilité immédiate sans dépendre des index Firebase
     const sortedTransactions = useMemo(() => {
         return [...rawTransactions].sort((a, b) => {
             const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
@@ -120,7 +121,7 @@ export default function NdaraWalletPage() {
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
     const handleRecharge = async () => {
-        if (!user || selectedAmount < 100 || !activeMethod) return;
+        if (!user || selectedAmount < 100 || !activeMethod || !countryData) return;
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         if (cleanPhone.length < 8) {
             toast({ variant: 'destructive', title: "Numéro invalide" });
@@ -134,6 +135,8 @@ export default function NdaraWalletPage() {
                 phoneNumber: cleanPhone,
                 service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
                 userId: user.uid,
+                country: countryData.code,
+                currency: countryData.currency,
                 type: 'wallet_topup',
                 courseTitle: 'Recharge Portefeuille'
             });
@@ -156,6 +159,8 @@ export default function NdaraWalletPage() {
 
     if (isUserLoading || isLoadingCountry) return <div className="h-screen bg-slate-950 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
+    const currencySymbol = countryData?.currency || 'XOF';
+
     return (
         <div className="flex justify-center bg-slate-950 min-h-screen font-sans relative">
             <div className="grain-overlay opacity-[0.03]"></div>
@@ -174,7 +179,7 @@ export default function NdaraWalletPage() {
                         <div className="relative z-10">
                             <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.25em] mb-1">Solde de Production</p>
                             <h2 className="text-white font-black text-4xl tracking-tight">
-                                {liveData.balance.toLocaleString('fr-FR')} <span className="text-lg font-bold opacity-60">XOF</span>
+                                {liveData.balance.toLocaleString('fr-FR')} <span className="text-lg font-bold opacity-60">{currencySymbol}</span>
                             </h2>
                             <div className="flex items-center justify-between mt-8">
                                 <p className="text-white font-black text-sm uppercase tracking-widest">{currentUser?.fullName}</p>
@@ -191,7 +196,7 @@ export default function NdaraWalletPage() {
                                 </div>
                                 <div>
                                     <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Crédits de Simulation</p>
-                                    <p className="text-lg font-black text-white">{liveData.virtualBalance.toLocaleString()} <span className="text-[10px] opacity-40">FCFA</span></p>
+                                    <p className="text-lg font-black text-white">{liveData.virtualBalance.toLocaleString()} <span className="text-[10px] opacity-40">{currencySymbol}</span></p>
                                 </div>
                             </div>
                         </div>
@@ -321,7 +326,7 @@ export default function NdaraWalletPage() {
                         </div>
                         <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Paiement en cours</DialogTitle>
                         <p className="text-slate-300 font-medium italic text-sm">
-                            Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} XOF</b> via le prompt USSD sur votre téléphone.
+                            Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} {currencySymbol}</b> via le prompt USSD sur votre téléphone.
                         </p>
                         <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-4">Fermer</Button>
                     </div>

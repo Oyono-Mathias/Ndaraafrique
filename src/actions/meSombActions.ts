@@ -3,8 +3,8 @@
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * Utilise le SDK officiel @hachther/mesomb v2.0.1.
+ * ✅ DYNAMIQUE : Supporte désormais le pays et la devise passés en paramètres.
  * ✅ TRAÇABILITÉ : Enregistre systématiquement les tentatives avec le titre du cours.
- * ✅ UNIFICATION : Statuts en minuscules (completed, pending, failed).
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -22,6 +22,8 @@ export async function initiateMeSombPayment(params: {
   phoneNumber: string;
   service: 'ORANGE' | 'MTN' | 'WAVE';
   userId: string;
+  country?: string; // Ex: 'CM', 'SN', 'CF'
+  currency?: string; // Ex: 'XAF', 'XOF'
   type?: 'course_purchase' | 'wallet_topup' | 'license_purchase';
   courseId?: string;
   courseTitle?: string;
@@ -42,7 +44,7 @@ export async function initiateMeSombPayment(params: {
         transactionId: simTxnId,
         provider: 'simulated',
         amount: params.amount,
-        currency: 'XAF',
+        currency: params.currency || 'XAF',
         metadata: {
           userId: params.userId,
           type: params.type || 'course_purchase',
@@ -64,12 +66,16 @@ export async function initiateMeSombPayment(params: {
     const cleanPhone = params.phoneNumber.replace(/\D/g, '');
     const client = getMeSombClient();
     
+    // Détermination dynamique du pays et de la devise
+    const country = params.country || 'CM';
+    const currency = params.currency || (['SN', 'CI', 'BJ', 'BF', 'NE', 'TG', 'ML'].includes(country) ? 'XOF' : 'XAF');
+
     const response = await client.makeCollect({
         amount: params.amount,
         service: params.service,
         payer: cleanPhone,
-        country: 'CM',
-        currency: 'XAF'
+        country: country,
+        currency: currency
     });
 
     const realId = response.isOperationSuccess() 
@@ -81,7 +87,7 @@ export async function initiateMeSombPayment(params: {
       id: realId,
       userId: params.userId,
       amount: Number(params.amount),
-      currency: 'XAF',
+      currency: currency,
       status: response.isOperationSuccess() ? 'pending' : 'failed',
       type: params.type || 'course_purchase',
       provider: params.service.toLowerCase(),
@@ -94,6 +100,7 @@ export async function initiateMeSombPayment(params: {
         operator: params.service, 
         phone: cleanPhone, 
         gatewayId: realId,
+        country: country,
         errorMessage: !response.isOperationSuccess() ? (response as any).message : null
       }
     });
@@ -159,7 +166,7 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
                     transactionId: docSnap.id,
                     provider: 'mesomb_reconciled',
                     amount: Number((officialTxn as any).amount),
-                    currency: 'XAF',
+                    currency: (officialTxn as any).currency || 'XAF',
                     metadata: {
                         userId: paymentData.userId,
                         courseId: paymentData.courseId,
