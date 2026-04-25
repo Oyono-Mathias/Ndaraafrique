@@ -278,6 +278,7 @@ export default function NdaraWalletPage() {
                             ) : sortedTransactions.length > 0 ? (
                                 sortedTransactions.map(txn => {
                                     const status = (txn.status || 'pending').toLowerCase();
+                                    // ✅ Priorité au service réel détecté pour le logo
                                     const opName = txn.metadata?.operator || txn.provider;
                                     return (
                                         <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
