@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import Image from 'next/image';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Smartphone } from 'lucide-react';
 import { normalizeOperator } from '@/utils/normalizeOperator';
@@ -9,17 +8,19 @@ import { MOBILE_OPERATORS } from '@/constants/mobileOperators';
 
 interface OperatorLogoProps {
   operatorName?: string;
-  logo?: string; // Nom exact du fichier (ex: mtn.png)
+  logo?: string; // Nom exact du fichier (ex: orange.png)
   className?: string;
   size?: number;
 }
 
 /**
  * @fileOverview Affiche le logo officiel depuis public/image/.
- * ✅ DIRECT : Utilise le nom de fichier fourni.
- * ✅ PUR : Aucun style de fond ou de couleur imposé.
+ * ✅ FIABLE : Utilise une balise img standard avec fallback automatique en cas d'erreur.
+ * ✅ DIRECT : Pointe vers /image/nom-du-fichier.
  */
 export function OperatorLogo({ operatorName, logo, className, size = 32 }: OperatorLogoProps) {
+  const [hasError, setHasError] = useState(false);
+
   // 1. Détermination du chemin source
   let finalSrc = '';
 
@@ -35,18 +36,19 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
     }
   }
 
-  // 2. Rendu
-  if (!finalSrc) {
+  // 2. Rendu du Fallback (si pas de source ou si l'image est brisée)
+  if (!finalSrc || hasError) {
     return (
       <div 
         style={{ width: size, height: size }}
-        className={cn("rounded-lg bg-slate-800 flex items-center justify-center text-slate-600 shrink-0", className)}
+        className={cn("rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 border border-white/5", className)}
       >
         <Smartphone size={size * 0.5} />
       </div>
     );
   }
 
+  // 3. Rendu de l'image (standard img pour éviter les soucis de cache/optimisation locale)
   return (
     <div 
       style={{ width: size, height: size }}
@@ -55,13 +57,11 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
         className
       )}
     >
-      <Image
+      <img
         src={finalSrc}
         alt={operatorName || "Logo"}
-        fill
-        className="object-contain"
-        sizes={`${size}px`}
-        unoptimized // ✅ Crucial pour les logos locaux dans public/image
+        className="w-full h-full object-contain"
+        onError={() => setHasError(true)}
       />
     </div>
   );
