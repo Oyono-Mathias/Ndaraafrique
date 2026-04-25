@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V5.1.
- * ✅ LOGOS : Utilisation dynamique des logos par pays.
+ * @fileOverview Tunnel de paiement Ndara Afrique V5.5.
+ * ✅ UX : Modal USSD immersive unifiée avec le wallet.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -21,7 +21,9 @@ import {
   GraduationCap, 
   Check, 
   Zap, 
-  Wallet
+  Wallet,
+  X,
+  PhoneCall
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Country } from '@/lib/types';
@@ -32,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 function CheckoutContent() {
   const params = useParams();
@@ -80,12 +83,21 @@ function CheckoutContent() {
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
+  // ✅ LOGIQUE INSTRUCTIONS USSD
+  const ussdInstruction = useMemo(() => {
+    if (!activeMethod || activeMethod.provider !== 'mesomb') return "Veuillez valider le paiement sur votre téléphone";
+    const op = activeMethod.name.toUpperCase();
+    if (op.includes('MTN')) return "Composez *126# puis validez le paiement sur votre téléphone";
+    if (op.includes('ORANGE')) return "Composez #150*50# puis validez le paiement";
+    return "Veuillez valider le paiement sur votre téléphone";
+  }, [activeMethod]);
+
   const handlePayment = async () => {
     if (!user || !course || !activeMethod) return;
-    setIsProcessing(true);
 
     try {
       if (activeMethod.provider === 'wallet') {
+          setIsProcessing(true);
           const result = await purchaseCourseWithWalletAction({
               userId: user.uid,
               courseId: course.id,
@@ -100,8 +112,12 @@ function CheckoutContent() {
 
       } else if (activeMethod.provider === 'mesomb') {
           if (!phoneNumber || phoneNumber.length < 8) {
-              throw new Error("Numéro de téléphone requis pour Mobile Money.");
+              toast({ variant: 'destructive', title: "Numéro requis" });
+              return;
           }
+
+          setIsAwaitingUssd(true);
+          setIsProcessing(true);
 
           const result = await initiateMeSombPayment({
               amount: course.price,
@@ -114,9 +130,8 @@ function CheckoutContent() {
           
           if (result.success) {
               if (result.type === 'SIMULATED') {
+                  setIsAwaitingUssd(false);
                   setIsSuccess(true);
-              } else {
-                  setIsAwaitingUssd(true);
               }
           } else {
               throw new Error(result.error);
@@ -125,6 +140,7 @@ function CheckoutContent() {
           setIsSuccess(true);
       }
     } catch (e: any) {
+      setIsAwaitingUssd(false);
       toast({ variant: 'destructive', title: "Échec du paiement", description: e.message });
     } finally {
       setIsProcessing(false);
@@ -132,6 +148,8 @@ function CheckoutContent() {
   };
 
   if (courseLoading || isLoadingCountry) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
+
+  const currencySymbol = countryData?.currency || 'XOF';
 
   return (
     <div className="min-h-screen bg-slate-950 pb-40 relative">
@@ -152,7 +170,7 @@ function CheckoutContent() {
             </div>
             <div className="flex justify-between items-end">
                 <span className="text-[#D97706]/60 text-[10px] font-black uppercase tracking-widest">Total à payer</span>
-                <span className="font-mono font-black text-[#D97706] text-3xl">{(course?.price || 0).toLocaleString()} {countryData?.currency || 'XOF'}</span>
+                <span className="font-mono font-black text-[#D97706] text-3xl">{(course?.price || 0).toLocaleString()} {currencySymbol}</span>
             </div>
         </div>
 
@@ -174,7 +192,7 @@ function CheckoutContent() {
             {selectedMethodId === 'wallet' ? (
                 <div className="p-6 bg-slate-900 border border-white/5 rounded-3xl text-center shadow-inner relative overflow-hidden">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Votre solde Ndara</p>
-                    <p className="text-2xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {countryData?.currency || 'XOF'}</p>
+                    <p className="text-2xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {currencySymbol}</p>
                 </div>
             ) : (selectedMethodId !== 'virtual') && (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
@@ -195,17 +213,53 @@ function CheckoutContent() {
         </Button>
       </main>
 
+      {/* 🔥 MODAL USSD UNIFIÉE */}
       <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
-          <DialogContent className="bg-slate-900 border-white/10 rounded-[3rem] p-10 text-center sm:max-w-md">
-              <div className="flex flex-col items-center gap-6">
+          <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
+              
+              <div className="p-8 pb-10 flex flex-col items-center text-center space-y-8 animate-in slide-up-modal">
+                  <div className="w-full flex items-center justify-between px-2">
+                      <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4 text-primary" />
+                          <span className="text-[10px] font-black text-primary uppercase tracking-widest">Ndara Secure</span>
+                      </div>
+                      <Badge variant="outline" className="border-white/10 text-white/40 font-mono text-[9px]">TX: {slug.substring(0,6).toUpperCase()}</Badge>
+                  </div>
+
                   <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                          <Loader2 className="h-10 w-10 animate-spin" />
+                      <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+                      <div className="w-24 h-24 rounded-full bg-slate-950 border-2 border-primary/30 flex items-center justify-center relative z-10 shadow-2xl">
+                          <Loader2 className="h-14 w-14 animate-spin text-primary opacity-20 absolute" />
+                          <PhoneCall className="h-8 w-8 text-primary animate-bounce" />
                       </div>
                   </div>
-                  <DialogTitle className="text-xl font-black text-white uppercase tracking-tight">Paiement en cours</DialogTitle>
-                  <p className="text-slate-400 font-medium italic text-sm">Veuillez saisir votre code PIN sur votre téléphone.</p>
-                  <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px]">Fermer</Button>
+
+                  <div className="space-y-3">
+                      <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Validation USSD</DialogTitle>
+                      <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+                          <p className="text-primary text-sm font-bold leading-relaxed italic">
+                              "{ussdInstruction}"
+                          </p>
+                      </div>
+                      <p className="text-slate-500 text-[10px] font-medium uppercase tracking-widest">
+                          Montant : {course?.price.toLocaleString()} {currencySymbol}
+                      </p>
+                  </div>
+
+                  <div className="w-full pt-4">
+                      <Button 
+                          variant="ghost" 
+                          onClick={() => setIsAwaitingUssd(false)} 
+                          className="w-full h-14 rounded-2xl text-slate-500 font-black uppercase text-[11px] tracking-[0.2em] hover:bg-white/5 hover:text-white transition-all"
+                      >
+                          <X className="mr-2 h-4 w-4" /> Annuler l'achat
+                      </Button>
+                  </div>
+              </div>
+              
+              <div className="h-1 w-full bg-slate-800">
+                  <div className="h-full bg-primary animate-[shimmer_2s_infinite_linear] w-1/3 shadow-[0_0_10px_#10b981]" />
               </div>
           </DialogContent>
       </Dialog>

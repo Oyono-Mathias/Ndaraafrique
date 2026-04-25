@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V6.9 Elite Fintech.
- * ✅ LOGOS : Utilisation prioritaire des métadonnées operator pour l'historique.
+ * @fileOverview Ndara Wallet Étudiant - V7.0 Elite Fintech.
+ * ✅ UX : Modal USSD immersive avec instructions dynamiques.
+ * ✅ DESIGN : Android-first avec effets de lueur et glassmorphism.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -20,7 +21,10 @@ import {
     History,
     AlertCircle,
     CreditCard,
-    ArrowRight
+    ArrowRight,
+    X,
+    ShieldCheck,
+    PhoneCall
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -31,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
@@ -96,7 +100,7 @@ export default function NdaraWalletPage() {
         fetchCountry();
     }, [currentUser?.countryCode, db, user?.uid]);
 
-    // 3. Écouteur historique des transactions (SÉCURISÉ)
+    // 3. Écouteur historique des transactions
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
@@ -124,6 +128,15 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
+    // ✅ LOGIQUE INSTRUCTIONS USSD
+    const ussdInstruction = useMemo(() => {
+        if (!activeMethod) return "Veuillez valider le paiement sur votre téléphone";
+        const op = activeMethod.name.toUpperCase();
+        if (op.includes('MTN')) return "Composez *126# puis validez le paiement sur votre téléphone";
+        if (op.includes('ORANGE')) return "Composez #150*50# puis validez le paiement";
+        return "Veuillez valider le paiement sur votre téléphone";
+    }, [activeMethod]);
+
     const handleRecharge = async () => {
         if (!user || selectedAmount < 100 || !activeMethod || !countryData) return;
         const cleanPhone = phoneNumber.replace(/\D/g, '');
@@ -132,7 +145,10 @@ export default function NdaraWalletPage() {
             return;
         }
         
+        // 🔥 UX OPTIMISTE : Afficher la modal immédiatement
+        setIsAwaitingUssd(true);
         setIsProcessing(true);
+
         try {
             const result = await initiateMeSombPayment({
                 amount: selectedAmount,
@@ -147,14 +163,15 @@ export default function NdaraWalletPage() {
 
             if (result.success) {
                 if (result.type === 'SIMULATED') {
+                    setIsAwaitingUssd(false);
                     setIsSuccess(true);
-                } else {
-                    setIsAwaitingUssd(true);
                 }
+                // Si c'est REAL, on reste dans la modal USSD jusqu'à fermeture manuelle ou succès webhook (futur)
             } else {
                 throw new Error(String(result.error));
             }
         } catch (e: any) {
+            setIsAwaitingUssd(false);
             toast({ variant: 'destructive', title: "Échec", description: String(e.message) });
         } finally {
             setIsProcessing(false);
@@ -261,7 +278,6 @@ export default function NdaraWalletPage() {
                             ) : sortedTransactions.length > 0 ? (
                                 sortedTransactions.map(txn => {
                                     const status = (txn.status || 'pending').toLowerCase();
-                                    // ✅ LOGIQUE FINTECH : Détection intelligente de l'opérateur
                                     const opName = txn.metadata?.operator || txn.provider;
                                     return (
                                         <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
@@ -277,7 +293,7 @@ export default function NdaraWalletPage() {
                                                     {txn.amount.toLocaleString()} F
                                                 </p>
                                                 <Badge className={cn(
-                                                    "text-[7px] font-black uppercase px-1.5 py-0 border-none h-4", 
+                                                    "text-[7px] font-black uppercase px-1.5 py-0.5 border-none h-4", 
                                                     status === 'completed' ? "bg-emerald-500/10 text-emerald-500" : 
                                                     status === 'failed' ? "bg-red-500/10 text-red-500" : 
                                                     "bg-amber-500/10 text-amber-500"
@@ -308,22 +324,88 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
+            {/* 🔥 MODAL USSD ENHANCED V2 */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
-                <DialogContent className="bg-slate-900 border-white/10 rounded-[3rem] p-10 text-center sm:max-w-md">
-                    <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
+                <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+                    <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
+                    
+                    <div className="p-8 pb-10 flex flex-col items-center text-center space-y-8 animate-in slide-up-modal">
+                        {/* Header Status */}
+                        <div className="w-full flex items-center justify-between px-2">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-primary" />
+                                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Ndara Secure</span>
+                            </div>
+                            <Badge variant="outline" className="border-white/10 text-white/40 font-mono text-[9px]">ID: {Math.random().toString(36).substring(7).toUpperCase()}</Badge>
+                        </div>
+
+                        {/* Animated Visual */}
                         <div className="relative">
-                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                <Loader2 className="h-12 w-12 animate-spin" />
+                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+                            <div className="w-24 h-24 rounded-full bg-slate-950 border-2 border-primary/30 flex items-center justify-center relative z-10 shadow-2xl">
+                                <Loader2 className="h-14 w-14 animate-spin text-primary opacity-20 absolute" />
+                                <PhoneCall className="h-8 w-8 text-primary animate-bounce" />
                             </div>
                         </div>
-                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Paiement en cours</DialogTitle>
-                        <p className="text-slate-300 font-medium italic text-sm">
-                            Veuillez valider le débit de <b>{selectedAmount.toLocaleString()} {currencySymbol}</b> via le prompt USSD sur votre téléphone.
-                        </p>
-                        <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full text-slate-500 font-black uppercase text-[10px] tracking-widest mt-4">Fermer</Button>
+
+                        {/* Instructions */}
+                        <div className="space-y-3">
+                            <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Validation USSD</DialogTitle>
+                            <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+                                <p className="text-primary text-sm font-bold leading-relaxed italic">
+                                    "{ussdInstruction}"
+                                </p>
+                            </div>
+                            <p className="text-slate-500 text-[10px] font-medium uppercase tracking-widest">
+                                Montant : {selectedAmount.toLocaleString()} {currencySymbol}
+                            </p>
+                        </div>
+
+                        {/* Sub-instructions */}
+                        <div className="space-y-4 w-full">
+                            <div className="flex items-center gap-4 text-left p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                                <div className="p-2 bg-slate-800 rounded-lg"><Zap className="h-4 w-4 text-amber-500" /></div>
+                                <p className="text-[10px] text-slate-400 leading-tight font-medium uppercase tracking-tighter">
+                                    Un prompt de validation va s'afficher sur votre écran mobile. Saisissez votre code secret.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Action Bar */}
+                        <div className="w-full pt-4">
+                            <Button 
+                                variant="ghost" 
+                                onClick={() => setIsAwaitingUssd(false)} 
+                                className="w-full h-14 rounded-2xl text-slate-500 font-black uppercase text-[11px] tracking-[0.2em] hover:bg-white/5 hover:text-white transition-all"
+                            >
+                                <X className="mr-2 h-4 w-4" /> Annuler l'opération
+                            </Button>
+                        </div>
+                    </div>
+                    
+                    {/* Progress Bar Loader */}
+                    <div className="h-1 w-full bg-slate-800">
+                        <div className="h-full bg-primary animate-[shimmer_2s_infinite_linear] w-1/3 shadow-[0_0_10px_#10b981]" />
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {isSuccess && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
+                    <div className="bg-slate-900 rounded-[3rem] p-10 text-center space-y-8 max-w-sm shadow-2xl border border-primary/20">
+                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl animate-bounce shadow-primary/40">
+                            <Check className="h-14 w-14 text-slate-950" strokeWidth={4} />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-3xl font-black text-white uppercase tracking-tight">C'est crédité !</h3>
+                            <p className="text-slate-400 font-medium italic text-sm">Votre solde a été mis à jour instantanément.</p>
+                        </div>
+                        <Button onClick={() => setIsSuccess(false)} className="w-full h-16 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
+                            Continuer mes études
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
