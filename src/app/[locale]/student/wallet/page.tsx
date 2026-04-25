@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - V7.5 Elite Fintech.
- * ✅ UX : Modal USSD immersive avec instructions dynamiques.
- * ✅ ERRORS : Gestion complète des échecs (Solde bas, Annulation, Timeout).
+ * ✅ UX : Écoute en temps réel de Firestore pour basculer en succès dès validation USSD.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -56,7 +55,6 @@ export default function NdaraWalletPage() {
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     
-    // Gestion des Erreurs
     const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string; title: string }>({
         isOpen: false,
         message: '',
@@ -167,6 +165,27 @@ export default function NdaraWalletPage() {
                 if (result.type === 'SIMULATED') {
                     setIsAwaitingUssd(false);
                     setIsSuccess(true);
+                } else if (result.type === 'REAL' && result.transactionId) {
+                    // ✅ ÉCOUTE EN TEMPS RÉEL DU DOCUMENT FIRESTORE
+                    const paymentRef = doc(db, 'payments', result.transactionId);
+                    const unsubscribe = onSnapshot(paymentRef, (snap) => {
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            if (data.status === 'completed') {
+                                setIsAwaitingUssd(false);
+                                setIsSuccess(true);
+                                unsubscribe();
+                            } else if (data.status === 'failed') {
+                                setIsAwaitingUssd(false);
+                                setErrorModal({
+                                    isOpen: true,
+                                    title: "Paiement échoué",
+                                    message: data.metadata?.errorMessage || "La transaction a été rejetée ou a expiré."
+                                });
+                                unsubscribe();
+                            }
+                        }
+                    });
                 }
             } else {
                 throw new Error(String(result.error));

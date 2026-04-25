@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V5.6.
- * ✅ ERRORS : Gestion complète des échecs (Solde bas, Annulation, Timeout).
+ * @fileOverview Tunnel de paiement Ndara Afrique V5.7.
+ * ✅ TEMPS RÉEL : Écoute du statut de la transaction Firestore pour une validation automatique.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -140,6 +140,27 @@ function CheckoutContent() {
               if (result.type === 'SIMULATED') {
                   setIsAwaitingUssd(false);
                   setIsSuccess(true);
+              } else if (result.type === 'REAL' && result.transactionId) {
+                  // ✅ ÉCOUTE EN TEMPS RÉEL DU DOCUMENT FIRESTORE (RELIÉ AU WEBHOOK)
+                  const paymentRef = doc(db, 'payments', result.transactionId);
+                  const unsubscribe = onSnapshot(paymentRef, (snap) => {
+                      if (snap.exists()) {
+                          const data = snap.data();
+                          if (data.status === 'completed') {
+                              setIsAwaitingUssd(false);
+                              setIsSuccess(true);
+                              unsubscribe();
+                          } else if (data.status === 'failed') {
+                              setIsAwaitingUssd(false);
+                              setErrorModal({
+                                  isOpen: true,
+                                  title: "Échec de validation",
+                                  message: data.metadata?.errorMessage || "La transaction a été rejetée ou le délai a expiré."
+                              });
+                              unsubscribe();
+                          }
+                      }
+                  });
               }
           } else {
               throw new Error(result.error);

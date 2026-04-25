@@ -3,8 +3,7 @@
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * ✅ STANDARD BANCAIRE : Création du document AVANT l'appel API.
- * ✅ FIABILITÉ : Utilisation d'une référence externe unique.
- * ✅ SÉCURITÉ : Vérification du rôle admin pour le solde marchand.
+ * ✅ FIABILITÉ : Retourne la référence pour écoute temps réel par le client.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -103,7 +102,7 @@ export async function initiateMeSombPayment(params: {
         return { 
           success: true, 
           type: 'REAL', 
-          transactionId: externalReference, 
+          transactionId: externalReference, // On renvoie l'ID pour que le client l'écoute
           message: "Validez le prompt USSD." 
         };
     } else {
@@ -125,6 +124,9 @@ export async function initiateMeSombPayment(params: {
 export async function reconcilePendingPaymentsAction(adminId: string) {
     try {
         const db = getAdminDb();
+        const adminDoc = await db.collection('users').doc(adminId).get();
+        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') throw new Error("Accès refusé.");
+
         const pendingSnap = await db.collection('payments').where('status', '==', 'pending').limit(20).get();
         let processed = 0;
 
