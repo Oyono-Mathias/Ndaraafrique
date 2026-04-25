@@ -9,26 +9,36 @@ import { Smartphone } from 'lucide-react';
 
 interface OperatorLogoProps {
   operatorName: string | undefined;
+  logo?: string; // Nom du fichier dans /image/ (ex: mtn-momo.png)
   className?: string;
   size?: number;
 }
 
 /**
- * @fileOverview Composant d'affichage intelligent du logo opérateur.
- * ✅ DESIGN : Parfaitement circulaire pour correspondre à l'UI Fintech.
- * ✅ FALLBACK : Affiche les initiales en majuscules si l'image est absente.
+ * @fileOverview Affichage du logo opérateur basé sur le fichier réel.
+ * ✅ SÉCURITÉ : Utilise le nom de fichier spécifié dans la config pays.
+ * ✅ DESIGN : Aucun fond coloré forcé, respecte le visuel original du logo.
  */
-export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLogoProps) {
-  const code = normalizeOperator(operatorName);
-  const operator = MOBILE_OPERATORS[code];
+export function OperatorLogo({ operatorName, logo, className, size = 32 }: OperatorLogoProps) {
+  // 1. Si un logo spécifique est fourni dans la config (ex: orange-money.png)
+  let finalSrc = logo ? (logo.startsWith('/') ? logo : `/image/${logo}`) : '';
 
-  if (!operator) {
+  // 2. Sinon, on cherche dans les constantes basées sur le nom de l'opérateur
+  if (!finalSrc) {
+    const code = normalizeOperator(operatorName);
+    const operator = MOBILE_OPERATORS[code];
+    if (operator) {
+      finalSrc = operator.logoUrl;
+    }
+  }
+
+  if (!finalSrc) {
     return (
       <div 
         style={{ width: size, height: size }}
-        className={cn("rounded-full bg-slate-800 flex items-center justify-center text-slate-500 shadow-inner", className)}
+        className={cn("rounded-full bg-slate-800 flex items-center justify-center text-slate-500 shrink-0", className)}
       >
-        <Smartphone size={size * 0.6} />
+        <Smartphone size={size * 0.5} />
       </div>
     );
   }
@@ -37,31 +47,21 @@ export function OperatorLogo({ operatorName, className, size = 32 }: OperatorLog
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative rounded-full overflow-hidden flex items-center justify-center shadow-md shrink-0 border border-white/5",
-        operator.color,
+        "relative rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-white/5",
         className
       )}
     >
       <Image
-        src={operator.logoUrl}
-        alt={operator.name}
+        src={finalSrc}
+        alt={operatorName || "Payment Logo"}
         fill
-        className="object-contain z-10 p-1"
+        className="object-contain p-1"
         sizes={`${size}px`}
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.style.display = 'none';
         }}
       />
-      
-      {/* Fallback texte stylisé (Initiales en MAJUSCULES) */}
-      <span className={cn(
-        "font-black uppercase select-none absolute inset-0 flex items-center justify-center pointer-events-none",
-        operator.textColor,
-        size < 35 ? "text-[8px]" : "text-[10px]"
-      )}>
-        {operator.name.substring(0, 2).toUpperCase()}
-      </span>
     </div>
   );
 }

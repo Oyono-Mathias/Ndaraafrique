@@ -3,7 +3,7 @@
 /**
  * @fileOverview Cockpit Géographique & Paiements.
  * ✅ GESTION : Pays, devises et méthodes de paiement par pays.
- * ✅ DESIGN : Utilisation des logos opérateurs dans la liste.
+ * ✅ LOGOS : Utilisation des noms de fichiers réels pour les opérateurs.
  */
 
 import { useState, useMemo } from 'react';
@@ -17,7 +17,8 @@ import {
     Trash2, 
     Loader2, 
     Smartphone, 
-    Settings2
+    Settings2,
+    ImageIcon
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ export default function AdminCountriesPage() {
 
     const [newMethod, setNewMethod] = useState({
         name: '',
-        logo: '',
+        logo: '', // Doit être le nom du fichier (ex: orange-money.png)
         provider: 'mesomb' as PaymentProvider
     });
 
@@ -71,7 +72,7 @@ export default function AdminCountriesPage() {
     const handleAdd = async () => {
         if (!formData.name || !formData.code) return;
         setIsSubmitting(true);
-        const result = await addCountryAction({ ...formData, active: true, paymentMethods: [] });
+        const result = await addCountryAction({ ...formData, active: true, paymentMethods: [] } as any);
         if (result.success) {
             toast({ title: "Pays ajouté !" });
             setIsAddModalOpen(false);
@@ -206,7 +207,7 @@ export default function AdminCountriesPage() {
                                     <TableCell>
                                         <div className="flex -space-x-2">
                                             {country.paymentMethods?.filter(m => m.active).map(m => (
-                                                <OperatorLogo key={m.id} operatorName={m.name} size={26} className="border-2 border-slate-900" />
+                                                <OperatorLogo key={m.id} operatorName={m.name} logo={m.logo} size={26} className="border-2 border-slate-900" />
                                             ))}
                                             {(!country.paymentMethods || country.paymentMethods.filter(m => m.active).length === 0) && <span className="text-[9px] text-slate-600 italic">Zéro canal</span>}
                                         </div>
@@ -259,8 +260,11 @@ export default function AdminCountriesPage() {
                                 {selectedCountry?.paymentMethods?.map(m => (
                                     <div key={m.id} className="flex items-center justify-between p-3 bg-slate-950 border border-white/5 rounded-2xl shadow-inner">
                                         <div className="flex items-center gap-3">
-                                            <OperatorLogo operatorName={m.name} size={32} />
-                                            <span className="font-bold text-sm uppercase tracking-tight">{m.name}</span>
+                                            <OperatorLogo operatorName={m.name} logo={m.logo} size={32} />
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm uppercase tracking-tight">{m.name}</span>
+                                                <span className="text-[8px] font-mono text-slate-500">{m.logo || 'Aucun logo spécifique'}</span>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Switch 
@@ -278,13 +282,26 @@ export default function AdminCountriesPage() {
                         <div className="p-6 bg-slate-950/50 border border-dashed border-slate-800 rounded-[2rem] space-y-4">
                             <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Ajouter un nouveau canal</label>
                             <div className="grid grid-cols-2 gap-3">
-                                <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800 h-12" />
+                                <div className="space-y-2">
+                                    <label className="text-[8px] font-black uppercase text-slate-600 ml-1">Nom affiché</label>
+                                    <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[8px] font-black uppercase text-slate-600 ml-1">Fichier Logo (public/image/)</label>
+                                    <div className="relative">
+                                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                                        <Input placeholder="mtn-momo.png" value={newMethod.logo} onChange={e => setNewMethod({...newMethod, logo: e.target.value})} className="bg-slate-950 border-slate-800 h-11 pl-9 text-xs font-mono" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[8px] font-black uppercase text-slate-600 ml-1">Passerelle Technique</label>
                                 <Select value={newMethod.provider} onValueChange={(v: any) => setNewMethod({...newMethod, provider: v})}>
-                                    <SelectTrigger className="bg-slate-950 border-slate-800 h-12"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="mesomb">MeSomb (Orange/MTN)</SelectItem>
+                                        <SelectItem value="mesomb">MeSomb (Orange/MTN/Wave)</SelectItem>
                                         <SelectItem value="moneroo">Moneroo (Global)</SelectItem>
-                                        <SelectItem value="wave">Wave</SelectItem>
+                                        <SelectItem value="manual">Manuel (Espèces)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
