@@ -2,14 +2,13 @@
 
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
- * Utilise le SDK officiel @hachther/mesomb v2.0.1.
- * ✅ DYNAMIQUE : Supporte désormais le pays et la devise passés en paramètres.
- * ✅ DIAGNOSTIC : Détecte l'erreur 'NOT ACTIVATED' et guide l'admin.
+ * ✅ STANDARD BANCAIRE : Création du document AVANT l'appel API.
+ * ✅ FIABILITÉ : Utilisation d'une référence externe unique.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, getMeSombTransactionStatus, getMeSombAccountBalance } from '@/lib/mesomb';
+import { getMeSombClient, getMeSombTransactionStatus } from '@/lib/mesomb';
 import { processNdaraPayment } from '@/services/paymentProcessor';
 
 export type MeSombResponse =
@@ -22,135 +21,109 @@ export async function initiateMeSombPayment(params: {
   phoneNumber: string;
   service: 'ORANGE' | 'MTN' | 'WAVE';
   userId: string;
-  country?: string; // Ex: 'CM', 'SN', 'CF'
-  currency?: string; // Ex: 'XAF', 'XOF'
+  country?: string;
+  currency?: string;
   type?: 'course_purchase' | 'wallet_topup' | 'license_purchase';
   courseId?: string;
   courseTitle?: string;
 }): Promise<MeSombResponse> {
   const db = getAdminDb();
-  const gatewayId = `TRY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  // Génération d'une référence unique NDARA avant tout appel
+  const externalReference = `ND-TX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const cleanPhone = params.phoneNumber.replace(/\D/g, '');
+  const country = params.country || 'CM';
+  const currency = params.currency || (['SN', 'CI', 'BJ', 'BF', 'NE', 'TG', 'ML'].includes(country) ? 'XOF' : 'XAF');
 
   try {
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data() as any;
-
     const isTestMode = settings?.payments?.paymentMode === 'test';
 
-    // 1. MODE TEST : Crédit virtuel instantané
+    // 1. PRÉ-ENREGISTREMENT SYSTÉMATIQUE (Audit Trail)
+    // On utilise l'externalReference comme ID de document pour être sûr de le retrouver
+    await db.collection('payments').doc(externalReference).set({
+      id: externalReference,
+      userId: params.userId,
+      amount: Number(params.amount),
+      currency: currency,
+      status: 'pending',
+      type: params.type || 'course_purchase',
+      provider: params.service.toLowerCase(),
+      isSimulated: isTestMode,
+      courseId: params.courseId || 'WALLET_TOPUP',
+      courseTitle: params.courseTitle || (params.type === 'wallet_topup' ? 'Recharge Wallet' : 'Formation'),
+      date: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      externalReference: externalReference,
+      metadata: { 
+        operator: params.service, 
+        phone: cleanPhone, 
+        country: country
+      }
+    });
+
+    // 2. MODE TEST
     if (isTestMode) {
-      const simTxnId = `SIM-${Date.now()}`;
       await processNdaraPayment({
-        transactionId: simTxnId,
+        transactionId: externalReference,
         provider: 'simulated',
         amount: params.amount,
-        currency: params.currency || 'XAF',
+        currency: currency,
         metadata: {
           userId: params.userId,
           type: params.type || 'course_purchase',
           courseId: params.courseId || 'WALLET_TOPUP',
-          courseTitle: params.courseTitle || (params.type === 'wallet_topup' ? 'Recharge Wallet' : 'Formation'),
-          isSimulated: true,
-          reason: 'Achat simulé (Mode Test)'
+          courseTitle: params.courseTitle || 'Achat Test',
+          isSimulated: true
         }
       });
-
-      return { 
-        success: true, 
-        type: 'SIMULATED', 
-        message: "Mode TEST : Crédit ajouté." 
-      };
+      return { success: true, type: 'SIMULATED', message: "Mode TEST : Crédit ajouté." };
     }
 
-    // 2. PAIEMENT RÉEL VIA SDK OFFICIEL
-    const cleanPhone = params.phoneNumber.replace(/\D/g, '');
+    // 3. PAIEMENT RÉEL
     const client = getMeSombClient();
-    
-    // Détermination dynamique du pays et de la devise
-    const country = params.country || 'CM';
-    const currency = params.currency || (['SN', 'CI', 'BJ', 'BF', 'NE', 'TG', 'ML'].includes(country) ? 'XOF' : 'XAF');
-
     const response = await client.makeCollect({
         amount: params.amount,
         service: params.service,
         payer: cleanPhone,
         country: country,
-        currency: currency
+        currency: currency,
+        // CRITIQUE : On passe notre ID à MeSomb
+        reference: externalReference 
     });
-
-    const realId = response.isOperationSuccess() 
-        ? String((response as any).transaction.pk || (response as any).transaction.id)
-        : gatewayId;
-
-    // Enregistrer la transaction (Succès ou Échec partiel) pour la traçabilité
-    await db.collection('payments').doc(realId).set({
-      id: realId,
-      userId: params.userId,
-      amount: Number(params.amount),
-      currency: currency,
-      status: response.isOperationSuccess() ? 'pending' : 'failed',
-      type: params.type || 'course_purchase',
-      provider: params.service.toLowerCase(),
-      isSimulated: false,
-      courseId: params.courseId || 'WALLET_TOPUP',
-      courseTitle: params.courseTitle || (params.type === 'wallet_topup' ? 'Recharge Wallet' : 'Formation'),
-      date: FieldValue.serverTimestamp(),
-      createdAt: FieldValue.serverTimestamp(),
-      metadata: { 
-        operator: params.service, 
-        phone: cleanPhone, 
-        gatewayId: realId,
-        country: country,
-        errorMessage: !response.isOperationSuccess() ? (response as any).message : null
-      }
-    });
-
-    // Ajouter au flux d'activité si c'est un échec
-    if (!response.isOperationSuccess()) {
-        await db.collection('users').doc(params.userId).collection('activity').add({
-            userId: params.userId,
-            type: 'payment',
-            title: 'Tentative de recharge échouée',
-            description: `Le paiement de ${params.amount} F par ${params.service} a été rejeté par l'opérateur.`,
-            read: false,
-            createdAt: FieldValue.serverTimestamp()
-        });
-    }
 
     if (response.isOperationSuccess()) {
+        const transaction = (response as any).transaction;
+        const realId = String(transaction.pk || transaction.id);
+        
+        // On met à jour le document avec l'ID réel de MeSomb pour la double traçabilité
+        await db.collection('payments').doc(externalReference).update({
+            gatewayTransactionId: realId,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
         return { 
           success: true, 
           type: 'REAL', 
-          transactionId: realId, 
-          message: "Validez le prompt USSD sur votre mobile." 
+          transactionId: externalReference, 
+          message: "Validez le prompt USSD." 
         };
     } else {
-        const errorMsg = (response as any).message || "Le paiement a été rejeté par l'opérateur.";
+        const errorMsg = (response as any).message || "Rejeté par l'opérateur.";
+        await db.collection('payments').doc(externalReference).update({
+            status: 'failed',
+            'metadata.errorMessage': errorMsg
+        });
         return { success: false, error: errorMsg };
     }
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
-    
-    // Log de l'erreur fatale
-    await db.collection('payments').doc(gatewayId).set({
-      id: gatewayId,
-      userId: params.userId,
-      amount: Number(params.amount),
-      currency: 'XAF',
-      status: 'failed',
-      type: params.type || 'course_purchase',
-      provider: params.service?.toLowerCase() || 'unknown',
-      courseTitle: params.courseTitle || 'Transaction Ndara',
-      date: FieldValue.serverTimestamp(),
-      metadata: { error: error.message }
-    });
-
-    return { success: false, error: error.message || "Erreur de connexion aux serveurs de paiement." };
+    return { success: false, error: error.message || "Erreur de connexion." };
   }
 }
 
-/** 🛠️ Réconciliation manuelle par l'admin */
+/** 🛠️ Réconciliation manuelle */
 export async function reconcilePendingPaymentsAction(adminId: string) {
     try {
         const db = getAdminDb();
@@ -159,7 +132,9 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 
         for (const docSnap of pendingSnap.docs) {
             const paymentData = docSnap.data();
-            const officialTxn = await getMeSombTransactionStatus(docSnap.id);
+            // On cherche par le gateway ID si présent, sinon par l'ID doc
+            const searchId = paymentData.gatewayTransactionId || docSnap.id;
+            const officialTxn = await getMeSombTransactionStatus(searchId);
 
             if (officialTxn && (officialTxn as any).status === 'SUCCESS') {
                 await processNdaraPayment({
@@ -180,39 +155,5 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
         return { success: true, processed };
     } catch (e: any) {
         return { success: false, error: e.message };
-    }
-}
-
-/** 💰 Consultation solde marchand */
-export async function getMeSombBalanceAction(adminId: string) {
-    try {
-        const db = getAdminDb();
-        const settingsSnap = await db.collection('settings').doc('global').get();
-        const settings = settingsSnap.data() as any;
-        const globalCurrency = settings?.payments?.currency || 'XAF';
-
-        const response = await getMeSombAccountBalance();
-        const data = response as any;
-        
-        let totalBalance = data.balance || 0;
-
-        // On cumule les balances si le tableau détaillé est présent
-        if (data.balances && Array.isArray(data.balances)) {
-            const sum = data.balances.reduce((acc: number, b: any) => acc + (Number(b.amount) || 0), 0);
-            if (sum > totalBalance) totalBalance = sum;
-        }
-
-        return { 
-            success: true, 
-            balance: totalBalance, 
-            currency: globalCurrency 
-        };
-    } catch (e: any) {
-        let errorMsg = e.message;
-        // Détection de l'erreur d'activation MeSomb
-        if (errorMsg?.toUpperCase().includes("NOT ACTIVATED")) {
-            errorMsg = "ACTION REQUISE : Votre application MeSomb n'est pas encore activée. Veuillez finaliser votre enregistrement sur api.mesomb.com.";
-        }
-        return { success: false, error: errorMsg };
     }
 }
