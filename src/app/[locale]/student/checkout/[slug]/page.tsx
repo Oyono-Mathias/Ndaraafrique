@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V5.5.
- * ✅ UX : Modal USSD immersive unifiée avec le wallet.
+ * @fileOverview Tunnel de paiement Ndara Afrique V5.6.
+ * ✅ ERRORS : Gestion complète des échecs (Solde bas, Annulation, Timeout).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -23,7 +23,9 @@ import {
   Zap, 
   Wallet,
   X,
-  PhoneCall
+  PhoneCall,
+  XCircle,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Country } from '@/lib/types';
@@ -33,7 +35,7 @@ import { purchaseCourseWithWalletAction } from '@/actions/userActions';
 import { cn } from '@/lib/utils';
 import { useLocale } from 'next-intl';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 
 function CheckoutContent() {
@@ -49,6 +51,13 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Gestion des Erreurs
+  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string; title: string }>({
+    isOpen: false,
+    message: '',
+    title: 'Échec de la commande'
+  });
 
   const [countryData, setCountryData] = useState<Country | null>(null);
   const [selectedMethodId, setSelectedMethodId] = useState<string>('wallet');
@@ -83,7 +92,6 @@ function CheckoutContent() {
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
-  // ✅ LOGIQUE INSTRUCTIONS USSD
   const ussdInstruction = useMemo(() => {
     if (!activeMethod || activeMethod.provider !== 'mesomb') return "Veuillez valider le paiement sur votre téléphone";
     const op = activeMethod.name.toUpperCase();
@@ -141,7 +149,23 @@ function CheckoutContent() {
       }
     } catch (e: any) {
       setIsAwaitingUssd(false);
-      toast({ variant: 'destructive', title: "Échec du paiement", description: e.message });
+      const errorMsg = String(e.message).toLowerCase();
+      
+      let finalMessage = "Erreur de connexion. Vérifiez votre réseau et réessayez.";
+      let finalTitle = "Erreur de connexion";
+
+      if (errorMsg.includes('balance') || errorMsg.includes('solde')) {
+          finalMessage = "Solde insuffisant. Veuillez recharger votre compte Mobile Money puis réessayer.";
+          finalTitle = "Solde Insuffisant";
+      } else if (errorMsg.includes('cancel') || errorMsg.includes('annulé')) {
+          finalMessage = "Paiement annulé. Vous pouvez réessayer à tout moment.";
+          finalTitle = "Paiement Annulé";
+      } else if (errorMsg.includes('timeout') || errorMsg.includes('expiré')) {
+          finalMessage = "Délai expiré. Veuillez relancer la recharge.";
+          finalTitle = "Délai Expiré";
+      }
+
+      setErrorModal({ isOpen: true, message: finalMessage, title: finalTitle });
     } finally {
       setIsProcessing(false);
     }
@@ -213,20 +237,17 @@ function CheckoutContent() {
         </Button>
       </main>
 
-      {/* 🔥 MODAL USSD UNIFIÉE */}
+      {/* 🔥 MODAL USSD */}
       <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
           <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
               <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
-              
               <div className="p-8 pb-10 flex flex-col items-center text-center space-y-8 animate-in slide-up-modal">
                   <div className="w-full flex items-center justify-between px-2">
                       <div className="flex items-center gap-2">
                           <ShieldCheck className="h-4 w-4 text-primary" />
                           <span className="text-[10px] font-black text-primary uppercase tracking-widest">Ndara Secure</span>
                       </div>
-                      <Badge variant="outline" className="border-white/10 text-white/40 font-mono text-[9px]">TX: {slug.substring(0,6).toUpperCase()}</Badge>
                   </div>
-
                   <div className="relative">
                       <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
                       <div className="w-24 h-24 rounded-full bg-slate-950 border-2 border-primary/30 flex items-center justify-center relative z-10 shadow-2xl">
@@ -234,7 +255,6 @@ function CheckoutContent() {
                           <PhoneCall className="h-8 w-8 text-primary animate-bounce" />
                       </div>
                   </div>
-
                   <div className="space-y-3">
                       <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Validation USSD</DialogTitle>
                       <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
@@ -242,11 +262,7 @@ function CheckoutContent() {
                               "{ussdInstruction}"
                           </p>
                       </div>
-                      <p className="text-slate-500 text-[10px] font-medium uppercase tracking-widest">
-                          Montant : {course?.price.toLocaleString()} {currencySymbol}
-                      </p>
                   </div>
-
                   <div className="w-full pt-4">
                       <Button 
                           variant="ghost" 
@@ -257,11 +273,37 @@ function CheckoutContent() {
                       </Button>
                   </div>
               </div>
-              
-              <div className="h-1 w-full bg-slate-800">
-                  <div className="h-full bg-primary animate-[shimmer_2s_infinite_linear] w-1/3 shadow-[0_0_10px_#10b981]" />
-              </div>
           </DialogContent>
+      </Dialog>
+
+      {/* ❌ MODAL D'ERREUR FINTECH */}
+      <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
+        <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
+            <div className="p-8 flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20 shadow-2xl">
+                    <XCircle className="h-10 w-10 text-red-500" />
+                </div>
+                <div className="space-y-2">
+                    <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">{errorModal.title}</DialogTitle>
+                    <p className="text-slate-400 text-sm font-medium leading-relaxed italic">"{errorModal.message}"</p>
+                </div>
+            </div>
+            <DialogFooter className="p-8 pt-0 flex flex-col gap-3">
+                <Button 
+                    onClick={() => { setErrorModal(prev => ({ ...prev, isOpen: false })); handlePayment(); }}
+                    className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
+                >
+                    <RefreshCw className="mr-2 h-4 w-4" /> Réessayer
+                </Button>
+                <Button 
+                    variant="ghost"
+                    onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+                    className="w-full h-12 rounded-xl text-slate-500 font-bold uppercase text-[10px] tracking-widest"
+                >
+                    Fermer
+                </Button>
+            </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       {isSuccess && (

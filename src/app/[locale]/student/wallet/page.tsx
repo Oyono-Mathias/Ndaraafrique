@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V7.0 Elite Fintech.
+ * @fileOverview Ndara Wallet Étudiant - V7.5 Elite Fintech.
  * ✅ UX : Modal USSD immersive avec instructions dynamiques.
- * ✅ DESIGN : Android-first avec effets de lueur et glassmorphism.
+ * ✅ ERRORS : Gestion complète des échecs (Solde bas, Annulation, Timeout).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -24,7 +24,9 @@ import {
     ArrowRight,
     X,
     ShieldCheck,
-    PhoneCall
+    PhoneCall,
+    RefreshCw,
+    XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -35,7 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PRESET_AMOUNTS = [2500, 5000, 10000, 25000];
@@ -53,13 +55,19 @@ export default function NdaraWalletPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    
+    // Gestion des Erreurs
+    const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string; title: string }>({
+        isOpen: false,
+        message: '',
+        title: 'Échec du paiement'
+    });
 
     const [countryData, setCountryData] = useState<Country | null>(null);
     const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
     const [isLoadingCountry, setIsLoadingCountry] = useState(true);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-    // 1. Écouteur de solde live
     useEffect(() => {
         if (!user?.uid) return;
         const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
@@ -74,7 +82,6 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
-    // 2. Chargement configuration pays
     useEffect(() => {
         if (!user?.uid || !currentUser?.countryCode) return;
 
@@ -100,7 +107,6 @@ export default function NdaraWalletPage() {
         fetchCountry();
     }, [currentUser?.countryCode, db, user?.uid]);
 
-    // 3. Écouteur historique des transactions
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
@@ -111,13 +117,11 @@ export default function NdaraWalletPage() {
             setRawTransactions(txns);
             setIsLoadingHistory(false);
         }, (err) => {
-            console.error("History loading error:", err);
             setIsLoadingHistory(false);
         });
         return () => unsub();
     }, [user?.uid, db]);
 
-    // 4. Tri en mémoire
     const sortedTransactions = useMemo(() => {
         return [...rawTransactions].sort((a, b) => {
             const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
@@ -128,7 +132,6 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
-    // ✅ LOGIQUE INSTRUCTIONS USSD
     const ussdInstruction = useMemo(() => {
         if (!activeMethod) return "Veuillez valider le paiement sur votre téléphone";
         const op = activeMethod.name.toUpperCase();
@@ -145,7 +148,6 @@ export default function NdaraWalletPage() {
             return;
         }
         
-        // 🔥 UX OPTIMISTE : Afficher la modal immédiatement
         setIsAwaitingUssd(true);
         setIsProcessing(true);
 
@@ -166,13 +168,28 @@ export default function NdaraWalletPage() {
                     setIsAwaitingUssd(false);
                     setIsSuccess(true);
                 }
-                // Si c'est REAL, on reste dans la modal USSD jusqu'à fermeture manuelle ou succès webhook (futur)
             } else {
                 throw new Error(String(result.error));
             }
         } catch (e: any) {
             setIsAwaitingUssd(false);
-            toast({ variant: 'destructive', title: "Échec", description: String(e.message) });
+            const errorMsg = String(e.message).toLowerCase();
+            
+            let finalMessage = "Erreur de connexion. Vérifiez votre réseau et réessayez.";
+            let finalTitle = "Erreur de connexion";
+
+            if (errorMsg.includes('balance') || errorMsg.includes('solde')) {
+                finalMessage = "Solde insuffisant. Veuillez recharger votre compte Mobile Money puis réessayer.";
+                finalTitle = "Solde Insuffisant";
+            } else if (errorMsg.includes('cancel') || errorMsg.includes('annulé')) {
+                finalMessage = "Paiement annulé. Vous pouvez réessayer à tout moment.";
+                finalTitle = "Paiement Annulé";
+            } else if (errorMsg.includes('timeout') || errorMsg.includes('expiré')) {
+                finalMessage = "Délai expiré. Veuillez relancer la recharge.";
+                finalTitle = "Délai Expiré";
+            }
+
+            setErrorModal({ isOpen: true, message: finalMessage, title: finalTitle });
         } finally {
             setIsProcessing(false);
         }
@@ -278,7 +295,6 @@ export default function NdaraWalletPage() {
                             ) : sortedTransactions.length > 0 ? (
                                 sortedTransactions.map(txn => {
                                     const status = (txn.status || 'pending').toLowerCase();
-                                    // ✅ Priorité au service réel détecté pour le logo
                                     const opName = txn.metadata?.operator || txn.provider;
                                     return (
                                         <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
@@ -325,22 +341,17 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
-            {/* 🔥 MODAL USSD ENHANCED V2 */}
+            {/* 🔥 MODAL USSD */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
                     <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
-                    
                     <div className="p-8 pb-10 flex flex-col items-center text-center space-y-8 animate-in slide-up-modal">
-                        {/* Header Status */}
                         <div className="w-full flex items-center justify-between px-2">
                             <div className="flex items-center gap-2">
                                 <ShieldCheck className="h-4 w-4 text-primary" />
                                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">Ndara Secure</span>
                             </div>
-                            <Badge variant="outline" className="border-white/10 text-white/40 font-mono text-[9px]">ID: {Math.random().toString(36).substring(7).toUpperCase()}</Badge>
                         </div>
-
-                        {/* Animated Visual */}
                         <div className="relative">
                             <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
                             <div className="w-24 h-24 rounded-full bg-slate-950 border-2 border-primary/30 flex items-center justify-center relative z-10 shadow-2xl">
@@ -348,8 +359,6 @@ export default function NdaraWalletPage() {
                                 <PhoneCall className="h-8 w-8 text-primary animate-bounce" />
                             </div>
                         </div>
-
-                        {/* Instructions */}
                         <div className="space-y-3">
                             <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Validation USSD</DialogTitle>
                             <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
@@ -357,22 +366,7 @@ export default function NdaraWalletPage() {
                                     "{ussdInstruction}"
                                 </p>
                             </div>
-                            <p className="text-slate-500 text-[10px] font-medium uppercase tracking-widest">
-                                Montant : {selectedAmount.toLocaleString()} {currencySymbol}
-                            </p>
                         </div>
-
-                        {/* Sub-instructions */}
-                        <div className="space-y-4 w-full">
-                            <div className="flex items-center gap-4 text-left p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                                <div className="p-2 bg-slate-800 rounded-lg"><Zap className="h-4 w-4 text-amber-500" /></div>
-                                <p className="text-[10px] text-slate-400 leading-tight font-medium uppercase tracking-tighter">
-                                    Un prompt de validation va s'afficher sur votre écran mobile. Saisissez votre code secret.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Action Bar */}
                         <div className="w-full pt-4">
                             <Button 
                                 variant="ghost" 
@@ -383,11 +377,36 @@ export default function NdaraWalletPage() {
                             </Button>
                         </div>
                     </div>
-                    
-                    {/* Progress Bar Loader */}
-                    <div className="h-1 w-full bg-slate-800">
-                        <div className="h-full bg-primary animate-[shimmer_2s_infinite_linear] w-1/3 shadow-[0_0_10px_#10b981]" />
+                </DialogContent>
+            </Dialog>
+
+            {/* ❌ MODAL D'ERREUR FINTECH */}
+            <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
+                <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
+                    <div className="p-8 flex flex-col items-center text-center space-y-6">
+                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20 shadow-2xl">
+                            <XCircle className="h-10 w-10 text-red-500" />
+                        </div>
+                        <div className="space-y-2">
+                            <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">{errorModal.title}</DialogTitle>
+                            <p className="text-slate-400 text-sm font-medium leading-relaxed italic">"{errorModal.message}"</p>
+                        </div>
                     </div>
+                    <DialogFooter className="p-8 pt-0 flex flex-col gap-3">
+                        <Button 
+                            onClick={() => { setErrorModal(prev => ({ ...prev, isOpen: false })); handleRecharge(); }}
+                            className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" /> Réessayer
+                        </Button>
+                        <Button 
+                            variant="ghost"
+                            onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+                            className="w-full h-12 rounded-xl text-slate-500 font-bold uppercase text-[10px] tracking-widest"
+                        >
+                            Fermer
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
@@ -407,6 +426,16 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function BadgeEuroIcon() {
+    return (
+        <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-primary shadow-inner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-5 w-5">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+            </svg>
         </div>
     );
 }
