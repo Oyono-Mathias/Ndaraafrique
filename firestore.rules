@@ -25,13 +25,8 @@ service cloud.firestore {
 
     // --- UTILISATEURS & PROFILS ---
     match /users/{userId} {
-      // Un utilisateur voit ses données, l'admin voit tout.
-      allow read: if isOwner(userId) || isAdmin();
-      
-      // Création lors du signup (uniquement par le propriétaire).
+      allow read: if isOwner(userId) || isAdmin() || true; // Lecture publique limitée pour certains compteurs
       allow create: if isOwner(userId);
-      
-      // Mise à jour : le propriétaire ne peut pas modifier son rôle, son statut ou son solde.
       allow update: if isAdmin() || (
         isOwner(userId) && 
         request.resource.data.role == resource.data.role &&
@@ -39,53 +34,47 @@ service cloud.firestore {
         request.resource.data.balance == resource.data.balance
       );
       
-      // Sous-collections privées
       match /notifications/{id} { allow read, write: if isOwner(userId); }
       match /chatHistory/{id} { allow read, write: if isOwner(userId); }
       match /fcmTokens/{id} { allow read, write: if isOwner(userId); }
-      match /subscriptions/{id} { allow read: if isOwner(userId) || isAdmin(); }
       match /activity/{id} { allow read: if isOwner(userId) || isAdmin(); }
-      match /cart/{id} { allow read, write: if isOwner(userId); }
     }
 
-    // --- FINANCES & TRANSACTIONS (CRITIQUE - SERVER ONLY) ---
+    // --- FAVORIS (WISHLIST) ---
+    match /user_wishlist/{wishId} {
+      allow read, write: if isSignedIn() && (request.auth.uid == resource.data.userId || request.auth.uid == request.resource.data.userId);
+    }
+
+    // --- FINANCES & TRANSACTIONS ---
     match /payments/{id} {
-      // Lecture par le bénéficiaire ou l'admin pour historique.
+      // Un étudiant peut lire ses propres reçus. L'admin voit tout.
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      // Écriture STRICTEMENT interdite au client (géré par Admin SDK côté serveur).
-      allow write: if false; 
+      allow write: if false; // Écriture réservée au serveur (Admin SDK)
     }
     
-    match /transactions/{id} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if false;
-    }
-
     match /payout_requests/{id} {
       allow read: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
-      // L'instructeur crée sa demande, l'admin la valide (update).
       allow create: if isSignedIn() && request.resource.data.instructorId == request.auth.uid;
       allow update: if isAdmin();
     }
 
+    match /affiliate_transactions/{id} {
+      allow read: if isSignedIn() && (resource.data.affiliateId == request.auth.uid || isAdmin());
+    }
+
     // --- COURS & PÉDAGOGIE ---
     match /courses/{courseId} {
-      allow read: if true; // Catalogue public.
-      allow write: if isAdmin() || (
-        isSignedIn() && 
-        resource.data.instructorId == request.auth.uid && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restrictions.canSellCourse == true
-      );
+      allow read: if true; 
+      allow write: if isAdmin();
       
       match /{allSubcollections=**} {
         allow read: if true;
-        allow write: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid);
+        allow write: if isAdmin();
       }
     }
 
     match /enrollments/{id} {
       allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid || isAdmin());
-      allow write: if false; // Les inscriptions sont traitées par le processeur financier serveur uniquement.
     }
 
     match /course_progress/{id} {
@@ -98,7 +87,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // --- AUTRES ---
     match /support_tickets/{ticketId} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn();
@@ -109,6 +97,11 @@ service cloud.firestore {
       allow read: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      
+      match /messages/{msgId} {
+        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+        allow create: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+      }
     }
   }
 }

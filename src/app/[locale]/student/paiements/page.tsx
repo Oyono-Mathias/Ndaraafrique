@@ -3,14 +3,14 @@
 /**
  * @fileOverview Historique financier complet de l'étudiant Ndara Afrique.
  * ✅ TRAÇABILITÉ : Affiche les transactions réussies, en attente et échouées.
- * ✅ DESIGN : Cartes immersives avec statuts colorés et logos opérateurs.
- * ✅ FIX : Correction d'erreur de build TypeScript sur l'indexation des statuts.
+ * ✅ PERFORMANCE : Tri en mémoire pour éviter les erreurs d'index Firestore.
+ * ✅ UNIFICATION : Utilisation de 'completed' en minuscules.
  */
 
 import { useMemo, useState } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,27 +36,44 @@ export default function StudentPaymentsPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
-  // 1. Récupération de TOUTES les transactions de l'utilisateur
+  // 1. Récupération de TOUTES les transactions de l'utilisateur (sans orderBy pour éviter les index manquants)
   const paymentsQuery = useMemo(() => 
     currentUser?.uid ? query(
         collection(db, 'payments'), 
-        where('userId', '==', currentUser.uid), 
-        orderBy('date', 'desc')
+        where('userId', '==', currentUser.uid)
     ) : null,
     [db, currentUser]
   );
-  const { data: payments, isLoading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
+  const { data: rawPayments, isLoading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
 
   // 2. Récupération des retraits (Payouts)
   const payoutsQuery = useMemo(() => 
     currentUser?.uid ? query(
         collection(db, 'payout_requests'), 
-        where('instructorId', '==', currentUser.uid), 
-        orderBy('createdAt', 'desc')
+        where('instructorId', '==', currentUser.uid)
     ) : null,
     [db, currentUser]
   );
-  const { data: payouts, isLoading: payoutsLoading } = useCollection<any>(payoutsQuery);
+  const { data: rawPayouts, isLoading: payoutsLoading } = useCollection<any>(payoutsQuery);
+
+  // 💎 TRI ET FILTRAGE EN MÉMOIRE
+  const payments = useMemo(() => {
+    if (!rawPayments) return [];
+    return [...rawPayments].sort((a, b) => {
+        const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
+        const dateB = (b.date as any)?.toDate?.() || new Date(b.date as any || 0);
+        return dateB.getTime() - dateA.getTime();
+    });
+  }, [rawPayments]);
+
+  const payouts = useMemo(() => {
+    if (!rawPayouts) return [];
+    return [...rawPayouts].sort((a, b) => {
+        const dateA = (a.createdAt as any)?.toDate?.() || new Date(a.createdAt as any || 0);
+        const dateB = (b.createdAt as any)?.toDate?.() || new Date(b.createdAt as any || 0);
+        return dateB.getTime() - dateA.getTime();
+    });
+  }, [rawPayouts]);
 
   const isLoading = isUserLoading || paymentsLoading || payoutsLoading;
 
@@ -87,20 +104,20 @@ export default function StudentPaymentsPage() {
 
         <main className="px-6 mt-8">
           <TabsContent value="all" className="m-0 space-y-4">
-            {isLoading ? <ListSkeleton /> : (payments || []).length > 0 ? (
-                payments!.map(p => <PaymentItem key={p.id} payment={p} />)
+            {isLoading ? <ListSkeleton /> : payments.length > 0 ? (
+                payments.map(p => <PaymentItem key={p.id} payment={p} />)
             ) : <EmptyState icon={ShoppingBag} text="Aucun mouvement enregistré" />}
           </TabsContent>
 
           <TabsContent value="purchases" className="m-0 space-y-4">
-            {isLoading ? <ListSkeleton /> : (payments || []).filter(p => p.type === 'course_purchase').length > 0 ? (
-                payments!.filter(p => p.type === 'course_purchase').map(p => <PaymentItem key={p.id} payment={p} />)
+            {isLoading ? <ListSkeleton /> : payments.filter(p => p.type === 'course_purchase').length > 0 ? (
+                payments.filter(p => p.type === 'course_purchase').map(p => <PaymentItem key={p.id} payment={p} />)
             ) : <EmptyState icon={ShoppingBag} text="Aucune formation achetée" />}
           </TabsContent>
 
           <TabsContent value="payouts" className="m-0 space-y-4">
-             {isLoading ? <ListSkeleton /> : (payouts || []).length > 0 ? (
-                payouts!.map((p: any) => <PayoutItem key={p.id} payout={p} />)
+             {isLoading ? <ListSkeleton /> : payouts.length > 0 ? (
+                payouts.map((p: any) => <PayoutItem key={p.id} payout={p} />)
             ) : <EmptyState icon={BadgeEuro} text="Aucune demande de retrait" />}
           </TabsContent>
         </main>
@@ -110,14 +127,14 @@ export default function StudentPaymentsPage() {
 }
 
 function PaymentItem({ payment }: { payment: Payment }) {
-  const date = (payment.date as any)?.toDate?.() || new Date();
+  const date = (payment.date as any)?.toDate?.() || new Date(payment.date as any || 0);
   
   const statusConfig = (({
     completed: { label: 'Réussi', class: 'bg-emerald-500/10 text-emerald-400', icon: CheckCircle2 },
     pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-400 animate-pulse', icon: Clock },
     failed: { label: 'Échoué', class: 'bg-red-500/10 text-red-400', icon: XCircle },
     refunded: { label: 'Remboursé', class: 'bg-slate-800 text-slate-400', icon: AlertCircle },
-  } as any)[payment.status.toLowerCase()] || { label: payment.status, class: 'bg-slate-800', icon: Clock });
+  } as any)[payment.status?.toLowerCase() || 'pending'] || { label: payment.status, class: 'bg-slate-800', icon: Clock });
 
   const typeLabel = {
     wallet_topup: 'Recharge Wallet',
@@ -135,7 +152,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
         <div className="flex items-center gap-4 min-w-0">
             <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                payment.status.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-[#10b981]" : "bg-slate-800 text-slate-500"
+                payment.status?.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-[#10b981]" : "bg-slate-800 text-slate-500"
             )}>
                 {payment.type === 'wallet_topup' ? <Smartphone size={20} /> : <ShoppingBag size={20} />}
             </div>
@@ -153,7 +170,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
         </div>
         
         <div className="text-right shrink-0">
-            <p className={cn("text-base font-black mb-1", payment.status.toLowerCase() === 'completed' ? "text-emerald-400" : "text-white")}>
+            <p className={cn("text-base font-black mb-1", payment.status?.toLowerCase() === 'completed' ? "text-emerald-400" : "text-white")}>
                 {payment.amount.toLocaleString('fr-FR')} <span className="text-[10px] opacity-40">F</span>
             </p>
             <Badge className={cn("text-[8px] font-black uppercase border-none px-2 py-0.5 rounded-full h-4", statusConfig.class)}>
@@ -166,14 +183,14 @@ function PaymentItem({ payment }: { payment: Payment }) {
 }
 
 function PayoutItem({ payout }: { payout: any }) {
-    const date = (payout.createdAt as any)?.toDate?.() || new Date();
+    const date = (payout.createdAt as any)?.toDate?.() || new Date(payout.createdAt as any || 0);
     
     const statusConfig = (({
         pending: { label: 'Audit', class: 'bg-amber-500/10 text-amber-500' },
         approved: { label: 'Validé', class: 'bg-blue-500/10 text-blue-400' },
         paid: { label: 'Versé', class: 'bg-emerald-500/10 text-emerald-500' },
         rejected: { label: 'Rejeté', class: 'bg-red-500/10 text-red-500' },
-    } as any)[payout.status.toLowerCase()] || { label: payout.status, class: 'bg-slate-800' });
+    } as any)[payout.status?.toLowerCase() || 'pending'] || { label: payout.status, class: 'bg-slate-800' });
 
     return (
         <Card className="bg-slate-900 border border-white/5 rounded-[2rem] overflow-hidden shadow-xl">
