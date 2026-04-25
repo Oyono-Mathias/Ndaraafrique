@@ -154,14 +154,13 @@ function PaymentItem({ payment }: { payment: Payment }) {
                 "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
                 payment.status?.toLowerCase() === 'completed' ? "bg-emerald-500/10 text-[#10b981]" : "bg-slate-800 text-slate-500"
             )}>
-                {payment.type === 'wallet_topup' ? <Smartphone size={20} /> : <ShoppingBag size={20} />}
+                <OperatorLogo operatorName={payment.provider} size={42} className="bg-slate-950 p-1" />
             </div>
             <div className="min-w-0">
                 <h3 className="text-[13px] font-black text-white uppercase truncate tracking-tight">
                     {payment.courseTitle || typeLabel}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
-                    <OperatorLogo operatorName={payment.provider} size={16} />
                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
                         {format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}
                     </span>

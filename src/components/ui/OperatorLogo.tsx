@@ -15,8 +15,8 @@ interface OperatorLogoProps {
 
 /**
  * @fileOverview Affiche le logo officiel depuis public/image/.
- * ✅ FIABLE : Utilise une balise img standard avec fallback automatique en cas d'erreur.
- * ✅ DIRECT : Pointe vers /image/nom-du-fichier.
+ * ✅ DESIGN : Suppression des fonds forcés pour laisser place au logo pur.
+ * ✅ FIABILITÉ : Utilise img standard avec fallback intelligent.
  */
 export function OperatorLogo({ operatorName, logo, className, size = 32 }: OperatorLogoProps) {
   const [hasError, setHasError] = useState(false);
@@ -41,19 +41,19 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
     return (
       <div 
         style={{ width: size, height: size }}
-        className={cn("rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 border border-white/5", className)}
+        className={cn("rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-500 shrink-0 border border-white/5", className)}
       >
-        <Smartphone size={size * 0.5} />
+        <Smartphone size={size * 0.6} />
       </div>
     );
   }
 
-  // 3. Rendu de l'image (standard img pour éviter les soucis de cache/optimisation locale)
+  // 3. Rendu de l'image (standard img pour la robustesse sur mobile)
   return (
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative flex items-center justify-center shrink-0 overflow-hidden",
+        "relative flex items-center justify-center shrink-0 overflow-hidden rounded-md",
         className
       )}
     >
