@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V6.8 Elite Fintech.
- * ✅ DYNAMIQUE : Utilise les réglages pays pour le paiement MeSomb.
- * ✅ TRAÇABILITÉ : Historique résilient avec tri en mémoire.
+ * @fileOverview Ndara Wallet Étudiant - V6.9 Elite Fintech.
+ * ✅ TRAÇABILITÉ : Historique ultra-robuste avec tri en mémoire.
+ * ✅ VISIBILITÉ : Affiche systématiquement les échecs de recharge.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -56,6 +56,7 @@ export default function NdaraWalletPage() {
     const [isLoadingCountry, setIsLoadingCountry] = useState(true);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
+    // 1. Écouteur de solde live
     useEffect(() => {
         if (!user?.uid) return;
         const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
@@ -70,6 +71,7 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
+    // 2. Chargement configuration pays
     useEffect(() => {
         if (!user?.uid || !currentUser?.countryCode) return;
 
@@ -87,7 +89,7 @@ export default function NdaraWalletPage() {
                     }
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Config fetch error:", e);
             } finally {
                 setIsLoadingCountry(false);
             }
@@ -95,10 +97,14 @@ export default function NdaraWalletPage() {
         fetchCountry();
     }, [currentUser?.countryCode, db, user?.uid]);
 
+    // 3. Écouteur historique des transactions (SÉCURISÉ)
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
-        const q = query(collection(db, 'payments'), where('userId', '==', user.uid), limit(20));
+        
+        // On récupère les 20 dernières sans tri forcé Firestore pour éviter les blocages d'index
+        const q = query(collection(db, 'payments'), where('userId', '==', user.uid), limit(50));
+        
         const unsub = onSnapshot(q, (snap) => {
             const txns = snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment));
             setRawTransactions(txns);
@@ -110,6 +116,7 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
+    // 4. Tri en mémoire pour plus de résilience
     const sortedTransactions = useMemo(() => {
         return [...rawTransactions].sort((a, b) => {
             const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);

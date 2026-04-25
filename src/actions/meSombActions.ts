@@ -4,7 +4,7 @@
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * Utilise le SDK officiel @hachther/mesomb v2.0.1.
  * ✅ DYNAMIQUE : Supporte désormais le pays et la devise passés en paramètres.
- * ✅ TRAÇABILITÉ : Enregistre systématiquement les tentatives avec le titre du cours.
+ * ✅ DIAGNOSTIC : Détecte l'erreur 'NOT ACTIVATED' et guide l'admin.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -186,11 +186,17 @@ export async function reconcilePendingPaymentsAction(adminId: string) {
 /** 💰 Consultation solde marchand */
 export async function getMeSombBalanceAction(adminId: string) {
     try {
+        const db = getAdminDb();
+        const settingsSnap = await db.collection('settings').doc('global').get();
+        const settings = settingsSnap.data() as any;
+        const globalCurrency = settings?.payments?.currency || 'XAF';
+
         const response = await getMeSombAccountBalance();
         const data = response as any;
         
         let totalBalance = data.balance || 0;
 
+        // On cumule les balances si le tableau détaillé est présent
         if (data.balances && Array.isArray(data.balances)) {
             const sum = data.balances.reduce((acc: number, b: any) => acc + (Number(b.amount) || 0), 0);
             if (sum > totalBalance) totalBalance = sum;
@@ -199,9 +205,14 @@ export async function getMeSombBalanceAction(adminId: string) {
         return { 
             success: true, 
             balance: totalBalance, 
-            currency: 'XAF' 
+            currency: globalCurrency 
         };
     } catch (e: any) {
-        return { success: false, error: e.message };
+        let errorMsg = e.message;
+        // Détection de l'erreur d'activation MeSomb
+        if (errorMsg?.toUpperCase().includes("NOT ACTIVATED")) {
+            errorMsg = "ACTION REQUISE : Votre application MeSomb n'est pas encore activée. Veuillez finaliser votre enregistrement sur api.mesomb.com.";
+        }
+        return { success: false, error: errorMsg };
     }
 }

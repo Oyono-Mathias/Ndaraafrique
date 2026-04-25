@@ -5,12 +5,13 @@ import { getMeSombBalanceAction } from '@/actions/meSombActions';
 import { useRole } from '@/context/RoleContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Wallet, RefreshCw, AlertCircle, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Carte de consultation du solde MeSomb pour le cockpit Admin.
  * ✅ DESIGN : Elite Fintech.
+ * ✅ SUPPORT : Aide à la résolution si le compte n'est pas activé.
  */
 export function MeSombBalanceCard() {
     const { currentUser } = useRole();
@@ -29,7 +30,6 @@ export function MeSombBalanceCard() {
                 setBalance(result.balance ?? 0);
                 setCurrency(result.currency || 'XAF');
             } else {
-                // On tronque si c'est du HTML d'erreur
                 const msg = result.error?.includes('<!DOCTYPE') ? "Erreur serveur MeSomb (404/500)" : result.error;
                 setError(msg || "Erreur de connexion.");
             }
@@ -43,6 +43,8 @@ export function MeSombBalanceCard() {
     useEffect(() => {
         fetchBalance();
     }, [currentUser?.uid]);
+
+    const isNotActivated = error?.toUpperCase().includes("ACTIVATED") || error?.toUpperCase().includes("ACTION REQUISE");
 
     return (
         <Card className="bg-slate-900 border border-white/5 shadow-2xl rounded-3xl overflow-hidden relative group transition-all">
@@ -68,7 +70,7 @@ export function MeSombBalanceCard() {
                     </Button>
                 </div>
 
-                <div className="min-h-[50px] flex flex-col justify-center">
+                <div className="min-h-[60px] flex flex-col justify-center">
                     {isLoading && (
                         <div className="flex items-center gap-2 text-slate-500 italic text-sm">
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -77,9 +79,20 @@ export function MeSombBalanceCard() {
                     )}
 
                     {!isLoading && error && (
-                        <div className="flex items-start gap-2 text-red-400 bg-red-500/5 p-3 rounded-xl border border-red-500/20 animate-in fade-in zoom-in">
-                            <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                            <span className="text-[10px] font-bold uppercase leading-tight">{error}</span>
+                        <div className="space-y-3 animate-in fade-in zoom-in duration-500">
+                            <div className="flex items-start gap-2 text-red-400 bg-red-500/5 p-3 rounded-xl border border-red-500/20">
+                                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                                <span className="text-[10px] font-bold uppercase leading-tight">{error}</span>
+                            </div>
+                            
+                            {isNotActivated && (
+                                <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-start gap-3">
+                                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                    <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">
+                                        Conseil : Assurez-vous que votre application MeSomb est en mode "Live" et que vos documents KYC ont été validés.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
