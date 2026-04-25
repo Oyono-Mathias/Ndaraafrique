@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -25,13 +26,15 @@ service cloud.firestore {
 
     // --- UTILISATEURS & PROFILS ---
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin() || true; // Lecture publique limitée pour certains compteurs
+      // Les étudiants voient leur profil. L'admin voit tout. La lecture publique est autorisée pour certains besoins de l'annuaire.
+      allow read: if isSignedIn(); 
       allow create: if isOwner(userId);
       allow update: if isAdmin() || (
         isOwner(userId) && 
         request.resource.data.role == resource.data.role &&
         request.resource.data.status == resource.data.status &&
-        request.resource.data.balance == resource.data.balance
+        request.resource.data.balance == resource.data.balance &&
+        request.resource.data.affiliateBalance == resource.data.affiliateBalance
       );
       
       match /notifications/{id} { allow read, write: if isOwner(userId); }
@@ -62,6 +65,12 @@ service cloud.firestore {
       allow read: if isSignedIn() && (resource.data.affiliateId == request.auth.uid || isAdmin());
     }
 
+    // --- RÉGLAGES GÉOGRAPHIQUES & PAIEMENTS ---
+    match /countries/{countryId} {
+      allow read: if true; // Lecture publique pour le catalogue et le wallet
+      allow write: if isAdmin();
+    }
+
     // --- COURS & PÉDAGOGIE ---
     match /courses/{courseId} {
       allow read: if true; 
@@ -75,11 +84,21 @@ service cloud.firestore {
 
     match /enrollments/{id} {
       allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
 
     match /course_progress/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /quiz_submissions/{id} {
+      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin());
+      allow write: if isSignedIn() && request.resource.data.studentId == request.auth.uid;
+    }
+
+    match /recommended_courses/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
     }
 
     match /settings/{id} {
@@ -102,6 +121,11 @@ service cloud.firestore {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
         allow create: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
       }
+    }
+    
+    match /admin_audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

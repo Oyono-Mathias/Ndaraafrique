@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "CourseQuestion": {
@@ -80,6 +81,8 @@
         "fullName": { "type": "string" },
         "role": { "type": "string", "default": "student" },
         "status": { "type": "string", "enum": ["active", "suspended"] },
+        "balance": { "type": "number" },
+        "affiliateBalance": { "type": "number" },
         "isInstructorApproved": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -96,11 +99,32 @@
         "instructorId": { "type": "string" },
         "category": { "type": "string" },
         "price": { "type": "number" },
-        "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] },
-        "rating": { "type": "number" },
-        "participantsCount": { "type": "number" }
+        "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] }
       },
       "required": ["courseId", "title", "description", "instructorId", "category", "price", "status"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "type": "object",
+      "description": "Financial transaction record.",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string" },
+        "provider": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "status", "date"]
+    },
+    "Country": {
+        "title": "Country Config",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "code": { "type": "string" },
+            "active": { "type": "boolean" }
+        }
     }
   },
   "auth": {
@@ -127,6 +151,24 @@
     },
     "courses/{courseId}": {
         "schema": { "$ref": "#/entities/Course" }
+    },
+    "payments/{paymentId}": {
+        "schema": { "$ref": "#/entities/Payment" }
+    },
+    "countries/{countryId}": {
+        "schema": { "$ref": "#/entities/Country" }
+    },
+    "payout_requests/{payoutId}": {
+        "schema": { "type": "object" }
+    },
+    "user_wishlist/{wishId}": {
+        "schema": { "type": "object" }
+    },
+    "recommended_courses/{userId}": {
+        "schema": { "type": "object" }
+    },
+    "quiz_submissions/{submissionId}": {
+        "schema": { "type": "object" }
     }
   }
 }
