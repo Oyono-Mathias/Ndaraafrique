@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Cockpit Géographique & Paiements.
- * ✅ GESTION : Pays, devises et méthodes de paiement par pays.
- * ✅ LOGOS : Utilisation des noms de fichiers réels pour les opérateurs.
+ * ✅ LOGOS : Utilisation stricte des noms de fichiers dans /image/.
  */
 
 import { useState, useMemo } from 'react';
@@ -18,7 +17,8 @@ import {
     Loader2, 
     Smartphone, 
     Settings2,
-    ImageIcon
+    ImageIcon,
+    Save
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function AdminCountriesPage() {
 
     const [newMethod, setNewMethod] = useState({
         name: '',
-        logo: '', // Doit être le nom du fichier (ex: orange-money.png)
+        logo: '', 
         provider: 'mesomb' as PaymentProvider
     });
 
@@ -83,10 +83,12 @@ export default function AdminCountriesPage() {
         setIsSubmitting(false);
     };
 
-    const handleToggleMethod = async (countryId: string, methods: PaymentMethod[], methodId: string) => {
-        if (!currentUser) return;
-        const updated = methods.map(m => m.id === methodId ? { ...m, active: !m.active } : m);
-        await updateCountryPaymentMethods(countryId, updated, currentUser.uid);
+    const handleUpdateMethods = async (methods: PaymentMethod[]) => {
+        if (!selectedCountry || !currentUser) return;
+        const result = await updateCountryPaymentMethods(selectedCountry.id, methods, currentUser.uid);
+        if (!result.success) {
+            toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        }
     };
 
     const handleAddMethod = async () => {
@@ -94,18 +96,23 @@ export default function AdminCountriesPage() {
         setIsSubmitting(true);
         const methods = selectedCountry.paymentMethods || [];
         const updated = [...methods, { ...newMethod, id: Math.random().toString(36).substring(7), active: true }];
-        const result = await updateCountryPaymentMethods(selectedCountry.id, updated as any, currentUser.uid);
-        if (result.success) {
-            toast({ title: "Méthode ajoutée !" });
-            setNewMethod({ name: '', logo: '', provider: 'mesomb' });
-        }
+        await handleUpdateMethods(updated);
+        setNewMethod({ name: '', logo: '', provider: 'mesomb' });
         setIsSubmitting(false);
     };
 
+    const handleMethodLogoChange = (methodId: string, newLogo: string) => {
+        if (!selectedCountry) return;
+        const updated = (selectedCountry.paymentMethods || []).map(m => 
+            m.id === methodId ? { ...m, logo: newLogo } : m
+        );
+        handleUpdateMethods(updated);
+    };
+
     const handleRemoveMethod = async (methodId: string) => {
-        if (!selectedCountry || !currentUser) return;
+        if (!selectedCountry) return;
         const updated = (selectedCountry.paymentMethods || []).filter(m => m.id !== methodId);
-        await updateCountryPaymentMethods(selectedCountry.id, updated, currentUser.uid);
+        await handleUpdateMethods(updated);
     };
 
     return (
@@ -139,20 +146,6 @@ export default function AdminCountriesPage() {
                                     <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} placeholder="Ex: SN" maxLength={2} className="bg-slate-950 border-slate-800" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Devise</label>
-                                    <Input value={formData.currency} onChange={e => setFormData({...formData, currency: e.target.value.toUpperCase()})} placeholder="XOF" className="bg-slate-950 border-slate-800" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Préfixe</label>
-                                    <Input value={formData.prefix} onChange={e => setFormData({...formData, prefix: e.target.value})} placeholder="+221" className="bg-slate-950 border-slate-800" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Drapeau</label>
-                                    <Input value={formData.flagEmoji} onChange={e => setFormData({...formData, flagEmoji: e.target.value})} placeholder="🇸🇳" className="bg-slate-950 border-slate-800 text-center text-xl" />
-                                </div>
-                            </div>
                         </div>
                         <DialogFooter>
                             <Button onClick={handleAdd} disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs">
@@ -167,7 +160,7 @@ export default function AdminCountriesPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input 
                     placeholder="Chercher un pays..." 
-                    className="h-12 pl-12 bg-slate-900 border-white/5 rounded-xl text-white shadow-inner"
+                    className="h-12 pl-12 bg-slate-900 border-white/5 rounded-xl text-white"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -178,7 +171,6 @@ export default function AdminCountriesPage() {
                     <TableHeader>
                         <TableRow className="border-slate-800 bg-slate-800/30">
                             <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Pays</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Devise / Préfixe</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Canaux Actifs</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
                             <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Configuration</TableHead>
@@ -187,7 +179,7 @@ export default function AdminCountriesPage() {
                     <TableBody>
                         {isLoading ? (
                             [...Array(5)].map((_, i) => (
-                                <TableRow key={i} className="border-slate-800"><TableCell colSpan={5} className="h-12 bg-slate-800/20" /></TableRow>
+                                <TableRow key={i} className="border-slate-800"><TableCell colSpan={4} className="h-12 bg-slate-800/20" /></TableRow>
                             ))
                         ) : filtered.length > 0 ? (
                             filtered.map(country => (
@@ -199,15 +191,9 @@ export default function AdminCountriesPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-black text-slate-300">{country.currency}</span>
-                                            <span className="text-[9px] font-bold text-slate-500">{country.prefix}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
                                         <div className="flex -space-x-2">
                                             {country.paymentMethods?.filter(m => m.active).map(m => (
-                                                <OperatorLogo key={m.id} operatorName={m.name} logo={m.logo} size={26} className="border-2 border-slate-900" />
+                                                <OperatorLogo key={m.id} logo={m.logo} size={26} className="border-2 border-slate-900 shadow-lg" />
                                             ))}
                                             {(!country.paymentMethods || country.paymentMethods.filter(m => m.active).length === 0) && <span className="text-[9px] text-slate-600 italic">Zéro canal</span>}
                                         </div>
@@ -220,25 +206,17 @@ export default function AdminCountriesPage() {
                                         />
                                     </TableCell>
                                     <TableCell className="text-right pr-6">
-                                        <div className="flex justify-end gap-2">
-                                            <button 
-                                                onClick={() => { setSelectedCountry(country); setIsMethodsModalOpen(true); }}
-                                                className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-slate-950 transition shadow-xl active:scale-90"
-                                            >
-                                                <Settings2 size={14} />
-                                            </button>
-                                            <button 
-                                                onClick={() => deleteCountryAction(country.id)} 
-                                                className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition shadow-xl active:scale-90"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
+                                        <button 
+                                            onClick={() => { setSelectedCountry(country); setIsMethodsModalOpen(true); }}
+                                            className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-slate-950 transition shadow-xl active:scale-90"
+                                        >
+                                            <Settings2 size={16} />
+                                        </button>
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
-                            <TableRow><TableCell colSpan={5} className="h-48 text-center opacity-20"><Globe size={48} className="mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucun pays configuré</p></TableCell></TableRow>
+                            <TableRow><TableCell colSpan={4} className="h-48 text-center opacity-20"><Globe size={48} className="mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucun pays configuré</p></TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
@@ -255,58 +233,49 @@ export default function AdminCountriesPage() {
                     
                     <div className="space-y-6 py-4">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Méthodes configurées</label>
-                            <div className="grid gap-2">
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Canaux et Logos</label>
+                            <div className="grid gap-3">
                                 {selectedCountry?.paymentMethods?.map(m => (
-                                    <div key={m.id} className="flex items-center justify-between p-3 bg-slate-950 border border-white/5 rounded-2xl shadow-inner">
-                                        <div className="flex items-center gap-3">
-                                            <OperatorLogo operatorName={m.name} logo={m.logo} size={32} />
-                                            <div className="flex flex-col">
+                                    <div key={m.id} className="flex items-center gap-4 p-4 bg-slate-950 border border-white/5 rounded-2xl shadow-inner">
+                                        <OperatorLogo logo={m.logo} size={36} />
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex items-center justify-between">
                                                 <span className="font-bold text-sm uppercase tracking-tight">{m.name}</span>
-                                                <span className="text-[8px] font-mono text-slate-500">{m.logo || 'Aucun logo spécifique'}</span>
+                                                <Switch 
+                                                    checked={m.active} 
+                                                    onCheckedChange={() => {
+                                                        const updated = (selectedCountry.paymentMethods || []).map(item => 
+                                                            item.id === m.id ? { ...item, active: !item.active } : item
+                                                        );
+                                                        handleUpdateMethods(updated);
+                                                    }}
+                                                    className="data-[state=checked]:bg-primary"
+                                                />
+                                            </div>
+                                            <div className="relative group">
+                                                <ImageIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-600" />
+                                                <Input 
+                                                    placeholder="Nom du fichier (ex: orange.png)" 
+                                                    defaultValue={m.logo}
+                                                    onBlur={(e) => handleMethodLogoChange(m.id, e.target.value)}
+                                                    className="bg-black/50 border-slate-800 h-8 pl-8 text-[10px] font-mono text-slate-400 focus:text-white" 
+                                                />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <Switch 
-                                                checked={m.active} 
-                                                onCheckedChange={() => handleToggleMethod(selectedCountry!.id, selectedCountry!.paymentMethods, m.id)}
-                                                className="data-[state=checked]:bg-primary"
-                                            />
-                                            <button onClick={() => handleRemoveMethod(m.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition"><Trash2 size={14} /></button>
-                                        </div>
+                                        <button onClick={() => handleRemoveMethod(m.id)} className="p-2 text-red-500/50 hover:text-red-500 transition"><Trash2 size={16} /></button>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         <div className="p-6 bg-slate-950/50 border border-dashed border-slate-800 rounded-[2rem] space-y-4">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Ajouter un nouveau canal</label>
+                            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Nouveau canal</label>
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                    <label className="text-[8px] font-black uppercase text-slate-600 ml-1">Nom affiché</label>
-                                    <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[8px] font-black uppercase text-slate-600 ml-1">Fichier Logo (public/image/)</label>
-                                    <div className="relative">
-                                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                                        <Input placeholder="mtn-momo.png" value={newMethod.logo} onChange={e => setNewMethod({...newMethod, logo: e.target.value})} className="bg-slate-950 border-slate-800 h-11 pl-9 text-xs font-mono" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[8px] font-black uppercase text-slate-600 ml-1">Passerelle Technique</label>
-                                <Select value={newMethod.provider} onValueChange={(v: any) => setNewMethod({...newMethod, provider: v})}>
-                                    <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="mesomb">MeSomb (Orange/MTN/Wave)</SelectItem>
-                                        <SelectItem value="moneroo">Moneroo (Global)</SelectItem>
-                                        <SelectItem value="manual">Manuel (Espèces)</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Input placeholder="Nom (ex: MTN MoMo)" value={newMethod.name} onChange={e => setNewMethod({...newMethod, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                                <Input placeholder="Fichier logo (ex: mtn.png)" value={newMethod.logo} onChange={e => setNewMethod({...newMethod, logo: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs font-mono" />
                             </div>
                             <Button onClick={handleAddMethod} disabled={isSubmitting} className="w-full h-12 rounded-xl bg-slate-800 hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all">
-                                {isSubmitting ? <Loader2 className="animate-spin" /> : <><Plus size={14} className="mr-2"/> Ajouter à la liste</>}
+                                {isSubmitting ? <Loader2 className="animate-spin" /> : "Ajouter le canal"}
                             </Button>
                         </div>
                     </div>

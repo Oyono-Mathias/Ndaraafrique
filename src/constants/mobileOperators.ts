@@ -1,6 +1,6 @@
 /**
- * @fileOverview Référentiel des opérateurs Mobile Money et moyens de paiement.
- * Basé sur les fichiers réels du dossier public/image/.
+ * @fileOverview Référentiel des logos par défaut.
+ * Pointe exclusivement vers le dossier public/image/.
  */
 
 export interface MobileOperator {

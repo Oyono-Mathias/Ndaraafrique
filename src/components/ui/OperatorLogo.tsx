@@ -2,29 +2,32 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { normalizeOperator } from '@/utils/normalizeOperator';
-import { MOBILE_OPERATORS } from '@/constants/mobileOperators';
 import { cn } from '@/lib/utils';
 import { Smartphone } from 'lucide-react';
+import { normalizeOperator } from '@/utils/normalizeOperator';
+import { MOBILE_OPERATORS } from '@/constants/mobileOperators';
 
 interface OperatorLogoProps {
-  operatorName: string | undefined;
-  logo?: string; // Nom du fichier dans /image/ (ex: mtn-momo.png)
+  operatorName?: string;
+  logo?: string; // Nom exact du fichier (ex: mtn.png)
   className?: string;
   size?: number;
 }
 
 /**
- * @fileOverview Affichage du logo opérateur basé sur le fichier réel.
- * ✅ SÉCURITÉ : Utilise le nom de fichier spécifié dans la config pays.
- * ✅ DESIGN : Aucun fond coloré forcé, respecte le visuel original du logo.
+ * @fileOverview Affiche le logo officiel depuis public/image/.
+ * ✅ DIRECT : Utilise le nom de fichier fourni.
+ * ✅ PUR : Aucun style de fond ou de couleur imposé.
  */
 export function OperatorLogo({ operatorName, logo, className, size = 32 }: OperatorLogoProps) {
-  // 1. Si un logo spécifique est fourni dans la config (ex: orange-money.png)
-  let finalSrc = logo ? (logo.startsWith('/') ? logo : `/image/${logo}`) : '';
+  // 1. Détermination du chemin source
+  let finalSrc = '';
 
-  // 2. Sinon, on cherche dans les constantes basées sur le nom de l'opérateur
-  if (!finalSrc) {
+  if (logo) {
+    // Si c'est un nom de fichier, on pointe vers /image/
+    finalSrc = logo.startsWith('/') ? logo : `/image/${logo}`;
+  } else if (operatorName) {
+    // Fallback sur le catalogue par défaut via le nom de l'opérateur
     const code = normalizeOperator(operatorName);
     const operator = MOBILE_OPERATORS[code];
     if (operator) {
@@ -32,11 +35,12 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
     }
   }
 
+  // 2. Rendu
   if (!finalSrc) {
     return (
       <div 
         style={{ width: size, height: size }}
-        className={cn("rounded-full bg-slate-800 flex items-center justify-center text-slate-500 shrink-0", className)}
+        className={cn("rounded-lg bg-slate-800 flex items-center justify-center text-slate-600 shrink-0", className)}
       >
         <Smartphone size={size * 0.5} />
       </div>
@@ -47,20 +51,17 @@ export function OperatorLogo({ operatorName, logo, className, size = 32 }: Opera
     <div 
       style={{ width: size, height: size }}
       className={cn(
-        "relative rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-white/5",
+        "relative flex items-center justify-center shrink-0 overflow-hidden",
         className
       )}
     >
       <Image
         src={finalSrc}
-        alt={operatorName || "Payment Logo"}
+        alt={operatorName || "Logo"}
         fill
-        className="object-contain p-1"
+        className="object-contain"
         sizes={`${size}px`}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-        }}
+        unoptimized // Évite les problèmes de redimensionnement sur les logos locaux
       />
     </div>
   );
