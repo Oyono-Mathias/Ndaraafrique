@@ -1,22 +1,20 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V8.0 Elite Fintech.
+ * @fileOverview Ndara Wallet Étudiant - V8.1 Elite Fintech.
  * ✅ SÉCURITÉ : Restriction stricte aux numéros de téléphone certifiés.
- * ✅ UX : Écoute en temps réel de Firestore pour validation automatique.
+ * ✅ FIX : Importation de l'icône Lock pour corriger le build Vercel.
  */
 
 import { useRole } from '@/context/RoleContext';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, limit, onSnapshot, doc, getDocs } from 'firebase/firestore';
-import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { 
     Wifi, 
     Loader2, 
     Smartphone, 
     Check,
-    SmartphoneNfc,
     Zap,
     History,
     AlertCircle,
@@ -28,7 +26,8 @@ import {
     RefreshCw,
     XCircle,
     ShieldAlert,
-    ExternalLink
+    ExternalLink,
+    Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
@@ -133,7 +132,6 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
-    // 🛡️ REQUISITION DU NUMÉRO CERTIFIÉ
     const certifiedNumber = useMemo(() => {
         if (!currentUser || !currentUser.countryCode) return null;
         return currentUser.certifiedMobileNumbers?.[currentUser.countryCode] || null;
@@ -272,7 +270,6 @@ export default function NdaraWalletPage() {
                         </div>
                     </section>
 
-                    {/* 🛡️ SECTION NUMÉRO CERTIFIÉ */}
                     <section className="space-y-4">
                         <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Compte de débit certifié</label>
                         
@@ -295,7 +292,7 @@ export default function NdaraWalletPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl flex flex-col items-center text-center space-y-4 animate-pulse">
+                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl flex flex-col items-center text-center space-y-4">
                                 <ShieldAlert className="h-10 w-10 text-red-500" />
                                 <div className="space-y-1">
                                     <p className="text-white font-bold text-sm uppercase">Numéro non certifié</p>
@@ -367,7 +364,6 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
-            {/* 🔥 MODAL USSD */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
                     <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -406,7 +402,6 @@ export default function NdaraWalletPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* ❌ MODAL D'ERREUR FINTECH */}
             <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
                 <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
                     <div className="p-8 flex flex-col items-center text-center space-y-6">
@@ -452,16 +447,6 @@ export default function NdaraWalletPage() {
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-function BadgeEuroIcon() {
-    return (
-        <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-primary shadow-inner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-5 w-5">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
         </div>
     );
 }
