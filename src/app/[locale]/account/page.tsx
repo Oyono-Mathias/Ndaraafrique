@@ -3,10 +3,11 @@
 /**
  * @fileOverview Mon Profil - Identification & Bio Ndara Afrique.
  * ✅ DESIGN : Forest & Wealth (Android-First).
- * ✅ SÉCURITÉ : Certification des numéros Mobile Money (Vérrouillage Admin).
+ * ✅ SÉCURITÉ : Certification des numéros Mobile Money par opérateur local.
+ * ✅ DYNAMIQUE : Affiche uniquement les opérateurs du pays de l'utilisateur.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,13 +20,34 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, Briefcase, ArrowLeft, Linkedin, Globe, MapPin, Lock, ShieldAlert } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, ArrowLeft, Lock, ShieldAlert, AlertCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useRouter } from 'next/navigation';
 import { africanCountries } from '@/lib/countries';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { OperatorLogo } from '@/components/ui/OperatorLogo';
+
+// Mapping des opérateurs par pays pour la certification
+const COUNTRY_OPERATORS: Record<string, { id: string, name: string, logo: string }[]> = {
+    CM: [
+        { id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' },
+        { id: 'orange', name: 'Orange Money', logo: 'orange-money.png' }
+    ],
+    CI: [
+        { id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' },
+        { id: 'orange', name: 'Orange Money', logo: 'orange-money.png' },
+        { id: 'wave', name: 'Wave', logo: 'wave.png' }
+    ],
+    BJ: [
+        { id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' },
+        { id: 'moov', name: 'Moov Money', logo: 'wallet' }
+    ],
+    RW: [{ id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' }],
+    UG: [{ id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' }],
+    KE: [{ id: 'mpesa', name: 'M-Pesa', logo: 'wallet' }]
+};
 
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/, "Lettres, chiffres et _ uniquement."),
@@ -36,13 +58,8 @@ const accountSchema = z.object({
   countryCode: z.string().min(2, "Pays requis."),
   linkedinUrl: z.string().url("Lien invalide").optional().nullable().or(z.literal('')),
   portfolioUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
-  // 🔐 Numéros certifiés
-  momo_cm: z.string().optional().nullable(),
-  momo_ci: z.string().optional().nullable(),
-  momo_rw: z.string().optional().nullable(),
-  momo_ug: z.string().optional().nullable(),
-  momo_ke: z.string().optional().nullable(),
-  momo_bj: z.string().optional().nullable(),
+  // Chasseur dynamique pour les numéros certifiés
+  certifiedNumbers: z.record(z.string()).optional(),
 });
 
 export default function AccountPage() {
@@ -65,12 +82,7 @@ export default function AccountPage() {
         countryCode: '',
         linkedinUrl: '',
         portfolioUrl: '',
-        momo_cm: '',
-        momo_ci: '',
-        momo_rw: '',
-        momo_ug: '',
-        momo_ke: '',
-        momo_bj: '',
+        certifiedNumbers: {},
     }
   });
 
@@ -85,12 +97,7 @@ export default function AccountPage() {
         interestDomain: currentUser.careerGoals?.interestDomain || '',
         linkedinUrl: currentUser.socialLinks?.linkedin || '',
         portfolioUrl: currentUser.socialLinks?.website || '',
-        momo_cm: currentUser.certifiedMobileNumbers?.CM || '',
-        momo_ci: currentUser.certifiedMobileNumbers?.CI || '',
-        momo_rw: currentUser.certifiedMobileNumbers?.RW || '',
-        momo_ug: currentUser.certifiedMobileNumbers?.UG || '',
-        momo_ke: currentUser.certifiedMobileNumbers?.KE || '',
-        momo_bj: currentUser.certifiedMobileNumbers?.BJ || '',
+        certifiedNumbers: currentUser.certifiedMobileNumbers || {},
       });
     }
   }, [currentUser, form]);
@@ -147,14 +154,7 @@ export default function AccountPage() {
                 'careerGoals.interestDomain': values.interestDomain,
                 'socialLinks.linkedin': values.linkedinUrl || '',
                 'socialLinks.website': values.portfolioUrl || '',
-                certifiedMobileNumbers: {
-                    CM: values.momo_cm || currentUser.certifiedMobileNumbers?.CM || '',
-                    CI: values.momo_ci || currentUser.certifiedMobileNumbers?.CI || '',
-                    RW: values.momo_rw || currentUser.certifiedMobileNumbers?.RW || '',
-                    UG: values.momo_ug || currentUser.certifiedMobileNumbers?.UG || '',
-                    KE: values.momo_ke || currentUser.certifiedMobileNumbers?.KE || '',
-                    BJ: values.momo_bj || currentUser.certifiedMobileNumbers?.BJ || '',
-                },
+                certifiedMobileNumbers: values.certifiedNumbers || {},
                 isProfileComplete: true
             },
             requesterId: currentUser.uid
@@ -172,7 +172,8 @@ export default function AccountPage() {
     return <div className="flex h-screen items-center justify-center bg-[#0f172a]"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
   }
 
-  const isCert = (code: string) => !!currentUser.certifiedMobileNumbers?.[code];
+  // Opérateurs spécifiques au pays de l'utilisateur
+  const userCountryOperators = COUNTRY_OPERATORS[currentUser.countryCode || ''] || [];
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f172a] relative flex flex-col font-sans">
@@ -216,7 +217,6 @@ export default function AccountPage() {
                         <Camera className="h-4 w-4 text-[#0f172a]" />
                     </div>
                 </div>
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mt-4">Tap pour modifier la photo</p>
             </div>
 
             <Form {...form}>
@@ -235,19 +235,6 @@ export default function AccountPage() {
                             </FormItem>
                         )}/>
 
-                        <FormField control={form.control} name="username" render={({ field }) => (
-                            <FormItem className="space-y-2">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom d'utilisateur</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">@</div>
-                                        <Input {...field} value={field.value ?? ''} className="h-14 pl-10 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-black" placeholder="username" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
-
                         <FormField control={form.control} name="countryCode" render={({ field }) => (
                             <FormItem className="space-y-2">
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Pays de résidence</FormLabel>
@@ -255,7 +242,6 @@ export default function AccountPage() {
                                     <FormControl>
                                         <SelectTrigger className="h-14 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-bold">
                                             <div className="flex items-center gap-2">
-                                                <MapPin className="h-4 w-4 text-primary" />
                                                 <SelectValue placeholder="Choisir votre pays" />
                                             </div>
                                         </SelectTrigger>
@@ -274,27 +260,41 @@ export default function AccountPage() {
                         )}/>
                     </div>
 
-                    {/* 🛡️ SECTION SÉCURITÉ PAIEMENTS */}
+                    {/* 🛡️ SECTION SÉCURITÉ PAIEMENTS : FILTRÉE PAR PAYS */}
                     <div className="bg-[#1e293b] rounded-4xl p-6 border border-emerald-500/20 shadow-xl space-y-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-5"><Lock size={80} /></div>
                         
                         <div className="flex items-center gap-3 mb-2 border-b border-white/5 pb-2">
                             <ShieldAlert className="h-4 w-4 text-emerald-500" />
-                            <h3 className="font-black text-emerald-500 text-[10px] uppercase tracking-[0.3em]">Comptes de Paiement Certifiés</h3>
+                            <h3 className="font-black text-emerald-500 text-[10px] uppercase tracking-[0.3em]">Certification Mobile Money</h3>
                         </div>
 
-                        <FormDescription className="text-[10px] text-slate-400 italic leading-relaxed">
-                            "Pour votre sécurité, enregistrez vos numéros Mobile Money. Une fois certifiés, ils ne pourront être modifiés que par l'administration."
-                        </FormDescription>
+                        {userCountryOperators.length > 0 ? (
+                            <>
+                                <FormDescription className="text-[10px] text-slate-400 italic leading-relaxed">
+                                    "Enregistrez vos numéros pour votre pays ({currentUser.countryName}). Une fois certifiés, ils sont scellés pour votre sécurité."
+                                </FormDescription>
 
-                        <div className="grid gap-4">
-                            <CertifiedInput form={form} name="momo_cm" flag="🇨🇲" label="Cameroun" isCert={isCert('CM')} />
-                            <CertifiedInput form={form} name="momo_ci" flag="🇨🇮" label="Côte d'Ivoire" isCert={isCert('CI')} />
-                            <CertifiedInput form={form} name="momo_rw" flag="🇷🇼" label="Rwanda" isCert={isCert('RW')} />
-                            <CertifiedInput form={form} name="momo_ug" flag="🇺🇬" label="Ouganda" isCert={isCert('UG')} />
-                            <CertifiedInput form={form} name="momo_ke" flag="🇰🇪" label="Kenya" isCert={isCert('KE')} />
-                            <CertifiedInput form={form} name="momo_bj" flag="🇧🇯" label="Bénin" isCert={isCert('BJ')} />
-                        </div>
+                                <div className="grid gap-4">
+                                    {userCountryOperators.map(op => (
+                                        <OperatorCertifiedInput 
+                                            key={op.id}
+                                            form={form} 
+                                            operator={op}
+                                            countryCode={currentUser.countryCode || ''}
+                                            isCert={!!currentUser.certifiedMobileNumbers?.[`${currentUser.countryCode}_${op.id.toUpperCase()}`]} 
+                                        />
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-4 bg-slate-950/50 rounded-2xl text-center space-y-3">
+                                <AlertCircle className="mx-auto text-slate-600 h-8 w-8" />
+                                <p className="text-[10px] font-black uppercase text-slate-500 leading-relaxed">
+                                    Aucun opérateur n'est encore supporté pour votre région ({currentUser.countryName}).
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-[#1e293b] rounded-4xl p-6 border border-white/5 shadow-xl space-y-6">
@@ -344,16 +344,18 @@ export default function AccountPage() {
   );
 }
 
-function CertifiedInput({ form, name, flag, label, isCert }: { form: any, name: string, flag: string, label: string, isCert: boolean }) {
+function OperatorCertifiedInput({ form, operator, countryCode, isCert }: { form: any, operator: any, countryCode: string, isCert: boolean }) {
+    const fieldName = `certifiedNumbers.${countryCode}_${operator.id.toUpperCase()}`;
+
     return (
-        <FormField control={form.control} name={name} render={({ field }) => (
+        <FormField control={form.control} name={fieldName} render={({ field }) => (
             <FormItem className="space-y-1">
                 <div className="flex justify-between items-center px-1">
                     <FormLabel className="text-[9px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                        <span className="text-sm">{flag}</span> {label}
+                        <OperatorLogo logo={operator.logo} size={18} /> {operator.name}
                     </FormLabel>
                     {isCert && (
-                        <div className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        <div className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-inner">
                             <CheckCircle2 size={10} /> Certifié
                         </div>
                     )}
@@ -363,10 +365,10 @@ function CertifiedInput({ form, name, flag, label, isCert }: { form: any, name: 
                         <Input 
                             {...field} 
                             disabled={isCert} 
-                            placeholder="+2xx ..."
+                            placeholder={isCert ? field.value : "Numéro de compte..."}
                             className={cn(
-                                "h-12 bg-[#0f172a] border-white/5 rounded-xl font-mono text-sm",
-                                isCert ? "opacity-60 text-slate-400 border-emerald-500/20" : "text-white"
+                                "h-12 bg-[#0f172a] border-white/5 rounded-xl font-mono text-sm tracking-widest",
+                                isCert ? "opacity-60 text-slate-400 border-emerald-500/20 bg-slate-900" : "text-white focus:border-primary/40"
                             )} 
                         />
                         {isCert && <div className="absolute inset-0 bg-transparent z-10 cursor-not-allowed" />}

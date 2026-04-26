@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V8.1 Elite Fintech.
- * ✅ SÉCURITÉ : Restriction stricte aux numéros de téléphone certifiés.
- * ✅ FIX : Importation de l'icône Lock pour corriger le build Vercel.
+ * @fileOverview Ndara Wallet Étudiant - V8.5 Elite Fintech.
+ * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié par opérateur.
+ * ✅ RÉSOLU : Support multi-opérateurs pour le débit automatique.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -132,10 +132,18 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
+    // 🛡️ RÉCUPÉRATION DU NUMÉRO CERTIFIÉ SPÉCIFIQUE À L'OPÉRATEUR
     const certifiedNumber = useMemo(() => {
-        if (!currentUser || !currentUser.countryCode) return null;
-        return currentUser.certifiedMobileNumbers?.[currentUser.countryCode] || null;
-    }, [currentUser]);
+        if (!currentUser || !currentUser.countryCode || !activeMethod) return null;
+        
+        // Détecter l'opérateur simplifié (mtn, orange, wave)
+        const opKey = activeMethod.name.toLowerCase().includes('mtn') ? 'MTN' : 
+                      activeMethod.name.toLowerCase().includes('orange') ? 'ORANGE' : 
+                      activeMethod.name.toLowerCase().includes('wave') ? 'WAVE' : 
+                      activeMethod.name.toLowerCase().includes('mpesa') ? 'MPESA' : 'DEFAULT';
+
+        return currentUser.certifiedMobileNumbers?.[`${currentUser.countryCode}_${opKey}`] || null;
+    }, [currentUser, activeMethod]);
 
     const ussdInstruction = useMemo(() => {
         if (!activeMethod) return "Veuillez valider le paiement sur votre téléphone";
@@ -147,7 +155,7 @@ export default function NdaraWalletPage() {
 
     const handleRecharge = async () => {
         if (!user || selectedAmount < 100 || !activeMethod || !countryData || !certifiedNumber) {
-            if (!certifiedNumber) toast({ variant: 'destructive', title: "Certification requise", description: "Veuillez enregistrer votre numéro Mobile Money dans votre profil." });
+            if (!certifiedNumber) toast({ variant: 'destructive', title: "Certification requise", description: "Veuillez enregistrer votre numéro pour cet opérateur dans votre profil." });
             return;
         }
         
@@ -283,7 +291,7 @@ export default function NdaraWalletPage() {
                                         <p className="font-mono text-lg font-black text-white tracking-widest">{certifiedNumber}</p>
                                         <div className="flex items-center gap-1.5 mt-0.5">
                                             <ShieldCheck size={12} className="text-[#10b981]" />
-                                            <span className="text-[8px] font-black text-[#10b981] uppercase tracking-widest">Numéro Certifié Ndara</span>
+                                            <span className="text-[8px] font-black text-[#10b981] uppercase tracking-widest">{activeMethod?.name} Certifié</span>
                                         </div>
                                     </div>
                                 </div>
@@ -295,19 +303,19 @@ export default function NdaraWalletPage() {
                             <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl flex flex-col items-center text-center space-y-4">
                                 <ShieldAlert className="h-10 w-10 text-red-500" />
                                 <div className="space-y-1">
-                                    <p className="text-white font-bold text-sm uppercase">Numéro non certifié</p>
+                                    <p className="text-white font-bold text-sm uppercase">Numéro {activeMethod?.name} non certifié</p>
                                     <p className="text-slate-500 text-[10px] font-medium leading-relaxed italic">
-                                        Vous devez enregistrer votre numéro Mobile Money dans votre profil avant de pouvoir recharger.
+                                        Vous devez enregistrer votre numéro {activeMethod?.name} dans votre profil avant de pouvoir recharger.
                                     </p>
                                 </div>
                                 <Button asChild className="h-11 rounded-xl bg-slate-900 border border-white/5 text-xs font-black uppercase tracking-widest">
-                                    <Link href="/account">Certifier mon numéro <ExternalLink size={12} className="ml-2" /></Link>
+                                    <Link href="/account">Certifier ce numéro <ExternalLink size={12} className="ml-2" /></Link>
                                 </Button>
                             </div>
                         )}
                     </section>
 
-                    <section className="space-y-4">
+                    <section className="space-y-4 pb-12">
                         <h2 className="font-black text-white text-xs uppercase tracking-widest flex items-center gap-2 px-1">
                             <History size={14} className="text-slate-600" />
                             Dernières opérations

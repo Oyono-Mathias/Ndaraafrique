@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V5.8.
- * ✅ SÉCURITÉ : Restriction stricte aux numéros de téléphone certifiés.
+ * @fileOverview Tunnel de paiement Ndara Afrique V5.9.
+ * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié par opérateur.
  * ✅ TEMPS RÉEL : Écoute du statut de la transaction Firestore.
  */
 
@@ -94,11 +94,17 @@ function CheckoutContent() {
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
-  // 🛡️ RÉCUPÉRATION DU NUMÉRO CERTIFIÉ
+  // 🛡️ RÉCUPÉRATION DU NUMÉRO CERTIFIÉ SPÉCIFIQUE À L'OPÉRATEUR
   const certifiedNumber = useMemo(() => {
-    if (!currentUser || !currentUser.countryCode) return null;
-    return currentUser.certifiedMobileNumbers?.[currentUser.countryCode] || null;
-  }, [currentUser]);
+    if (!currentUser || !currentUser.countryCode || !activeMethod || activeMethod.provider !== 'mesomb') return null;
+    
+    const opKey = activeMethod.name.toLowerCase().includes('mtn') ? 'MTN' : 
+                  activeMethod.name.toLowerCase().includes('orange') ? 'ORANGE' : 
+                  activeMethod.name.toLowerCase().includes('wave') ? 'WAVE' : 
+                  activeMethod.name.toLowerCase().includes('mpesa') ? 'MPESA' : 'DEFAULT';
+
+    return currentUser.certifiedMobileNumbers?.[`${currentUser.countryCode}_${opKey}`] || null;
+  }, [currentUser, activeMethod]);
 
   const ussdInstruction = useMemo(() => {
     if (!activeMethod || activeMethod.provider !== 'mesomb') return "Veuillez valider le paiement sur votre téléphone";
@@ -128,7 +134,7 @@ function CheckoutContent() {
 
       } else if (activeMethod.provider === 'mesomb') {
           if (!certifiedNumber) {
-              toast({ variant: 'destructive', title: "Numéro non certifié", description: "Veuillez enregistrer votre numéro Mobile Money dans votre profil." });
+              toast({ variant: 'destructive', title: "Certification requise", description: `Veuillez enregistrer votre numéro ${activeMethod.name} dans votre profil.` });
               return;
           }
 
@@ -170,7 +176,7 @@ function CheckoutContent() {
                   });
               }
           } else {
-              throw new Error(result.error);
+              throw new Error(String(result.error));
           }
       } else if (selectedMethodId === 'virtual') {
           setIsSuccess(true);
@@ -192,7 +198,7 @@ function CheckoutContent() {
       <div className="grain-overlay" />
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-4 py-4">
-            <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 transition active:scale-90"><ArrowLeft className="h-5 w-5" /></button>
+            <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 transition active:scale-90"><ArrowLeft className="h-5 w-5" /></button>
             <h1 className="font-black text-xl text-white uppercase tracking-tight">Finaliser l'achat</h1>
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">{countryData?.flagEmoji || '🌍'}</div>
         </div>
@@ -244,7 +250,7 @@ function CheckoutContent() {
                                     <p className="font-mono text-lg font-black text-white tracking-widest">{certifiedNumber}</p>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <ShieldCheck size={12} className="text-[#10b981]" />
-                                        <span className="text-[8px] font-black text-[#10b981] uppercase tracking-widest">Numéro Certifié</span>
+                                        <span className="text-[8px] font-black text-[#10b981] uppercase tracking-widest">{activeMethod?.name} Certifié</span>
                                     </div>
                                 </div>
                             </div>
@@ -256,13 +262,13 @@ function CheckoutContent() {
                         <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl flex flex-col items-center text-center space-y-4">
                             <ShieldAlert className="h-10 w-10 text-red-500" />
                             <div className="space-y-1">
-                                <p className="text-white font-bold text-sm uppercase">Numéro non certifié</p>
+                                <p className="text-white font-bold text-sm uppercase">Numéro {activeMethod?.name} non certifié</p>
                                 <p className="text-slate-500 text-[10px] font-medium leading-relaxed italic">
-                                    Vous devez enregistrer votre numéro Mobile Money dans votre profil pour acheter cette formation.
+                                    Vous devez enregistrer votre numéro {activeMethod?.name} dans votre profil pour acheter cette formation.
                                 </p>
                             </div>
                             <Button asChild className="h-11 rounded-xl bg-slate-900 border border-white/5 text-xs font-black uppercase tracking-widest">
-                                <Link href="/account">Certifier mon numéro <ExternalLink size={12} className="ml-2" /></Link>
+                                <Link href="/account">Certifier ce numéro <ExternalLink size={12} className="ml-2" /></Link>
                             </Button>
                         </div>
                     )}

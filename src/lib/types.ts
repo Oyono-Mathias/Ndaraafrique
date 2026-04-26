@@ -47,9 +47,9 @@ export interface NdaraUser {
   rating?: number;
   referralCode?: string;
   referredBy?: string | null;
-  /** 🛡️ Numéros de téléphone certifiés pour le paiement (Vérrouillés après saisie) */
+  /** 🛡️ Numéros de téléphone certifiés par opérateur (Vérrouillés après saisie) */
   certifiedMobileNumbers?: {
-    [countryCode: string]: string;
+    [key: string]: string; // Format: COUNTRYCODE_OPERATOR (ex: CM_MTN)
   };
   affiliateStats?: {
     clicks: number;
