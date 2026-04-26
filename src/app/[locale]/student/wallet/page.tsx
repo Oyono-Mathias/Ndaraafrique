@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V8.5 Elite Fintech.
+ * @fileOverview Ndara Wallet Étudiant - V9.0 Elite Fintech.
+ * ✅ AJOUT : Saisie de montant personnalisé.
+ * ✅ FIX : Suppression des doublons de sections.
  * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié par opérateur.
- * ✅ RÉSOLU : Support multi-opérateurs pour le débit automatique.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -52,7 +53,7 @@ export default function NdaraWalletPage() {
     const [liveData, setLiveData] = useState({ balance: 0, virtualBalance: 0 });
     const [rawTransactions, setRawTransactions] = useState<Payment[]>([]);
     const [selectedAmount, setSelectedAmount] = useState<number>(5000);
-    const [customAmount, setCustomAmount] = useState('');
+    const [customAmount, setCustomAmount] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -68,6 +69,7 @@ export default function NdaraWalletPage() {
     const [isLoadingCountry, setIsLoadingCountry] = useState(true);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
+    // Synchronisation du solde en temps réel
     useEffect(() => {
         if (!user?.uid) return;
         const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
@@ -82,6 +84,7 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
+    // Chargement de la config pays
     useEffect(() => {
         if (!user?.uid || !currentUser?.countryCode) return;
 
@@ -107,6 +110,7 @@ export default function NdaraWalletPage() {
         fetchCountry();
     }, [currentUser?.countryCode, db, user?.uid]);
 
+    // Historique des transactions
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
@@ -132,18 +136,18 @@ export default function NdaraWalletPage() {
 
     const activeMethod = useMemo(() => countryData?.paymentMethods.find(m => m.id === selectedMethodId), [countryData, selectedMethodId]);
 
-    // 🛡️ RÉCUPÉRATION DU NUMÉRO CERTIFIÉ SPÉCIFIQUE À L'OPÉRATEUR
     const certifiedNumber = useMemo(() => {
         if (!currentUser || !currentUser.countryCode || !activeMethod) return null;
-        
-        // Détecter l'opérateur simplifié (mtn, orange, wave)
         const opKey = activeMethod.name.toLowerCase().includes('mtn') ? 'MTN' : 
                       activeMethod.name.toLowerCase().includes('orange') ? 'ORANGE' : 
                       activeMethod.name.toLowerCase().includes('wave') ? 'WAVE' : 
                       activeMethod.name.toLowerCase().includes('mpesa') ? 'MPESA' : 'DEFAULT';
-
         return currentUser.certifiedMobileNumbers?.[`${currentUser.countryCode}_${opKey}`] || null;
     }, [currentUser, activeMethod]);
+
+    const finalAmount = useMemo(() => {
+        return customAmount ? parseInt(customAmount, 10) : selectedAmount;
+    }, [customAmount, selectedAmount]);
 
     const ussdInstruction = useMemo(() => {
         if (!activeMethod) return "Veuillez valider le paiement sur votre téléphone";
@@ -154,8 +158,8 @@ export default function NdaraWalletPage() {
     }, [activeMethod]);
 
     const handleRecharge = async () => {
-        if (!user || selectedAmount < 100 || !activeMethod || !countryData || !certifiedNumber) {
-            if (!certifiedNumber) toast({ variant: 'destructive', title: "Certification requise", description: "Veuillez enregistrer votre numéro pour cet opérateur dans votre profil." });
+        if (!user || finalAmount < 100 || !activeMethod || !countryData || !certifiedNumber) {
+            if (!certifiedNumber) toast({ variant: 'destructive', title: "Certification requise", description: "Veuillez enregistrer votre numéro pour cet opérateur." });
             return;
         }
         
@@ -164,7 +168,7 @@ export default function NdaraWalletPage() {
 
         try {
             const result = await initiateMeSombPayment({
-                amount: selectedAmount,
+                amount: finalAmount,
                 phoneNumber: certifiedNumber,
                 service: activeMethod.name.toUpperCase().includes('MTN') ? 'MTN' : activeMethod.name.toUpperCase().includes('WAVE') ? 'WAVE' : 'ORANGE',
                 userId: user.uid,
@@ -192,7 +196,7 @@ export default function NdaraWalletPage() {
                                 setErrorModal({
                                     isOpen: true,
                                     title: "Paiement échoué",
-                                    message: data.metadata?.errorMessage || "La transaction a été rejetée ou a expiré."
+                                    message: data.metadata?.errorMessage || "La transaction a été rejetée."
                                 });
                                 unsubscribe();
                             }
@@ -218,7 +222,7 @@ export default function NdaraWalletPage() {
         <div className="flex justify-center bg-slate-950 min-h-screen font-sans relative">
             <div className="grain-overlay opacity-[0.03]"></div>
 
-            <div className="w-full max-w-md bg-slate-950 relative flex flex-col pb-32">
+            <div className="w-full max-w-md bg-slate-950 relative flex flex-col pb-40">
                 <header className="fixed top-0 w-full max-w-md z-40 bg-slate-950/90 backdrop-blur-md safe-area-pt border-b border-white/5">
                     <div className="px-6 py-4 flex items-center justify-between">
                         <h1 className="font-black text-xl text-white tracking-wide uppercase">Ndara Wallet</h1>
@@ -226,7 +230,7 @@ export default function NdaraWalletPage() {
                     </div>
                 </header>
 
-                <main className="flex-1 pt-24 px-6 space-y-8 animate-in fade-in duration-700">
+                <main className="flex-1 pt-24 px-6 space-y-10 animate-in fade-in duration-700">
                     
                     <div className="virtual-card rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
                         <div className="relative z-10">
@@ -241,6 +245,7 @@ export default function NdaraWalletPage() {
                         </div>
                     </div>
 
+                    {/* MONTANT À RECHARGER */}
                     <section className="space-y-4">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Montant à recharger</label>
                         <div className="grid grid-cols-2 gap-3">
@@ -257,8 +262,20 @@ export default function NdaraWalletPage() {
                                 </button>
                             ))}
                         </div>
+                        
+                        <div className="relative group">
+                            <Input 
+                                type="number" 
+                                placeholder="Saisir un autre montant..." 
+                                value={customAmount}
+                                onChange={(e) => setCustomAmount(e.target.value)}
+                                className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-black text-center text-lg focus-visible:ring-primary/20 shadow-inner"
+                            />
+                            {!customAmount && <p className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-700 uppercase tracking-widest">XOF</p>}
+                        </div>
                     </section>
 
+                    {/* MÉTHODE DE PAIEMENT */}
                     <section className="space-y-4">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Méthode de paiement</label>
                         <div className="grid grid-cols-3 gap-3">
@@ -278,11 +295,12 @@ export default function NdaraWalletPage() {
                         </div>
                     </section>
 
+                    {/* COMPTE DE DÉBIT CERTIFIÉ */}
                     <section className="space-y-4">
                         <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Compte de débit certifié</label>
                         
                         {certifiedNumber ? (
-                            <div className="p-5 bg-[#10b981]/5 border border-[#10b981]/20 rounded-3xl flex items-center justify-between shadow-inner group">
+                            <div className="p-5 bg-[#10b981]/5 border border-[#10b981]/20 rounded-3xl flex items-center justify-between shadow-inner">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-2xl bg-[#10b981]/10 flex items-center justify-center text-[#10b981]">
                                         <Smartphone size={20} />
@@ -315,6 +333,7 @@ export default function NdaraWalletPage() {
                         )}
                     </section>
 
+                    {/* HISTORIQUE */}
                     <section className="space-y-4 pb-12">
                         <h2 className="font-black text-white text-xs uppercase tracking-widest flex items-center gap-2 px-1">
                             <History size={14} className="text-slate-600" />
@@ -331,7 +350,7 @@ export default function NdaraWalletPage() {
                                         <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
                                             <div className="flex items-center gap-4">
                                                 <OperatorLogo operatorName={opName} size={42} className="bg-slate-950 p-1" />
-                                                <div>
+                                                <div className="min-w-0">
                                                     <p className="font-bold text-white text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Transaction'}</p>
                                                     <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">{format((txn.date as any)?.toDate?.() || new Date(txn.date as any || 0), 'dd MMM • HH:mm', { locale: fr })}</p>
                                                 </div>
@@ -344,7 +363,7 @@ export default function NdaraWalletPage() {
                                                     "text-[7px] font-black uppercase px-1.5 py-0.5 border-none h-4", 
                                                     status === 'completed' ? "bg-emerald-500/10 text-emerald-500" : 
                                                     status === 'failed' ? "bg-red-500/10 text-red-500" : 
-                                                    "bg-amber-500/10 text-amber-500"
+                                                    "bg-amber-500/10 text-amber-400"
                                                 )}>{status === 'completed' ? 'Réussi' : status === 'failed' ? 'Échec' : 'Audit'}</Badge>
                                             </div>
                                         </div>
@@ -363,7 +382,7 @@ export default function NdaraWalletPage() {
                 <div className="fixed bottom-0 w-full max-w-md bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent pt-10 pb-8 px-6 z-40 safe-area-pb">
                     <Button 
                         onClick={handleRecharge}
-                        disabled={isProcessing || !certifiedNumber || !activeMethod}
+                        disabled={isProcessing || !certifiedNumber || !activeMethod || finalAmount < 100}
                         className="w-full h-16 bg-primary hover:bg-emerald-400 text-slate-950 rounded-[2.5rem] font-black text-sm uppercase flex items-center justify-center gap-3 shadow-2xl active:scale-90 animate-pulse-glow border-none"
                     >
                         {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
@@ -372,6 +391,7 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
+            {/* MODALS (USSD, ERREUR, SUCCÈS) */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
                     <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -392,19 +412,11 @@ export default function NdaraWalletPage() {
                         <div className="space-y-3">
                             <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Validation USSD</DialogTitle>
                             <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
-                                <p className="text-primary text-sm font-bold leading-relaxed italic">
-                                    "{ussdInstruction}"
-                                </p>
+                                <p className="text-primary text-sm font-bold leading-relaxed italic">"{ussdInstruction}"</p>
                             </div>
                         </div>
                         <div className="w-full pt-4">
-                            <Button 
-                                variant="ghost" 
-                                onClick={() => setIsAwaitingUssd(false)} 
-                                className="w-full h-14 rounded-2xl text-slate-500 font-black uppercase text-[11px] tracking-[0.2em] hover:bg-white/5 hover:text-white transition-all"
-                            >
-                                <X className="mr-2 h-4 w-4" /> Annuler l'opération
-                            </Button>
+                            <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full h-14 rounded-2xl text-slate-500 font-black uppercase text-[11px] tracking-[0.2em] hover:bg-white/5 transition-all"><X className="mr-2 h-4 w-4" /> Annuler l'opération</Button>
                         </div>
                     </div>
                 </DialogContent>
@@ -413,28 +425,15 @@ export default function NdaraWalletPage() {
             <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
                 <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
                     <div className="p-8 flex flex-col items-center text-center space-y-6">
-                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20 shadow-2xl">
-                            <XCircle className="h-10 w-10 text-red-500" />
-                        </div>
+                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20 shadow-2xl"><XCircle className="h-10 w-10 text-red-500" /></div>
                         <div className="space-y-2">
                             <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">{errorModal.title}</DialogTitle>
                             <p className="text-slate-400 text-sm font-medium leading-relaxed italic">"{errorModal.message}"</p>
                         </div>
                     </div>
                     <DialogFooter className="p-8 pt-0 flex flex-col gap-3">
-                        <Button 
-                            onClick={() => { setErrorModal(prev => ({ ...prev, isOpen: false })); handleRecharge(); }}
-                            className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
-                        >
-                            <RefreshCw className="mr-2 h-4 w-4" /> Réessayer
-                        </Button>
-                        <Button 
-                            variant="ghost"
-                            onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
-                            className="w-full h-12 rounded-xl text-slate-500 font-bold uppercase text-[10px] tracking-widest"
-                        >
-                            Fermer
-                        </Button>
+                        <Button onClick={() => { setErrorModal(prev => ({ ...prev, isOpen: false })); handleRecharge(); }} className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"><RefreshCw className="mr-2 h-4 w-4" /> Réessayer</Button>
+                        <Button variant="ghost" onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))} className="w-full h-12 rounded-xl text-slate-500 font-bold uppercase text-[10px] tracking-widest">Fermer</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -442,16 +441,12 @@ export default function NdaraWalletPage() {
             {isSuccess && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
                     <div className="bg-slate-900 rounded-[3rem] p-10 text-center space-y-8 max-w-sm shadow-2xl border border-primary/20">
-                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl animate-bounce shadow-primary/40">
-                            <Check className="h-14 w-14 text-slate-950" strokeWidth={4} />
-                        </div>
+                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl animate-bounce shadow-primary/40"><Check className="h-14 w-14 text-slate-950" strokeWidth={4} /></div>
                         <div className="space-y-2">
                             <h3 className="text-3xl font-black text-white uppercase tracking-tight">C'est crédité !</h3>
                             <p className="text-slate-400 font-medium italic text-sm">Votre solde a été mis à jour instantanément.</p>
                         </div>
-                        <Button onClick={() => setIsSuccess(false)} className="w-full h-16 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
-                            Continuer mes études
-                        </Button>
+                        <Button onClick={() => setIsSuccess(false)} className="w-full h-16 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">Continuer mes études</Button>
                     </div>
                 </div>
             )}
