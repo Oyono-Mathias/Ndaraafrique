@@ -4,7 +4,7 @@
  * @fileOverview Mon Profil - Identification & Bio Ndara Afrique.
  * ✅ DESIGN : Forest & Wealth (Android-First).
  * ✅ SÉCURITÉ : Certification des numéros Mobile Money par opérateur local.
- * ✅ DYNAMIQUE : Affiche uniquement les opérateurs du pays de l'utilisateur.
+ * ✅ VERROUILLAGE : Le pays et les numéros sont scellés après enregistrement. Seul l'admin peut modifier.
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, ArrowLeft, Lock, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, ArrowLeft, Lock, ShieldAlert, AlertCircle, Globe } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useRouter } from 'next/navigation';
@@ -32,21 +32,21 @@ import { OperatorLogo } from '@/components/ui/OperatorLogo';
 // Mapping des opérateurs par pays pour la certification
 const COUNTRY_OPERATORS: Record<string, { id: string, name: string, logo: string }[]> = {
     CM: [
-        { id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' },
-        { id: 'orange', name: 'Orange Money', logo: 'orange-money.png' }
+        { id: 'MTN', name: 'MTN MoMo', logo: 'mtn-momo.png' },
+        { id: 'ORANGE', name: 'Orange Money', logo: 'orange-money.png' }
     ],
     CI: [
-        { id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' },
-        { id: 'orange', name: 'Orange Money', logo: 'orange-money.png' },
-        { id: 'wave', name: 'Wave', logo: 'wave.png' }
+        { id: 'MTN', name: 'MTN MoMo', logo: 'mtn-momo.png' },
+        { id: 'ORANGE', name: 'Orange Money', logo: 'orange-money.png' },
+        { id: 'WAVE', name: 'Wave', logo: 'wave.png' }
     ],
     BJ: [
-        { id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' },
-        { id: 'moov', name: 'Moov Money', logo: 'wallet' }
+        { id: 'MTN', name: 'MTN MoMo', logo: 'mtn-momo.png' },
+        { id: 'MOOV', name: 'Moov Money', logo: 'wallet' }
     ],
-    RW: [{ id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' }],
-    UG: [{ id: 'mtn', name: 'MTN MoMo', logo: 'mtn-momo.png' }],
-    KE: [{ id: 'mpesa', name: 'M-Pesa', logo: 'wallet' }]
+    RW: [{ id: 'MTN', name: 'MTN MoMo', logo: 'mtn-momo.png' }],
+    UG: [{ id: 'MTN', name: 'MTN MoMo', logo: 'mtn-momo.png' }],
+    KE: [{ id: 'MPESA', name: 'M-Pesa', logo: 'wallet' }]
 };
 
 const accountSchema = z.object({
@@ -58,7 +58,6 @@ const accountSchema = z.object({
   countryCode: z.string().min(2, "Pays requis."),
   linkedinUrl: z.string().url("Lien invalide").optional().nullable().or(z.literal('')),
   portfolioUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
-  // Chasseur dynamique pour les numéros certifiés
   certifiedNumbers: z.record(z.string()).optional(),
 });
 
@@ -173,7 +172,10 @@ export default function AccountPage() {
   }
 
   // Opérateurs spécifiques au pays de l'utilisateur
-  const userCountryOperators = COUNTRY_OPERATORS[currentUser.countryCode || ''] || [];
+  const userCountryOperators = COUNTRY_OPERATORS[form.watch('countryCode') || ''] || [];
+  
+  // 🛡️ SÉCURITÉ : Le pays est-il déjà enregistré ?
+  const isCountryLocked = !!currentUser.countryCode;
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f172a] relative flex flex-col font-sans">
@@ -237,10 +239,25 @@ export default function AccountPage() {
 
                         <FormField control={form.control} name="countryCode" render={({ field }) => (
                             <FormItem className="space-y-2">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Pays de résidence</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                <div className="flex justify-between items-center px-1">
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Pays de résidence</FormLabel>
+                                    {isCountryLocked && (
+                                        <div className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                            <Lock size={10} /> Scellé
+                                        </div>
+                                    )}
+                                </div>
+                                <Select 
+                                    onValueChange={field.onChange} 
+                                    defaultValue={field.value} 
+                                    value={field.value}
+                                    disabled={isCountryLocked}
+                                >
                                     <FormControl>
-                                        <SelectTrigger className="h-14 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-bold">
+                                        <SelectTrigger className={cn(
+                                            "h-14 bg-[#0f172a] border-white/5 rounded-[1.5rem] text-white font-bold transition-all",
+                                            isCountryLocked && "opacity-60 cursor-not-allowed bg-slate-900"
+                                        )}>
                                             <div className="flex items-center gap-2">
                                                 <SelectValue placeholder="Choisir votre pays" />
                                             </div>
@@ -255,6 +272,11 @@ export default function AccountPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {isCountryLocked && (
+                                    <p className="text-[9px] text-slate-500 italic mt-1 ml-1 flex items-center gap-1">
+                                        <AlertCircle size={10} /> Pour changer de pays, contactez l'administration.
+                                    </p>
+                                )}
                                 <FormMessage />
                             </FormItem>
                         )}/>
@@ -272,7 +294,7 @@ export default function AccountPage() {
                         {userCountryOperators.length > 0 ? (
                             <>
                                 <FormDescription className="text-[10px] text-slate-400 italic leading-relaxed">
-                                    "Enregistrez vos numéros pour votre pays ({currentUser.countryName}). Une fois certifiés, ils sont scellés pour votre sécurité."
+                                    "Enregistrez vos numéros pour votre pays ({africanCountries.find(c => c.code === form.watch('countryCode'))?.name}). Une fois certifiés, ils sont scellés pour votre sécurité."
                                 </FormDescription>
 
                                 <div className="grid gap-4">
@@ -281,17 +303,17 @@ export default function AccountPage() {
                                             key={op.id}
                                             form={form} 
                                             operator={op}
-                                            countryCode={currentUser.countryCode || ''}
-                                            isCert={!!currentUser.certifiedMobileNumbers?.[`${currentUser.countryCode}_${op.id.toUpperCase()}`]} 
+                                            countryCode={form.watch('countryCode') || ''}
+                                            isCert={!!currentUser.certifiedMobileNumbers?.[`${form.watch('countryCode')}_${op.id.toUpperCase()}`]} 
                                         />
                                     ))}
                                 </div>
                             </>
                         ) : (
                             <div className="p-4 bg-slate-950/50 rounded-2xl text-center space-y-3">
-                                <AlertCircle className="mx-auto text-slate-600 h-8 w-8" />
+                                <Globe className="mx-auto text-slate-600 h-8 w-8" />
                                 <p className="text-[10px] font-black uppercase text-slate-500 leading-relaxed">
-                                    Aucun opérateur n'est encore supporté pour votre région ({currentUser.countryName}).
+                                    Sélectionnez un pays ci-dessus pour activer vos espaces de paiement.
                                 </p>
                             </div>
                         )}
