@@ -3,6 +3,7 @@
 /**
  * @fileOverview Historique financier complet de l'étudiant Ndara Afrique.
  * ✅ TRAÇABILITÉ : Affiche les logos via détection intelligente des métadonnées.
+ * ✅ FIX : Remplacement du terme "AUDIT" par "EN ATTENTE".
  */
 
 import { useMemo, useState } from 'react';
@@ -130,7 +131,6 @@ function PaymentItem({ payment }: { payment: Payment }) {
     refunded: { label: 'Remboursé', class: 'bg-slate-800 text-slate-400', icon: AlertCircle },
   } as any)[payment.status?.toLowerCase() || 'pending'] || { label: payment.status, class: 'bg-slate-800', icon: Clock });
 
-  // ✅ LOGIQUE FINTECH : Détection intelligente de l'opérateur via métadonnées
   const opName = payment.metadata?.operator || payment.provider;
 
   return (
@@ -172,7 +172,7 @@ function PayoutItem({ payout }: { payout: any }) {
     const date = (payout.createdAt as any)?.toDate?.() || new Date(payout.createdAt as any || 0);
     
     const statusConfig = (({
-        pending: { label: 'Audit', class: 'bg-amber-500/10 text-amber-500' },
+        pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-500 animate-pulse' },
         approved: { label: 'Validé', class: 'bg-blue-500/10 text-blue-400' },
         paid: { label: 'Versé', class: 'bg-emerald-500/10 text-emerald-500' },
         rejected: { label: 'Rejeté', class: 'bg-red-500/10 text-red-500' },

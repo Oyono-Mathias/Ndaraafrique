@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V9.0 Elite Fintech.
+ * @fileOverview Ndara Wallet Étudiant - V9.1 Elite Fintech.
  * ✅ AJOUT : Saisie de montant personnalisé.
- * ✅ FIX : Suppression des doublons de sections.
+ * ✅ FIX : Remplacement du terme "AUDIT" par "EN ATTENTE" pour plus de clarté.
  * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié par opérateur.
  */
 
@@ -69,7 +69,6 @@ export default function NdaraWalletPage() {
     const [isLoadingCountry, setIsLoadingCountry] = useState(true);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-    // Synchronisation du solde en temps réel
     useEffect(() => {
         if (!user?.uid) return;
         const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
@@ -84,7 +83,6 @@ export default function NdaraWalletPage() {
         return () => unsub();
     }, [user?.uid, db]);
 
-    // Chargement de la config pays
     useEffect(() => {
         if (!user?.uid || !currentUser?.countryCode) return;
 
@@ -110,7 +108,6 @@ export default function NdaraWalletPage() {
         fetchCountry();
     }, [currentUser?.countryCode, db, user?.uid]);
 
-    // Historique des transactions
     useEffect(() => {
         if (!user?.uid) return;
         setIsLoadingHistory(true);
@@ -363,8 +360,8 @@ export default function NdaraWalletPage() {
                                                     "text-[7px] font-black uppercase px-1.5 py-0.5 border-none h-4", 
                                                     status === 'completed' ? "bg-emerald-500/10 text-emerald-500" : 
                                                     status === 'failed' ? "bg-red-500/10 text-red-500" : 
-                                                    "bg-amber-500/10 text-amber-400"
-                                                )}>{status === 'completed' ? 'Réussi' : status === 'failed' ? 'Échec' : 'Audit'}</Badge>
+                                                    "bg-amber-500/10 text-amber-400 animate-pulse"
+                                                )}>{status === 'completed' ? 'Réussi' : status === 'failed' ? 'Échec' : 'En attente'}</Badge>
                                             </div>
                                         </div>
                                     );
