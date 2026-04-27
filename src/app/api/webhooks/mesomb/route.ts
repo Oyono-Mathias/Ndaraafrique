@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
-import { getMeSombTransactionStatus } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb Ultra-Fiabilisé v4.0.
- * ✅ RÉSILIENCE : Accepte le paiement si le webhook est valide, même si l'API de statut est restreinte.
- * ✅ SÉCURITÉ : Vérification de l'idempotence via transaction Firestore.
+ * @fileOverview Webhook MeSomb Ultra-Fiabilisé v5.0 (Standard CTO Fintech).
+ * ✅ INDÉPENDANCE : Ne dépend plus de l'activation du compte pour l'API Polling.
+ * ✅ SÉCURITÉ : Vérification de l'idempotence et logging des orphelins.
  */
 
 export async function POST(req: Request) {
@@ -27,54 +26,57 @@ export async function POST(req: Request) {
     }
 
     const db = getAdminDb();
-    let paymentDoc;
-    let paymentRef;
+    let paymentDoc = null;
 
-    // 1. RECHERCHE DE LA TRANSACTION
+    // 1. RECHERCHE DE LA TRANSACTION PAR RÉFÉRENCE (La plus fiable)
     if (externalReference) {
-        paymentRef = db.collection('payments').doc(externalReference);
-        paymentDoc = await paymentRef.get();
-    }
-
-    // Fallback par ID MeSomb
-    if (!paymentDoc?.exists) {
-        const q = await db.collection('payments').where('gatewayTransactionId', '==', gatewayId).limit(1).get();
-        if (!q.empty) {
-            paymentDoc = q.docs[0];
-            paymentRef = paymentDoc.ref;
+        const docRef = db.collection('payments').doc(externalReference);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+            paymentDoc = docSnap;
         }
     }
 
-    if (!paymentDoc?.exists) {
-        console.error(`[${webhookId}] ❌ TRANSACTION INTROUVABLE DANS FIRESTORE.`);
+    // 2. FALLBACK : RECHERCHE PAR ID PASSERELLE
+    if (!paymentDoc) {
+        const q = await db.collection('payments').where('gatewayTransactionId', '==', gatewayId).limit(1).get();
+        if (!q.empty) {
+            paymentDoc = q.docs[0];
+        }
+    }
+
+    // 3. GESTION DES ORPHELINS (Paiement reçu mais inconnu de Ndara)
+    if (!paymentDoc) {
+        console.error(`[${webhookId}] ❌ TRANSACTION INTROUVABLE. CRÉATION LOG SÉCURITÉ.`);
         await db.collection('security_logs').add({
             eventType: 'payment_orphan_webhook',
             targetId: gatewayId,
-            details: `Paiement orphelin de ${transaction.amount} ${transaction.currency}. Réf: ${externalReference}`,
-            timestamp: new Date()
+            details: `Argent reçu (${transaction.amount} ${transaction.currency}) mais aucune référence Ndara trouvée. Réf: ${externalReference}`,
+            timestamp: new Date(),
+            status: 'open'
         });
         return NextResponse.json({ status: 'orphan_logged' });
     }
 
     const storedData = paymentDoc.data()!;
 
-    // 2. VÉRIFICATION DU STATUT
-    // Si le Webhook dit SUCCESS, on traite. 
-    // On tente la double vérification API, mais on ne bloque pas si elle échoue pour cause de compte "Non Activé"
+    // 4. VÉRIFICATION DU STATUT DANS LE WEBHOOK
+    // On fait confiance au succès envoyé par MeSomb (l'argent est déjà chez vous).
     const isWebhookSuccess = transaction.status === 'SUCCESS' || body.status === 'SUCCESS';
     
     if (!isWebhookSuccess) {
-        console.warn(`[${webhookId}] ⚠️ Le statut du webhook n'est pas SUCCESS. Statut: ${transaction.status}`);
+        console.warn(`[${webhookId}] ⚠️ Le statut du webhook n'est pas SUCCESS. Transaction échouée.`);
+        await paymentDoc.ref.update({ status: 'failed', updatedAt: new Date() });
         return NextResponse.json({ status: 'not_a_success' });
     }
 
-    // 3. TRAITEMENT FINANCIER ATOMIQUE
-    console.log(`[${webhookId}] ⚙️ Crédit en cours pour: ${storedData.userId}`);
+    // 5. TRAITEMENT FINANCIER ATOMIQUE (CRÉDIT WALLET)
+    console.log(`[${webhookId}] ⚙️ Déclenchement crédit pour: ${storedData.userId}`);
     
-    await processNdaraPayment({
+    const result = await processNdaraPayment({
       transactionId: paymentDoc.id,
       gatewayTransactionId: gatewayId,
-      provider: 'mesomb',
+      provider: transaction.service?.toLowerCase() || 'mesomb',
       amount: Number(transaction.amount),
       currency: transaction.currency || 'XAF',
       metadata: {
@@ -86,8 +88,12 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log(`[${webhookId}] ✅ TRANSACTION VALIDÉE ET CRÉDITÉE.`);
-    return NextResponse.json({ processed: true });
+    if (result.success) {
+        console.log(`[${webhookId}] ✅ TRANSACTION VALIDÉE ET CRÉDITÉE.`);
+        return NextResponse.json({ processed: true });
+    } else {
+        throw new Error("Échec du traitement financier interne.");
+    }
 
   } catch (error: any) {
     console.error(`[${webhookId}] 💥 ERREUR FATALE WEBHOOK:`, error.message);

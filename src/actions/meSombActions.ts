@@ -2,21 +2,20 @@
 
 /**
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
- * ✅ STANDARD BANCAIRE : Création du document AVANT l'appel API.
- * ✅ FIABILITÉ : Retourne la référence pour écoute temps réel par le client.
+ * ✅ SÉCURITÉ : Suppression totale du mode simulé pour la production.
+ * ✅ FIABILITÉ : Création systématique du document AVANT l'appel MeSomb.
  */
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getMeSombClient, getMeSombTransactionStatus, getMeSombAccountBalance } from '@/lib/mesomb';
-import { processNdaraPayment } from '@/services/paymentProcessor';
+import { getMeSombClient } from '@/lib/mesomb';
+import type { NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
-  | { success: true; type: 'REAL'; transactionId: string; message: string }
-  | { success: true; type: 'SIMULATED'; message: string }
+  | { success: true; transactionId: string; message: string }
   | { success: false; error: string };
 
-/** 💸 1. Initier un paiement (Collect) */
+/** 💸 1. Initier un paiement réel (Collect) */
 export async function initiateMeSombPayment(params: {
   amount: number;
   phoneNumber: string;
@@ -35,11 +34,7 @@ export async function initiateMeSombPayment(params: {
   const currency = params.currency || (['SN', 'CI', 'BJ', 'BF', 'NE', 'TG', 'ML'].includes(country) ? 'XOF' : 'XAF');
 
   try {
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settings = settingsSnap.data() as any;
-    const isTestMode = settings?.payments?.paymentMode === 'test';
-
-    // 1. PRÉ-ENREGISTREMENT SYSTÉMATIQUE (Audit Trail)
+    // 🛡️ 1. ENREGISTREMENT PRÉALABLE (Impératif Fintech)
     await db.collection('payments').doc(externalReference).set({
       id: externalReference,
       userId: params.userId,
@@ -48,7 +43,7 @@ export async function initiateMeSombPayment(params: {
       status: 'pending',
       type: params.type || 'course_purchase',
       provider: params.service.toLowerCase(),
-      isSimulated: isTestMode,
+      isSimulated: false,
       courseId: params.courseId || 'WALLET_TOPUP',
       courseTitle: params.courseTitle || (params.type === 'wallet_topup' ? 'Recharge Wallet' : 'Formation'),
       date: FieldValue.serverTimestamp(),
@@ -61,25 +56,7 @@ export async function initiateMeSombPayment(params: {
       }
     });
 
-    // 2. MODE TEST
-    if (isTestMode) {
-      await processNdaraPayment({
-        transactionId: externalReference,
-        provider: 'simulated',
-        amount: params.amount,
-        currency: currency,
-        metadata: {
-          userId: params.userId,
-          type: params.type || 'course_purchase',
-          courseId: params.courseId || 'WALLET_TOPUP',
-          courseTitle: params.courseTitle || 'Achat Test',
-          isSimulated: true
-        }
-      });
-      return { success: true, type: 'SIMULATED', message: "Mode TEST : Crédit ajouté." };
-    }
-
-    // 3. PAIEMENT RÉEL
+    // ⚡ 2. APPEL API MESOMB
     const client = getMeSombClient();
     const response = await client.makeCollect({
         amount: params.amount,
@@ -92,18 +69,18 @@ export async function initiateMeSombPayment(params: {
 
     if (response.isOperationSuccess()) {
         const transaction = (response as any).transaction;
-        const realId = String(transaction.pk || transaction.id);
+        const gatewayId = String(transaction.pk || transaction.id);
         
+        // On lie l'ID MeSomb au document Ndara
         await db.collection('payments').doc(externalReference).update({
-            gatewayTransactionId: realId,
+            gatewayTransactionId: gatewayId,
             updatedAt: FieldValue.serverTimestamp()
         });
 
         return { 
           success: true, 
-          type: 'REAL', 
-          transactionId: externalReference, // On renvoie l'ID pour que le client l'écoute
-          message: "Validez le prompt USSD." 
+          transactionId: externalReference,
+          message: "Veuillez valider le prompt sur votre téléphone." 
         };
     } else {
         const errorMsg = (response as any).message || "Rejeté par l'opérateur.";
@@ -116,68 +93,28 @@ export async function initiateMeSombPayment(params: {
 
   } catch (error: any) {
     console.error("[MeSomb Action Error]", error.message);
-    return { success: false, error: error.message || "Erreur de connexion." };
+    return { success: false, error: error.message || "Erreur de connexion aux serveurs de paiement." };
   }
 }
 
-/** 🛠️ 2. Réconciliation manuelle */
-export async function reconcilePendingPaymentsAction(adminId: string) {
+/** 💰 2. Vérifier le solde marchand MeSomb (Pour Admin) */
+export async function getMeSombBalanceAction(adminId: string) {
     try {
         const db = getAdminDb();
         const adminDoc = await db.collection('users').doc(adminId).get();
         if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') throw new Error("Accès refusé.");
 
-        const pendingSnap = await db.collection('payments').where('status', '==', 'pending').limit(20).get();
-        let processed = 0;
-
-        for (const docSnap of pendingSnap.docs) {
-            const paymentData = docSnap.data();
-            const searchId = paymentData.gatewayTransactionId || docSnap.id;
-            const officialTxn = await getMeSombTransactionStatus(searchId);
-
-            if (officialTxn && (officialTxn as any).status === 'SUCCESS') {
-                await processNdaraPayment({
-                    transactionId: docSnap.id,
-                    provider: 'mesomb_reconciled',
-                    amount: Number((officialTxn as any).amount),
-                    currency: (officialTxn as any).currency || 'XAF',
-                    metadata: {
-                        userId: paymentData.userId,
-                        courseId: paymentData.courseId,
-                        courseTitle: paymentData.courseTitle,
-                        type: paymentData.type,
-                    }
-                });
-                processed++;
-            }
-        }
-        return { success: true, processed };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/** 💰 3. Vérifier le solde marchand MeSomb */
-export async function getMeSombBalanceAction(adminId: string): Promise<{ success: boolean; balance?: number; currency?: string; error?: string }> {
-    try {
-        const db = getAdminDb();
-        const adminDoc = await db.collection('users').doc(adminId).get();
-        
-        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-            throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
-        }
-
-        const appStatus = await getMeSombAccountBalance();
+        const client = getMeSombClient();
+        const appStatus = await client.getStatus();
         const balances = (appStatus as any).balances || [];
         const mainBalance = balances[0] || { value: 0, currency: 'XAF' };
         
         return { 
             success: true, 
             balance: Number(mainBalance.value), 
-            currency: mainBalance.currency || 'XAF' 
+            currency: mainBalance.currency 
         };
     } catch (e: any) {
-        console.error("[MeSomb Balance API Error]", e.message);
         return { success: false, error: e.message };
     }
 }

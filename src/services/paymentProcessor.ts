@@ -5,9 +5,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ Processeur financier SÉCURISÉ v3.6
- * Garantit le lien atomique entre Paiement et Accès au cours.
- * ✅ INTELLIGENCE : Détecte l'opérateur réel dans les métadonnées pour le logo.
+ * ✅ PROCESSEUR FINANCIER ÉLITE v4.0
+ * Supprime toute logique de simulation pour MeSomb.
+ * Force le crédit sur le solde réel (balance).
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -22,10 +22,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const userRef = db.collection('users').doc(metadata.userId);
       const activityRef = userRef.collection('activity').doc();
 
-      // 1. IDEMPOTENCE : Éviter les doubles traitements
+      // 1. IDEMPOTENCE : Ne jamais créditer deux fois
       const paymentSnap = await transaction.get(paymentRef);
-      const currentStatus = paymentSnap.data()?.status?.toLowerCase();
-      if (paymentSnap.exists && currentStatus === 'completed') {
+      if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
         return { success: true, alreadyProcessed: true };
       }
 
@@ -34,27 +33,23 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
       
       const userData = userSnap.data() as NdaraUser;
-      if (!userData) throw new Error("USER_DATA_MISSING");
 
-      const isSimulated = metadata.isSimulated === true || provider === 'simulated' || provider === 'admin_recharge_test';
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-      // 💾 Détermination de l'opérateur final pour le logo (Priorité au spécifique)
-      const finalProvider = (metadata.operator || metadata.service || provider || 'wallet').toLowerCase();
-
+      // 💾 Préparation des données de paiement standardisées
       const paymentData = {
         id: String(transactionId),
         userId: metadata.userId,
         amount: Number(amount),
         currency: currency || 'XAF',
-        provider: finalProvider,
+        provider: (metadata.operator || provider || 'mobile_money').toLowerCase(),
         status: 'completed',
-        isSimulated,
+        isSimulated: false, // Forcé à false car flux MeSomb Webhook = Réel
         type: metadata.type || (isTopup ? 'wallet_topup' : 'course_purchase'),
         updatedAt: FieldValue.serverTimestamp(),
         gatewayTransactionId: gatewayTransactionId || transactionId,
         courseId: metadata.courseId || 'WALLET_TOPUP',
-        courseTitle: metadata.courseTitle || (isTopup ? 'Recharge Portefeuille' : 'Achat formation'),
+        courseTitle: metadata.courseTitle || (isTopup ? 'Recharge Wallet' : 'Formation'),
         metadata: { ...metadata }
       };
 
@@ -66,87 +61,70 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       transaction.set(paymentRef, paymentData, { merge: true });
 
       // =========================================================
-      // 💰 CAS 1 : RECHARGE (DÉPÔT)
+      // 💰 CAS 1 : RECHARGE DU WALLET (RÉEL UNIQUEMENT)
       // =========================================================
       if (isTopup) {
-        const targetField = isSimulated ? 'virtualBalance' : 'balance';
         transaction.update(userRef, {
-          [targetField]: FieldValue.increment(Number(amount)),
+          balance: FieldValue.increment(Number(amount)),
           updatedAt: FieldValue.serverTimestamp()
         });
         
         transaction.set(activityRef, {
             userId: metadata.userId,
             type: 'payment',
-            title: isSimulated ? 'Crédit Démo validé' : 'Portefeuille crédité',
-            description: `Votre compte a été alimenté de ${amount.toLocaleString()} ${currency}.`,
+            title: 'Portefeuille crédité',
+            description: `Votre recharge de ${amount.toLocaleString()} ${currency} a été validée.`,
             read: false,
             createdAt: FieldValue.serverTimestamp()
         });
       }
 
       // =========================================================
-      // 🎓 CAS 2 : ACHAT DE COURS
+      // 🎓 CAS 2 : ACHAT DE COURS DIRECT
       // =========================================================
       else if (metadata.courseId) {
         const courseRef = db.collection('courses').doc(metadata.courseId);
         const courseSnap = await transaction.get(courseRef);
-        if (!courseSnap.exists) throw new Error("COURS_NON_TROUVÉ");
-        const courseData = courseSnap.data() as Course;
+        
+        if (courseSnap.exists) {
+            const courseData = courseSnap.data() as Course;
+            const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
+            const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
 
-        const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
-        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
-        const enrollmentSnap = await transaction.get(enrollmentRef);
-
-        if (enrollmentSnap.exists) {
-            return { success: true, alreadyEnrolled: true };
-        }
-
-        if (!isSimulated) {
-          const currentBalance = Number(userData.balance) || 0;
-          if (provider === 'wallet' && currentBalance < Number(amount)) throw new Error("SOLDE_INSUFFISANT");
-
-          if (provider === 'wallet') {
-            transaction.update(userRef, {
-                balance: FieldValue.increment(-Number(amount)),
-                updatedAt: FieldValue.serverTimestamp()
+            transaction.set(enrollmentRef, {
+                id: enrollmentId,
+                studentId: metadata.userId,
+                courseId: metadata.courseId,
+                instructorId: courseData.instructorId,
+                status: 'active',
+                progress: 0,
+                enrollmentDate: FieldValue.serverTimestamp(),
+                lastAccessedAt: FieldValue.serverTimestamp(),
+                priceAtEnrollment: Number(amount)
             });
-          }
 
-          if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
-            const instructorRef = db.collection('users').doc(courseData.instructorId);
-            transaction.update(instructorRef, {
-              balance: FieldValue.increment(Number(amount) * 0.7)
+            transaction.update(courseRef, {
+                participantsCount: FieldValue.increment(1)
             });
-          }
+
+            // Commission Instructeur (70% par défaut)
+            if (courseData.instructorId && courseData.instructorId !== 'NDARA_OFFICIAL') {
+                const instructorRef = db.collection('users').doc(courseData.instructorId);
+                transaction.update(instructorRef, {
+                    balance: FieldValue.increment(Number(amount) * 0.7)
+                });
+            }
+
+            transaction.set(activityRef, {
+                userId: metadata.userId,
+                type: 'enrollment',
+                title: 'Formation activée',
+                description: `Vous avez rejoint : ${courseData.title}`,
+                link: `/student/courses/${metadata.courseId}`,
+                read: false,
+                createdAt: FieldValue.serverTimestamp()
+            });
         }
-
-        transaction.set(enrollmentRef, {
-          id: enrollmentId,
-          studentId: metadata.userId,
-          courseId: metadata.courseId,
-          instructorId: courseData.instructorId,
-          status: 'active',
-          progress: 0,
-          isSimulated,
-          enrollmentDate: FieldValue.serverTimestamp(),
-          lastAccessedAt: FieldValue.serverTimestamp(),
-          priceAtEnrollment: Number(amount)
-        });
-
-        transaction.update(courseRef, {
-          participantsCount: FieldValue.increment(1)
-        });
-
-        transaction.set(activityRef, {
-            userId: metadata.userId,
-            type: 'enrollment',
-            title: 'Nouvelle formation acquise',
-            description: `Vous avez rejoint le cours : ${courseData.title}`,
-            link: `/student/courses/${metadata.courseId}`,
-            read: false,
-            createdAt: FieldValue.serverTimestamp()
-        });
       }
 
       return { success: true };
