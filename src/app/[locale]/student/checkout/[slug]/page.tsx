@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Tunnel de paiement Ndara Afrique V7.0.
+ * ✅ RÉSOLU : Erreurs de typage TypeScript pour le build Vercel.
  * ✅ RÉSOLU : Redirection automatique si le cours est déjà acquis.
- * ✅ RÉSOLU : Écouteur temps réel ultra-réactif.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -67,13 +67,12 @@ function CheckoutContent() {
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
-  // 🛡️ SÉCURITÉ : Vérifier si le cours est déjà possédé AVANT de proposer le paiement
   useEffect(() => {
       if (!user?.uid || !slug) return;
       const enrollmentId = `${user.uid}_${slug}`;
       const unsub = onSnapshot(doc(db, 'enrollments', enrollmentId), (snap) => {
           if (snap.exists() && snap.data().status === 'active') {
-              setIsSuccess(true); // Si déjà possédé, on saute directement au succès
+              setIsSuccess(true);
           }
       });
       return () => unsub();
@@ -159,8 +158,11 @@ function CheckoutContent() {
               userId: user.uid
           });
           
-          if (result.success && result.transactionId) {
-                // ✅ ÉCOUTEUR SPÉCIFIQUE : Surveiller la transaction jusqu'au succès
+          if (!result.success) {
+              throw new Error(result.error);
+          }
+
+          if (result.transactionId) {
                 const paymentRef = doc(db, 'payments', result.transactionId);
                 const unsubscribe = onSnapshot(paymentRef, (snap) => {
                     if (snap.exists()) {
@@ -180,13 +182,11 @@ function CheckoutContent() {
                         }
                     }
                 });
-          } else {
-              throw new Error(String(result.error));
           }
       }
     } catch (e: any) {
       setIsAwaitingUssd(false);
-      setErrorModal({ isOpen: true, message: "Une erreur est survenue. Réessayez.", title: "Erreur de paiement" });
+      setErrorModal({ isOpen: true, message: e.message || "Une erreur est survenue. Réessayez.", title: "Erreur de paiement" });
     } finally {
       setIsProcessing(false);
     }
@@ -288,7 +288,6 @@ function CheckoutContent() {
         </Button>
       </main>
 
-      {/* 🔥 MODAL USSD DYNAMIQUE */}
       <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
           <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
               <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -327,7 +326,6 @@ function CheckoutContent() {
           </DialogContent>
       </Dialog>
 
-      {/* ❌ MODAL D'ERREUR FINTECH RÉELLE */}
       <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
         <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
             <div className="p-8 flex flex-col items-center text-center space-y-6">

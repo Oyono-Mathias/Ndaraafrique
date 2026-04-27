@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Ndara Wallet Étudiant - V9.5 Elite Fintech.
- * ✅ TEMPS RÉEL : Écouteur Firestore onSnapshot sur la transaction en cours.
- * ✅ UX FLUIDE : Transition automatique du modal USSD vers le succès/erreur.
+ * ✅ RÉSOLU : Erreurs de typage TypeScript pour le build Vercel.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -180,35 +179,35 @@ export default function NdaraWalletPage() {
                 courseTitle: 'Recharge Portefeuille'
             });
 
-            if (result.success) {
-                if (result.transactionId) {
-                    const paymentRef = doc(db, 'payments', result.transactionId);
-                    const unsubscribe = onSnapshot(paymentRef, (snap) => {
-                        if (snap.exists()) {
-                            const data = snap.data();
-                            if (data.status === 'completed') {
-                                setIsAwaitingUssd(false);
-                                setIsSuccess(true);
-                                unsubscribe();
-                            } else if (data.status === 'failed') {
-                                setIsAwaitingUssd(false);
-                                const errorMsg = data.metadata?.errorMessage || "La transaction a été rejetée.";
-                                setErrorModal({
-                                    isOpen: true,
-                                    title: "Paiement non validé",
-                                    message: errorMsg
-                                });
-                                unsubscribe();
-                            }
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            if (result.transactionId) {
+                const paymentRef = doc(db, 'payments', result.transactionId);
+                const unsubscribe = onSnapshot(paymentRef, (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.status === 'completed') {
+                            setIsAwaitingUssd(false);
+                            setIsSuccess(true);
+                            unsubscribe();
+                        } else if (data.status === 'failed') {
+                            setIsAwaitingUssd(false);
+                            const errorMsg = data.metadata?.errorMessage || "La transaction a été rejetée.";
+                            setErrorModal({
+                                isOpen: true,
+                                title: "Paiement non validé",
+                                message: errorMsg
+                            });
+                            unsubscribe();
                         }
-                    });
-                }
-            } else {
-                throw new Error(String(result.error));
+                    }
+                });
             }
         } catch (e: any) {
             setIsAwaitingUssd(false);
-            setErrorModal({ isOpen: true, message: "Erreur de connexion. Vérifiez votre réseau.", title: "Erreur de paiement" });
+            setErrorModal({ isOpen: true, message: e.message || "Erreur de connexion. Vérifiez votre réseau.", title: "Erreur de paiement" });
         } finally {
             setIsProcessing(false);
         }
@@ -386,7 +385,6 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
-            {/* MODAL USSD DYNAMIQUE */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
                     <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -417,7 +415,6 @@ export default function NdaraWalletPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* MODAL D'ERREUR FINTECH */}
             <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
                 <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-2xl">
                     <div className="p-8 flex flex-col items-center text-center space-y-6">
@@ -436,7 +433,6 @@ export default function NdaraWalletPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* OVERLAY DE SUCCÈS TEMPS RÉEL */}
             {isSuccess && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
                     <div className="bg-slate-900 rounded-[3rem] p-10 text-center space-y-8 max-w-sm shadow-2xl border border-primary/20">
