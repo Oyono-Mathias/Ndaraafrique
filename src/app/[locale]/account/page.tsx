@@ -4,8 +4,7 @@
  * @fileOverview Mon Profil - Identification & Bio Ndara Afrique.
  * ✅ DESIGN : Forest & Wealth (Android-First).
  * ✅ SÉCURITÉ : Certification des numéros Mobile Money par opérateur local.
- * ✅ VERROUILLAGE : Le pays est scellé UNIQUEMENT si au moins un numéro est certifié.
- * ✅ RÉSEAUX : Ajout de TOUS les réseaux (YouTube, Instagram, Facebook, X, etc.).
+ * ✅ FLEXIBILITÉ : L'utilisateur enregistre uniquement les numéros qu'il possède.
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -36,7 +35,6 @@ import {
     Linkedin, 
     Send, 
     MessageCircle,
-    Link as LinkIcon,
     Youtube,
     Instagram,
     Facebook,
@@ -85,7 +83,7 @@ const accountSchema = z.object({
   facebookUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
   whatsappUrl: z.string().optional().nullable().or(z.literal('')),
   telegramUrl: z.string().optional().nullable().or(z.literal('')),
-  certifiedNumbers: z.record(z.string()).optional(),
+  certifiedNumbers: z.record(z.string().optional().nullable()).optional(),
 });
 
 export default function AccountPage() {
@@ -180,6 +178,14 @@ export default function AccountPage() {
     const selectedCountry = africanCountries.find(c => c.code === values.countryCode);
 
     try {
+        // Filtrer les numéros vides avant envoi pour ne pas polluer Firestore
+        const filteredNumbers: Record<string, string> = {};
+        if (values.certifiedNumbers) {
+            Object.entries(values.certifiedNumbers).forEach(([key, val]) => {
+                if (val && val.trim() !== '') filteredNumbers[key] = val.trim();
+            });
+        }
+
         const result = await updateUserProfileAction({
             userId: currentUser.uid,
             data: {
@@ -198,7 +204,7 @@ export default function AccountPage() {
                 'socialLinks.facebookUrl': values.facebookUrl || '',
                 'socialLinks.whatsappUrl': values.whatsappUrl || '',
                 'socialLinks.telegramUrl': values.telegramUrl || '',
-                certifiedMobileNumbers: values.certifiedNumbers || {},
+                certifiedMobileNumbers: filteredNumbers,
                 isProfileComplete: true
             },
             requesterId: currentUser.uid
@@ -340,7 +346,7 @@ export default function AccountPage() {
                         {userCountryOperators.length > 0 ? (
                             <>
                                 <FormDescription className="text-[10px] text-slate-400 italic leading-relaxed">
-                                    "Enregistrez vos numéros pour votre pays ({africanCountries.find(c => c.code === form.watch('countryCode'))?.name}). Une fois certifiés, ils sont scellés pour votre sécurité."
+                                    "Enregistrez vos numéros pour votre pays ({africanCountries.find(c => c.code === form.watch('countryCode'))?.name}). Seuls les champs remplis seront certifiés."
                                 </FormDescription>
 
                                 <div className="grid gap-4">
