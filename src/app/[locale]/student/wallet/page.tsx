@@ -1,10 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V9.1 Elite Fintech.
- * ✅ AJOUT : Saisie de montant personnalisé.
- * ✅ FIX : Remplacement du terme "AUDIT" par "EN ATTENTE" pour plus de clarté.
- * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié par opérateur.
+ * @fileOverview Ndara Wallet Étudiant - V9.5 Elite Fintech.
+ * ✅ TEMPS RÉEL : Écouteur Firestore onSnapshot sur la transaction en cours.
+ * ✅ UX FLUIDE : Transition automatique du modal USSD vers le succès/erreur.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -176,24 +175,35 @@ export default function NdaraWalletPage() {
             });
 
             if (result.success) {
-                if (result.type === 'SIMULATED') {
-                    setIsAwaitingUssd(false);
-                    setIsSuccess(true);
-                } else if (result.type === 'REAL' && result.transactionId) {
+                // ✅ LOGIQUE TEMPS RÉEL : On écoute le document de transaction spécifique
+                if (result.transactionId) {
                     const paymentRef = doc(db, 'payments', result.transactionId);
+                    
                     const unsubscribe = onSnapshot(paymentRef, (snap) => {
                         if (snap.exists()) {
                             const data = snap.data();
+                            
+                            // 1. Succès détecté via Webhook
                             if (data.status === 'completed') {
                                 setIsAwaitingUssd(false);
                                 setIsSuccess(true);
                                 unsubscribe();
-                            } else if (data.status === 'failed') {
+                            } 
+                            // 2. Échec détecté via Webhook (Solde insuffisant, etc.)
+                            else if (data.status === 'failed') {
                                 setIsAwaitingUssd(false);
+                                const errorMsg = data.metadata?.errorMessage || "La transaction a été rejetée ou le délai a expiré.";
+                                
+                                // Mapping des messages d'erreurs pour l'UX
+                                let userMessage = errorMsg;
+                                if (errorMsg.includes('balance')) userMessage = "Solde insuffisant. Veuillez recharger votre compte Mobile Money puis réessayer.";
+                                if (errorMsg.includes('cancel')) userMessage = "Paiement annulé. Vous pouvez réessayer à tout moment.";
+                                if (errorMsg.includes('timeout')) userMessage = "Délai expiré. Veuillez relancer la recharge.";
+
                                 setErrorModal({
                                     isOpen: true,
-                                    title: "Paiement échoué",
-                                    message: data.metadata?.errorMessage || "La transaction a été rejetée."
+                                    title: "Paiement non validé",
+                                    message: userMessage
                                 });
                                 unsubscribe();
                             }
@@ -205,7 +215,7 @@ export default function NdaraWalletPage() {
             }
         } catch (e: any) {
             setIsAwaitingUssd(false);
-            setErrorModal({ isOpen: true, message: e.message || "Erreur de connexion.", title: "Erreur de paiement" });
+            setErrorModal({ isOpen: true, message: "Erreur de connexion. Vérifiez votre réseau et réessayez.", title: "Erreur de paiement" });
         } finally {
             setIsProcessing(false);
         }
@@ -388,7 +398,7 @@ export default function NdaraWalletPage() {
                 </div>
             </div>
 
-            {/* MODALS (USSD, ERREUR, SUCCÈS) */}
+            {/* MODAL USSD DYNAMIQUE */}
             <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
                 <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
                     <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -411,6 +421,7 @@ export default function NdaraWalletPage() {
                             <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
                                 <p className="text-primary text-sm font-bold leading-relaxed italic">"{ussdInstruction}"</p>
                             </div>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest animate-pulse">En attente de votre code PIN...</p>
                         </div>
                         <div className="w-full pt-4">
                             <Button variant="ghost" onClick={() => setIsAwaitingUssd(false)} className="w-full h-14 rounded-2xl text-slate-500 font-black uppercase text-[11px] tracking-[0.2em] hover:bg-white/5 transition-all"><X className="mr-2 h-4 w-4" /> Annuler l'opération</Button>
@@ -419,10 +430,13 @@ export default function NdaraWalletPage() {
                 </DialogContent>
             </Dialog>
 
+            {/* MODAL D'ERREUR FINTECH (RÉELLE) */}
             <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
-                <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
+                <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-2xl">
                     <div className="p-8 flex flex-col items-center text-center space-y-6">
-                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20 shadow-2xl"><XCircle className="h-10 w-10 text-red-500" /></div>
+                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                            <XCircle className="h-10 w-10 text-red-500" />
+                        </div>
                         <div className="space-y-2">
                             <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">{errorModal.title}</DialogTitle>
                             <p className="text-slate-400 text-sm font-medium leading-relaxed italic">"{errorModal.message}"</p>
@@ -435,12 +449,15 @@ export default function NdaraWalletPage() {
                 </DialogContent>
             </Dialog>
 
+            {/* OVERLAY DE SUCCÈS TEMPS RÉEL */}
             {isSuccess && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
                     <div className="bg-slate-900 rounded-[3rem] p-10 text-center space-y-8 max-w-sm shadow-2xl border border-primary/20">
-                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-2xl animate-bounce shadow-primary/40"><Check className="h-14 w-14 text-slate-950" strokeWidth={4} /></div>
+                        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(16,185,129,0.4)] animate-bounce">
+                            <Check className="h-14 w-14 text-slate-950" strokeWidth={4} />
+                        </div>
                         <div className="space-y-2">
-                            <h3 className="text-3xl font-black text-white uppercase tracking-tight">C'est crédité !</h3>
+                            <h3 className="text-3xl font-black text-white uppercase tracking-tight">C'est validé !</h3>
                             <p className="text-slate-400 font-medium italic text-sm">Votre solde a été mis à jour instantanément.</p>
                         </div>
                         <Button onClick={() => setIsSuccess(false)} className="w-full h-16 rounded-2xl bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">Continuer mes études</Button>

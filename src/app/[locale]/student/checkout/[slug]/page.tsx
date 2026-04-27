@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V5.9.
- * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié par opérateur.
- * ✅ TEMPS RÉEL : Écoute du statut de la transaction Firestore.
+ * @fileOverview Tunnel de paiement Ndara Afrique V6.0.
+ * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié.
+ * ✅ TEMPS RÉEL : Écouteur Firestore onSnapshot pour feedback USSD immédiat.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -94,7 +94,6 @@ function CheckoutContent() {
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
-  // 🛡️ RÉCUPÉRATION DU NUMÉRO CERTIFIÉ SPÉCIFIQUE À L'OPÉRATEUR
   const certifiedNumber = useMemo(() => {
     if (!currentUser || !currentUser.countryCode || !activeMethod || activeMethod.provider !== 'mesomb') return null;
     
@@ -155,6 +154,7 @@ function CheckoutContent() {
                   setIsAwaitingUssd(false);
                   setIsSuccess(true);
               } else if (result.type === 'REAL' && result.transactionId) {
+                  // ✅ LOGIQUE TEMPS RÉEL : Écoute de la transaction spécifique
                   const paymentRef = doc(db, 'payments', result.transactionId);
                   const unsubscribe = onSnapshot(paymentRef, (snap) => {
                       if (snap.exists()) {
@@ -165,10 +165,17 @@ function CheckoutContent() {
                               unsubscribe();
                           } else if (data.status === 'failed') {
                               setIsAwaitingUssd(false);
+                              const errorMsg = data.metadata?.errorMessage || "La transaction a été rejetée.";
+                              
+                              let userMessage = errorMsg;
+                              if (errorMsg.includes('balance')) userMessage = "Solde insuffisant sur votre compte Mobile Money.";
+                              if (errorMsg.includes('cancel')) userMessage = "Paiement annulé sur votre téléphone.";
+                              if (errorMsg.includes('timeout')) userMessage = "Le délai de validation a expiré.";
+
                               setErrorModal({
                                   isOpen: true,
-                                  title: "Échec de validation",
-                                  message: data.metadata?.errorMessage || "La transaction a été rejetée ou le délai a expiré."
+                                  title: "Validation échouée",
+                                  message: userMessage
                               });
                               unsubscribe();
                           }
@@ -178,12 +185,10 @@ function CheckoutContent() {
           } else {
               throw new Error(String(result.error));
           }
-      } else if (selectedMethodId === 'virtual') {
-          setIsSuccess(true);
       }
     } catch (e: any) {
       setIsAwaitingUssd(false);
-      setErrorModal({ isOpen: true, message: e.message || "Erreur de connexion.", title: "Erreur de paiement" });
+      setErrorModal({ isOpen: true, message: "Erreur réseau. Vérifiez votre connexion.", title: "Erreur de paiement" });
     } finally {
       setIsProcessing(false);
     }
@@ -226,7 +231,6 @@ function CheckoutContent() {
                         <span className="text-[8px] font-black uppercase text-white truncate w-full text-center">{m.name}</span>
                     </button>
                 ))}
-                <button onClick={() => setSelectedMethodId('virtual')} className={cn("flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95", selectedMethodId === 'virtual' ? "border-primary bg-primary/10" : "border-white/5 bg-slate-900 opacity-40")}><Zap className="h-5 w-5 text-primary mb-1"/><span className="text-[8px] font-black uppercase text-white">Virtuel</span></button>
             </div>
         </section>
 
@@ -236,7 +240,7 @@ function CheckoutContent() {
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Votre solde Ndara</p>
                     <p className="text-2xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {currencySymbol}</p>
                 </div>
-            ) : (selectedMethodId !== 'virtual') && (
+            ) : (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Compte de débit certifié</label>
                     
@@ -278,7 +282,7 @@ function CheckoutContent() {
 
         <Button 
             onClick={handlePayment} 
-            disabled={isProcessing || isSuccess || !certifiedNumber && selectedMethodId !== 'wallet' && selectedMethodId !== 'virtual' || (selectedMethodId === 'wallet' && (currentUser?.balance || 0) < (course?.price || 0))} 
+            disabled={isProcessing || isSuccess || (!certifiedNumber && selectedMethodId !== 'wallet') || (selectedMethodId === 'wallet' && (currentUser?.balance || 0) < (course?.price || 0))} 
             className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-sm tracking-widest shadow-2xl active:scale-95 transition-all"
         >
             {isProcessing ? <Loader2 className="animate-spin h-5 w-5" /> : <Lock className="h-4 w-4 mr-2" />}
@@ -286,7 +290,7 @@ function CheckoutContent() {
         </Button>
       </main>
 
-      {/* 🔥 MODAL USSD */}
+      {/* 🔥 MODAL USSD DYNAMIQUE */}
       <Dialog open={isAwaitingUssd} onOpenChange={setIsAwaitingUssd}>
           <DialogContent className="bg-slate-900/90 backdrop-blur-2xl border-white/10 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
               <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -325,7 +329,7 @@ function CheckoutContent() {
           </DialogContent>
       </Dialog>
 
-      {/* ❌ MODAL D'ERREUR FINTECH */}
+      {/* ❌ MODAL D'ERREUR FINTECH RÉELLE */}
       <Dialog open={errorModal.isOpen} onOpenChange={(o) => setErrorModal(prev => ({ ...prev, isOpen: o }))}>
         <DialogContent className="bg-[#0f172a] border-white/5 rounded-t-[3rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
             <div className="p-8 flex flex-col items-center text-center space-y-6">
