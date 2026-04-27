@@ -4,6 +4,7 @@
  * @fileOverview Actions MeSomb pour Next.js Server Actions.
  * ✅ SÉCURITÉ : Suppression totale du mode simulé pour la production.
  * ✅ FIABILITÉ : Création systématique du document AVANT l'appel MeSomb.
+ * ✅ RÉCONCILIATION : Export des fonctions nécessaires au Cockpit Admin.
  */
 
 import { getAdminDb } from '@/firebase/admin';
@@ -12,8 +13,17 @@ import { getMeSombClient } from '@/lib/mesomb';
 import type { NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
-  | { success: true; transactionId: string; message: string }
+  | { success: true; transactionId: string; message: string; type: 'REAL' | 'SIMULATED' }
   | { success: false; error: string };
+
+/** 🛡️ Helper de sécurité interne */
+async function verifyAdminOrThrow(adminId: string) {
+    const db = getAdminDb();
+    const adminDoc = await db.collection('users').doc(adminId).get();
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
+        throw new Error("UNAUTHORIZED_ACCESS: Droits administrateur requis.");
+    }
+}
 
 /** 💸 1. Initier un paiement réel (Collect) */
 export async function initiateMeSombPayment(params: {
@@ -80,6 +90,7 @@ export async function initiateMeSombPayment(params: {
         return { 
           success: true, 
           transactionId: externalReference,
+          type: 'REAL',
           message: "Veuillez valider le prompt sur votre téléphone." 
         };
     } else {
@@ -100,9 +111,7 @@ export async function initiateMeSombPayment(params: {
 /** 💰 2. Vérifier le solde marchand MeSomb (Pour Admin) */
 export async function getMeSombBalanceAction(adminId: string) {
     try {
-        const db = getAdminDb();
-        const adminDoc = await db.collection('users').doc(adminId).get();
-        if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') throw new Error("Accès refusé.");
+        await verifyAdminOrThrow(adminId);
 
         const client = getMeSombClient();
         const appStatus = await client.getStatus();
@@ -114,6 +123,67 @@ export async function getMeSombBalanceAction(adminId: string) {
             balance: Number(mainBalance.value), 
             currency: mainBalance.currency 
         };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🔧 3. Réconciliation des paiements en attente (Pour Admin) */
+export async function reconcilePendingPaymentsAction(adminId: string) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+
+        // On récupère les 20 dernières transactions en attente
+        const pendingSnap = await db.collection('payments')
+            .where('status', '==', 'pending')
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+
+        if (pendingSnap.empty) return { success: true, processed: 0 };
+
+        let processed = 0;
+        const client = getMeSombClient();
+
+        for (const paymentDoc of pendingSnap.docs) {
+            const paymentData = paymentDoc.data();
+            const gatewayId = paymentData.gatewayTransactionId;
+
+            if (!gatewayId) continue;
+
+            try {
+                // On interroge MeSomb pour voir si la transaction a été validée entre-temps
+                const transactions = await client.getTransactions([gatewayId]);
+                if (transactions && transactions.length > 0) {
+                    const tsx = transactions[0];
+                    if ((tsx as any).status === 'SUCCESS') {
+                        // Si MeSomb confirme le succès, on déclenche le processeur financier
+                        const { processNdaraPayment } = await import('@/services/paymentProcessor');
+                        await processNdaraPayment({
+                            transactionId: paymentDoc.id,
+                            gatewayTransactionId: gatewayId,
+                            provider: paymentData.provider,
+                            amount: paymentData.amount,
+                            currency: paymentData.currency,
+                            metadata: {
+                                ...paymentData.metadata,
+                                userId: paymentData.userId,
+                                courseId: paymentData.courseId,
+                                type: paymentData.type
+                            }
+                        });
+                        processed++;
+                    } else if ((tsx as any).status === 'FAIL') {
+                        await paymentDoc.ref.update({ status: 'failed', updatedAt: FieldValue.serverTimestamp() });
+                    }
+                }
+            } catch (err) {
+                console.error(`[Reconciliation Fail] for ${paymentDoc.id}:`, err);
+            }
+        }
+
+        return { success: true, processed };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
