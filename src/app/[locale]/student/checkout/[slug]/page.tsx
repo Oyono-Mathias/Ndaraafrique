@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V6.0.
- * ✅ SÉCURITÉ : Récupération intelligente du numéro certifié.
- * ✅ TEMPS RÉEL : Écouteur Firestore onSnapshot pour feedback USSD immédiat.
+ * @fileOverview Tunnel de paiement Ndara Afrique V7.0.
+ * ✅ RÉSOLU : Redirection automatique si le cours est déjà acquis.
+ * ✅ RÉSOLU : Écouteur temps réel ultra-réactif.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -21,7 +21,6 @@ import {
   ShieldCheck, 
   GraduationCap, 
   Check, 
-  Zap, 
   Wallet,
   X,
   PhoneCall,
@@ -68,6 +67,18 @@ function CheckoutContent() {
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
+  // 🛡️ SÉCURITÉ : Vérifier si le cours est déjà possédé AVANT de proposer le paiement
+  useEffect(() => {
+      if (!user?.uid || !slug) return;
+      const enrollmentId = `${user.uid}_${slug}`;
+      const unsub = onSnapshot(doc(db, 'enrollments', enrollmentId), (snap) => {
+          if (snap.exists() && snap.data().status === 'active') {
+              setIsSuccess(true); // Si déjà possédé, on saute directement au succès
+          }
+      });
+      return () => unsub();
+  }, [user?.uid, slug, db]);
+
   useEffect(() => {
     if (!currentUser?.countryCode) return;
 
@@ -90,7 +101,6 @@ function CheckoutContent() {
 
   const activeMethod = useMemo(() => 
     selectedMethodId === 'wallet' ? { provider: 'wallet', name: 'Solde Ndara' } :
-    selectedMethodId === 'virtual' ? { provider: 'virtual', name: 'Crédit Virtuel' } :
     countryData?.paymentMethods.find(m => m.id === selectedMethodId),
   [countryData, selectedMethodId]);
 
@@ -149,46 +159,34 @@ function CheckoutContent() {
               userId: user.uid
           });
           
-          if (result.success) {
-              if (result.type === 'SIMULATED') {
-                  setIsAwaitingUssd(false);
-                  setIsSuccess(true);
-              } else if (result.type === 'REAL' && result.transactionId) {
-                  // ✅ LOGIQUE TEMPS RÉEL : Écoute de la transaction spécifique
-                  const paymentRef = doc(db, 'payments', result.transactionId);
-                  const unsubscribe = onSnapshot(paymentRef, (snap) => {
-                      if (snap.exists()) {
-                          const data = snap.data();
-                          if (data.status === 'completed') {
-                              setIsAwaitingUssd(false);
-                              setIsSuccess(true);
-                              unsubscribe();
-                          } else if (data.status === 'failed') {
-                              setIsAwaitingUssd(false);
-                              const errorMsg = data.metadata?.errorMessage || "La transaction a été rejetée.";
-                              
-                              let userMessage = errorMsg;
-                              if (errorMsg.includes('balance')) userMessage = "Solde insuffisant sur votre compte Mobile Money.";
-                              if (errorMsg.includes('cancel')) userMessage = "Paiement annulé sur votre téléphone.";
-                              if (errorMsg.includes('timeout')) userMessage = "Le délai de validation a expiré.";
-
-                              setErrorModal({
-                                  isOpen: true,
-                                  title: "Validation échouée",
-                                  message: userMessage
-                              });
-                              unsubscribe();
-                          }
-                      }
-                  });
-              }
+          if (result.success && result.transactionId) {
+                // ✅ ÉCOUTEUR SPÉCIFIQUE : Surveiller la transaction jusqu'au succès
+                const paymentRef = doc(db, 'payments', result.transactionId);
+                const unsubscribe = onSnapshot(paymentRef, (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.status === 'completed') {
+                            setIsAwaitingUssd(false);
+                            setIsSuccess(true);
+                            unsubscribe();
+                        } else if (data.status === 'failed') {
+                            setIsAwaitingUssd(false);
+                            setErrorModal({
+                                isOpen: true,
+                                title: "Transaction échouée",
+                                message: data.metadata?.errorMessage || "Le paiement a été rejeté ou annulé."
+                            });
+                            unsubscribe();
+                        }
+                    }
+                });
           } else {
               throw new Error(String(result.error));
           }
       }
     } catch (e: any) {
       setIsAwaitingUssd(false);
-      setErrorModal({ isOpen: true, message: "Erreur réseau. Vérifiez votre connexion.", title: "Erreur de paiement" });
+      setErrorModal({ isOpen: true, message: "Une erreur est survenue. Réessayez.", title: "Erreur de paiement" });
     } finally {
       setIsProcessing(false);
     }
@@ -241,7 +239,7 @@ function CheckoutContent() {
                     <p className="text-2xl font-black text-primary">{(currentUser?.balance || 0).toLocaleString()} {currencySymbol}</p>
                 </div>
             ) : (
-                <div className="space-y-3 animate-in slide-in-from-top-2">
+                <div className="space-y-3 animate-in slide-up-modal">
                     <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Compte de débit certifié</label>
                     
                     {certifiedNumber ? (
@@ -258,7 +256,7 @@ function CheckoutContent() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-2 bg-slate-950 rounded-lg text-slate-700">
+                            <div className="p-2 bg-slate-900 rounded-lg text-slate-700">
                                 <Lock size={16} />
                             </div>
                         </div>
