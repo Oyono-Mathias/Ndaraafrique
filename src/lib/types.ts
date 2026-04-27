@@ -71,6 +71,7 @@ export interface NdaraUser {
     linkedin?: string;
     youtube?: string;
     telegramUrl?: string;
+    whatsappUrl?: string;
   };
   instructorApplication?: {
     specialty: string;

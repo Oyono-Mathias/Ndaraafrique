@@ -4,7 +4,8 @@
  * @fileOverview Mon Profil - Identification & Bio Ndara Afrique.
  * ✅ DESIGN : Forest & Wealth (Android-First).
  * ✅ SÉCURITÉ : Certification des numéros Mobile Money par opérateur local.
- * ✅ VERROUILLAGE : Le pays et les numéros sont scellés après enregistrement. Seul l'admin peut modifier.
+ * ✅ VERROUILLAGE : Le pays est scellé UNIQUEMENT si au moins un numéro est certifié.
+ * ✅ RÉSEAUX : Ajout de WhatsApp, Telegram, LinkedIn et Portfolio.
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -20,7 +21,23 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Camera, CheckCircle2, ShieldCheck, User, AtSign, Smartphone, ArrowLeft, Lock, ShieldAlert, AlertCircle, Globe } from 'lucide-react';
+import { 
+    Loader2, 
+    Camera, 
+    CheckCircle2, 
+    ShieldCheck, 
+    User, 
+    Smartphone, 
+    ArrowLeft, 
+    Lock, 
+    ShieldAlert, 
+    AlertCircle, 
+    Globe, 
+    Linkedin, 
+    Send, 
+    MessageCircle,
+    Link as LinkIcon
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useRouter } from 'next/navigation';
@@ -58,6 +75,8 @@ const accountSchema = z.object({
   countryCode: z.string().min(2, "Pays requis."),
   linkedinUrl: z.string().url("Lien invalide").optional().nullable().or(z.literal('')),
   portfolioUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
+  whatsappUrl: z.string().optional().nullable().or(z.literal('')),
+  telegramUrl: z.string().optional().nullable().or(z.literal('')),
   certifiedNumbers: z.record(z.string()).optional(),
 });
 
@@ -81,6 +100,8 @@ export default function AccountPage() {
         countryCode: '',
         linkedinUrl: '',
         portfolioUrl: '',
+        whatsappUrl: '',
+        telegramUrl: '',
         certifiedNumbers: {},
     }
   });
@@ -96,6 +117,8 @@ export default function AccountPage() {
         interestDomain: currentUser.careerGoals?.interestDomain || '',
         linkedinUrl: currentUser.socialLinks?.linkedin || '',
         portfolioUrl: currentUser.socialLinks?.website || '',
+        whatsappUrl: currentUser.socialLinks?.whatsappUrl || '',
+        telegramUrl: currentUser.socialLinks?.telegramUrl || '',
         certifiedNumbers: currentUser.certifiedMobileNumbers || {},
       });
     }
@@ -153,6 +176,8 @@ export default function AccountPage() {
                 'careerGoals.interestDomain': values.interestDomain,
                 'socialLinks.linkedin': values.linkedinUrl || '',
                 'socialLinks.website': values.portfolioUrl || '',
+                'socialLinks.whatsappUrl': values.whatsappUrl || '',
+                'socialLinks.telegramUrl': values.telegramUrl || '',
                 certifiedMobileNumbers: values.certifiedNumbers || {},
                 isProfileComplete: true
             },
@@ -174,8 +199,9 @@ export default function AccountPage() {
   // Opérateurs spécifiques au pays de l'utilisateur
   const userCountryOperators = COUNTRY_OPERATORS[form.watch('countryCode') || ''] || [];
   
-  // 🛡️ SÉCURITÉ : Le pays est-il déjà enregistré ?
-  const isCountryLocked = !!currentUser.countryCode;
+  // 🛡️ SÉCURITÉ : Le pays n'est verrouillé QUE si au moins un numéro est certifié
+  const hasCertifiedNumbers = Object.keys(currentUser.certifiedMobileNumbers || {}).length > 0;
+  const isCountryLocked = hasCertifiedNumbers;
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f172a] relative flex flex-col font-sans">
@@ -317,6 +343,62 @@ export default function AccountPage() {
                                 </p>
                             </div>
                         )}
+                    </div>
+
+                    {/* 🌐 SECTION RÉSEAUX SOCIAUX */}
+                    <div className="bg-[#1e293b] rounded-4xl p-6 border border-white/5 shadow-xl space-y-6">
+                        <h3 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.3em] mb-2 border-b border-white/5 pb-2">Visibilité & Réseaux</h3>
+
+                        <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
+                            <FormItem className="space-y-1">
+                                <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Profil LinkedIn</FormLabel>
+                                <FormControl>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"><Linkedin size={16}/></div>
+                                        <Input {...field} value={field.value ?? ''} placeholder="https://linkedin.com/in/..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+
+                        <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
+                            <FormItem className="space-y-1">
+                                <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Portfolio / Site</FormLabel>
+                                <FormControl>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><LinkIcon size={16}/></div>
+                                        <Input {...field} value={field.value ?? ''} placeholder="https://votre-site.com" className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <FormField control={form.control} name="whatsappUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">WhatsApp</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><MessageCircle size={14}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="Numéro..." className="h-10 pl-9 bg-[#0f172a] border-white/5 rounded-lg text-white text-[10px]" />
+                                        </div>
+                                    </FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="telegramUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Telegram</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400"><Send size={14}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="@pseudo..." className="h-10 pl-9 bg-[#0f172a] border-white/5 rounded-lg text-white text-[10px]" />
+                                        </div>
+                                    </FormControl>
+                                </FormItem>
+                            )}/>
+                        </div>
                     </div>
 
                     <div className="bg-[#1e293b] rounded-4xl p-6 border border-white/5 shadow-xl space-y-6">
