@@ -4,6 +4,7 @@
  * @fileOverview Historique financier complet de l'étudiant Ndara Afrique.
  * ✅ TRAÇABILITÉ : Affiche les logos via détection intelligente des métadonnées.
  * ✅ FIX : Remplacement du terme "AUDIT" par "EN ATTENTE".
+ * ✅ FIX : Correction du crash RangeError sur le formatage des dates.
  */
 
 import { useMemo, useState } from 'react';
@@ -27,6 +28,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { safeToDate } from '@/lib/date-utils';
 import type { Payment } from '@/lib/types';
 import { OperatorLogo } from '@/components/ui/OperatorLogo';
 
@@ -55,18 +57,18 @@ export default function StudentPaymentsPage() {
   const payments = useMemo(() => {
     if (!rawPayments) return [];
     return [...rawPayments].sort((a, b) => {
-        const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
-        const dateB = (b.date as any)?.toDate?.() || new Date(b.date as any || 0);
-        return dateB.getTime() - dateA.getTime();
+        const dateA = safeToDate(a.date).getTime();
+        const dateB = safeToDate(b.date).getTime();
+        return dateB - dateA;
     });
   }, [rawPayments]);
 
   const payouts = useMemo(() => {
     if (!rawPayouts) return [];
     return [...rawPayouts].sort((a, b) => {
-        const dateA = (a.createdAt as any)?.toDate?.() || new Date(a.createdAt as any || 0);
-        const dateB = (b.createdAt as any)?.toDate?.() || new Date(b.createdAt as any || 0);
-        return dateB.getTime() - dateA.getTime();
+        const dateA = safeToDate(a.createdAt).getTime();
+        const dateB = safeToDate(b.createdAt).getTime();
+        return dateB - dateA;
     });
   }, [rawPayouts]);
 
@@ -122,7 +124,7 @@ export default function StudentPaymentsPage() {
 }
 
 function PaymentItem({ payment }: { payment: Payment }) {
-  const date = (payment.date as any)?.toDate?.() || new Date(payment.date as any || 0);
+  const date = safeToDate(payment.date);
   
   const statusConfig = (({
     completed: { label: 'Réussi', class: 'bg-emerald-500/10 text-emerald-400', icon: CheckCircle2 },
@@ -149,7 +151,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                        {format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}
+                        {date.getTime() === 0 ? '---' : format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}
                     </span>
                 </div>
             </div>
@@ -169,7 +171,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
 }
 
 function PayoutItem({ payout }: { payout: any }) {
-    const date = (payout.createdAt as any)?.toDate?.() || new Date(payout.createdAt as any || 0);
+    const date = safeToDate(payout.createdAt);
     
     const statusConfig = (({
         pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-500 animate-pulse' },
@@ -188,7 +190,7 @@ function PayoutItem({ payout }: { payout: any }) {
                     <div>
                         <p className="font-black text-white text-[13px] uppercase tracking-tight">Retrait expert</p>
                         <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest mt-0.5">
-                            {format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}
+                            {date.getTime() === 0 ? '---' : format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}
                         </p>
                     </div>
                 </div>

@@ -3,6 +3,7 @@
 /**
  * @fileOverview Ndara Wallet Étudiant - V9.5 Elite Fintech.
  * ✅ RÉSOLU : Erreurs de typage TypeScript pour le build Vercel.
+ * ✅ RÉSOLU : Correction du crash RangeError sur le formatage des dates.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -32,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { initiateMeSombPayment } from '@/actions/meSombActions';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { safeToDate } from '@/lib/date-utils';
 import type { Payment, Country } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -123,9 +125,9 @@ export default function NdaraWalletPage() {
 
     const sortedTransactions = useMemo(() => {
         return [...rawTransactions].sort((a, b) => {
-            const dateA = (a.date as any)?.toDate?.() || new Date(a.date as any || 0);
-            const dateB = (b.date as any)?.toDate?.() || new Date(b.date as any || 0);
-            return dateB.getTime() - dateA.getTime();
+            const dateA = safeToDate(a.date).getTime();
+            const dateB = safeToDate(b.date).getTime();
+            return dateB - dateA;
         });
     }, [rawTransactions]);
 
@@ -180,7 +182,7 @@ export default function NdaraWalletPage() {
             });
 
             if (!result.success) {
-                throw new Error(result.error);
+                throw new Error((result as any).error);
             }
 
             if (result.transactionId) {
@@ -340,13 +342,17 @@ export default function NdaraWalletPage() {
                                 sortedTransactions.map(txn => {
                                     const status = (txn.status || 'pending').toLowerCase();
                                     const opName = txn.metadata?.operator || txn.provider;
+                                    const txnDate = safeToDate(txn.date);
+                                    
                                     return (
                                         <div key={txn.id} className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between group active:scale-[0.98] transition-all">
                                             <div className="flex items-center gap-4">
                                                 <OperatorLogo operatorName={opName} size={42} className="bg-slate-950 p-1" />
                                                 <div className="min-w-0">
                                                     <p className="font-bold text-white text-xs uppercase truncate max-w-[120px]">{txn.courseTitle || 'Transaction'}</p>
-                                                    <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">{format((txn.date as any)?.toDate?.() || new Date(txn.date as any || 0), 'dd MMM • HH:mm', { locale: fr })}</p>
+                                                    <p className="text-slate-600 text-[9px] font-bold uppercase mt-0.5">
+                                                      {txnDate.getTime() === 0 ? '---' : format(txnDate, 'dd MMM • HH:mm', { locale: fr })}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">

@@ -77,7 +77,14 @@ service cloud.firestore {
     }
 
     match /enrollments/{id} {
-      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid || isAdmin());
+      // ✅ FIX : Autorise le 'get' même si le document n'existe pas encore (resource == null)
+      // pour permettre au tunnel de paiement de vérifier l'absence d'inscription.
+      allow read: if isSignedIn() && (
+        resource == null || 
+        resource.data.studentId == request.auth.uid || 
+        resource.data.instructorId == request.auth.uid || 
+        isAdmin()
+      );
       allow write: if isAdmin();
     }
 
