@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V7.0.
- * ✅ RÉSOLU : Erreurs de typage TypeScript pour le build Vercel.
- * ✅ RÉSOLU : Redirection automatique si le cours est déjà acquis.
+ * @fileOverview Tunnel de paiement Ndara Afrique V8.0.
+ * ✅ RÉSOLU : Affichage du succès UNIQUEMENT après réception d'un nouveau paiement.
+ * ✅ RÉSOLU : Redirection immédiate si le cours est déjà possédé (évite le double achat).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getFirestore, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot, collection, query, where, getDocs, limit, getDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,7 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingUssd, setIsAwaitingUssd] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isInitialCheckDone, setIsInitialCheckDone] = useState(false);
 
   const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string; title: string }>({
     isOpen: false,
@@ -67,16 +68,40 @@ function CheckoutContent() {
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
+  // 🛡️ SÉCURITÉ : Redirection automatique si le cours est déjà acquis
+  // On ne montre le modal "C'est validé" que si l'inscription arrive pendant que l'utilisateur est sur la page
   useEffect(() => {
-      if (!user?.uid || !slug) return;
+    if (!user?.uid || !slug || isInitialCheckDone) return;
+    
+    const checkExistingEnrollment = async () => {
+        const enrollmentId = `${user.uid}_${slug}`;
+        const snap = await getDoc(doc(db, 'enrollments', enrollmentId));
+        
+        if (snap.exists() && snap.data().status === 'active') {
+            // Déjà inscrit : Redirection directe vers les leçons sans modal de succès
+            router.replace(`/${locale}/courses/${slug}`);
+        } else {
+            // Pas encore inscrit : On autorise le processus de paiement
+            setIsInitialCheckDone(true);
+        }
+    };
+    
+    checkExistingEnrollment();
+  }, [user?.uid, slug, db, isInitialCheckDone, locale, router]);
+
+  // 🔄 ÉCOUTEUR TEMPS RÉEL : Détecte la confirmation du paiement (Webhook)
+  useEffect(() => {
+      if (!user?.uid || !slug || !isInitialCheckDone) return;
+      
       const enrollmentId = `${user.uid}_${slug}`;
       const unsub = onSnapshot(doc(db, 'enrollments', enrollmentId), (snap) => {
           if (snap.exists() && snap.data().status === 'active') {
+              // Nouveau paiement reçu ! On affiche la célébration
               setIsSuccess(true);
           }
       });
       return () => unsub();
-  }, [user?.uid, slug, db]);
+  }, [user?.uid, slug, db, isInitialCheckDone]);
 
   useEffect(() => {
     if (!currentUser?.countryCode) return;
@@ -134,11 +159,10 @@ function CheckoutContent() {
               amount: course.price
           });
 
-          if (result.success) {
-              setIsSuccess(true);
-          } else {
+          if (!result.success) {
               throw new Error(result.error || "Échec du débit wallet.");
           }
+          // isSuccess sera activé par le onSnapshot sur l'enrollment
 
       } else if (activeMethod.provider === 'mesomb') {
           if (!certifiedNumber) {
@@ -159,7 +183,8 @@ function CheckoutContent() {
           });
           
           if (!result.success) {
-              throw new Error(result.error);
+              // Narrowing TypeScript : result est de type MeSombError
+              throw new Error(String((result as any).error));
           }
 
           if (result.transactionId) {
@@ -169,7 +194,7 @@ function CheckoutContent() {
                         const data = snap.data();
                         if (data.status === 'completed') {
                             setIsAwaitingUssd(false);
-                            setIsSuccess(true);
+                            // setIsSuccess sera géré par l'autre useEffect sur l'enrollment
                             unsubscribe();
                         } else if (data.status === 'failed') {
                             setIsAwaitingUssd(false);
@@ -192,7 +217,7 @@ function CheckoutContent() {
     }
   };
 
-  if (courseLoading || isLoadingCountry) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
+  if (courseLoading || isLoadingCountry || !isInitialCheckDone) return <div className="p-8 pt-24 bg-slate-950 min-h-screen"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
 
   const currencySymbol = countryData?.currency || 'XOF';
 
