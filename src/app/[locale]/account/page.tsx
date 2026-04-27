@@ -5,7 +5,7 @@
  * ✅ DESIGN : Forest & Wealth (Android-First).
  * ✅ SÉCURITÉ : Certification des numéros Mobile Money par opérateur local.
  * ✅ VERROUILLAGE : Le pays est scellé UNIQUEMENT si au moins un numéro est certifié.
- * ✅ RÉSEAUX : Ajout de WhatsApp, Telegram, LinkedIn et Portfolio.
+ * ✅ RÉSEAUX : Ajout de TOUS les réseaux (YouTube, Instagram, Facebook, X, etc.).
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -36,7 +36,11 @@ import {
     Linkedin, 
     Send, 
     MessageCircle,
-    Link as LinkIcon
+    Link as LinkIcon,
+    Youtube,
+    Instagram,
+    Facebook,
+    Twitter
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
@@ -75,6 +79,10 @@ const accountSchema = z.object({
   countryCode: z.string().min(2, "Pays requis."),
   linkedinUrl: z.string().url("Lien invalide").optional().nullable().or(z.literal('')),
   portfolioUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
+  youtubeUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
+  twitterUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
+  instagramUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
+  facebookUrl: z.string().url("URL invalide").optional().nullable().or(z.literal('')),
   whatsappUrl: z.string().optional().nullable().or(z.literal('')),
   telegramUrl: z.string().optional().nullable().or(z.literal('')),
   certifiedNumbers: z.record(z.string()).optional(),
@@ -100,6 +108,10 @@ export default function AccountPage() {
         countryCode: '',
         linkedinUrl: '',
         portfolioUrl: '',
+        youtubeUrl: '',
+        twitterUrl: '',
+        instagramUrl: '',
+        facebookUrl: '',
         whatsappUrl: '',
         telegramUrl: '',
         certifiedNumbers: {},
@@ -117,6 +129,10 @@ export default function AccountPage() {
         interestDomain: currentUser.careerGoals?.interestDomain || '',
         linkedinUrl: currentUser.socialLinks?.linkedin || '',
         portfolioUrl: currentUser.socialLinks?.website || '',
+        twitterUrl: currentUser.socialLinks?.twitter || '',
+        youtubeUrl: currentUser.socialLinks?.youtube || '',
+        instagramUrl: currentUser.socialLinks?.instagramUrl || '',
+        facebookUrl: currentUser.socialLinks?.facebookUrl || '',
         whatsappUrl: currentUser.socialLinks?.whatsappUrl || '',
         telegramUrl: currentUser.socialLinks?.telegramUrl || '',
         certifiedNumbers: currentUser.certifiedMobileNumbers || {},
@@ -176,6 +192,10 @@ export default function AccountPage() {
                 'careerGoals.interestDomain': values.interestDomain,
                 'socialLinks.linkedin': values.linkedinUrl || '',
                 'socialLinks.website': values.portfolioUrl || '',
+                'socialLinks.twitter': values.twitterUrl || '',
+                'socialLinks.youtube': values.youtubeUrl || '',
+                'socialLinks.instagramUrl': values.instagramUrl || '',
+                'socialLinks.facebookUrl': values.facebookUrl || '',
                 'socialLinks.whatsappUrl': values.whatsappUrl || '',
                 'socialLinks.telegramUrl': values.telegramUrl || '',
                 certifiedMobileNumbers: values.certifiedNumbers || {},
@@ -345,37 +365,91 @@ export default function AccountPage() {
                         )}
                     </div>
 
-                    {/* 🌐 SECTION RÉSEAUX SOCIAUX */}
+                    {/* 🌐 SECTION RÉSEAUX SOCIAUX COMPLÈTE */}
                     <div className="bg-[#1e293b] rounded-4xl p-6 border border-white/5 shadow-xl space-y-6">
                         <h3 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.3em] mb-2 border-b border-white/5 pb-2">Visibilité & Réseaux</h3>
 
-                        <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
-                            <FormItem className="space-y-1">
-                                <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Profil LinkedIn</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"><Linkedin size={16}/></div>
-                                        <Input {...field} value={field.value ?? ''} placeholder="https://linkedin.com/in/..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">LinkedIn</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"><Linkedin size={16}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="Lien profil..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
 
-                        <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
-                            <FormItem className="space-y-1">
-                                <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Portfolio / Site</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><LinkIcon size={16}/></div>
-                                        <Input {...field} value={field.value ?? ''} placeholder="https://votre-site.com" className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
+                            <FormField control={form.control} name="youtubeUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">YouTube</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500"><Youtube size={16}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="Lien chaîne..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
 
-                        <div className="grid grid-cols-2 gap-3">
+                            <FormField control={form.control} name="instagramUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Instagram</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500"><Instagram size={16}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="Lien Instagram..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name="twitterUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">X (Twitter)</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200"><Twitter size={16}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="Lien Twitter..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name="facebookUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Facebook</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600"><Facebook size={16}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="Lien Facebook..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Site / Portfolio</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400"><Globe size={16}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="https://..." className="h-12 pl-11 bg-[#0f172a] border-white/5 rounded-xl text-white text-xs" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
                             <FormField control={form.control} name="whatsappUrl" render={({ field }) => (
                                 <FormItem className="space-y-1">
                                     <FormLabel className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">WhatsApp</FormLabel>
