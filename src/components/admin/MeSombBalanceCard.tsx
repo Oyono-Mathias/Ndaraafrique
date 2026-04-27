@@ -30,11 +30,12 @@ export function MeSombBalanceCard() {
                 setBalance(result.balance ?? 0);
                 setCurrency(result.currency || 'XAF');
             } else {
-                const msg = result.error?.includes('<!DOCTYPE') ? "Erreur serveur MeSomb (404/500)" : result.error;
+                // Nettoyage des messages d'erreur MeSomb pour l'admin
+                const msg = result.error?.includes('<!DOCTYPE') ? "Erreur serveur MeSomb" : result.error;
                 setError(msg || "Erreur de connexion.");
             }
         } catch (e: any) {
-            setError("Erreur technique de communication.");
+            setError("Erreur technique.");
         } finally {
             setIsLoading(false);
         }
@@ -89,7 +90,7 @@ export function MeSombBalanceCard() {
                                 <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-start gap-3">
                                     <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                                     <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">
-                                        Conseil : Assurez-vous que votre application MeSomb est en mode "Live" et que vos documents KYC ont été validés.
+                                        Note : MeSomb reçoit bien votre argent, mais l'affichage du solde sera activé après validation de vos documents KYC.
                                     </p>
                                 </div>
                             )}
@@ -104,7 +105,7 @@ export function MeSombBalanceCard() {
                             </p>
                             <div className="flex items-center gap-1.5 mt-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Moteur SDK v2.0.1</span>
+                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Connecté</span>
                             </div>
                         </div>
                     )}
