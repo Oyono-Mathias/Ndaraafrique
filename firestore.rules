@@ -11,6 +11,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
@@ -76,11 +77,11 @@ service cloud.firestore {
       }
     }
 
-    match /enrollments/{id} {
-      // ✅ FIX PERMISSION : On autorise la lecture si l'utilisateur est le propriétaire (via l'ID ou les data)
-      // Cela évite le crash lors de la vérification "Check Existing Enrollment" avant l'achat.
+    match /enrollments/{enrollmentId} {
+      // ✅ FIX PERMISSION : On autorise la lecture si l'ID commence par l'UID de l'utilisateur.
+      // Cela permet le 'get' et le 'onSnapshot' même si le document n'existe pas encore.
       allow read: if isSignedIn() && (
-        id.startsWith(request.auth.uid) || 
+        enrollmentId.startsWith(request.auth.uid) || 
         (resource != null && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid)) ||
         isAdmin()
       );
