@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Ndara Wallet Étudiant - V9.5 Elite Fintech.
- * ✅ RÉSOLU : Erreurs de typage TypeScript pour le build Vercel.
- * ✅ RÉSOLU : Correction du crash RangeError sur le formatage des dates.
+ * @fileOverview Ndara Wallet Étudiant - V9.6 Elite Fintech.
+ * ✅ RÉSOLU : Correction du crash RangeError sur le formatage des dates via safeToDate.
  */
 
 import { useRole } from '@/context/RoleContext';

@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -19,7 +18,6 @@ service cloud.firestore {
     }
 
     // --- PROFIL UTILISATEUR ---
-    // Autorisé en lecture publique pour les compteurs de la Landing Page
     match /users/{userId} {
       allow read: if true; 
       allow create: if isOwner(userId);
@@ -34,8 +32,17 @@ service cloud.firestore {
       }
     }
 
+    // --- ENROLLMENTS (INSCRIPTIONS) ---
+    match /enrollments/{id} {
+      // ✅ FIX PERMISSION : Sécurisation de l'accès via préfixe d'ID pour permettre le 'get' sur document inexistant
+      allow read: if isSignedIn() && (
+        id.startsWith(request.auth.uid) || 
+        (resource != null && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid))
+      );
+      allow write: if false;
+    }
+
     // --- AVIS (REVIEWS) ---
-    // Autorisé en lecture publique pour la section Témoignages de la Landing Page
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if isSignedIn();

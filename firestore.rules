@@ -77,12 +77,11 @@ service cloud.firestore {
     }
 
     match /enrollments/{id} {
-      // ✅ FIX : Autorise le 'get' même si le document n'existe pas encore (resource == null)
-      // pour permettre au tunnel de paiement de vérifier l'absence d'inscription.
+      // ✅ FIX PERMISSION : On autorise la lecture si l'utilisateur est le propriétaire (via l'ID ou les data)
+      // Cela évite le crash lors de la vérification "Check Existing Enrollment" avant l'achat.
       allow read: if isSignedIn() && (
-        resource == null || 
-        resource.data.studentId == request.auth.uid || 
-        resource.data.instructorId == request.auth.uid || 
+        id.startsWith(request.auth.uid) || 
+        (resource != null && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid)) ||
         isAdmin()
       );
       allow write: if isAdmin();
