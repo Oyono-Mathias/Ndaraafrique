@@ -18,7 +18,7 @@ async function verifyAdminOrThrow(adminId: string) {
 }
 
 /**
- * 🤖 Soumettre un cours pour revue avec Audit IA Mathias obligatoire.
+ * 🤖 Soumettre un cours pour revue avec Audit IA Mathias OBLIGATOIRE et BLOQUANT.
  */
 export async function submitCourseForReviewAction({
   courseId,
@@ -39,11 +39,15 @@ export async function submitCourseForReviewAction({
       return { success: false, error: 'error.not_authorized' };
     }
 
-    // 1. Récupérer la structure du cours pour l'audit
+    // 1. Récupérer la structure du cours pour l'audit (Sections + Leçons)
     const sectionsSnap = await courseRef.collection('sections').get();
-    const contentSummary = sectionsSnap.docs.map(s => s.data().title).join(', ');
+    const sections = await Promise.all(sectionsSnap.docs.map(async (s) => {
+        const lecturesSnap = await s.ref.collection('lectures').get();
+        return `${s.data().title} (${lecturesSnap.size} leçons)`;
+    }));
+    const contentSummary = sections.join(', ') || "Aucun module créé";
 
-    // 2. Lancer l'Audit Qualité Mathias
+    // 2. Lancer l'Audit Qualité Mathias (BARRIÈRE IA)
     const audit = await auditCourseQuality({
         title: courseData.title,
         description: courseData.description,
@@ -51,20 +55,30 @@ export async function submitCourseForReviewAction({
         contentSummary
     });
 
-    if (!audit.isValid) {
+    // 🛑 RÈGLE D'OR : On bloque la soumission si le score est inférieur à 80
+    if (!audit.isValid || audit.score < 80) {
+        // On enregistre quand même les issues pour que le formateur puisse les voir
+        await courseRef.update({
+            lastAiAuditScore: audit.score,
+            moderationFeedback: `[Audit Mathias IA] : ${audit.mentorComment}`,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
         return { 
             success: false, 
-            error: `QUALITÉ INSUFFISANTE (Score: ${audit.score}/100)`, 
+            error: "QUALITÉ INSUFFISANTE", 
+            score: audit.score,
             issues: audit.issues,
             comment: audit.mentorComment
         };
     }
 
-    // 3. Mise à jour si validé par l'IA
+    // 3. Mise à jour vers 'Pending Review' si validé par Mathias
     await courseRef.update({
       status: 'Pending Review',
       isAiVerified: true,
       lastAiAuditScore: audit.score,
+      moderationFeedback: FieldValue.delete(), // On nettoie les anciens feedbacks
       updatedAt: FieldValue.serverTimestamp(),
     });
 

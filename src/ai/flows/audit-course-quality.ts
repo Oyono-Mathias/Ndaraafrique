@@ -2,6 +2,10 @@
 /**
  * @fileOverview Mathias IA - Contrôleur Qualité Élite.
  * Analyse les formations avant publication pour garantir les standards Ndara Afrique.
+ * 
+ * - auditCourseQuality - Fonction principale d'audit.
+ * - AuditCourseInput - Schéma d'entrée (titre, desc, etc).
+ * - AuditCourseOutput - Schéma de sortie avec score et verdict.
  */
 
 import { ai } from '@/ai/genkit';
@@ -17,10 +21,10 @@ export type AuditCourseInput = z.infer<typeof AuditCourseInputSchema>;
 
 const AuditCourseOutputSchema = z.object({
   score: z.number().describe("Score global de qualité sur 100"),
-  issues: z.array(z.string()).describe("Liste des problèmes identifiés"),
-  suggestions: z.array(z.string()).describe("Suggestions d'amélioration"),
-  isValid: z.boolean().describe("Si le cours peut être soumis (score >= 80)"),
-  mentorComment: z.string().describe("Commentaire de Mathias pour l'expert"),
+  issues: z.array(z.string()).describe("Liste des problèmes identifiés empêchant la publication"),
+  suggestions: z.array(z.string()).describe("Suggestions d'amélioration pour atteindre l'excellence"),
+  isValid: z.boolean().describe("Verdict final : TRUE si score >= 80, FALSE sinon"),
+  mentorComment: z.string().describe("Message de mentorat de Mathias pour l'expert"),
 });
 export type AuditCourseOutput = z.infer<typeof AuditCourseOutputSchema>;
 
@@ -32,27 +36,27 @@ const auditPrompt = ai.definePrompt({
   name: 'auditCourseQualityPrompt',
   input: { schema: AuditCourseInputSchema },
   output: { schema: AuditCourseOutputSchema },
-  prompt: `Tu es MATHIAS, le Contrôleur Qualité Élite de Ndara Afrique. 
-  Ta mission est d'auditer la formation suivante pour s'assurer qu'elle respecte les standards d'excellence panafricaine.
-
-  CRITÈRES D'AUDIT :
-  1. CLARTÉ : Le titre et la description sont-ils explicites et professionnels ?
-  2. VALEUR : Le contenu semble-t-il apporter une réelle compétence ?
-  3. STRUCTURE : Y a-t-il suffisamment de modules pour justifier une formation ?
-  4. COHÉRENCE : La catégorie correspond-elle au sujet ?
+  prompt: `Tu es MATHIAS, le Gardien de l'Excellence Panafricaine sur Ndara Afrique. 
+  Ta mission est de réaliser un audit impitoyable de la formation proposée par un expert.
+  
+  CRITÈRES DE RIGUEUR :
+  1. PROFESSIONNALISME : Le titre et la description doivent être dignes d'une institution d'élite.
+  2. VALEUR : Le contenu doit promettre une transformation réelle pour l'apprenant.
+  3. STRUCTURE : Une formation avec moins de 3 leçons ou sans résumé clair doit être rejetée.
+  4. ANTI-TEST : Rejette systématiquement les textes de type "test", "asdf", ou les contenus vides (Score < 20).
 
   DONNÉES DU COURS :
   - Titre : {{{title}}}
   - Catégorie : {{{category}}}
   - Description : {{{description}}}
-  - Structure : {{{contentSummary}}}
+  - Structure détectée : {{{contentSummary}}}
 
-  CONSIGNES DE SCORE :
-  - Un score < 80 est considéré comme insuffisant.
-  - Sois exigeant. Nous ne voulons pas de contenu "test" ou vide.
-  - Si le texte contient du charabia (asdf, test test...), le score doit être inférieur à 20.
+  DIRECTIVES DE RÉPONSE :
+  - Tu dois attribuer un score entre 0 et 100.
+  - La validation (isValid: true) est STRICTEMENT réservée aux scores >= 80.
+  - Liste chaque défaut précisément dans 'issues'.
 
-  Réponds avec franchise et bienveillance au format JSON.`,
+  Réponds en Français, avec la sagesse d'un mentor mais la fermeté d'un censeur de qualité.`,
 });
 
 const auditCourseQualityFlow = ai.defineFlow(
