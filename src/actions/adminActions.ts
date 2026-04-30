@@ -84,7 +84,67 @@ export async function rechargeUserWalletAction({
     }
 }
 
-/** 🔒 2. Modifier Statut (Suspension/Réactivation) */
+/** 💰 2. Débiter le portefeuille (Transactionnel) */
+export async function debitUserWalletAction({
+    adminId,
+    targetUserId,
+    amount,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    amount: number;
+    reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+        if (amount <= 0) throw new Error("Le montant doit être positif.");
+
+        const db = getAdminDb();
+        
+        await db.runTransaction(async (transaction) => {
+            const userRef = db.collection('users').doc(targetUserId);
+            const userSnap = await transaction.get(userRef);
+
+            if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
+            const currentBalance = userSnap.data()?.balance || 0;
+            if (currentBalance < amount) throw new Error("Solde insuffisant pour le débit.");
+
+            transaction.update(userRef, {
+                balance: FieldValue.increment(-amount),
+                updatedAt: FieldValue.serverTimestamp()
+            });
+
+            const paymentRef = db.collection('payments').doc();
+            transaction.set(paymentRef, {
+                id: paymentRef.id,
+                userId: targetUserId,
+                amount: amount,
+                currency: 'XOF',
+                provider: 'admin_debit',
+                status: 'completed',
+                date: FieldValue.serverTimestamp(),
+                courseTitle: `Débit Admin: ${reason}`,
+                metadata: { type: 'wallet_debit', adminId, reason }
+            });
+
+            const auditRef = db.collection('admin_audit_logs').doc();
+            transaction.set(auditRef, {
+                adminId,
+                eventType: 'user.wallet.debit',
+                target: { id: targetUserId, type: 'user' },
+                details: `Débit de ${amount} XOF. Raison: ${reason}`,
+                timestamp: FieldValue.serverTimestamp()
+            });
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🔒 3. Modifier Statut (Suspension/Réactivation) */
 export async function toggleUserStatusAction({
     adminId,
     targetUserId,
@@ -124,7 +184,7 @@ export async function toggleUserStatusAction({
     }
 }
 
-/** 🎓 3. Changer Rôle */
+/** 🎓 4. Changer Rôle */
 export async function changeUserRoleAction({
     adminId,
     targetUserId,
@@ -157,7 +217,119 @@ export async function changeUserRoleAction({
     }
 }
 
-/** 🗑️ 4. Suppression définitive (Action Irréversible & Synchronisée) */
+/** 🚫 5. Appliquer des restrictions */
+export async function applyUserRestrictionsAction({
+    adminId,
+    targetUserId,
+    restrictions,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    restrictions: any;
+    reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        await db.collection('users').doc(targetUserId).update({ 
+            restrictions,
+            restrictionReason: reason,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.restrictions.apply',
+            target: { id: targetUserId, type: 'user' },
+            details: `Restrictions appliquées. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** ✅ 6. Lever les restrictions */
+export async function removeUserRestrictionsAction({
+    adminId,
+    targetUserId
+}: {
+    adminId: string;
+    targetUserId: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        const defaultRestrictions = {
+            canWithdraw: true,
+            canSendMessage: true,
+            canBuyCourse: true,
+            canSellCourse: true,
+            canAccessPlatform: true
+        };
+
+        await db.collection('users').doc(targetUserId).update({ 
+            restrictions: defaultRestrictions,
+            restrictionReason: FieldValue.delete(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.restrictions.remove',
+            target: { id: targetUserId, type: 'user' },
+            details: `Toutes les restrictions ont été levées.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** ⚠️ 7. Marquer/Lever suspicion */
+export async function toggleSuspectStatusAction({
+    adminId,
+    targetUserId,
+    isSuspect,
+    reason
+}: {
+    adminId: string;
+    targetUserId: string;
+    isSuspect: boolean;
+    reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        await db.collection('users').doc(targetUserId).update({ 
+            isSuspect,
+            suspectReason: isSuspect ? reason : FieldValue.delete(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: isSuspect ? 'user.suspect.mark' : 'user.suspect.clear',
+            target: { id: targetUserId, type: 'user' },
+            details: isSuspect ? `Marqué comme suspect. Raison: ${reason}` : `Suspicion levée.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🗑️ 8. Suppression définitive (Action Irréversible & Synchronisée) */
 export async function hardDeleteUserAction({
     adminId,
     targetUserId,
@@ -186,9 +358,7 @@ export async function hardDeleteUserAction({
             }
         }
 
-        // 2. Nettoyage ou Anonymisation dans Firestore
-        // Option A: Suppression totale du document
-        // Option B: Marquage "deleted" pour intégrité des logs (recommandé en fintech)
+        // 2. Marquage "deleted" pour intégrité des logs (recommandé en fintech)
         await db.collection('users').doc(targetUserId).update({
             status: 'deleted',
             deletedAt: FieldValue.serverTimestamp(),
@@ -216,7 +386,7 @@ export async function hardDeleteUserAction({
     }
 }
 
-/** 🔐 5. Réinitialiser Mot de Passe (Lien sécurisé) */
+/** 🔐 9. Réinitialiser Mot de Passe (Lien sécurisé) */
 export async function resetUserPasswordAction(adminId: string, targetUserId: string) {
     try {
         await verifyAdminOrThrow(adminId);
