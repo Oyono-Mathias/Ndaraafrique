@@ -2,14 +2,14 @@
 
 /**
  * @fileOverview Cockpit Trésorerie & Audit Financier - Version 2.5 Elite.
- * ✅ TRAÇABILITÉ : Affiche 100% des transactions (Pending, Completed, Failed).
+ * ✅ TRAÇABILITÉ : Affiche 100% des transactions (pending, completed, failed).
  * ✅ FILTRAGE : KPI en temps réel pour un audit financier rigoureux.
  * ✅ RÉCONCILIATION : Outil de réparation des flux bloqués MeSomb.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, limit, doc, updateDoc, increment, getDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, limit, doc, updateDoc, increment, getDoc, serverTimestamp, onSnapshot, where } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,8 @@ import {
     AlertCircle,
     Clock,
     XCircle,
-    Wrench
+    Wrench,
+    RefreshCw
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -40,6 +41,7 @@ import { OperatorLogo } from '@/components/ui/OperatorLogo';
 import { StatCard } from '@/components/dashboard/StatCard';
 import type { Payment } from '@/lib/types';
 import { reconcilePendingPaymentsAction } from '@/actions/meSombActions';
+import { migratePaymentStatusesAction } from '@/actions/adminActions';
 
 const PAGE_SIZE = 20;
 
@@ -50,6 +52,7 @@ export default function AdminPaymentsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
     const [isReconciling, setIsReconciling] = useState(false);
+    const [isMigrating, setIsMigrating] = useState(false);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     
     const [kpis, setKpis] = useState({
@@ -106,6 +109,21 @@ export default function AdminPaymentsPage() {
         }
     };
 
+    const handleMigration = async () => {
+        if (!admin || isMigrating) return;
+        setIsMigrating(true);
+        try {
+            const result = await migratePaymentStatusesAction(admin.uid);
+            if (result.success) {
+                toast({ title: "Migration réussie", description: `${result.migratedCount} paiements ont été normalisés.` });
+            }
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Erreur migration", description: e.message });
+        } finally {
+            setIsMigrating(false);
+        }
+    };
+
     const handleManualValidate = async (payment: Payment) => {
         if (!admin || isProcessing) return;
         setIsProcessing(payment.id);
@@ -158,15 +176,21 @@ export default function AdminPaymentsPage() {
                 </div>
                 <div className="flex gap-3">
                     <Button 
+                        onClick={handleMigration}
+                        disabled={isMigrating}
+                        variant="outline"
+                        className="h-12 rounded-2xl border-white/5 bg-slate-900 font-bold uppercase text-[10px] tracking-widest text-primary"
+                    >
+                        {isMigrating ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Normaliser Casse
+                    </Button>
+                    <Button 
                         onClick={handleReconcile}
                         disabled={isReconciling || kpis.pendingCount === 0}
                         className="h-12 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-orange-500/20"
                     >
                         {isReconciling ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Wrench className="mr-2 h-4 w-4" />}
                         Réparer les flux ({kpis.pendingCount})
-                    </Button>
-                    <Button variant="outline" className="h-12 border-slate-800 bg-slate-900 font-bold uppercase text-[10px] tracking-widest">
-                        <Download className="mr-2 h-4 w-4" /> Exporter
                     </Button>
                 </div>
             </header>
@@ -207,7 +231,8 @@ export default function AdminPaymentsPage() {
                             ))
                         ) : filtered.length > 0 ? (
                             filtered.map(payment => {
-                                const isPending = payment.status === 'pending';
+                                const status = payment.status?.toLowerCase() || 'pending';
+                                const isPending = status === 'pending';
                                 return (
                                     <TableRow key={payment.id} className="group border-slate-800 hover:bg-slate-800/20">
                                         <TableCell>
@@ -239,11 +264,11 @@ export default function AdminPaymentsPage() {
                                         <TableCell>
                                             <Badge className={cn(
                                                 "font-black text-[8px] uppercase border-none px-2",
-                                                payment.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" :
+                                                status === 'completed' ? "bg-emerald-500/10 text-emerald-500" :
                                                 isPending ? "bg-amber-500/10 text-amber-500 animate-pulse" : 
                                                 "bg-red-500/10 text-red-500"
                                             )}>
-                                                {payment.status === 'completed' ? 'Réussi' : isPending ? 'Audit' : 'Rejet'}
+                                                {status === 'completed' ? 'Réussi' : isPending ? 'En attente' : 'Rejet'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right pr-6">

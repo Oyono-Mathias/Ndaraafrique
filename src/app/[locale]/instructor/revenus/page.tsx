@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Financier de l'Instructeur V3 (Design Qwen Fintech Elite).
  * ✅ I18N : Traduction dynamique des retours serveur.
+ * ✅ FIX : Standardisation casse statut 'completed'.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -60,8 +60,9 @@ export default function InstructorRevenuePage() {
         if (!instructor?.uid) return;
         const instructorId = instructor.uid;
 
+        // ✅ Normalisation du statut vers 'completed' (minuscule)
         const unsubPayments = onSnapshot(
-            query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'Completed')),
+            query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'completed')),
             (snap) => {
                 setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
                 setLoadingStates(prev => ({ ...prev, payments: false }));
@@ -131,7 +132,7 @@ export default function InstructorRevenuePage() {
     const historyItems = useMemo(() => {
         const p = payments.map(item => ({ 
             id: item.id, type: 'sale', title: `Vente: ${item.courseTitle || 'Formation'}`, 
-            amount: item.amount, date: (item.date as any)?.toDate ? (item.date as any).toDate() : new Date(), status: 'Completed' 
+            amount: item.amount, date: (item.date as any)?.toDate ? (item.date as any).toDate() : new Date(), status: 'completed' 
         }));
         const pr = payoutRequests.map(item => ({ 
             id: item.id, type: 'payout', title: `Retrait Mobile Money`, 
@@ -225,10 +226,10 @@ export default function InstructorRevenuePage() {
                                     </p>
                                     <Badge className={cn(
                                         "text-[8px] font-black uppercase border-none px-2 py-0.5 h-4 rounded-full",
-                                        item.status === 'Completed' || item.status === 'paid' ? "bg-emerald-500/10 text-emerald-500" :
+                                        item.status === 'completed' || item.status === 'paid' ? "bg-emerald-500/10 text-emerald-500" :
                                         item.status === 'pending' || item.status === 'approved' ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-500"
                                     )}>
-                                        {item.status === 'Completed' || item.status === 'paid' ? 'Succès' : item.status === 'pending' ? 'Audit' : item.status === 'approved' ? 'Prêt' : 'Rejeté'}
+                                        {item.status === 'completed' || item.status === 'paid' ? 'Succès' : item.status === 'pending' ? 'Audit' : item.status === 'approved' ? 'Prêt' : 'Rejeté'}
                                     </Badge>
                                 </div>
                             </div>

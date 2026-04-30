@@ -410,3 +410,33 @@ export async function resetUserPasswordAction(adminId: string, targetUserId: str
         return { success: false, error: e.message };
     }
 }
+
+/** 🧪 10. Script de Migration : Normalisation des statuts de paiement */
+export async function migratePaymentStatusesAction(adminId: string) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        const paymentsRef = db.collection('payments');
+        
+        // On récupère les paiements qui pourraient avoir une mauvaise casse
+        const snapshot = await paymentsRef.get();
+        const batch = db.batch();
+        let count = 0;
+
+        snapshot.forEach(doc => {
+            const currentStatus = doc.data().status;
+            if (currentStatus && currentStatus !== currentStatus.toLowerCase()) {
+                batch.update(doc.ref, { status: currentStatus.toLowerCase() });
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            await batch.commit();
+        }
+
+        return { success: true, migratedCount: count };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}

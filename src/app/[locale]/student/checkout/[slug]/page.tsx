@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement Ndara Afrique V8.0.
- * ✅ RÉSOLU : Affichage du succès UNIQUEMENT après réception d'un nouveau paiement.
- * ✅ RÉSOLU : Redirection immédiate si le cours est déjà possédé (évite le double achat).
+ * @fileOverview Tunnel de paiement Ndara Afrique V8.5.
+ * ✅ FIX : Standardisation casse statut 'completed'.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -68,8 +67,6 @@ function CheckoutContent() {
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
-  // 🛡️ SÉCURITÉ : Redirection automatique si le cours est déjà acquis
-  // On ne montre le modal "C'est validé" que si l'inscription arrive pendant que l'utilisateur est sur la page
   useEffect(() => {
     if (!user?.uid || !slug || isInitialCheckDone) return;
     
@@ -78,10 +75,8 @@ function CheckoutContent() {
         const snap = await getDoc(doc(db, 'enrollments', enrollmentId));
         
         if (snap.exists() && snap.data().status === 'active') {
-            // Déjà inscrit : Redirection directe vers les leçons sans modal de succès
             router.replace(`/${locale}/courses/${slug}`);
         } else {
-            // Pas encore inscrit : On autorise le processus de paiement
             setIsInitialCheckDone(true);
         }
     };
@@ -89,14 +84,12 @@ function CheckoutContent() {
     checkExistingEnrollment();
   }, [user?.uid, slug, db, isInitialCheckDone, locale, router]);
 
-  // 🔄 ÉCOUTEUR TEMPS RÉEL : Détecte la confirmation du paiement (Webhook)
   useEffect(() => {
       if (!user?.uid || !slug || !isInitialCheckDone) return;
       
       const enrollmentId = `${user.uid}_${slug}`;
       const unsub = onSnapshot(doc(db, 'enrollments', enrollmentId), (snap) => {
           if (snap.exists() && snap.data().status === 'active') {
-              // Nouveau paiement reçu ! On affiche la célébration
               setIsSuccess(true);
           }
       });
@@ -162,8 +155,6 @@ function CheckoutContent() {
           if (!result.success) {
               throw new Error(result.error || "Échec du débit wallet.");
           }
-          // isSuccess sera activé par le onSnapshot sur l'enrollment
-
       } else if (activeMethod.provider === 'mesomb') {
           if (!certifiedNumber) {
               toast({ variant: 'destructive', title: "Certification requise", description: `Veuillez enregistrer votre numéro ${activeMethod.name} dans votre profil.` });
@@ -183,7 +174,6 @@ function CheckoutContent() {
           });
           
           if (!result.success) {
-              // Narrowing TypeScript : result est de type MeSombError
               throw new Error(String((result as any).error));
           }
 
@@ -192,11 +182,11 @@ function CheckoutContent() {
                 const unsubscribe = onSnapshot(paymentRef, (snap) => {
                     if (snap.exists()) {
                         const data = snap.data();
-                        if (data.status === 'completed') {
+                        const status = data.status?.toLowerCase() || 'pending';
+                        if (status === 'completed') {
                             setIsAwaitingUssd(false);
-                            // setIsSuccess sera géré par l'autre useEffect sur l'enrollment
                             unsubscribe();
-                        } else if (data.status === 'failed') {
+                        } else if (status === 'failed') {
                             setIsAwaitingUssd(false);
                             setErrorModal({
                                 isOpen: true,
