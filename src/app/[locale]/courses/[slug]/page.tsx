@@ -3,7 +3,7 @@
 /**
  * @fileOverview Lecteur de cours Ndara Afrique V3.
  * ✅ SÉCURITÉ : Vérification stricte de l'enrollment avant affichage.
- * ✅ PÉDAGOGIE : Blocage de progression si l'exercice (Milestone) n'est pas réussi.
+ * ✅ PÉDAGOGIE : Blocage de progression si l'exercice (Milestone) n'est pas réussi (Score >= 70%).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -41,7 +41,8 @@ import {
     FileVideo,
     ArrowLeft,
     Lock,
-    AlertCircle
+    AlertCircle,
+    ChevronRight
 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
@@ -204,20 +205,6 @@ function CoursePlayerPageContent() {
     }
   };
 
-  const currentIndices = useMemo(() => {
-      if (!activeLecture) return { section: 0, lesson: 0 };
-      let lectureCount = 0;
-      for (let i = 0; i < sections.length; i++) {
-          const sectionLectures = lecturesMap.get(sections[i].id) || [];
-          const idx = sectionLectures.findIndex(l => l.id === activeLecture.id);
-          if (idx !== -1) {
-              return { section: i + 1, lesson: lectureCount + idx + 1 };
-          }
-          lectureCount += sectionLectures.length;
-      }
-      return { section: 0, lesson: 0 };
-  }, [sections, lecturesMap, activeLecture]);
-
   const isLoading = isLoadingContent || courseLoading || isEnrolled === null;
 
   if (isLoading) return <div className="h-screen bg-[#050505] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -337,9 +324,13 @@ function CoursePlayerPageContent() {
                             <div>
                                 <p className="text-sm font-bold text-white uppercase tracking-tight">Étape bloquée</p>
                                 <p className="text-[10px] text-amber-200/70 font-medium italic mt-0.5 leading-relaxed">
-                                    "Réussis le quiz associé à ce module pour débloquer la suite de ton parcours."
+                                    "Réussis le quiz de ce module (min. 70%) pour valider ton savoir et continuer ton parcours."
                                 </p>
-                                <Button size="sm" onClick={() => router.push(`/student/quiz/${activeLecture?.associatedQuizId}`)} className="h-8 mt-3 bg-amber-500 text-slate-950 font-black uppercase text-[9px] tracking-widest">
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => router.push(`/${currentUser?.preferredLanguage || 'fr'}/student/quiz/${activeLecture?.associatedQuizId}`)} 
+                                    className="h-8 mt-3 bg-amber-500 text-slate-950 font-black uppercase text-[9px] tracking-widest"
+                                >
                                     Lancer le Quiz
                                 </Button>
                             </div>
@@ -422,19 +413,33 @@ function CoursePlayerPageContent() {
                                     Section {idx + 1}: {section.title}
                                 </h3>
                                 <div className="space-y-0.5">
-                                    {(lecturesMap.get(section.id) || []).map(lecture => {
+                                    {(lecturesMap.get(section.id) || []).map((lecture, lIdx, list) => {
                                         const isActive = activeLecture?.id === lecture.id;
                                         const isDone = completedLessons.includes(lecture.id);
-                                        // Blocage visuel dans la sidebar
-                                        const isLocked = false; // Logic for future deep locking
+                                        
+                                        // LOGIQUE DE BLOCAGE SEQUENTIEL
+                                        // On vérifie si une leçon précédente demandait une validation non complétée
+                                        let isLocked = false;
+                                        const allLecturesFlat = Array.from(lecturesMap.values()).flat();
+                                        const currentFlatIdx = allLecturesFlat.findIndex(l => l.id === lecture.id);
+                                        
+                                        for (let i = 0; i < currentFlatIdx; i++) {
+                                            const prev = allLecturesFlat[i];
+                                            if (prev.requiresValidation && !completedLessons.includes(prev.id)) {
+                                                isLocked = true;
+                                                break;
+                                            }
+                                        }
 
                                         return (
                                             <button 
                                                 key={lecture.id}
+                                                disabled={isLocked}
                                                 onClick={() => { setActiveLecture(lecture); setIsCurriculumOpen(false); }}
                                                 className={cn(
-                                                    "w-full text-left p-4 flex items-center gap-4 rounded-2xl border-l-4",
-                                                    isActive ? "bg-primary/10 border-primary" : "border-transparent"
+                                                    "w-full text-left p-4 flex items-center gap-4 rounded-2xl border-l-4 transition-all",
+                                                    isActive ? "bg-primary/10 border-primary" : "border-transparent",
+                                                    isLocked ? "opacity-30 grayscale" : "hover:bg-white/5"
                                                 )}
                                             >
                                                 {isDone ? (
