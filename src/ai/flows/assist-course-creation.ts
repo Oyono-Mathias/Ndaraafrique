@@ -2,17 +2,16 @@
 
 /**
  * @fileOverview Implements a Genkit flow to assist instructors with course creation.
- *
- * - assistCourseCreation - The main function to generate course details.
- * - AssistCourseCreationInput - Input type for the function.
- * - AssistCourseCreationOutput - Output type for the function.
+ * ✅ SECURED: Consumes AI credits.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { consumeAiCredits } from '@/actions/instructorActions';
 
 const AssistCourseCreationInputSchema = z.object({
   courseTitle: z.string().describe('The title of the course provided by the instructor.'),
+  userId: z.string().describe('The ID of the user requesting AI assistance.'),
 });
 export type AssistCourseCreationInput = z.infer<typeof AssistCourseCreationInputSchema>;
 
@@ -24,6 +23,8 @@ const AssistCourseCreationOutputSchema = z.object({
 export type AssistCourseCreationOutput = z.infer<typeof AssistCourseCreationOutputSchema>;
 
 export async function assistCourseCreation(input: AssistCourseCreationInput): Promise<AssistCourseCreationOutput> {
+  // 🛡️ SECURITY CHECK: Consume 1 credit per generation
+  await consumeAiCredits(input.userId, 1);
   return assistCourseCreationFlow(input);
 }
 

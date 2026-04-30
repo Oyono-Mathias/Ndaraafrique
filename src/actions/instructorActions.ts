@@ -7,8 +7,9 @@ import type { Settings, NdaraUser } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne : Consommation de crédits IA
+ * Vérifie et décrémente les crédits Mathias.
  */
-async function consumeAiCredits(userId: string, credits: number = 1) {
+export async function consumeAiCredits(userId: string, credits: number = 1) {
     const db = getAdminDb();
     const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
@@ -16,13 +17,21 @@ async function consumeAiCredits(userId: string, credits: number = 1) {
     if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
     const userData = userSnap.data() as NdaraUser;
 
-    if (!userData.hasAIAccess && userData.aiCredits < credits) {
-        throw new Error("AI_PREMIUM_REQUIRED: Vous n'avez plus de crédits Mathias IA.");
+    // Les admins et les comptes Premium (hasAIAccess) ne sont pas bloqués
+    if (userData.role === 'admin' || userData.hasAIAccess) {
+        return { success: true, remaining: userData.aiCredits };
+    }
+
+    if (userData.aiCredits < credits) {
+        throw new Error("AI_PREMIUM_REQUIRED: Vous n'avez plus de crédits Mathias IA. Passez au mode Premium.");
     }
 
     await userRef.update({
-        aiCredits: FieldValue.increment(-credits)
+        aiCredits: FieldValue.increment(-credits),
+        updatedAt: FieldValue.serverTimestamp()
     });
+
+    return { success: true, remaining: userData.aiCredits - credits };
 }
 
 const CourseFormSchema = z.object({
@@ -80,7 +89,7 @@ export async function createCourseAction({ formData, instructorId }: { formData:
       creatorId: instructorId,
       ownerId: instructorId,
       instructorId: instructorId,
-      status: 'Draft', // Toujours en draft par défaut pour audit IA
+      status: 'Draft',
       isAiVerified: false,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),

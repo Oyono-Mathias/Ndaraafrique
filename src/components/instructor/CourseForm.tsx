@@ -79,14 +79,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   });
 
   const handleMathiasHelp = async () => {
-    if (!currentUser?.hasAIAccess && currentUser?.aiCredits === 0) {
-        toast({ 
-            variant: 'destructive', 
-            title: "Crédits épuisés", 
-            description: "Passez à un abonnement Expert Premium pour continuer à utiliser Mathias IA." 
-        });
-        return;
-    }
+    if (!currentUser) return;
 
     const title = form.getValues('title');
     if (!title || title.length < 5) {
@@ -96,17 +89,20 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
 
     setIsAiLoading(true);
     try {
-        const result = await assistCourseCreation({ courseTitle: title });
+        const result = await assistCourseCreation({ 
+            courseTitle: title,
+            userId: currentUser.uid 
+        });
         form.setValue('description', result.description);
         if (courseCategories.includes(result.category)) {
             form.setValue('category', result.category);
         }
-        toast({ title: "Contenu généré !" });
+        toast({ title: "Contenu généré !", description: "1 crédit Mathias IA utilisé." });
     } catch (error: any) {
         if (error.message?.includes('AI_PREMIUM_REQUIRED')) {
-            toast({ variant: 'destructive', title: "Premium Requis", description: "Cette fonction est réservée aux Experts Premium." });
+            toast({ variant: 'destructive', title: "Premium Requis", description: "Vous n'avez plus de crédits Mathias IA." });
         } else {
-            toast({ variant: 'destructive', title: "Erreur IA" });
+            toast({ variant: 'destructive', title: "Erreur IA", description: "Une erreur est survenue lors de la génération." });
         }
     } finally {
         setIsAiLoading(false);
@@ -132,7 +128,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     "font-black text-[10px]",
                     currentUser?.aiCredits === 0 ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"
                 )}>
-                    {currentUser?.aiCredits} DISPONIBLES
+                    {currentUser?.aiCredits || 0} DISPONIBLES
                 </Badge>
             </div>
 

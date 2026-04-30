@@ -2,17 +2,18 @@
 
 /**
  * @fileOverview Implements the MATHIAS AI Tutor Chat flow for student assistance.
- * ✅ ROBUSTESSE : Gestion du fallback texte si le JSON échoue.
- * ✅ DIAGNOSTIC : Logs détaillés pour identifier les échecs de connexion API.
+ * ✅ SECURED: Consumes user credits.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getAdminDb } from '@/firebase/admin';
+import { consumeAiCredits } from '@/actions/instructorActions';
 
 const MathiasTutorInputSchema = z.object({
   query: z.string().describe('La question ou la requête de l’étudiant pour le tuteur IA.'),
   courseContext: z.string().optional().describe('L’ID ou le contenu du cours que l’étudiant consulte actuellement.'),
+  userId: z.string().describe('ID de l’utilisateur pour la gestion des crédits.'),
 });
 export type MathiasTutorInput = z.infer<typeof MathiasTutorInputSchema>;
 
@@ -86,6 +87,16 @@ const searchFaq = ai.defineTool(
 );
 
 export async function mathiasTutor(input: MathiasTutorInput): Promise<MathiasTutorOutput> {
+  // 🛡️ SECURITY CHECK: Consume 1 credit per query
+  try {
+    await consumeAiCredits(input.userId, 1);
+  } catch (e: any) {
+      return { 
+          response: "Bara ala ! Vos crédits Mathias IA sont épuisés. Veuillez recharger votre compte ou passer au mode Premium pour continuer notre échange.",
+          isError: true 
+      };
+  }
+  
   return mathiasTutorFlow(input);
 }
 
@@ -145,19 +156,9 @@ const mathiasTutorFlow = ai.defineFlow(
         throw new Error("Aucun contenu généré par Gemini.");
 
     } catch (error: any) {
-        console.error("❌ MATHIAS_FLOW_CRITICAL_ERROR:", {
-            message: error.message,
-            stack: error.stack,
-            details: error
-        });
+        console.error("❌ MATHIAS_FLOW_CRITICAL_ERROR:", error.message);
 
-        let errorMsg = "Bara ala ! J'ai eu un petit vertige technique. Ma connexion aux serveurs de savoir est temporairement instable. Réessaie dans quelques secondes. (Erreur: IA_CONNECT_FAIL)";
-        
-        // Message plus précis si on détecte une clé manquante
-        if (error.message?.includes('API_KEY')) {
-            errorMsg = "Bara ala ! Mon cerveau est déconnecté car la clé de savoir (API KEY) est manquante sur le serveur. Demande à l'administrateur de vérifier la configuration Vercel.";
-        }
-
+        let errorMsg = "Bara ala ! Ma connexion aux serveurs de savoir est temporairement instable. Réessaie dans quelques secondes.";
         return { 
             response: errorMsg,
             isError: true 

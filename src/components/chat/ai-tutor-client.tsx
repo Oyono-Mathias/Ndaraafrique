@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Client de chat pour le Tuteur MATHIAS - Redesign WhatsApp Android.
- * Gère l'historique et l'interactivité en temps réel avec une esthétique familière.
+ * ✅ SECURED: Passes userId for credit consumption.
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
@@ -173,8 +173,12 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
       batch.set(userMsgRef, { sender: "user", text: messageToSend, timestamp: serverTimestamp() });
       await batch.commit();
 
-      // 2. Appeler Mathias
-      const result = await mathiasTutor({ query: messageToSend, courseContext: initialContext || undefined });
+      // 2. Appeler Mathias (avec userId pour les crédits)
+      const result = await mathiasTutor({ 
+        query: messageToSend, 
+        courseContext: initialContext || undefined,
+        userId: user.uid
+      });
       
       // 3. Enregistrer la réponse de Mathias
       const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
@@ -191,11 +195,10 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     } catch (error: any) {
       console.error("Tutor communication error:", error);
       setHasError(true);
-      // Fallback message en cas d'erreur de communication serveur
       const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       await setDoc(aiMsgRef, { 
         sender: "ai", 
-        text: "Bara ala ! Je n'ai pas pu vous répondre car mon cerveau est temporairement déconnecté. Vérifiez votre clé API Gemini sur Vercel.", 
+        text: "Bara ala ! Je n'ai pas pu vous répondre. Vérifiez votre connexion ou vos crédits Mathias IA.", 
         timestamp: serverTimestamp(),
         error: true 
       }).catch(console.error);
@@ -206,7 +209,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-      {/* WhatsApp Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
@@ -221,9 +223,9 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#10b981] rounded-full border-2 border-[#111b21] shadow-[0_0_10px_#10b981]"></span>
           </div>
           <div className="flex flex-col overflow-hidden">
-            <h2 className="font-bold text-sm text-white truncate leading-none uppercase tracking-widest">MATHIAS</h2>
+            <h2 className="font-bold text-sm text-white truncate leading-none uppercase tracking-widest">MATHIAS IA</h2>
             <p className="text-[#10b981] text-[10px] font-bold uppercase tracking-tighter mt-1">
-              En ligne
+              Expertise temps réel
             </p>
           </div>
         </div>
@@ -302,7 +304,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
         </div>
       </ScrollArea>
 
-      {/* Quick Suggestions Chips */}
       <div className="z-20 px-4 mb-2">
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
             {suggestions.map((suggestion, i) => (
@@ -317,7 +318,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
         </div>
       </div>
 
-      {/* Input Bar (Floating Pill) */}
       <div className="p-2 bg-transparent safe-area-pb z-30 flex items-end gap-2">
         <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md border border-white/5">
             <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0 hover:bg-white/5 rounded-full"><Smile className="h-6 w-6" /></Button>
