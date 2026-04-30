@@ -5,9 +5,10 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser } from '@/lib/types';
 
 /**
- * ✅ PROCESSEUR FINANCIER ÉLITE v5.0
- * Priorité absolue à l'expérience utilisateur : Débloque l'accès avant les stats.
- * Gère l'idempotence stricte pour éviter les doubles débits/inscriptions.
+ * ✅ PROCESSEUR FINANCIER ÉLITE v5.1
+ * Priorité absolue à l'expérience utilisateur et à l'intégrité des fonds.
+ * Gère l'idempotence stricte et le verrouillage anti race-condition.
+ * SÉCURISÉ : Vérification du solde pour les paiements par Wallet (Anti Race-Condition).
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -25,19 +26,44 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       // 1. VÉRIFICATION IDEMPOTENCE (Évite les doublons)
       const paymentSnap = await transaction.get(paymentRef);
       if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
+        console.log(`[PaymentProcessor] Transaction ${transactionId} déjà traitée.`);
         return { success: true, alreadyProcessed: true };
       }
 
-      // 2. RÉCUPÉRATION UTILISATEUR
+      // 2. RÉCUPÉRATION UTILISATEUR ET VÉRIFICATION SOLDE
       const userSnap = await transaction.get(userRef);
       if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
       
       const userData = userSnap.data() as NdaraUser;
       const isTopup = metadata.type === 'wallet_topup' || metadata.courseId === 'WALLET_TOPUP';
 
-      // 💾 Mise à jour du document de paiement (C'est ce qui débloque l'UI en temps réel)
+      // 🛡️ SÉCURITÉ FINTECH : Vérification du solde si achat par Wallet
+      if (provider === 'wallet' && !isTopup) {
+          const currentBalance = userData.balance || 0;
+          if (currentBalance < amount) {
+              console.error(`[CRITICAL] Solde insuffisant pour ${metadata.userId} (${currentBalance} < ${amount})`);
+              throw new Error("SOLDE_INSUFFISANT");
+          }
+          // Déduction immédiate et atomique (uniquement pour le wallet)
+          transaction.update(userRef, {
+              balance: FieldValue.increment(-amount),
+              updatedAt: FieldValue.serverTimestamp()
+          });
+      }
+
+      // 💾 Mise à jour/Création du document de paiement
       const paymentData = {
+        id: String(transactionId),
+        userId: metadata.userId,
+        amount: Number(amount),
+        currency: currency || 'XOF',
+        provider: provider,
+        type: metadata.type || (isTopup ? 'wallet_topup' : 'course_purchase'),
         status: 'completed',
+        isSimulated: metadata.isSimulated || false,
+        courseId: metadata.courseId || null,
+        courseTitle: metadata.courseTitle || null,
+        date: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         gatewayTransactionId: gatewayTransactionId || transactionId,
         metadata: { 
@@ -46,16 +72,15 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         }
       };
 
-      transaction.update(paymentRef, paymentData);
+      transaction.set(paymentRef, paymentData, { merge: true });
 
       // =========================================================
-      // 🎓 CAS : ACHAT DE COURS DIRECT (Priorité Étudiant)
+      // 🎓 CAS : ACHAT DE COURS / LICENCE (Fulfillment)
       // =========================================================
       if (!isTopup && metadata.courseId) {
         const courseRef = db.collection('courses').doc(metadata.courseId);
         const courseSnap = await transaction.get(courseRef);
         
-        // On crée l'inscription même si le document cours a un souci (fallback instructor)
         const enrollmentId = `${metadata.userId}_${metadata.courseId}`;
         const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
 
@@ -67,13 +92,13 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             instructorId = courseData.instructorId || instructorId;
             courseTitle = courseData.title || courseTitle;
             
-            // Mise à jour des compteurs (non-bloquant pour l'étudiant)
+            // Mise à jour des compteurs
             transaction.update(courseRef, {
                 participantsCount: FieldValue.increment(1)
             });
         }
 
-        // CRÉATION DE L'ACCÈS (L'élément vital)
+        // CRÉATION DE L'ACCÈS
         transaction.set(enrollmentRef, {
             id: enrollmentId,
             studentId: metadata.userId,
@@ -89,8 +114,10 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
         // Crédit Instructeur (Sauf si Ndara Officiel)
         if (instructorId !== 'NDARA_OFFICIAL') {
             const instructorRef = db.collection('users').doc(instructorId);
+            // L'instructeur reçoit 70% du prix brut
+            const instructorShare = Number(amount) * 0.7;
             transaction.update(instructorRef, {
-                balance: FieldValue.increment(Number(amount) * 0.7) // 70% pour l'expert
+                balance: FieldValue.increment(instructorShare)
             });
         }
 
@@ -106,9 +133,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       }
 
       // =========================================================
-      // 💰 CAS : RECHARGE DU WALLET
+      // 💰 CAS : RECHARGE DU WALLET (Fulfillment)
       // =========================================================
-      else if (isTopup) {
+      else if (isTopup && provider !== 'wallet') {
         transaction.update(userRef, {
           balance: FieldValue.increment(Number(amount)),
           updatedAt: FieldValue.serverTimestamp()
@@ -129,6 +156,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
 
   } catch (error: any) {
     console.error("❌ [CRITICAL_PAYMENT_FAILURE]:", error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 }
