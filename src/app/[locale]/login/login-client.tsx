@@ -3,7 +3,7 @@
 /**
  * @fileOverview Client de connexion Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification de 'allowRegistration' avant toute inscription.
- * ✅ RÉSOLU : Utilisation de settings.users conformément au schéma types.ts.
+ * ✅ SYNC : Création systématique du document Firestore au premier login Google.
  */
 
 import { useState, useEffect } from 'react';
@@ -19,8 +19,7 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile, 
   GoogleAuthProvider, 
-  signInWithPopup, 
-  User as FirebaseUser 
+  signInWithPopup 
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -28,11 +27,8 @@ import {
   setDoc, 
   serverTimestamp, 
   getDoc,
-  updateDoc,
-  increment,
   onSnapshot
 } from 'firebase/firestore';
-import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -77,7 +73,6 @@ export default function LoginClient() {
   const locale = useLocale();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
-  const referralId = searchParams.get('ref'); 
   const redirectUrl = searchParams.get('redirect'); 
   
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -127,7 +122,6 @@ export default function LoginClient() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(getAuth(), values.email, values.password);
-      toast({ title: tActions('success.generic') });
     } catch (error) { 
       toast({ variant: 'destructive', title: tActions('error.generic'), description: tActions('error.user_not_found') }); 
     } finally { 
@@ -136,7 +130,6 @@ export default function LoginClient() {
   };
 
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
-    // ✅ Utilisation correcte du module 'users'
     if (settings?.users?.allowRegistration === false) {
         toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Les nouvelles inscriptions sont temporairement suspendues." });
         return;
@@ -167,7 +160,14 @@ export default function LoginClient() {
         balance: 0,
         affiliateBalance: 0,
         pendingAffiliateBalance: 0,
-        affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
+        affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+        restrictions: {
+            canWithdraw: true,
+            canSendMessage: true,
+            canBuyCourse: true,
+            canSellCourse: true,
+            canAccessPlatform: true
+        }
       };
 
       await setDoc(userRef, userData);
@@ -186,11 +186,12 @@ export default function LoginClient() {
     try {
       const result = await signInWithPopup(getAuth(), provider);
       const user = result.user;
+      
+      // ✅ VÉRIFICATION ET CRÉATION SYNC
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
-        // ✅ Utilisation correcte du module 'users'
         if (settings?.users?.allowRegistration === false) {
             await getAuth().signOut();
             toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Veuillez réessayer plus tard." });
@@ -199,7 +200,7 @@ export default function LoginClient() {
 
         const userData = {
           uid: user.uid,
-          email: user.email,
+          email: user.email || '',
           fullName: user.displayName || 'Utilisateur Google',
           username: (user.displayName || 'user').replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
           role: 'student',
@@ -214,12 +215,20 @@ export default function LoginClient() {
           balance: 0,
           affiliateBalance: 0,
           pendingAffiliateBalance: 0,
-          affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 }
+          affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+          restrictions: {
+              canWithdraw: true,
+              canSendMessage: true,
+              canBuyCourse: true,
+              canSellCourse: true,
+              canAccessPlatform: true
+          }
         };
         await setDoc(userRef, userData);
+        console.log(`[AUTH_SYNC] Nouveau profil créé pour ${user.email}`);
       }
-      toast({ title: tActions('success.generic') });
     } catch (err) {
+      console.error("[AUTH_GOOGLE_ERROR]", err);
       toast({ variant: 'destructive', title: tActions('error.generic') });
     } finally {
       setIsLoading(false);
@@ -257,7 +266,6 @@ export default function LoginClient() {
                     </TabsContent>
 
                     <TabsContent value="register" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
-                        {/* ✅ Utilisation correcte du module 'users' */}
                         {settings?.users?.allowRegistration === false ? (
                             <div className="py-10 text-center space-y-4">
                                 <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />

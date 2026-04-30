@@ -3,8 +3,8 @@
 /**
  * @fileOverview RoleProvider Ndara Afrique.
  * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
- * ✅ PRIORITÉ DES RÔLES : Admin > Instructor > Student.
- * ✅ SÉCURITÉ : Vérification des suspensions, suppressions et restrictions plateforme.
+ * ✅ SYNC : Filet de sécurité pour créer le document Firestore si manquant.
+ * ✅ SÉCURITÉ : Expulsion immédiate des utilisateurs suspendus ou supprimés.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -54,7 +54,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    router.push(`/${locale}`);
+    router.push(`/${locale}/login`);
   }, [db, router, locale]);
 
   const detectGeoLocation = useCallback(async (userId: string) => {
@@ -118,13 +118,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
 
-          // 🛡️ VÉRIFICATION SÉCURITÉ : Suspension ou Suppression
+          // 🛡️ SÉCURITÉ : Expulsion si suspendu ou supprimé
           if (userData.status === 'suspended' || userData.status === 'deleted' || userData.restrictions?.canAccessPlatform === false) {
+            console.warn(`[SECURITY] Accès bloqué pour l'utilisateur ${user.uid} (Status: ${userData.status})`);
             await secureSignOut();
             toast({ 
                 variant: 'destructive', 
                 title: 'Accès révoqué', 
-                description: userData.sanctions?.reason || 'Votre compte fait l\'objet d\'une mesure de restriction administrative.' 
+                description: userData.status === 'deleted' ? 'Ce compte n\'existe plus.' : (userData.statusReason || 'Votre compte est suspendu.')
             });
             return;
           }
@@ -170,6 +171,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
         } else {
+            // ✅ FILET DE SÉCURITÉ : Création du profil Firestore s'il manque (ex: login Google rapide)
+            console.log(`[AUTH_SYNC] Création du document manquant pour l'utilisateur ${user.uid}`);
+            
             const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
             const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
                 uid: user.uid,
