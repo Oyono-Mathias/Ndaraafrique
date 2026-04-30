@@ -3,6 +3,7 @@
 /**
  * @fileOverview Lecteur de cours Ndara Afrique V3.
  * ✅ SÉCURITÉ : Vérification stricte de l'enrollment avant affichage.
+ * ✅ PÉDAGOGIE : Blocage de progression si l'exercice (Milestone) n'est pas réussi.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -39,7 +40,8 @@ import {
     Bookmark,
     FileVideo,
     ArrowLeft,
-    Lock
+    Lock,
+    AlertCircle
 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
@@ -51,60 +53,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-
-interface Lecture {
-  id: string;
-  title: string;
-  videoUrl?: string;
-  contentUrl?: string;
-  duration?: number;
-  type: 'video' | 'text' | 'quiz' | 'youtube' | 'pdf';
-  content?: string;
-  textContent?: string;
-  description?: string;
-  isLocked?: boolean;
-}
-
-interface Section {
-  id: string;
-  title: string;
-  order?: number;
-  lectures?: Lecture[];
-}
-
-interface Course {
-  id: string;
-  title: string;
-  description?: string;
-  slug: string;
-  imageUrl?: string;
-  thumbnail?: string;
-  instructorId: string;
-}
-
-interface CourseProgress {
-  userId: string;
-  courseId: string;
-  completedLessons: string[];
-  lastLessonId?: string;
-  progressPercent: number;
-  updatedAt: any;
-}
-
-interface NdaraUser {
-  uid: string;
-  email: string;
-  fullName?: string;
-  displayName?: string;
-  role: 'student' | 'instructor' | 'admin';
-}
-
-interface Quiz {
-  id: string;
-  title: string;
-  courseId: string;
-  questions: any[];
-}
+import type { Course, Section, Lecture, CourseProgress, Quiz, Enrollment } from '@/lib/types';
 
 function CoursePlayerPageContent() {
   const { slug: courseId } = useParams();
@@ -124,29 +73,46 @@ function CoursePlayerPageContent() {
   const [isCurriculumOpen, setIsCurriculumOpen] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null);
+  const [isValidationBlocked, setIsValidationBlocked] = useState(false);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
-  const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [course, db]);
-  const { data: instructor } = useDoc<NdaraUser>(instructorRef);
-
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
 
-  // 🛡️ SÉCURITÉ : Vérification de l'inscription avant tout
+  // 🔄 ÉCOUTEUR TEMPS RÉEL : Progression et Quiz réussis
+  useEffect(() => {
+    if (!user?.uid || !courseId || !activeLecture) return;
+
+    // Si la leçon demande une validation (Milestone)
+    if (activeLecture.requiresValidation && activeLecture.associatedQuizId) {
+        const quizSubRef = query(
+            collection(db, 'quiz_submissions'),
+            where('studentId', '==', user.uid),
+            where('quizId', '==', activeLecture.associatedQuizId),
+            where('score', '>=', 70)
+        );
+        
+        const unsub = onSnapshot(quizSubRef, (snap) => {
+            setIsValidationBlocked(snap.empty);
+        });
+        return () => unsub();
+    } else {
+        setIsValidationBlocked(false);
+    }
+  }, [user?.uid, courseId, activeLecture, db]);
+
+  // 🛡️ SÉCURITÉ : Vérification de l'inscription
   useEffect(() => {
     if (!user || !courseId) return;
 
     const enrollmentRef = doc(db, 'enrollments', `${user.uid}_${courseId}`);
     const unsub = onSnapshot(enrollmentRef, (snap) => {
         setIsEnrolled(snap.exists());
-        if (!snap.exists() && !isUserLoading) {
-            // Optionnel : On laisse l'UI afficher ACCESS_DENIED au lieu d'une redirection brutale
-        }
     });
     return () => unsub();
-  }, [user, courseId, db, isUserLoading]);
+  }, [user, courseId, db]);
 
   useEffect(() => {
     if (!progressRef) return;
@@ -155,12 +121,6 @@ function CoursePlayerPageContent() {
     });
     return () => unsub();
   }, [progressRef]);
-
-  const quizzesQuery = useMemo(() => 
-    courseId ? query(collectionGroup(db, 'quizzes'), where('courseId', '==', courseId)) : null, 
-    [db, courseId]
-  );
-  const { data: quizzes } = useCollection<Quiz>(quizzesQuery);
 
   useEffect(() => {
     if (!courseId || isEnrolled === false) return;
@@ -206,6 +166,16 @@ function CoursePlayerPageContent() {
 
   const handleMarkComplete = async () => {
     if (!user || !activeLecture || !course || !progressRef || totalLecturesCount === 0) return;
+    
+    if (isValidationBlocked) {
+        toast({ 
+            variant: 'destructive', 
+            title: "Validation requise", 
+            description: "Vous devez réussir le quiz de ce module (min. 70%) pour continuer." 
+        });
+        return;
+    }
+
     const completed = courseProgress?.completedLessons || [];
     if (!completed.includes(activeLecture.id)) {
       const updated = [...completed, activeLecture.id];
@@ -252,7 +222,6 @@ function CoursePlayerPageContent() {
 
   if (isLoading) return <div className="h-screen bg-[#050505] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
 
-  // 🛡️ ÉCRAN ACCÈS REFUSÉ
   if (isEnrolled === false) {
       return (
           <div className="h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
@@ -261,10 +230,10 @@ function CoursePlayerPageContent() {
               </div>
               <h1 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Accès Non Autorisé</h1>
               <p className="text-slate-500 text-sm max-w-xs mx-auto mb-8 font-medium">
-                  Vous devez acquérir cette formation pour accéder aux leçons et obtenir votre certificat.
+                  Vous devez acquérir cette formation pour accéder aux leçons.
               </p>
               <Button onClick={() => router.push(`/course/${courseId}`)} className="h-14 px-8 rounded-2xl bg-primary text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl">
-                  Voir la vitrine du cours
+                  Voir la vitrine
               </Button>
           </div>
       );
@@ -279,7 +248,7 @@ function CoursePlayerPageContent() {
         onClose={() => setShowCertificateModal(false)} 
         courseName={course?.title || ''} 
         studentName={currentUser?.fullName || ''} 
-        instructorName={instructor?.fullName || 'Expert Ndara'} 
+        instructorName={'Expert Ndara'} 
         completionDate={new Date()} 
         certificateId={`${user?.uid}_${courseId}`} 
         courseId={(courseId as string)} 
@@ -322,7 +291,7 @@ function CoursePlayerPageContent() {
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center bg-slate-900 p-8 text-center">
                                 <FileVideo className="h-12 w-12 text-slate-700 mb-4" />
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Vidéo en cours de traitement...</p>
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Vidéo en cours...</p>
                             </div>
                         )
                     ) : activeLecture.type === 'youtube' ? (
@@ -345,10 +314,12 @@ function CoursePlayerPageContent() {
                 <div className="px-4 py-6 space-y-8 pb-32">
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                            <Badge className="bg-primary/20 text-primary border border-primary/30 font-black uppercase text-[10px] tracking-widest px-3 py-1 rounded-full">
-                                <ShieldCheck size={12} className="mr-1.5" />
-                                Certifiant
-                            </Badge>
+                            {course?.isAiVerified && (
+                                <Badge className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-black uppercase text-[8px] tracking-widest px-2 py-0.5 rounded-full">
+                                    <ShieldCheck size={10} className="mr-1" />
+                                    Vérifié par Mathias
+                                </Badge>
+                            )}
                             {(activeLecture?.duration ?? 0) > 0 && (
                                 <span className="text-slate-500 text-[10px] font-black font-mono">
                                     {activeLecture?.duration}:00 MIN
@@ -358,15 +329,27 @@ function CoursePlayerPageContent() {
                         <h1 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
                             {activeLecture?.title}
                         </h1>
-                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">
-                            Section {currentIndices.section} • Leçon {currentIndices.lesson}
-                        </p>
                     </div>
+
+                    {isValidationBlocked && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3 animate-in shake duration-500">
+                            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-bold text-white uppercase tracking-tight">Étape bloquée</p>
+                                <p className="text-[10px] text-amber-200/70 font-medium italic mt-0.5 leading-relaxed">
+                                    "Réussis le quiz associé à ce module pour débloquer la suite de ton parcours."
+                                </p>
+                                <Button size="sm" onClick={() => router.push(`/student/quiz/${activeLecture?.associatedQuizId}`)} className="h-8 mt-3 bg-amber-500 text-slate-950 font-black uppercase text-[9px] tracking-widest">
+                                    Lancer le Quiz
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 gap-3">
                         <Button 
                             onClick={handleMarkComplete}
-                            disabled={completedLessons.includes(activeLecture?.id || '')}
+                            disabled={completedLessons.includes(activeLecture?.id || '') || isValidationBlocked}
                             className={cn(
                                 "w-full h-16 rounded-[2rem] font-black uppercase text-xs tracking-[0.15em]",
                                 completedLessons.includes(activeLecture?.id || '') 
@@ -395,10 +378,8 @@ function CoursePlayerPageContent() {
                         <div className="text-slate-400 text-sm leading-relaxed font-medium">
                             {activeLecture?.textContent ? (
                                 <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
-                            ) : activeLecture?.description ? (
-                                <p>{activeLecture.description}</p>
                             ) : (
-                                <p>Module d'apprentissage Ndara.</p>
+                                <p>{activeLecture?.description || "Module d'apprentissage Ndara."}</p>
                             )}
                         </div>
                     </div>
@@ -444,6 +425,9 @@ function CoursePlayerPageContent() {
                                     {(lecturesMap.get(section.id) || []).map(lecture => {
                                         const isActive = activeLecture?.id === lecture.id;
                                         const isDone = completedLessons.includes(lecture.id);
+                                        // Blocage visuel dans la sidebar
+                                        const isLocked = false; // Logic for future deep locking
+
                                         return (
                                             <button 
                                                 key={lecture.id}
@@ -455,6 +439,8 @@ function CoursePlayerPageContent() {
                                             >
                                                 {isDone ? (
                                                     <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                                                ) : isLocked ? (
+                                                    <Lock className="h-5 w-5 text-slate-700 shrink-0" />
                                                 ) : (
                                                     <PlayCircle className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-slate-700")} />
                                                 )}

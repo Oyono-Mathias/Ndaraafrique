@@ -5,6 +5,26 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import type { Settings, NdaraUser } from '@/lib/types';
 
+/**
+ * 🛡️ Helper interne : Consommation de crédits IA
+ */
+async function consumeAiCredits(userId: string, credits: number = 1) {
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    
+    if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
+    const userData = userSnap.data() as NdaraUser;
+
+    if (!userData.hasAIAccess && userData.aiCredits < credits) {
+        throw new Error("AI_PREMIUM_REQUIRED: Vous n'avez plus de crédits Mathias IA.");
+    }
+
+    await userRef.update({
+        aiCredits: FieldValue.increment(-credits)
+    });
+}
+
 const CourseFormSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
@@ -36,14 +56,11 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-    // 🛡️ SÉCURITÉ ADMIN : allowCourseCreation
     if (settings.courses?.allowCourseCreation === false) {
         return { success: false, message: "La création de nouveaux cours est temporairement suspendue par l'administration." };
     }
 
     const { price } = validatedFields.data;
-
-    // 🛡️ VÉRIFICATION DU PRIX MINIMUM : minimumCoursePrice
     const minPrice = settings.courses?.minimumCoursePrice ?? 0;
     if (price > 0 && price < minPrice) {
         return { success: false, message: `Le prix minimum autorisé est de ${minPrice.toLocaleString()} XOF.` };
@@ -63,8 +80,8 @@ export async function createCourseAction({ formData, instructorId }: { formData:
       creatorId: instructorId,
       ownerId: instructorId,
       instructorId: instructorId,
-      // 🛡️ STATUT BASÉ SUR requireAdminApproval
-      status: settings.courses?.requireAdminApproval ? 'Pending Review' : 'Published',
+      status: 'Draft', // Toujours en draft par défaut pour audit IA
+      isAiVerified: false,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       currency: settings.payments?.currency || 'XOF',

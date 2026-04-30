@@ -17,9 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe, UploadCloud, ShieldAlert, HardDrive } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -79,65 +78,19 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     },
   });
 
-  if (isSanctioned) {
-      return (
-          <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in duration-700">
-              <Card className="bg-red-500/10 border-red-500/20 rounded-[2rem] p-12 text-center space-y-6">
-                  <div className="p-4 bg-red-500/20 rounded-full inline-block">
-                      <ShieldAlert className="h-16 w-16 text-red-500" />
-                  </div>
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">Compte Restreint</h2>
-                  <p className="text-slate-400 leading-relaxed">
-                      Votre droit de publication a été révoqué pour violation des règles de cession de droits intellectuels. <br/>
-                      <b>Raison :</b> {currentUser?.buyoutSanctions?.reason || 'Non spécifiée'}
-                  </p>
-                  <Button asChild variant="outline" className="mt-8 border-slate-800 bg-slate-900 rounded-xl">
-                      <Link href="/instructor/dashboard">Retour au tableau de bord</Link>
-                  </Button>
-              </Card>
-          </div>
-      );
-  }
-
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    setIsUploading(true);
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('userId', user.uid);
-        formData.append('folder', 'course_covers');
-
-        const response = await fetch('/api/storage/upload', {
-            method: 'POST',
-            body: formData,
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-
-        form.setValue('imageUrl', data.url);
-        setImagePreview(data.url);
-        toast({ title: "Image transmise !", description: "Elle est maintenant hébergée sur votre infrastructure CDN." });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: "Erreur de téléversement", description: error.message });
-    } finally {
-        setIsUploading(false);
-    }
-  };
-
-  const handleSelectTemplate = (url: string) => {
-      form.setValue('imageUrl', url);
-      setImagePreview(url);
-      toast({ title: "Visuel appliqué" });
-  };
-
   const handleMathiasHelp = async () => {
+    if (!currentUser?.hasAIAccess && currentUser?.aiCredits === 0) {
+        toast({ 
+            variant: 'destructive', 
+            title: "Crédits épuisés", 
+            description: "Passez à un abonnement Expert Premium pour continuer à utiliser Mathias IA." 
+        });
+        return;
+    }
+
     const title = form.getValues('title');
     if (!title || title.length < 5) {
-        toast({ variant: 'destructive', title: "Titre trop court", description: "Donnez un titre plus précis pour que Mathias puisse vous aider." });
+        toast({ variant: 'destructive', title: "Titre trop court", description: "Indiquez un titre précis." });
         return;
     }
 
@@ -148,9 +101,13 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
         if (courseCategories.includes(result.category)) {
             form.setValue('category', result.category);
         }
-        toast({ title: "Mathias a rédigé votre contenu !", description: "Vérifiez et ajustez si besoin." });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Erreur IA", description: "L'assistant n'a pas pu générer le contenu." });
+        toast({ title: "Contenu généré !" });
+    } catch (error: any) {
+        if (error.message?.includes('AI_PREMIUM_REQUIRED')) {
+            toast({ variant: 'destructive', title: "Premium Requis", description: "Cette fonction est réservée aux Experts Premium." });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur IA" });
+        }
     } finally {
         setIsAiLoading(false);
     }
@@ -165,12 +122,26 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(processSubmit)} className="space-y-8 max-w-4xl mx-auto p-4 pb-24">
+            {/* Affichage des crédits IA */}
+            <div className="flex justify-between items-center bg-slate-900 border border-white/5 p-4 rounded-2xl mb-4">
+                <div className="flex items-center gap-3">
+                    <Bot className="text-primary" />
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Crédits Mathias IA</span>
+                </div>
+                <Badge className={cn(
+                    "font-black text-[10px]",
+                    currentUser?.aiCredits === 0 ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"
+                )}>
+                    {currentUser?.aiCredits} DISPONIBLES
+                </Badge>
+            </div>
+
             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
                 <CardHeader className="border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30 p-8">
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle className="text-xl font-bold uppercase tracking-tight">Contenu Pédagogique</CardTitle>
-                            <CardDescription>Décrivez votre expertise aux futurs Ndara.</CardDescription>
+                            <CardDescription>L'IA Mathias peut vous aider à structurer votre savoir.</CardDescription>
                         </div>
                         <Button 
                             type="button" 
@@ -180,8 +151,8 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                             disabled={isAiLoading}
                             className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 rounded-xl h-10 px-4 font-bold"
                         >
-                            {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Bot className="h-4 w-4 mr-2" />}
-                            Aide de Mathias
+                            {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Sparkles className="h-4 w-4 mr-2" />}
+                            Mathias Assistant
                         </Button>
                     </div>
                 </CardHeader>
@@ -196,150 +167,17 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     <FormField control={form.control} name="description" render={({ field }) => ( 
                         <FormItem>
                             <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Résumé & Objectifs</FormLabel>
-                            <FormControl><Textarea placeholder="Décrivez ce que vos étudiants vont accomplir..." {...field} rows={8} className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl resize-none p-4 leading-relaxed" /></FormControl>
+                            <FormControl><Textarea placeholder="Décrivez votre formation..." {...field} rows={8} className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl resize-none p-4 leading-relaxed" /></FormControl>
                             <FormMessage />
                         </FormItem> 
                     )}/>
                 </CardContent>
             </Card>
-            
-             <div className="grid md:grid-cols-2 gap-6">
-                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
-                    <CardHeader className="p-6 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Tarification (XOF)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <FormField control={form.control} name="price" render={({ field }) => ( 
-                            <FormItem>
-                                <FormControl><Input type="number" {...field} className="h-14 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl font-black text-2xl" /></FormControl>
-                                <FormDescription className="text-[10px] italic">Laissez à 0 pour un cours gratuit.</FormDescription>
-                                <FormMessage />
-                            </FormItem> 
-                        )}/>
-                    </CardContent>
-                </Card>
-                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
-                    <CardHeader className="p-6 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Domaine</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <FormField control={form.control} name="category" render={({ field }) => ( 
-                            <FormItem>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger className="h-14 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl font-bold">
-                                            <SelectValue placeholder="Choisir une catégorie" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        {courseCategories.map(cat => <SelectItem key={cat} value={cat} className="font-bold py-3">{cat}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem> 
-                        )}/>
-                    </CardContent>
-                </Card>
-            </div>
-            
-             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
-                <CardHeader className="p-8 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight">Visuel de Couverture</CardTitle>
-                    <CardDescription>Sélectionnez une image officielle ou importez votre propre fichier.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-8 space-y-8">
-                   <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-inner group">
-                        {imagePreview ? (
-                            <Image src={imagePreview} alt="Aperçu" fill className="object-cover animate-in fade-in duration-700" />
-                        ) : (
-                             <div className="text-center text-slate-400 space-y-2">
-                                <ImageIcon className="mx-auto h-16 w-16 opacity-10" />
-                                <p className="text-[10px] font-black uppercase tracking-widest">Aucun visuel défini</p>
-                             </div>
-                        )}
-                        {isUploading && (
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-8 z-20">
-                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                                <p className="text-white font-black text-xs uppercase tracking-widest animate-pulse">Téléversement...</p>
-                            </div>
-                        )}
-                    </div>
 
-                    <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl w-fit border border-slate-200 dark:border-slate-800">
-                        <Button type="button" variant={imageSource === 'project' ? 'default' : 'ghost'} onClick={() => setImageSource('project')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Bibliothèque Ndara</Button>
-                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'ghost'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Modèles Externes</Button>
-                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'ghost'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Téléverser</Button>
-                    </div>
-
-                    {/* --- SECTION 1 : BIBLIOTHÈQUE PROJET (IA) --- */}
-                    {imageSource === 'project' && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in slide-in-from-bottom-2 duration-500">
-                            {PlaceHolderImages.map((img) => (
-                                <button
-                                    key={img.id}
-                                    type="button"
-                                    onClick={() => handleSelectTemplate(img.imageUrl)}
-                                    className={cn(
-                                        "relative aspect-video rounded-2xl overflow-hidden border-2 transition-all active:scale-95 group",
-                                        form.watch('imageUrl') === img.imageUrl ? "border-primary ring-4 ring-primary/10 shadow-xl" : "border-transparent opacity-60 hover:opacity-100"
-                                    )}
-                                >
-                                    <Image src={img.imageUrl} alt={img.description} fill className="object-cover" />
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* --- SECTION 2 : MODÈLES CUSTOM --- */}
-                    {imageSource === 'template' && (
-                        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
-                            {templatesLoading ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-video rounded-2xl bg-slate-100 dark:bg-slate-800" />)}
-                                </div>
-                            ) : customTemplates && customTemplates.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {customTemplates.map((img) => (
-                                        <button
-                                            key={img.id}
-                                            type="button"
-                                            onClick={() => handleSelectTemplate(img.imageUrl)}
-                                            className={cn(
-                                                "relative aspect-video rounded-2xl overflow-hidden border-2 transition-all group active:scale-95",
-                                                form.watch('imageUrl') === img.imageUrl ? "border-primary ring-4 ring-primary/10 shadow-2xl" : "border-transparent opacity-60 hover:opacity-100"
-                                            )}
-                                        >
-                                            <Image src={img.imageUrl} alt={img.description} fill className="object-cover" />
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-12 bg-slate-50 dark:bg-slate-950/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                                    <Frown className="h-10 w-10 mx-auto text-slate-300 mb-2 opacity-20" />
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aucun modèle externe prêt.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {imageSource === 'upload' && (
-                        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
-                            <label className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
-                                <UploadCloud className="h-10 w-10 text-primary mb-2" />
-                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir un fichier JPG/PNG</span>
-                                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading}/>
-                            </label>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <div className="flex flex-col sm:flex-row justify-end gap-4 sticky bottom-6 z-20 pt-4 border-t border-white/5 bg-slate-950/80 backdrop-blur-xl p-4 -m-4 rounded-t-3xl">
-                <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending} className="h-14 px-8 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
-                <Button type="submit" disabled={isPending || isUploading} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30 transition-all active:scale-[0.98]">
-                    {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                    {mode === 'create' ? "Initialiser la formation" : "Sauvegarder les changements"}
+            <div className="flex justify-end gap-4">
+                <Button type="submit" disabled={isPending} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl">
+                    {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                    Enregistrer le brouillon
                 </Button>
             </div>
         </form>

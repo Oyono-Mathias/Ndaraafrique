@@ -33,6 +33,12 @@ export interface NdaraUser {
   affiliateBalance?: number;
   pendingAffiliateBalance?: number;
   virtualBalance?: number;
+  /** 💰 Système de monétisation IA */
+  aiCredits: number;
+  hasAIAccess: boolean;
+  /** 🎓 Score de qualité Expert (0-100) */
+  qualityScore?: number;
+  totalReviews?: number;
   isInstructorApproved: boolean;
   preferredLanguage?: 'fr' | 'en' | 'sg';
   isProfileComplete: boolean;
@@ -173,6 +179,9 @@ export interface Course {
   resaleRightsAvailable?: boolean;
   resaleRightsPrice?: number;
   isPlatformOwned?: boolean;
+  /** 🤖 Badge Élite : Audit Mathias */
+  isAiVerified?: boolean;
+  lastAiAuditScore?: number;
   buyoutStatus?: 'none' | 'requested' | 'approved';
   buyoutPrice?: number;
   rightsChain?: string[];
@@ -196,6 +205,9 @@ export interface Lecture {
   order: number;
   isFreePreview?: boolean;
   description?: string;
+  /** 🔒 Milestone : Nécessite validation d'exercice avant suite */
+  requiresValidation?: boolean;
+  associatedQuizId?: string;
   createdAt?: Timestamp | FieldValue | Date;
   updatedAt?: Timestamp | FieldValue | Date;
 }

@@ -2,6 +2,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { auditCourseQuality } from '@/ai/flows/audit-course-quality';
 import type { Course, Settings } from '@/lib/types';
 
 /**
@@ -14,6 +15,64 @@ async function verifyAdminOrThrow(adminId: string) {
     if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
         throw new Error("UNAUTHORIZED: Droits d'administrateur requis.");
     }
+}
+
+/**
+ * 🤖 Soumettre un cours pour revue avec Audit IA Mathias obligatoire.
+ */
+export async function submitCourseForReviewAction({
+  courseId,
+  instructorId,
+}: {
+  courseId: string;
+  instructorId: string;
+}) {
+  try {
+    const db = getAdminDb();
+    const courseRef = db.collection('courses').doc(courseId);
+    const courseSnap = await courseRef.get();
+
+    if (!courseSnap.exists) return { success: false, error: 'error.course_not_found' };
+    const courseData = courseSnap.data() as Course;
+    
+    if (courseData.instructorId !== instructorId) {
+      return { success: false, error: 'error.not_authorized' };
+    }
+
+    // 1. Récupérer la structure du cours pour l'audit
+    const sectionsSnap = await courseRef.collection('sections').get();
+    const contentSummary = sectionsSnap.docs.map(s => s.data().title).join(', ');
+
+    // 2. Lancer l'Audit Qualité Mathias
+    const audit = await auditCourseQuality({
+        title: courseData.title,
+        description: courseData.description,
+        category: courseData.category,
+        contentSummary
+    });
+
+    if (!audit.isValid) {
+        return { 
+            success: false, 
+            error: `QUALITÉ INSUFFISANTE (Score: ${audit.score}/100)`, 
+            issues: audit.issues,
+            comment: audit.mentorComment
+        };
+    }
+
+    // 3. Mise à jour si validé par l'IA
+    await courseRef.update({
+      status: 'Pending Review',
+      isAiVerified: true,
+      lastAiAuditScore: audit.score,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, score: audit.score };
+  } catch (error: any) {
+    console.error("Submit Review Error:", error);
+    return { success: false, error: 'error.generic' };
+  }
 }
 
 /**
@@ -77,7 +136,6 @@ export async function toggleResaleRightsAction({
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        // 🛡️ SÉCURITÉ MARKETPLACE : enableMarketplace
         if (available && settings.marketplace?.enableMarketplace === false) {
             return { success: false, error: 'Le marché secondaire est actuellement désactivé.' };
         }
@@ -98,7 +156,6 @@ export async function toggleResaleRightsAction({
         }
 
         if (available) {
-            // 🛡️ VÉRIFICATION PRIX : minimumResalePrice
             const minPrice = settings.marketplace?.minimumResalePrice || 10000;
             if (price < minPrice) {
                 return { success: false, error: `Le prix de revente minimum est de ${minPrice.toLocaleString()} XOF.` };
@@ -117,9 +174,6 @@ export async function toggleResaleRightsAction({
     }
 }
 
-/**
- * Finaliser l'achat des droits de revente (Transaction atomique).
- */
 export async function purchaseResaleRightsAction({
     courseId,
     buyerId,
@@ -151,7 +205,6 @@ export async function purchaseResaleRightsAction({
             const previousOwner = courseData.ownerId || courseData.instructorId;
             const price = courseData.resaleRightsPrice || 0;
 
-            // 🛡️ COMMISSION DYNAMIQUE : resaleCommissionPercent
             const commissionRate = settings.marketplace?.resaleCommissionPercent || 20;
             const platformRevenue = (price * commissionRate) / 100;
             const instructorRevenue = price - platformRevenue;
@@ -234,7 +287,7 @@ export async function approveCourseBuyoutAction({
   adminId: string;
 }) {
   try {
-    await verifyAdminOrThrow(adminId);
+    verifyAdminOrThrow(adminId);
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
@@ -263,71 +316,6 @@ export async function approveCourseBuyoutAction({
   }
 }
 
-export async function sanctionInstructorForBuyoutViolation({
-    userId,
-    adminId,
-    reason
-}: {
-    userId: string;
-    adminId: string;
-    reason: string;
-}) {
-    try {
-        await verifyAdminOrThrow(adminId);
-        const db = getAdminDb();
-        
-        await db.collection('users').doc(userId).update({
-            'buyoutSanctions.isSanctioned': true,
-            'buyoutSanctions.reason': reason,
-            'buyoutSanctions.date': FieldValue.serverTimestamp(),
-            'status': 'active', 
-            'restrictions.canSellCourse': false,
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        await db.collection('admin_audit_logs').add({
-            adminId: adminId,
-            eventType: 'user.sanction.buyout',
-            target: { id: userId, type: 'user' },
-            details: `Sanction rachat appliquée. Raison: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message || 'error.generic' };
-    }
-}
-
-export async function submitCourseForReviewAction({
-  courseId,
-  instructorId,
-}: {
-  courseId: string;
-  instructorId: string;
-}) {
-  try {
-    const db = getAdminDb();
-    const courseRef = db.collection('courses').doc(courseId);
-    const courseDoc = await courseRef.get();
-
-    if (!courseDoc.exists) return { success: false, error: 'error.course_not_found' };
-    
-    if (courseDoc.data()?.instructorId !== instructorId) {
-      return { success: false, error: 'error.not_authorized' };
-    }
-
-    await courseRef.update({
-      status: 'Pending Review',
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: 'error.generic' };
-  }
-}
-
 export async function updateCourseStatusByAdmin({
   courseId,
   status,
@@ -338,7 +326,7 @@ export async function updateCourseStatusByAdmin({
   adminId: string;
 }) {
   try {
-    await verifyAdminOrThrow(adminId);
+    verifyAdminOrThrow(adminId);
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
     await courseRef.update({ status });
@@ -356,7 +344,7 @@ export async function deleteCourseByAdmin({
   adminId: string;
 }) {
   try {
-    await verifyAdminOrThrow(adminId);
+    verifyAdminOrThrow(adminId);
     const db = getAdminDb();
     const courseRef = db.collection('courses').doc(courseId);
     await courseRef.delete();
