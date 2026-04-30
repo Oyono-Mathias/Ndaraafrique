@@ -18,12 +18,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, ShieldAlert, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Course, CourseTemplate } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Badge } from '@/components/ui/badge';
 
 const CourseFormSchema = z.object({
   title: z.string().min(5, { message: "Le titre doit faire au moins 5 caractères." }),
@@ -61,11 +62,6 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
   const [imageSource, setImageSource] = useState<'upload' | 'template' | 'project'>('template');
   const { user, currentUser } = useRole();
-
-  const isSanctioned = currentUser?.buyoutSanctions?.isSanctioned === true;
-
-  const templatesQuery = useMemo(() => query(collection(db, 'course_templates'), orderBy('createdAt', 'desc')), [db]);
-  const { data: customTemplates, isLoading: templatesLoading } = useCollection<CourseTemplate>(templatesQuery);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(CourseFormSchema),
