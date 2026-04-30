@@ -316,6 +316,45 @@ export async function approveCourseBuyoutAction({
   }
 }
 
+/**
+ * Sanctionner un instructeur suite à une violation des conditions de rachat.
+ */
+export async function sanctionInstructorForBuyoutViolation({
+    userId,
+    adminId,
+    reason
+}: {
+    userId: string;
+    adminId: string;
+    reason: string;
+}) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        await db.collection('users').doc(userId).update({
+            buyoutSanctions: {
+                isSanctioned: true,
+                reason,
+                date: FieldValue.serverTimestamp()
+            },
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.sanction.buyout',
+            target: { id: userId, type: 'user' },
+            details: `Sanction rachat appliquée. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
 export async function updateCourseStatusByAdmin({
   courseId,
   status,
