@@ -160,6 +160,8 @@ export default function LoginClient() {
         balance: 0,
         affiliateBalance: 0,
         pendingAffiliateBalance: 0,
+        aiCredits: 5,
+        hasAIAccess: false,
         affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
         restrictions: {
             canWithdraw: true,
@@ -215,6 +217,8 @@ export default function LoginClient() {
           balance: 0,
           affiliateBalance: 0,
           pendingAffiliateBalance: 0,
+          aiCredits: 5,
+          hasAIAccess: false,
           affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
           restrictions: {
               canWithdraw: true,
