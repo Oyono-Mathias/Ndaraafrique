@@ -136,6 +136,44 @@ export async function assignInstructorToCourseAction({
     }
 }
 
+/**
+ * Sanctionner un instructeur pour violation grave (ex: tentative de rachat de contenu plagié).
+ */
+export async function sanctionInstructorForBuyoutViolation({
+    userId,
+    adminId,
+    reason
+}: {
+    userId: string;
+    adminId: string;
+    reason: string;
+}) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        await db.collection('users').doc(userId).update({
+            'buyoutSanctions.isSanctioned': true,
+            'buyoutSanctions.reason': reason,
+            'buyoutSanctions.date': FieldValue.serverTimestamp(),
+            status: 'suspended',
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.sanction.buyout',
+            target: { id: userId, type: 'user' },
+            details: `Sanction appliquée à l'instructeur suite à une violation de rachat. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
 export async function toggleResaleRightsAction({
     courseId,
     price,

@@ -3,8 +3,7 @@
 /**
  * @fileOverview Cockpit Admin Elite - Design Qwen Immersif V2.
  * ✅ REAL-TIME : 100% branché sur onSnapshot pour une réactivité totale.
- * ✅ I18N : Intégration complète des traductions Admin (FR/EN/SG).
- * ✅ MeSomb : Ajout du solde marchand en temps réel.
+ * ✅ SOUVERAINETÉ : Intégration des alertes de sécurité et de la file d'attente d'actions.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -27,12 +26,16 @@ import {
   Percent, 
   Award,
   Clock,
-  Activity
+  Activity,
+  ShieldAlert,
+  Zap
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { MeSombBalanceCard } from '@/components/admin/MeSombBalanceCard';
+import { AdminSecurityAlerts } from '@/components/dashboards/AdminSecurityAlerts';
+import { AdminActionQueue } from '@/components/dashboards/AdminActionQueue';
 import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslations } from 'next-intl';
@@ -174,8 +177,15 @@ export default function AdminDashboard() {
 
             <div className="relative z-10 space-y-10">
                 {/* MeSomb Live Monitoring */}
-                <div className="max-w-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <MeSombBalanceCard />
+                    <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 text-primary mb-2">
+                            <ShieldAlert className="h-4 w-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Aperçu Sécurité</span>
+                        </div>
+                        <p className="text-sm text-slate-400 font-medium italic">"L'intégrité de la plateforme est garantie par MATHIAS IA et votre vigilance."</p>
+                    </div>
                 </div>
 
                 <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -215,6 +225,26 @@ export default function AdminDashboard() {
                         isLoading={isLoading}
                     />
                 </section>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* File d'Actions */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-black text-white uppercase tracking-[0.3em] flex items-center gap-2 px-1">
+                            <Zap className="h-4 w-4 text-primary" />
+                            File d'Actions
+                        </h2>
+                        <AdminActionQueue />
+                    </div>
+
+                    {/* Alertes Sécurité */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-black text-white uppercase tracking-[0.3em] flex items-center gap-2 px-1">
+                            <ShieldAlert className="h-4 w-4 text-red-500" />
+                            Alertes Prioritaires
+                        </h2>
+                        <AdminSecurityAlerts />
+                    </div>
+                </div>
 
                 <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl overflow-hidden shadow-2xl">
                     <div className="p-8 border-b border-white/5 flex items-center justify-between">
