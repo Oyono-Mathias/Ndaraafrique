@@ -307,6 +307,34 @@ export interface Resource {
   createdAt: Timestamp | FieldValue | Date;
 }
 
+/** 📊 REGISTRE COMPTABLE NDARA */
+export interface NdaraTransaction {
+  id: string;
+  type: 'purchase' | 'commission' | 'referral' | 'payout' | 'deposit';
+  userId: string;
+  amount: number;
+  status: 'success' | 'failed' | 'pending_review';
+  meta: {
+    courseId?: string;
+    courseTitle?: string;
+    referrerId?: string;
+    targetUserId?: string;
+    provider?: string;
+    [key: string]: any;
+  };
+  createdAt: Timestamp | FieldValue | Date;
+}
+
+/** 💰 REGISTRE DES GAINS BÉNÉFICIAIRES */
+export interface NdaraEarning {
+  id: string;
+  userId: string;
+  type: 'course_sale' | 'referral' | 'bonus';
+  amount: number;
+  sourceId: string; // courseId or userId
+  createdAt: Timestamp | FieldValue | Date;
+}
+
 export interface Payment {
   id: string;
   userId: string;
@@ -706,7 +734,7 @@ export interface NdaraPaymentDetails {
   metadata: {
     userId: string;
     courseId?: string;
-    type?: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase';
+    type?: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase' | 'deposit';
     affiliateId?: string;
     couponId?: string;
     courseTitle?: string;
