@@ -1,12 +1,12 @@
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
-import type { NdaraPaymentDetails, Course, NdaraUser, NdaraTransaction, NdaraEarning } from '@/lib/types';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import type { NdaraPaymentDetails, Course, NdaraUser, NdaraTransaction, NdaraEarning, AffiliateTransaction } from '@/lib/types';
 
 /**
- * ✅ PROCESSEUR FINANCIER ÉLITE v6.0 - Infrastructure Step 1
- * Gère l'intégrité, l'idempotence et la ventilation comptable (Transactions & Earnings).
+ * ✅ PROCESSEUR FINANCIER ÉLITE v7.0 - Infrastructure Step 2
+ * Gère l'intégrité, l'idempotence et le MOTEUR DE PARRAINAGE avec ANTI-FRAUDE.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -120,16 +120,69 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             priceAtEnrollment: Number(amount)
         }, { merge: true });
 
-        // 💰 VENTILATION DES REVENUS (Earnings & Commission)
+        // 👥 MOTEUR DE PARRAINAGE : Reward the Referrer
+        if (userData.referredBy && userData.referredBy !== metadata.userId) {
+            const referrerId = userData.referredBy;
+            const referrerRef = db.collection('users').doc(referrerId);
+            
+            // 🛡️ ANTI-FRAUDE : On ne reward que si le parrain est actif
+            const referrerSnap = await transaction.get(referrerRef);
+            if (referrerSnap.exists && referrerSnap.data()?.status === 'active') {
+                const commissionRate = 0.10; // 10% par défaut
+                const commissionAmount = Number(amount) * commissionRate;
+
+                if (commissionAmount > 0) {
+                    // 🔒 SÉQUESTRE : On injecte dans pendingAffiliateBalance (libéré sous 14j par Cron)
+                    transaction.update(referrerRef, {
+                        pendingAffiliateBalance: FieldValue.increment(commissionAmount),
+                        'affiliateStats.earnings': FieldValue.increment(commissionAmount),
+                        'affiliateStats.sales': FieldValue.increment(1)
+                    });
+
+                    // Log de la transaction d'affiliation
+                    const affRef = db.collection('affiliate_transactions').doc();
+                    const unlockDate = new Date();
+                    unlockDate.setDate(unlockDate.getDate() + 14); // 14 jours de gel
+
+                    const affTransaction: AffiliateTransaction = {
+                        id: affRef.id,
+                        affiliateId: referrerId,
+                        buyerId: metadata.userId,
+                        buyerName: userData.fullName || 'Ndara Student',
+                        courseId: metadata.courseId,
+                        courseTitle: courseTitle,
+                        amount: Number(amount),
+                        commissionAmount: commissionAmount,
+                        status: 'pending', // Attente libération par Cron
+                        createdAt: now,
+                        unlockDate: Timestamp.fromDate(unlockDate)
+                    };
+                    transaction.set(affRef, affTransaction);
+
+                    // Notification d'activité pour le parrain
+                    const referrerActivityRef = referrerRef.collection('activity').doc();
+                    transaction.set(referrerActivityRef, {
+                        userId: referrerId,
+                        type: 'payment',
+                        title: 'Nouvelle commission !',
+                        description: `Gains en attente pour la vente de : ${courseTitle}`,
+                        read: false,
+                        createdAt: now
+                    });
+                }
+            }
+        }
+
+        // 💰 VENTILATION DES REVENUS (Earnings & Commission Formateur)
         if (instructorId !== 'NDARA_OFFICIAL') {
             const instructorRef = db.collection('users').doc(instructorId);
             const instructorShare = Number(amount) * 0.7; // Standard 70%
             const platformCommission = Number(amount) * 0.3; // Standard 30%
 
-            // 1. Crédit balance instructeur
+            // 1. Crédit balance formateur
             transaction.update(instructorRef, { balance: FieldValue.increment(instructorShare) });
 
-            // 2. Log Earning instructeur
+            // 2. Log Earning formateur
             const earningRef = db.collection('earnings').doc();
             const earning: NdaraEarning = {
                 id: earningRef.id,
@@ -140,22 +193,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                 createdAt: now
             };
             transaction.set(earningRef, earning);
-
-            // 3. Log Commission Plateforme (Comptabilité Interne)
-            const commissionTransRef = db.collection('transactions').doc();
-            const commissionTrans: NdaraTransaction = {
-                id: commissionTransRef.id,
-                userId: 'PLATFORM_REVENUE',
-                type: 'commission',
-                amount: platformCommission,
-                status: 'success',
-                meta: { sourceCourseId: metadata.courseId, buyerId: metadata.userId },
-                createdAt: now
-            };
-            transaction.set(commissionTransRef, commissionTrans);
         }
 
-        // Notification d'activité
+        // Notification d'activité pour l'acheteur
         transaction.set(activityRef, {
             userId: metadata.userId,
             type: 'enrollment',

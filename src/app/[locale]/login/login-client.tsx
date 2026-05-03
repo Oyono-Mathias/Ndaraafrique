@@ -3,7 +3,7 @@
 /**
  * @fileOverview Client de connexion Ndara Afrique.
  * ✅ SÉCURITÉ : Vérification de 'allowRegistration' avant toute inscription.
- * ✅ SYNC : Création systématique du document Firestore au premier login Google.
+ * ✅ PARRAINAGE : Capture et liaison automatique du parrain (referredBy).
  */
 
 import { useState, useEffect } from 'react';
@@ -27,7 +27,9 @@ import {
   setDoc, 
   serverTimestamp, 
   getDoc,
-  onSnapshot
+  onSnapshot,
+  increment,
+  updateDoc
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations, useLocale } from 'next-intl';
@@ -143,6 +145,19 @@ export default function LoginClient() {
       
       await updateProfile(authUser, { displayName: values.fullName });
 
+      // 👥 LOGIQUE PARRAINAGE : Récupérer l'ID du parrain stocké par /ref/[slug]
+      let referrerId: string | null = null;
+      const referralRaw = localStorage.getItem('ndara_referral');
+      if (referralRaw) {
+          try {
+              const refData = JSON.parse(referralRaw);
+              // Vérifier la validité (30 jours)
+              if (refData.expiresAt > Date.now()) {
+                  referrerId = refData.instructorId;
+              }
+          } catch (e) { console.warn("Invalid referral data"); }
+      }
+
       const userRef = doc(db, "users", authUser.uid);
       const userData = {
         uid: authUser.uid,
@@ -162,6 +177,7 @@ export default function LoginClient() {
         pendingAffiliateBalance: 0,
         aiCredits: 5,
         hasAIAccess: false,
+        referredBy: referrerId, // 🛡️ Liaison du parrain
         affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
         restrictions: {
             canWithdraw: true,
@@ -173,6 +189,16 @@ export default function LoginClient() {
       };
 
       await setDoc(userRef, userData);
+
+      // Si parrainage, on incrémente le compteur du parrain
+      if (referrerId) {
+          const referrerRef = doc(db, 'users', referrerId);
+          await updateDoc(referrerRef, {
+              'affiliateStats.registrations': increment(1)
+          }).catch(console.error);
+          localStorage.removeItem('ndara_referral'); // Consommé
+      }
+
       toast({ title: tActions('success.generic') });
 
     } catch (error: any) {
@@ -189,7 +215,6 @@ export default function LoginClient() {
       const result = await signInWithPopup(getAuth(), provider);
       const user = result.user;
       
-      // ✅ VÉRIFICATION ET CRÉATION SYNC
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
@@ -198,6 +223,16 @@ export default function LoginClient() {
             await getAuth().signOut();
             toast({ variant: 'destructive', title: "Inscriptions fermées", description: "Veuillez réessayer plus tard." });
             return;
+        }
+
+        // 👥 PARRAINAGE GOOGLE
+        let referrerId: string | null = null;
+        const referralRaw = localStorage.getItem('ndara_referral');
+        if (referralRaw) {
+            try {
+                const refData = JSON.parse(referralRaw);
+                if (refData.expiresAt > Date.now()) referrerId = refData.instructorId;
+            } catch (e) {}
         }
 
         const userData = {
@@ -219,6 +254,7 @@ export default function LoginClient() {
           pendingAffiliateBalance: 0,
           aiCredits: 5,
           hasAIAccess: false,
+          referredBy: referrerId,
           affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
           restrictions: {
               canWithdraw: true,
@@ -229,7 +265,11 @@ export default function LoginClient() {
           }
         };
         await setDoc(userRef, userData);
-        console.log(`[AUTH_SYNC] Nouveau profil créé pour ${user.email}`);
+        
+        if (referrerId) {
+            await updateDoc(doc(db, 'users', referrerId), { 'affiliateStats.registrations': increment(1) }).catch(() => {});
+            localStorage.removeItem('ndara_referral');
+        }
       }
     } catch (err) {
       console.error("[AUTH_GOOGLE_ERROR]", err);
