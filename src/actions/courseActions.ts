@@ -35,11 +35,17 @@ export async function submitCourseForReviewAction({
     if (!courseSnap.exists) return { success: false, error: 'error.course_not_found' };
     const courseData = courseSnap.data() as Course;
     
+    // 🛡️ BAC À SABLE : Seul le propriétaire peut soumettre son œuvre
     if (courseData.instructorId !== instructorId) {
       return { success: false, error: 'error.not_authorized' };
     }
 
-    // 1. Récupérer la structure du cours pour l'audit (Sections + Leçons)
+    // On ne peut soumettre que des brouillons ou des cours déjà refusés
+    if (courseData.status === 'Published') {
+        return { success: false, error: "ALREADY_PUBLISHED" };
+    }
+
+    // 1. Récupérer la structure du cours pour l'audit
     const sectionsSnap = await courseRef.collection('sections').get();
     const sections = await Promise.all(sectionsSnap.docs.map(async (s) => {
         const lecturesSnap = await s.ref.collection('lectures').get();
@@ -47,7 +53,7 @@ export async function submitCourseForReviewAction({
     }));
     const contentSummary = sections.join(', ') || "Aucun module créé";
 
-    // 2. Lancer l'Audit Qualité Mathias (BARRIÈRE IA)
+    // 2. Lancer l'Audit Qualité Mathias
     const audit = await auditCourseQuality({
         title: courseData.title,
         description: courseData.description,
@@ -55,9 +61,8 @@ export async function submitCourseForReviewAction({
         contentSummary
     });
 
-    // 🛑 RÈGLE D'OR : On bloque la soumission si le score est inférieur à 80
+    // 🛑 RÈGLE D'OR : On bloque la soumission si le score < 80
     if (!audit.isValid || audit.score < 80) {
-        // On enregistre quand même les issues pour que le formateur puisse les voir
         await courseRef.update({
             lastAiAuditScore: audit.score,
             moderationFeedback: `[Audit Mathias IA] : ${audit.mentorComment}`,
@@ -73,12 +78,12 @@ export async function submitCourseForReviewAction({
         };
     }
 
-    // 3. Mise à jour vers 'Pending Review' si validé par Mathias
+    // 3. Mise à jour vers 'Pending Review'
     await courseRef.update({
       status: 'Pending Review',
       isAiVerified: true,
       lastAiAuditScore: audit.score,
-      moderationFeedback: FieldValue.delete(), // On nettoie les anciens feedbacks
+      moderationFeedback: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -131,9 +136,6 @@ export async function assignInstructorToCourseAction({
     }
 }
 
-/**
- * Activer ou désactiver les droits de revente pour un cours.
- */
 export async function toggleResaleRightsAction({
     courseId,
     price,
@@ -328,45 +330,6 @@ export async function approveCourseBuyoutAction({
   } catch (error: any) {
     return { success: false, error: 'error.generic' };
   }
-}
-
-/**
- * Sanctionner un instructeur suite à une violation des conditions de rachat.
- */
-export async function sanctionInstructorForBuyoutViolation({
-    userId,
-    adminId,
-    reason
-}: {
-    userId: string;
-    adminId: string;
-    reason: string;
-}) {
-    try {
-        await verifyAdminOrThrow(adminId);
-        const db = getAdminDb();
-        
-        await db.collection('users').doc(userId).update({
-            buyoutSanctions: {
-                isSanctioned: true,
-                reason,
-                date: FieldValue.serverTimestamp()
-            },
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'user.sanction.buyout',
-            target: { id: userId, type: 'user' },
-            details: `Sanction rachat appliquée. Raison: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
 }
 
 export async function updateCourseStatusByAdmin({
