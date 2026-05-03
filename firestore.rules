@@ -23,14 +23,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- UTILISATEURS ---
+    // --- UTILISATEURS (IDENTITÉ & PRIVILÈGES) ---
     match /users/{userId} {
-      // Un utilisateur peut lire son profil. Les admins peuvent tout lire.
+      // Un utilisateur lit son profil. Les admins auditent tout.
       allow read: if isOwner(userId) || isAdmin();
-      // Création autorisée uniquement pour soi-même à l'inscription
+      // Création autorisée à l'inscription.
       allow create: if isOwner(userId);
-      // Mise à jour restreinte (le rôle ne peut pas être changé par l'utilisateur via le client)
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin();
+      // SÉCURITÉ CRITIQUE : L'utilisateur ne peut PAS changer son propre rôle.
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
       
       match /notifications/{id} { allow read, write: if isOwner(userId); }
       match /chatHistory/{id} { allow read, write: if isOwner(userId); }
@@ -38,34 +38,50 @@ service cloud.firestore {
       match /cart/{id} { allow read, write: if isOwner(userId); }
     }
 
-    // --- ENROLLMENTS (INSCRIPTIONS) ---
-    match /enrollments/{enrollmentId} {
-      // ✅ SÉCURITÉ FINTECH : Lecture autorisée si l'ID commence par l'UID ou si le champ studentId match.
-      // Cela permet le 'get' (vérification d'accès) et le 'list' (mes formations).
-      allow read: if isSignedIn() && (
-        enrollmentId.startsWith(request.auth.uid) || 
-        (resource != null && resource.data.studentId == request.auth.uid) ||
-        isAdmin()
-      );
-      // ✅ PROTECTION : Seul le Backend (Admin SDK) peut inscrire un utilisateur.
-      allow write: if isAdmin();
-    }
-
-    // --- PAYMENTS (TRANSACTIONS) ---
+    // --- FINANCES : TRANSACTIONS & AUDIT ---
     match /payments/{paymentId} {
-      // Un utilisateur ne voit que ses propres reçus.
-      allow read: if isSignedIn() && (
-        (resource != null && resource.data.userId == request.auth.uid) || 
-        isAdmin()
-      );
-      // ✅ PROTECTION : Aucune modification financière depuis le client.
+      // Un utilisateur ne voit que ses reçus. L'admin voit tout le flux.
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      // AUCUNE écriture financière autorisée depuis le client (Backend Only).
       allow write: if false;
     }
 
-    // --- COURS & CONTENU ---
-    match /courses/{courseId} {
-      allow read: if true; 
+    match /transactions/{id} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /earnings/{id} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // --- AMBASSADEURS : AFFILIATION ---
+    match /affiliate_transactions/{id} {
+      // L'ambassadeur suit ses commissions. L'admin arbitre.
+      allow read: if isSignedIn() && (resource.data.affiliateId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // --- TRÉSORERIE : RETRAITS ---
+    match /payout_requests/{id} {
+      // L'instructeur suit sa demande. L'admin valide.
+      allow read: if isSignedIn() && (resource.data.instructorId == request.auth.uid || isAdmin());
+      // Seul l'admin peut modifier le statut (Paid/Rejected).
+      allow update, delete: if isAdmin();
+    }
+
+    // --- PÉDAGOGIE : ACCÈS & CONTENU ---
+    match /enrollments/{enrollmentId} {
+      // Lecture si l'étudiant possède le cours ou si admin.
+      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin());
+      // Seul le Backend (via Admin SDK) peut valider une inscription.
       allow write: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow read: if true; // Catalogue public.
+      allow write: if isAdmin(); // Seul l'admin ou le backend publie.
       
       match /{allSubcollections=**} {
         allow read: if true;
@@ -74,8 +90,28 @@ service cloud.firestore {
     }
 
     match /course_progress/{id} {
+      // L'ID est formaté {userId}_{courseId}.
       allow read: if isOwner(id.split('_')[0]) || isAdmin();
       allow write: if isOwner(id.split('_')[0]);
+    }
+
+    // --- INFRASTRUCTURE & RÉGLAGES ---
+    match /settings/{id} {
+      allow read: if true; // Les réglages d'UI sont publics.
+      allow write: if isAdmin();
+    }
+
+    match /admin_audit_logs/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /push_campaigns/{id} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /marketing_campaigns/{id} {
+      allow read, write: if isAdmin();
     }
 
     // --- SUPPORT & MESSAGERIE ---
@@ -93,16 +129,6 @@ service cloud.firestore {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
         allow create: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
       }
-    }
-
-    match /admin_audit_logs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false;
-    }
-    
-    match /settings/{id} {
-      allow read: if true;
-      allow write: if isAdmin();
     }
   }
 }
