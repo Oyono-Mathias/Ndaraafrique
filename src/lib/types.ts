@@ -7,7 +7,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
-export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated';
+export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated' | 'withdrawal';
 
 export interface Role {
   id: string;
@@ -421,190 +421,6 @@ export interface Coupon {
   expiresAt: Timestamp | FieldValue | Date;
 }
 
-export interface Country {
-  id: string;
-  name: string;
-  code: string;
-  currency: string;
-  prefix: string;
-  flagEmoji: string;
-  active: boolean;
-  paymentMethods: PaymentMethod[];
-}
-
-export interface PaymentMethod {
-  id: string;
-  name: string;
-  logo?: string;
-  provider: PaymentProvider | string;
-  active: boolean;
-}
-
-export interface DesignSettings {
-  primaryColor: string;
-  borderRadius: 'none' | 'md' | 'lg' | 'xl';
-  fontScale: 'small' | 'medium' | 'large';
-}
-
-export interface Settings {
-  general: {
-    siteName: string;
-    logoUrl: string;
-    faviconUrl: string;
-    contactEmail: string;
-    contactPhone: string;
-    address: string;
-    defaultLanguage: 'fr' | 'en' | 'sg';
-    timezone: string;
-  };
-  payments: {
-    paymentsEnabled: boolean;
-    currency: string;
-    paymentMethods: string[];
-    transactionFeePercent: number;
-    minDeposit: number;
-    maxDeposit: number;
-    walletEnabled: boolean;
-    operatorCommission: number;
-    paymentMode: 'test' | 'live';
-  };
-  users: {
-    allowRegistration: boolean;
-    allowInstructorSignup: boolean;
-    requireEmailVerification: boolean;
-    autoApproveInstructors: boolean;
-    defaultRole: string;
-    maxAccountsPerUser: number;
-  };
-  courses: {
-    allowCourseCreation: boolean;
-    requireAdminApproval: boolean;
-    minimumCoursePrice: number;
-    instructorRevenuePercent: number;
-    allowDownload: boolean;
-    certificateEnabled: boolean;
-  };
-  marketplace: {
-    enableMarketplace: boolean;
-    minimumResalePrice: number;
-    resaleCommissionPercent: number;
-    allowLicenseResale: boolean;
-    allowCourseBuyout?: boolean;
-    allowResaleRights?: boolean;
-  };
-  ai: {
-    aiEnabled: boolean;
-    modelName: string;
-    maxRequestsPerUser: number;
-    contentGenerationEnabled: boolean;
-    autoCorrection?: boolean;
-    autonomousTutor?: boolean;
-    fraudDetection?: boolean;
-  };
-  notifications: {
-    emailNotifications: boolean;
-    pushNotifications: boolean;
-    smsNotifications: boolean;
-    adminAlerts: {
-      newUser: boolean;
-      newPayment: boolean;
-      systemError: boolean;
-    };
-  };
-  security: {
-    maintenanceMode: boolean;
-    enable2fa: boolean;
-    maxLoginAttempts: number;
-    blockedUsers: string[];
-    activityLogsEnabled: boolean;
-  };
-  localization: {
-    supportedLanguages: string[];
-    defaultLanguage: string;
-    autoDetectLanguage: boolean;
-  };
-  marketing: {
-    globalAnnouncement: string;
-    promoCodesEnabled: boolean;
-    referralProgramEnabled: boolean;
-    seo: {
-      title: string;
-      description: string;
-    };
-  };
-  finance: {
-    platformRevenuePercent: number;
-    minWithdrawal: number;
-    withdrawalDelayDays: number;
-    autoPayoutEnabled: boolean;
-  };
-  advanced: {
-    apiKeys: Record<string, string>;
-    firebaseConfig: Record<string, any>;
-    webhookUrls: string[];
-    debugMode: boolean;
-  };
-  appearance: DesignSettings;
-  social?: {
-    facebookUrl?: string;
-    instagramUrl?: string;
-    twitterUrl?: string;
-    linkedinUrl?: string;
-    youtubeUrl?: string;
-    telegramUrl?: string;
-  };
-  platform?: {
-    maintenanceMode?: boolean;
-    announcementMessage?: string;
-    allowYoutube?: boolean;
-    allowBunny?: boolean;
-    allowInstructorSignup?: boolean;
-  };
-  commercial?: {
-    instructorShare?: number;
-    payoutDelayDays?: number;
-  };
-  affiliate?: {
-    commissionRate?: number;
-  };
-  content?: {
-    landingPage?: {
-      heroBadge?: string;
-      heroTitle?: string;
-      heroSubtitle?: string;
-      heroImageUrl?: string;
-      badge_card_title?: string;
-      badge_card_subtitle?: string;
-      securitySection_imageUrl?: string;
-      showFinalCta?: boolean;
-      finalCtaTitle?: string;
-      finalCtaSubtitle?: string;
-      finalCtaButtonText?: string;
-    };
-    aboutPage?: {
-      mainTitle?: string;
-      mainSubtitle?: string;
-      historyTitle?: string;
-      historyFrench?: string;
-      historySango?: string;
-      visionTitle?: string;
-      visionFrench?: string;
-      visionSango?: string;
-      teamMembers?: TeamMember[];
-      ctaTitle?: string;
-    };
-  };
-  storage?: {
-    maxFileSizeMb: number;
-  };
-  pwa?: {
-    appName?: string;
-    shortName?: string;
-    iconUrl?: string;
-    appDescription?: string;
-  };
-}
-
 export interface FAQ {
   id: string;
   question_fr: string;
@@ -803,13 +619,186 @@ export interface TrackingEvent {
   timestamp: Timestamp | FieldValue | Date;
 }
 
-export interface InvestorLead {
+export interface Country {
   id: string;
-  fullName: string;
-  email: string;
-  organization?: string;
-  message?: string;
-  status: 'new' | 'contacted' | 'interested';
-  createdAt: Timestamp | FieldValue | Date;
-  updatedAt: Timestamp | FieldValue | Date;
+  name: string;
+  code: string;
+  currency: string;
+  prefix: string;
+  flagEmoji: string;
+  active: boolean;
+  paymentMethods: PaymentMethod[];
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  logo?: string;
+  provider: PaymentProvider | string;
+  active: boolean;
+}
+
+export interface DesignSettings {
+  primaryColor: string;
+  borderRadius: 'none' | 'md' | 'lg' | 'xl';
+  fontScale: 'small' | 'medium' | 'large';
+}
+
+export interface Settings {
+  general: {
+    siteName: string;
+    logoUrl: string;
+    faviconUrl: string;
+    contactEmail: string;
+    contactPhone: string;
+    address: string;
+    defaultLanguage: 'fr' | 'en' | 'sg';
+    timezone: string;
+  };
+  payments: {
+    paymentsEnabled: boolean;
+    currency: string;
+    paymentMethods: string[];
+    transactionFeePercent: number;
+    minDeposit: number;
+    maxDeposit: number;
+    walletEnabled: boolean;
+    operatorCommission: number;
+    paymentMode: 'test' | 'live';
+  };
+  users: {
+    allowRegistration: boolean;
+    allowInstructorSignup: boolean;
+    requireEmailVerification: boolean;
+    autoApproveInstructors: boolean;
+    defaultRole: string;
+    maxAccountsPerUser: number;
+  };
+  courses: {
+    allowCourseCreation: boolean;
+    requireAdminApproval: boolean;
+    minimumCoursePrice: number;
+    instructorRevenuePercent: number;
+    allowDownload: boolean;
+    certificateEnabled: boolean;
+  };
+  marketplace: {
+    enableMarketplace: boolean;
+    minimumResalePrice: number;
+    resaleCommissionPercent: number;
+    allowLicenseResale: boolean;
+    allowCourseBuyout?: boolean;
+    allowResaleRights?: boolean;
+  };
+  ai: {
+    aiEnabled: boolean;
+    modelName: string;
+    maxRequestsPerUser: number;
+    contentGenerationEnabled: boolean;
+    autoCorrection?: boolean;
+    autonomousTutor?: boolean;
+    fraudDetection?: boolean;
+  };
+  notifications: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    smsNotifications: boolean;
+    adminAlerts: {
+      newUser: boolean;
+      newPayment: boolean;
+      systemError: boolean;
+    };
+  };
+  security: {
+    maintenanceMode: boolean;
+    enable2fa: boolean;
+    maxLoginAttempts: number;
+    blockedUsers: string[];
+    activityLogsEnabled: boolean;
+  };
+  localization: {
+    supportedLanguages: string[];
+    defaultLanguage: string;
+    autoDetectLanguage: boolean;
+  };
+  marketing: {
+    globalAnnouncement: string;
+    promoCodesEnabled: boolean;
+    referralProgramEnabled: boolean;
+    seo: {
+      title: string;
+      description: string;
+    };
+  };
+  finance: {
+    platformRevenuePercent: number;
+    minWithdrawal: number;
+    withdrawalDelayDays: number;
+    autoPayoutEnabled: boolean;
+  };
+  advanced: {
+    apiKeys: Record<string, string>;
+    firebaseConfig: Record<string, any>;
+    webhookUrls: string[];
+    debugMode: boolean;
+  };
+  appearance: DesignSettings;
+  social?: {
+    facebookUrl?: string;
+    instagramUrl?: string;
+    twitterUrl?: string;
+    linkedinUrl?: string;
+    youtubeUrl?: string;
+    telegramUrl?: string;
+  };
+  platform?: {
+    maintenanceMode?: boolean;
+    announcementMessage?: string;
+    allowYoutube?: boolean;
+    allowBunny?: boolean;
+    allowInstructorSignup?: boolean;
+  };
+  commercial?: {
+    instructorShare?: number;
+    payoutDelayDays?: number;
+  };
+  affiliate?: {
+    commissionRate?: number;
+  };
+  content?: {
+    landingPage?: {
+      heroBadge?: string;
+      heroTitle?: string;
+      heroSubtitle?: string;
+      heroImageUrl?: string;
+      badge_card_title?: string;
+      badge_card_subtitle?: string;
+      securitySection_imageUrl?: string;
+      showFinalCta?: boolean;
+      finalCtaTitle?: string;
+      finalCtaSubtitle?: string;
+      finalCtaButtonText?: string;
+    };
+    aboutPage?: {
+      mainTitle?: string;
+      mainSubtitle?: string;
+      historyTitle?: string;
+      historyFrench?: string;
+      historySango?: string;
+      visionTitle?: string;
+      visionFrench?: string;
+      visionSango?: string;
+      teamMembers?: TeamMember[];
+      ctaTitle?: string;
+    };
+  };
+  storage?: {
+    maxFileSizeMb: number;
+  };
+  pwa?: {
+    appName?: string;
+    shortName?: string;
+    iconUrl?: string;
+    appDescription?: string;
+  };
 }

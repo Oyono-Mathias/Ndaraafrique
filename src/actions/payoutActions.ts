@@ -1,9 +1,9 @@
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
-import { sendAdminNotification } from './notificationActions';
-import type { NdaraUser, RequestPayoutParams, Settings } from '@/lib/types';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { sendAdminNotification, sendUserNotification } from './notificationActions';
+import type { NdaraUser, RequestPayoutParams, Settings, PayoutRequest } from '@/lib/types';
 
 /**
  * 🛡️ Helper interne de sécurité Admin
@@ -17,7 +17,11 @@ async function verifyAdminOrThrow(adminId: string) {
     }
 }
 
-// ✅ DEMANDE DE RETRAIT
+/** 
+ * 💸 1. DEMANDE DE RETRAIT (Utilisateur)
+ * Crée une entrée dans payout_requests. Les fonds ne sont pas encore déduits 
+ * pour permettre l'audit anti-fraude.
+ */
 export async function requestPayoutAction({ 
     instructorId, 
     amount, 
@@ -29,50 +33,41 @@ export async function requestPayoutAction({
         throw new Error("UNAUTHORIZED: Tentative de retrait sur un compte tiers.");
     }
 
-    if (amount <= 0) {
-        return { success: false, error: "Montant invalide" };
-    }
+    if (amount <= 0) return { success: false, error: "error.amount_positive" };
 
     try {
         const db = getAdminDb();
-        const instructorRef = db.collection('users').doc(instructorId);
-        const instructorDoc = await instructorRef.get();
+        const userRef = db.collection('users').doc(instructorId);
+        const userSnap = await userRef.get();
 
-        if (!instructorDoc.exists) {
-            return { success: false, error: "Utilisateur introuvable" };
-        }
+        if (!userSnap.exists) return { success: false, error: "error.user_not_found" };
+        const userData = userSnap.data() as NdaraUser;
 
-        const userData = instructorDoc.data() as NdaraUser;
-
+        // 🛡️ SÉCURITÉ : Vérification des restrictions
         if (userData.restrictions?.canWithdraw === false) {
-            return { success: false, error: "Retraits suspendus" };
+            return { success: false, error: "RESTRICTED: Retraits suspendus sur votre compte." };
         }
 
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        // 🛡️ VÉRIFICATION SEUIL : minWithdrawal
+        // 🛡️ VÉRIFICATION SEUIL
         const minThreshold = settings.finance?.minWithdrawal || 5000;
         const currentBalance = userData.balance || 0;
 
-        if (currentBalance < amount) {
-            return { success: false, error: "Solde insuffisant" };
-        }
-
-        if (amount < minThreshold) {
-            return { success: false, error: `Le montant minimum de retrait est de ${minThreshold.toLocaleString()} XOF.` };
-        }
+        if (currentBalance < amount) return { success: false, error: "error.insufficient_balance" };
+        if (amount < minThreshold) return { success: false, error: `Le retrait minimum est de ${minThreshold.toLocaleString()} XOF.` };
 
         const payoutRef = db.collection('payout_requests').doc();
-
-        await payoutRef.set({
-            id: payoutRef.id,
+        const payoutData: Omit<PayoutRequest, 'id'> = {
             instructorId,
             amount,
-            method,
+            method: method || 'mobile_money',
             status: 'pending',
-            createdAt: FieldValue.serverTimestamp(),
-        });
+            createdAt: Timestamp.now(),
+        };
+
+        await payoutRef.set({ id: payoutRef.id, ...payoutData });
 
         await sendAdminNotification({
             title: '💸 Nouvelle Demande de Retrait',
@@ -81,15 +76,19 @@ export async function requestPayoutAction({
             type: 'newPayouts'
         });
 
-        return { success: true, message: "Demande envoyée" };
+        return { success: true, message: "success.payout_requested" };
 
     } catch (error: any) {
         console.error("Payout Request Error:", error.message);
-        return { success: false, error: "Erreur serveur" };
+        return { success: false, error: "error.generic" };
     }
 }
 
-// ✅ MISE À JOUR STATUT (Action Admin)
+/** 
+ * ✅ 2. TRAITEMENT DU RETRAIT (Action Admin)
+ * Simule ou déclenche l'appel API MTN/Orange. 
+ * Si 'paid', les fonds sont déduits du solde utilisateur.
+ */
 export async function updatePayoutStatusAction({
   payoutId,
   status,
@@ -104,21 +103,75 @@ export async function updatePayoutStatusAction({
     
     const db = getAdminDb();
     const payoutRef = db.collection('payout_requests').doc(payoutId);
-    const payoutDoc = await payoutRef.get();
+    const payoutSnap = await payoutRef.get();
 
-    if (!payoutDoc.exists) {
-      return { success: false, error: 'Payout introuvable' };
+    if (!payoutSnap.exists) return { success: false, error: 'Retrait introuvable' };
+    const payoutData = payoutSnap.data() as PayoutRequest;
+
+    // Si on passe à 'paid', on exécute la transaction financière réelle
+    if (status === 'paid' && payoutData.status !== 'paid') {
+        await db.runTransaction(async (transaction) => {
+            const userRef = db.collection('users').doc(payoutData.instructorId);
+            const uSnap = await transaction.get(userRef);
+            
+            if (!uSnap.exists) throw new Error("Utilisateur introuvable");
+            const currentBalance = uSnap.data()?.balance || 0;
+
+            if (currentBalance < payoutData.amount) throw new Error("Solde désormais insuffisant.");
+
+            // 💸 DÉDUCTION RÉELLE
+            transaction.update(userRef, {
+                balance: FieldValue.increment(-payoutData.amount),
+                updatedAt: FieldValue.serverTimestamp()
+            });
+
+            // 💾 LOG TRANSACTION
+            const txRef = db.collection('payments').doc();
+            transaction.set(txRef, {
+                id: txRef.id,
+                userId: payoutData.instructorId,
+                amount: payoutData.amount,
+                currency: 'XOF',
+                provider: 'withdrawal',
+                type: 'payout',
+                status: 'completed',
+                date: FieldValue.serverTimestamp(),
+                courseTitle: 'Retrait Mobile Money',
+                metadata: { payoutId, adminId }
+            });
+
+            // ✅ UPDATE PAYOUT DOC
+            transaction.update(payoutRef, {
+                status: 'paid',
+                processedAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp()
+            });
+        });
+
+        await sendUserNotification(payoutData.instructorId, {
+            text: `Votre virement de ${payoutData.amount.toLocaleString()} XOF a été effectué.`,
+            type: 'success',
+            link: '/student/paiements'
+        });
+    } else {
+        // Simple mise à jour (approved ou rejected)
+        await payoutRef.update({
+            status,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        if (status === 'rejected') {
+            await sendUserNotification(payoutData.instructorId, {
+                text: `Votre demande de retrait de ${payoutData.amount.toLocaleString()} XOF a été rejetée.`,
+                type: 'alert'
+            });
+        }
     }
-
-    await payoutRef.update({
-      status,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
 
     return { success: true };
 
   } catch (error: any) {
     console.error('Update payout error:', error.message);
-    return { success: false, error: 'Erreur serveur' };
+    return { success: false, error: error.message };
   }
 }
