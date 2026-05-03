@@ -2,13 +2,12 @@
 
 /**
  * @fileOverview Centre de Marketing & Growth Hub Ndara Afrique.
- * Branché sur la collection Firestore 'marketing_campaigns'.
- * ✅ DESIGN QWEN : Radar des Campagnes & Entonnoir d'Acquisition.
+ * ✅ CEO FEATURE : Kit de diffusion WhatsApp pour copier-coller le message d'annonce.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, limit } from 'firebase/firestore';
 import { 
     Target, 
     Plus, 
@@ -19,24 +18,34 @@ import {
     History,
     BarChart2,
     Radar,
-    Flame
+    Flame,
+    MessageSquare,
+    Copy,
+    Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminMarketingPage() {
     const db = getFirestore();
-    const [hasMounted, setHasMounted] = useState(false);
-
-    useEffect(() => {
-        setHasMounted(true);
-    }, []);
+    const t = useTranslations('Admin');
+    const { toast } = useToast();
+    const [isCopied, setIsCopied] = useState(false);
 
     // Raccordement réel à la collection marketing
     const campaignsQuery = useMemo(() => query(collection(db, 'marketing_campaigns'), orderBy('createdAt', 'desc'), limit(10)), [db]);
     const { data: campaigns, isLoading } = useCollection<any>(campaignsQuery);
+
+    const handleCopyTemplate = () => {
+        navigator.clipboard.writeText(t('whatsapp_template'));
+        setIsCopied(true);
+        toast({ title: "Kit copié !", description: "Le message WhatsApp est prêt à être collé." });
+        setTimeout(() => setIsCopied(false), 2000);
+    };
 
     return (
         <div className="space-y-10 pb-20 animate-in fade-in duration-700 relative">
@@ -52,87 +61,76 @@ export default function AdminMarketingPage() {
                 <p className="text-slate-500 text-sm font-medium mt-1">Pilotez votre machine de croissance Ndara Afrique.</p>
             </header>
 
-            {/* --- ENTONNOIR D'ACQUISITION --- */}
-            <section className="relative z-10 space-y-4">
-                <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2 px-1">
-                    <BarChart2 className="h-4 w-4 text-primary" />
-                    Entonnoir d'Acquisition
-                </h2>
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl p-8 relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                    
-                    <div className="grid gap-6 relative z-10">
-                        <FunnelBarItem label="Affiliation" value={65} color="from-primary to-emerald-400" />
-                        <FunnelBarItem label="Direct" value={25} color="from-blue-600 to-blue-400" />
-                        <FunnelBarItem label="Publicité" value={10} color="from-ndara-amber to-amber-400" />
-                    </div>
-                </div>
-            </section>
-
-            {/* --- RADAR DES CAMPAGNES --- */}
-            <section className="relative z-10 space-y-4">
-                <div className="flex items-center justify-between px-1">
-                    <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                        <Radar className="h-4 w-4 text-primary" />
-                        Radar des Campagnes
-                    </h2>
-                    <Button variant="ghost" size="sm" className="h-8 text-primary font-black uppercase text-[9px] tracking-widest">
-                        <Plus className="h-3 w-3 mr-1" /> Créer une campagne
-                    </Button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {isLoading ? (
-                        [...Array(2)].map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-3xl bg-slate-900" />)
-                    ) : campaigns && campaigns.length > 0 ? (
-                        campaigns.map(camp => (
-                            <CampaignCard key={camp.id} camp={camp} />
-                        ))
-                    ) : (
-                        <>
-                            <CampaignCard camp={{ name: "Black Friday", clicks: 1250, status: "Active", trend: "+12%" }} isSimulated />
-                            <CampaignCard camp={{ name: "Parrainage", clicks: 840, status: "Active", trend: "Stable" }} isSimulated isAmber />
-                        </>
-                    )}
-                </div>
-            </section>
-
-            {/* --- HISTORY SECTION --- */}
-            <section className="relative z-10 space-y-4">
-                <div className="flex items-center gap-2 text-slate-500 ml-1">
-                    <History className="h-4 w-4" />
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em]">Historique des Performances</h3>
-                </div>
+            <div className="grid lg:grid-cols-3 gap-8 relative z-10">
                 
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl overflow-hidden shadow-2xl">
-                    {isLoading ? (
-                        <div className="p-8 space-y-4">
-                            <Skeleton className="h-12 w-full rounded-2xl bg-slate-800" />
-                            <Skeleton className="h-12 w-full rounded-2xl bg-slate-800" />
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-white/5">
-                            {campaigns?.map((camp: any) => (
-                                <div key={camp.id} className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-slate-500">
-                                            <Target size={18} />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-white uppercase tracking-tight text-sm">{camp.name}</p>
-                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{camp.type || 'Standard'}</p>
-                                        </div>
-                                    </div>
-                                    <Badge className={cn(
-                                        "text-[9px] font-black uppercase border-none px-2.5 py-1",
-                                        camp.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-500'
-                                    )}>{camp.status}</Badge>
+                {/* --- ENTONNOIR ET RADAR --- */}
+                <div className="lg:col-span-2 space-y-10">
+                    {/* Kit de Diffusion WhatsApp */}
+                    <section className="space-y-4">
+                        <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2 px-1">
+                            <MessageSquare className="h-4 w-4 text-emerald-500" />
+                            Kit de Diffusion WhatsApp
+                        </h2>
+                        <div className="bg-slate-900 border border-white/5 rounded-4xl p-8 relative overflow-hidden shadow-2xl">
+                            <div className="space-y-4">
+                                <p className="text-xs text-slate-400 font-medium italic">
+                                    "Message d'annonce officiel pour les groupes communautaires."
+                                </p>
+                                <div className="bg-slate-950/80 rounded-2xl p-6 border border-white/5 font-mono text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto hide-scrollbar">
+                                    {t('whatsapp_template')}
                                 </div>
-                            ))}
+                                <Button 
+                                    onClick={handleCopyTemplate}
+                                    className="w-full h-14 rounded-2xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black uppercase text-xs tracking-widest transition-all active:scale-95 shadow-xl shadow-emerald-500/10"
+                                >
+                                    {isCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                                    {isCopied ? "Copié dans le presse-papier" : "Copier le message WhatsApp"}
+                                </Button>
+                            </div>
                         </div>
-                    )}
+                    </section>
+
+                    <section className="space-y-4">
+                        <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2 px-1">
+                            <BarChart2 className="h-4 w-4 text-primary" />
+                            Entonnoir d'Acquisition
+                        </h2>
+                        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-4xl p-8 relative overflow-hidden shadow-2xl">
+                            <div className="grid gap-6 relative z-10">
+                                <FunnelBarItem label="Affiliation" value={65} color="from-primary to-emerald-400" />
+                                <FunnelBarItem label="Direct" value={25} color="from-blue-600 to-blue-400" />
+                                <FunnelBarItem label="Publicité" value={10} color="from-ndara-amber to-amber-400" />
+                            </div>
+                        </div>
+                    </section>
                 </div>
-            </section>
+
+                {/* --- SIDEBAR RADAR --- */}
+                <div className="space-y-8">
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                            <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                <Radar className="h-4 w-4 text-primary" />
+                                Radar Live
+                            </h2>
+                        </div>
+                        <div className="grid gap-4">
+                            {isLoading ? (
+                                [...Array(2)].map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-3xl bg-slate-900" />)
+                            ) : campaigns && campaigns.length > 0 ? (
+                                campaigns.map(camp => (
+                                    <CampaignCard key={camp.id} camp={camp} />
+                                ))
+                            ) : (
+                                <>
+                                    <CampaignCard camp={{ name: "Black Friday", clicks: 1250, status: "Active", trend: "+12%" }} isSimulated />
+                                    <CampaignCard camp={{ name: "Lancement Ndara", clicks: 3450, status: "Active", trend: "Viral" }} isSimulated isAmber />
+                                </>
+                            )}
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
     );
 }
@@ -187,4 +185,3 @@ function CampaignCard({ camp, isSimulated = false, isAmber = false }: { camp: an
         </div>
     );
 }
-
