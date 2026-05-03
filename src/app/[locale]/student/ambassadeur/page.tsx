@@ -1,11 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Espace Ambassadeur Ndara Afrique V2 - Design Qwen Fintech.
  * ✅ DESIGN : Esthétique Fintech Neo-Banque (Neo-card, stat-pills, grain).
- * ✅ CROISSANCE : Outils de partage viral et paliers de bonus.
- * ✅ FONCTIONNEL : Retrait Mobile Money et Leaderboard réel.
+ * ✅ SÉCURITÉ : Blocage des outils si le compte est suspect ou restreint.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -37,7 +35,8 @@ import {
     Lightbulb,
     Smartphone,
     ArrowUpRight,
-    Wallet
+    Wallet,
+    ShieldAlert
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from 'next-intl';
@@ -61,6 +60,8 @@ export default function AmbassadorPage() {
     const [withdrawMethod, setWithdrawMethod] = useState<'orange' | 'mtn' | 'wave'>('orange');
     const [phoneValue, setPhoneValue] = useState('');
 
+    const isRestricted = currentUser?.isSuspect || currentUser?.restrictions?.canWithdraw === false;
+
     useEffect(() => {
         if (!currentUser?.uid) return;
 
@@ -80,9 +81,13 @@ export default function AmbassadorPage() {
         return () => unsubLeader();
     }, [currentUser?.uid, db]);
 
-    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/${locale}/search?aff=${currentUser?.uid}` : '';
+    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/${locale}/ref/${currentUser?.uid}` : '';
 
     const handleCopyLink = () => {
+        if (isRestricted) {
+            toast({ variant: 'destructive', title: "Action restreinte", description: "Votre compte est en cours d'examen." });
+            return;
+        }
         navigator.clipboard.writeText(shareUrl);
         setIsCopied(true);
         toast({ title: "Lien copié !", description: "Partagez-le pour gagner des commissions." });
@@ -90,6 +95,11 @@ export default function AmbassadorPage() {
     };
 
     const handleWithdraw = async () => {
+        if (isRestricted) {
+            toast({ variant: 'destructive', title: "Retrait bloqué", description: "Veuillez contacter le support." });
+            return;
+        }
+
         const balance = currentUser?.affiliateBalance || 0;
         if (balance < 5000) {
             toast({ variant: 'destructive', title: "Seuil insuffisant", description: "Le retrait minimum est de 5 000 XOF." });
@@ -149,10 +159,26 @@ export default function AmbassadorPage() {
 
             <main className="flex-1 px-6 pt-32 space-y-8 animate-in fade-in duration-700">
                 
+                {/* --- RESTRICTION ALERT --- */}
+                {isRestricted && (
+                    <div className="bg-red-500/10 border border-red-500/20 p-5 rounded-[2rem] flex items-start gap-4 shadow-xl">
+                        <ShieldAlert className="h-6 w-6 text-red-500 shrink-0 mt-1" />
+                        <div>
+                            <p className="text-sm font-black text-white uppercase tracking-tight">Compte sous Surveillance</p>
+                            <p className="text-[10px] text-red-200/60 italic leading-relaxed mt-1">
+                                Vos activités de parrainage et vos retraits sont temporairement suspendus pour audit de sécurité.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* --- NEO-BANK CARD --- */}
                 <div 
-                    onClick={() => setIsWithdrawModalOpen(true)}
-                    className="bg-gradient-to-br from-[#10b981] via-[#047857] to-[#065f46] rounded-[2.5rem] p-8 relative overflow-hidden shadow-2xl shadow-primary/20 group active:scale-[0.98] transition-all cursor-pointer"
+                    onClick={() => !isRestricted && setIsWithdrawModalOpen(true)}
+                    className={cn(
+                        "rounded-[2.5rem] p-8 relative overflow-hidden shadow-2xl group transition-all cursor-pointer",
+                        isRestricted ? "bg-slate-800 grayscale" : "bg-gradient-to-br from-[#10b981] via-[#047857] to-[#065f46] shadow-primary/20 active:scale-[0.98]"
+                    )}
                 >
                     <div className="absolute -right-6 -top-6 h-40 w-40 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-1000" />
                     
@@ -181,7 +207,7 @@ export default function AmbassadorPage() {
                             </div>
                         </div>
 
-                        <Button className="w-full h-14 rounded-3xl bg-white text-[#047857] hover:bg-slate-50 font-black uppercase text-[11px] tracking-widest shadow-xl border-none">
+                        <Button disabled={isRestricted} className="w-full h-14 rounded-3xl bg-white text-[#047857] hover:bg-slate-50 font-black uppercase text-[11px] tracking-widest shadow-xl border-none">
                             <ArrowUpRight className="mr-2 h-4 w-4" />
                             Virement Mobile Money
                         </Button>
@@ -191,18 +217,26 @@ export default function AmbassadorPage() {
                 <div className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-xl space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="font-black text-white text-xs uppercase tracking-widest">Mon Lien Viral</h3>
-                        <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase px-2">Actif</Badge>
+                        <Badge className={cn("border-none text-[8px] font-black uppercase px-2", isRestricted ? "bg-red-500/20 text-red-400" : "bg-primary/10 text-primary")}>
+                            {isRestricted ? "Bloqué" : "Actif"}
+                        </Badge>
                     </div>
 
-                    <div className="bg-slate-950 rounded-2xl p-3 border border-white/10 flex items-center justify-between group active:scale-95 transition-all cursor-pointer" onClick={handleCopyLink}>
-                        <span className="text-[11px] font-mono text-slate-500 truncate flex-1 pr-4">{shareUrl}</span>
-                        <div className="h-10 px-4 rounded-xl bg-primary text-slate-950 flex items-center justify-center text-[10px] font-black uppercase tracking-widest shrink-0">
+                    <div className={cn(
+                        "rounded-2xl p-3 border flex items-center justify-between group transition-all",
+                        isRestricted ? "bg-slate-950 border-red-500/10 cursor-not-allowed" : "bg-slate-950 border-white/10 active:scale-95 cursor-pointer"
+                    )} onClick={handleCopyLink}>
+                        <span className="text-[11px] font-mono text-slate-500 truncate flex-1 pr-4">{isRestricted ? "••••••••••••••••" : shareUrl}</span>
+                        <div className={cn(
+                            "h-10 px-4 rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest shrink-0",
+                            isRestricted ? "bg-slate-800 text-slate-600" : "bg-primary text-slate-950"
+                        )}>
                             {isCopied ? <Check size={14} className="mr-1.5" /> : <Copy size={14} className="mr-1.5" />}
                             Copier
                         </div>
                     </div>
 
-                    <div className="flex justify-between items-center gap-2">
+                    <div className={cn("flex justify-between items-center gap-2", isRestricted && "opacity-20 pointer-events-none")}>
                         <ShareCircle icon={MessageCircle} color="bg-[#25D366]" href={`https://wa.me/?text=${encodeURIComponent("Rejoins-moi sur Ndara Afrique ! 🚀 " + shareUrl)}`} />
                         <ShareCircle icon={Facebook} color="bg-[#1877F2]" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} />
                         <ShareCircle icon={Twitter} color="bg-black" href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Ma quête du savoir commence ici.")}&url=${encodeURIComponent(shareUrl)}`} />
@@ -231,55 +265,6 @@ export default function AmbassadorPage() {
                         <BonusTier label="50 ventes → +10%" target={50} current={stats.sales} />
                     </div>
                 </div>
-
-                <div className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-xl space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="font-black text-white text-xs uppercase tracking-widest flex items-center gap-2">
-                            <Crown size={14} className="text-yellow-500" />
-                            Top Ambassadeurs
-                        </h3>
-                        <button className="text-primary text-[10px] font-black uppercase tracking-widest">Voir tout</button>
-                    </div>
-
-                    <div className="space-y-3">
-                        {loadingData ? (
-                            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl bg-slate-900" />)
-                        ) : leaderboard.map((user, idx) => (
-                            <div key={user.uid} className={cn(
-                                "flex items-center gap-4 p-3 rounded-2xl border transition-all",
-                                idx === 0 ? "bg-yellow-500/10 border-yellow-500/20" : "bg-slate-950/50 border-white/5"
-                            )}>
-                                <div className={cn(
-                                    "w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs",
-                                    idx === 0 ? "bg-yellow-500 text-slate-950" : "bg-slate-800 text-slate-500"
-                                )}>
-                                    {idx + 1}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-white truncate uppercase tracking-tight">{user.fullName}</p>
-                                    <p className={cn("text-[9px] font-black uppercase tracking-widest", idx === 0 ? "text-yellow-500" : "text-primary")}>
-                                        {user.affiliateStats?.earnings?.toLocaleString('fr-FR')} FCFA
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-slate-600 text-[8px] font-black uppercase">Ventes</p>
-                                    <p className="text-sm font-black text-white">{user.affiliateStats?.sales}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2.5rem] p-6 flex items-start gap-4">
-                    <div className="p-2 bg-orange-500/20 rounded-xl">
-                        <Lightbulb className="h-5 w-5 text-orange-500" />
-                    </div>
-                    <div>
-                        <h4 className="text-sm font-black text-white uppercase tracking-tight mb-1">Astuce du Jour</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed italic">"Partagez votre lien dans les groupes WhatsApp d'étudiants. Les taux de conversion sont 3x plus élevés !"</p>
-                    </div>
-                </div>
-
             </main>
 
             <Dialog open={isWithdrawModalOpen} onOpenChange={setIsWithdrawModalOpen}>
@@ -385,7 +370,7 @@ function ProviderBtn({ active, onClick, label, color }: any) {
 
 function AmbassadorSkeleton() {
     return (
-        <div className="p-6 space-y-8 pt-32">
+        <div className="p-6 space-y-8 pt-32 bg-slate-950 min-h-screen">
             <Skeleton className="h-48 w-full rounded-[2.5rem] bg-slate-900" />
             <div className="grid grid-cols-3 gap-3">
                 <Skeleton className="h-24 bg-slate-900 rounded-3xl" />

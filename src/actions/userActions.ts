@@ -3,6 +3,7 @@
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
  * ✅ SÉCURITÉ : Gestion stricte des achats de formation.
+ * ✅ INTÉGRITÉ : Verrous anti-doublon et vérification de solde.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -36,28 +37,36 @@ export async function purchaseCourseWithWalletAction({
     try {
         const db = getAdminDb();
         
-        // 1. Vérification d'existence du cours
+        // 1. Vérification des restrictions de l'utilisateur
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) return { success: false, error: "UTILISATEUR_INTROUVABLE" };
+        
+        const userData = userSnap.data() as NdaraUser;
+        if (userData.restrictions?.canBuyCourse === false) {
+            return { success: false, error: "ACHAT_BLOQUÉ: Votre compte fait l'objet de restrictions." };
+        }
+
+        // 2. Vérification d'existence du cours
         const courseRef = db.collection('courses').doc(courseId);
         const courseSnap = await courseRef.get();
         if (!courseSnap.exists) return { success: false, error: "COURS_NON_TROUVÉ" };
         const courseData = courseSnap.data();
 
-        // 2. Vérification de doublon (Déjà acheté ?)
+        // 3. Vérification de doublon (Déjà acheté ?)
         const enrollmentId = `${userId}_${courseId}`;
         const enrollmentSnap = await db.collection('enrollments').doc(enrollmentId).get();
-        if (enrollmentSnap.exists) return { success: false, error: "DEJA_ACHETE" };
+        if (enrollmentSnap.exists && enrollmentSnap.data()?.status === 'active') {
+            return { success: false, error: "DÉJÀ_POSSÉDÉ" };
+        }
 
-        // 3. Vérification du solde utilisateur
-        const userRef = db.collection('users').doc(userId);
-        const userSnap = await userRef.get();
-        const userData = userSnap.data() as NdaraUser;
+        // 4. Vérification du solde utilisateur
         const currentBalance = userData.balance || 0;
-
         if (currentBalance < amount) {
             return { success: false, error: "SOLDE_INSUFFISANT" };
         }
 
-        // 4. Appel du processeur financier pour l'exécution atomique
+        // 5. Appel du processeur financier pour l'exécution atomique
         const result = await processNdaraPayment({
             transactionId: `WAL-PUR-${Date.now()}-${userId.substring(0,5)}`,
             provider: 'wallet',
