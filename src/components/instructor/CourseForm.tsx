@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Course } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 
 const CourseFormSchema = z.object({
   title: z.string().min(5, { message: "Le titre doit faire au moins 5 caractères." }),
@@ -152,7 +153,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                                     disabled={isAiLoading}
                                     className="bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-slate-950 rounded-xl h-12 px-6 font-black uppercase text-[10px] tracking-widest transition-all"
                                 >
-                                    {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Sparkles className="h-4 w-4 mr-2" />}
+                                    {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
                                     Mathias Assistant
                                 </Button>
                             </div>
