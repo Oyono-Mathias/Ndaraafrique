@@ -40,6 +40,27 @@
       "badge_card_title": "HD Certifications",
       "badge_card_subtitle": "Industry recognized"
     },
+    "welcome_ndara": {
+      "badge": "The Era of Ndara is here",
+      "title": "The Knowledge Infrastructure is <span class='text-primary'>Ready.</span>",
+      "description": "Ndara Afrique is not just a platform, it is your arsenal to conquer the future. Discover an ecosystem designed for your success.",
+      "features_title": "Your Elite Features",
+      "benefits_title": "Your Exclusive Benefits",
+      "f1_title": "Mathias IA",
+      "f1_desc": "An intelligent tutor available 24/7 to answer all your questions.",
+      "f2_title": "Ndara Wallet",
+      "f2_desc": "Manage your funds, buy and withdraw your earnings instantly via Mobile Money.",
+      "f3_title": "Knowledge Exchange",
+      "f3_desc": "Become a co-owner of courses by acquiring resale licenses.",
+      "f4_title": "Ambassador Network",
+      "f4_desc": "Earn 10% commission on every Ndara you refer.",
+      "b1_title": "Independence",
+      "b1_desc": "Create your own sources of passive income.",
+      "b2_title": "Mastery",
+      "b2_desc": "Access key skills: FinTech, AgriTech, Coding.",
+      "b3_title": "Prestige",
+      "b3_desc": "Obtain HD certificates verifiable by QR Code."
+    },
     "stats": {
       "students": "Learners",
       "courses": "Courses",

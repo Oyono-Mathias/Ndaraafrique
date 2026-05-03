@@ -25,8 +25,8 @@
     "password_forgot": "Mot de passe oublié ?",
     "create_account": "Créer un compte",
     "i_agree_to": "J'accepte les",
-    "terms_of_use": "Conditions d'Utilisation",
     "and": "et la",
+    "terms_of_use": "Conditions d'Utilisation",
     "privacy_policy": "Politique de Confidentialité"
   },
   "Landing": {
@@ -39,6 +39,27 @@
       "cta_instructor": "Devenir Formateur",
       "badge_card_title": "Certifications HD",
       "badge_card_subtitle": "Reconnues par l'industrie"
+    },
+    "welcome_ndara": {
+      "badge": "L'Ère des Ndara est là",
+      "title": "L'Infrastructure du Savoir est <span class='text-primary'>Prête.</span>",
+      "description": "Ndara Afrique n'est pas qu'une plateforme, c'est votre arsenal pour conquérir le futur. Découvrez un écosystème conçu pour votre succès.",
+      "features_title": "Vos Fonctionnalités Élite",
+      "benefits_title": "Vos Avantages Exclusifs",
+      "f1_title": "Mathias IA",
+      "f1_desc": "Un tuteur intelligent disponible 24h/24 pour répondre à toutes vos questions.",
+      "f2_title": "Ndara Wallet",
+      "f2_desc": "Gérez vos fonds, achetez et retirez vos gains instantanément via Mobile Money.",
+      "f3_title": "Bourse du Savoir",
+      "f3_desc": "Devenez copropriétaire des formations en acquérant des licences de revente.",
+      "f4_title": "Réseau Ambassadeur",
+      "f4_desc": "Gagnez 10% de commission sur chaque Ndara que vous parrainez.",
+      "b1_title": "Indépendance",
+      "b1_desc": "Créez vos propres sources de revenus passifs.",
+      "b2_title": "Maîtrise",
+      "b2_desc": "Accédez aux compétences clés : FinTech, AgriTech, Trading.",
+      "b3_title": "Prestige",
+      "b3_desc": "Obtenez des certificats HD vérifiables par QR Code."
     },
     "stats": {
       "students": "Apprenants",

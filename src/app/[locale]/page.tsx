@@ -5,6 +5,7 @@ import { Categories } from '@/components/landing/Categories';
 import { PopularCourses } from '@/components/landing/PopularCourses';
 import { NewCourses } from '@/components/landing/NewCourses';
 import { TopInstructors } from '@/components/landing/TopInstructors';
+import { WelcomeNdara } from '@/components/landing/WelcomeNdara';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { BourseIntroSection } from '@/components/landing/BourseIntroSection';
 import { FintechSection } from '@/components/landing/FintechSection';
@@ -43,34 +44,37 @@ export default function LandingPage({ params: { locale } }: Props) {
         {/* 1. Hero & Search */}
         <Hero />
 
-        {/* 2. Platform Stats */}
+        {/* 2. Welcome Ndara - Launch Manifesto */}
+        <WelcomeNdara />
+
+        {/* 3. Platform Stats */}
         <Stats />
 
-        {/* 3. Browse by Category */}
+        {/* 4. Browse by Category */}
         <Categories />
 
-        {/* 4. Popular Courses (Limit 6) */}
+        {/* 5. Popular Courses (Limit 6) */}
         <PopularCourses />
 
-        {/* 5. New Horizons (Recent Courses) */}
+        {/* 6. New Horizons (Recent Courses) */}
         <NewCourses />
 
-        {/* 6. Concept Boursier (Unique Selling Point) */}
+        {/* 7. Concept Boursier (Unique Selling Point) */}
         <BourseIntroSection />
 
-        {/* 7. How it works (The Journey) */}
+        {/* 8. How it works (The Journey) */}
         <HowItWorks />
 
-        {/* 8. Top Instructors (Authority) */}
+        {/* 9. Top Instructors (Authority) */}
         <TopInstructors />
 
-        {/* 9. Testimonials (Trust) */}
+        {/* 10. Testimonials (Trust) */}
         <TestimonialsSection />
 
-        {/* 10. Mobile Money Trust Bar */}
+        {/* 11. Mobile Money Trust Bar */}
         <FintechSection />
 
-        {/* 11. Final CTA for Instructors */}
+        {/* 12. Final CTA for Instructors */}
         <InstructorCTASection />
       </main>
 
