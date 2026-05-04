@@ -239,14 +239,18 @@ export interface Enrollment {
   id: string;
   studentId: string;
   courseId: string;
+  courseTitle?: string;
   instructorId: string;
   status: 'active' | 'completed' | 'suspended';
+  accessStatus: 'active' | 'revoked'; // 🛡️ Source de vérité
+  revocationReason?: 'refund' | 'abuse' | 'admin_error';
   progress: number;
   isSimulated?: boolean;
   enrollmentDate: Timestamp | FieldValue | Date;
   lastAccessedAt: Timestamp | FieldValue | Date;
   priceAtEnrollment?: number;
   expiresAt?: Timestamp | null;
+  paymentId?: string; // 💰 Lien vers preuve financière
 }
 
 export interface CourseProgress {
@@ -609,6 +613,7 @@ export interface AdminAuditLog {
   target: { id: string; type: string };
   details: string;
   timestamp: Timestamp | FieldValue | Date;
+  previousState?: any; // 🛡️ Rollback support
 }
 
 export interface TrackingEvent {
