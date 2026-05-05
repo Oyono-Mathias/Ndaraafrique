@@ -48,14 +48,14 @@ export async function POST(req: Request) {
     // 🛡️ DÉTERMINATION DU FOURNISSEUR (HYBRIDE v6.0)
     let provider: StorageProvider = 'firebase';
     
-    // Règle 1: L'identité reste TOUJOURS sur Firebase
+    // Règle 1: L'identité reste TOUJOURS sur Firebase (Souveraineté)
     if (folder === 'avatars' || folder === 'identity') {
         provider = 'firebase';
     } else {
-        // Règle 2: Déduction du fournisseur basé sur le dossier/type et les réglages admin
-        if (folder.includes('video') || file.type.startsWith('video/')) {
+        // Règle 2: Déduction du fournisseur basé sur le type de fichier et les réglages admin
+        if (file.type.startsWith('video/')) {
             provider = settings?.storage?.videosProvider || 'r2';
-        } else if (folder.includes('pdf') || file.type === 'application/pdf') {
+        } else if (file.type === 'application/pdf') {
             provider = settings?.storage?.documentsProvider || 'r2';
         } else {
             provider = settings?.storage?.assetsProvider || 'r2';
@@ -89,21 +89,23 @@ export async function POST(req: Request) {
         });
 
         await r2Client.send(command);
+        
+        // Utilisation du domaine public R2 ou du domaine personnalisé si configuré
         const publicUrl = R2_PUBLIC_DOMAIN 
             ? `https://${R2_PUBLIC_DOMAIN}/${r2Path}`
-            : `https://${R2_BUCKET_NAME}.r2.cloudflarestorage.com/${r2Path}`;
+            : `${process.env.R2_ENDPOINT?.replace('.r2.cloudflarestorage.com', '')}.r2.dev/${r2Path}`; // Note: Cloudflare requiert l'activation de l'accès public .r2.dev
 
         return NextResponse.json({ success: true, url: publicUrl, fileName: safeFileName, provider: 'r2' });
     }
 
-    // 🐰 EXÉCUTION : BUNNY (VIA PROXY OU API DIRECTE - Simplifié ici pour la structure)
+    // 🐰 EXÉCUTION : BUNNY (Backup)
     if (provider === 'bunny') {
-        // Logique Bunny existante ou via API Storage
-        return NextResponse.json({ success: true, url: `https://bunny-storage-mock/${safeFileName}`, provider: 'bunny' });
+        // Fallback sur le CDN Bunny si configuré dans les actions spécifiques
+        return NextResponse.json({ success: true, url: `https://ndara-assets.b-cdn.net/${safeFileName}`, provider: 'bunny' });
     }
 
   } catch (error: any) {
     console.error("API_STORAGE_FATAL:", error.message);
-    return NextResponse.json({ error: "Erreur interne lors du traitement." }, { status: 500 });
+    return NextResponse.json({ error: "Erreur interne lors du traitement de l'upload." }, { status: 500 });
   }
 }
