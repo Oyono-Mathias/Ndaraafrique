@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v4.6
- * ✅ HYBRIDE : Configuration du stockage hybride (Bunny vs Firebase vs R2).
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v6.0
+ * ✅ HYBRIDE : Configuration granulaire du stockage par type de fichier.
  */
 
 import { useState, useEffect } from 'react';
@@ -26,26 +26,18 @@ import {
   Loader2, 
   CheckCircle2, 
   Globe, 
-  CreditCard, 
-  Users, 
-  BookOpen, 
-  ShoppingBag, 
-  Cpu, 
-  Bell, 
-  Shield, 
-  MapPin, 
-  TrendingUp, 
-  Landmark, 
   Zap,
-  Smartphone,
-  ShieldAlert,
   HardDrive,
-  Cloud
+  Cloud,
+  FileVideo,
+  FileText,
+  ImageIcon,
+  ShieldCheck
 } from 'lucide-react';
-import type { Settings } from '@/lib/types';
+import type { Settings, StorageProvider } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-// Schéma de validation flexible
+// Schéma de validation pour le stockage hybride v6.0
 const settingsSchema = z.object({
   general: z.object({
     siteName: z.string().default('Ndara Afrique'),
@@ -53,7 +45,9 @@ const settingsSchema = z.object({
   }).optional(),
   storage: z.object({
     maxFileSizeMb: z.coerce.number().min(1).default(50),
-    primaryProvider: z.enum(['bunny', 'firebase', 'r2']).default('r2'),
+    videosProvider: z.enum(['r2', 'bunny', 'firebase']).default('r2'),
+    documentsProvider: z.enum(['r2', 'bunny', 'firebase']).default('r2'),
+    assetsProvider: z.enum(['r2', 'bunny', 'firebase']).default('r2'),
     userFilesProvider: z.literal('firebase'),
   }).optional(),
   appearance: z.object({
@@ -169,46 +163,86 @@ export default function AdminSettingsPage() {
 
             <div className="max-w-4xl space-y-10">
               
-              {/* --- STOCKAGE --- */}
+              {/* --- STOCKAGE HYBRIDE V6.0 --- */}
               {activeTab === 'storage' && (
-                <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
-                    <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
-                        <Cloud className="text-blue-400 h-6 w-6 shrink-0 mt-1" />
-                        <div className="space-y-1">
-                            <p className="text-sm font-bold text-white uppercase">Cloudflare R2 Integration</p>
-                            <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
-                                "Le stockage R2 élimine les frais de sortie (egress) et sécurise vos vidéos via des Presigned URLs générées à la volée."
-                            </p>
+                <div className="space-y-8">
+                    <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-8 shadow-2xl">
+                        <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
+                            <Cloud className="text-blue-400 h-6 w-6 shrink-0 mt-1" />
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-white uppercase">Architecture Granulaire</p>
+                                <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
+                                    "Affectez dynamiquement chaque type de contenu au fournisseur le plus performant. R2 est recommandé pour le contenu lourd pour éliminer les frais de sortie."
+                                </p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <FormField control={form.control} name="storage.maxFileSizeMb" render={({ field }) => (
-                          <FormItem><FormLabel>Taille max. fichier (MB)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="storage.primaryProvider" render={({ field }) => (
+                        <div className="grid md:grid-cols-2 gap-8">
+                          <FormField control={form.control} name="storage.videosProvider" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="flex items-center gap-2"><FileVideo size={14} className="text-primary"/> Vidéos de Cours</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                      <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
+                                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                          <SelectItem value="r2">⚡ Cloudflare R2 (Optimal)</SelectItem>
+                                          <SelectItem value="bunny">🐰 Bunny Stream</SelectItem>
+                                          <SelectItem value="firebase">🔥 Firebase Storage</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </FormItem>
+                          )}/>
+
+                          <FormField control={form.control} name="storage.documentsProvider" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="flex items-center gap-2"><FileText size={14} className="text-amber-500"/> Documents & PDFs</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                      <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
+                                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                          <SelectItem value="r2">⚡ Cloudflare R2</SelectItem>
+                                          <SelectItem value="bunny">🐰 Bunny CDN</SelectItem>
+                                          <SelectItem value="firebase">🔥 Firebase Storage</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </FormItem>
+                          )}/>
+
+                          <FormField control={form.control} name="storage.assetsProvider" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="flex items-center gap-2"><ImageIcon size={14} className="text-blue-400"/> Images & Assets</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                      <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
+                                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                          <SelectItem value="r2">⚡ Cloudflare R2</SelectItem>
+                                          <SelectItem value="bunny">🐰 Bunny CDN</SelectItem>
+                                          <SelectItem value="firebase">🔥 Firebase Storage</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </FormItem>
+                          )}/>
+
                           <FormItem>
-                              <FormLabel>Diffuseur Principal (Contenu)</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl><SelectTrigger className="h-12 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger></FormControl>
-                                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                      <SelectItem value="r2">⚡ Cloudflare R2 (Recommandé)</SelectItem>
-                                      <SelectItem value="bunny">🐰 Bunny.net (Backup)</SelectItem>
-                                      <SelectItem value="firebase">🔥 Firebase Storage</SelectItem>
-                                  </SelectContent>
-                              </Select>
+                                <FormLabel className="flex items-center gap-2 opacity-60"><ShieldCheck size={14} className="text-emerald-500"/> Fichiers Utilisateurs</FormLabel>
+                                <div className="h-12 bg-slate-950 border border-slate-800 rounded-xl px-4 flex items-center justify-between opacity-60">
+                                    <span className="text-sm font-bold text-slate-400">🔥 Firebase Storage</span>
+                                    <Badge className="bg-emerald-500/10 text-emerald-500 text-[8px] border-none uppercase">Lock Secure</Badge>
+                                </div>
+                                <p className="text-[9px] text-slate-600 font-bold uppercase mt-1">Verrouillé par protocole d'identité.</p>
                           </FormItem>
-                      )}/>
-                    </div>
-
-                    <div className="p-6 bg-slate-950 rounded-2xl border border-white/5 space-y-2">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Fournisseur Identité (Lock)</p>
-                        <div className="flex items-center gap-3 text-emerald-500">
-                            <CheckCircle2 size={16} />
-                            <span className="text-sm font-bold">Firebase Cloud Storage (Personnel)</span>
                         </div>
-                    </div>
-                </Card>
+                    </Card>
+
+                    <Card className="bg-slate-900 border-white/5 rounded-3xl p-6 lg:p-8 space-y-6 shadow-2xl">
+                        <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest">Quotas & Limites</h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <FormField control={form.control} name="storage.maxFileSizeMb" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Taille max. fichier (MB)</FormLabel>
+                                    <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800" /></FormControl>
+                                </FormItem>
+                            )}/>
+                        </div>
+                    </Card>
+                </div>
               )}
 
               {/* --- GÉNÉRAL --- */}

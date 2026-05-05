@@ -9,6 +9,8 @@ export type UserRole = 'student' | 'instructor' | 'admin';
 
 export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated' | 'withdrawal';
 
+export type StorageProvider = 'r2' | 'bunny' | 'firebase';
+
 export interface Role {
   id: string;
   name: string;
@@ -752,8 +754,11 @@ export interface Settings {
   appearance: DesignSettings;
   storage: {
     maxFileSizeMb: number;
-    primaryProvider: 'bunny' | 'firebase';
+    primaryProvider: StorageProvider;
     userFilesProvider: 'firebase'; // Forcée pour la sécurité
+    videosProvider: StorageProvider;
+    documentsProvider: StorageProvider;
+    assetsProvider: StorageProvider;
   };
   social?: {
     facebookUrl?: string;
@@ -762,6 +767,9 @@ export interface Settings {
     linkedinUrl?: string;
     youtubeUrl?: string;
     telegramUrl?: string;
+    whatsappUrl?: string;
+    instagramUrl?: string;
+    facebookUrl?: string;
   };
   platform?: {
     maintenanceMode?: boolean;
