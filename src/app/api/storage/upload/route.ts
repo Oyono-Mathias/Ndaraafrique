@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
+import * as admin from 'firebase-admin';
 
 /**
- * @fileOverview Route API pour téléverser vers Bunny Storage Zone (ndara-assets).
- * ✅ SÉCURITÉ : Vérification de la taille maximale définie dans Admin Settings.
+ * @fileOverview Route API pour téléverser vers une architecture hybride.
+ * ✅ FIREBASE : Pour les avatars et documents personnels (Sécurité).
+ * ✅ BUNNY : Pour les contenus de cours et ressources (Performance).
  */
 
 const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-assets";
@@ -12,11 +14,6 @@ const PULL_ZONE_URL = process.env.BUNNY_PULL_ZONE_URL || "https://ndara-assets.b
 
 export async function POST(req: Request) {
   try {
-    if (!STORAGE_PASSWORD) {
-      console.error("BUNNY_STORAGE_PASSWORD_MISSING");
-      return NextResponse.json({ error: "Stockage non configuré sur le serveur." }, { status: 500 });
-    }
-
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const folder = formData.get('folder') as string || 'general';
@@ -26,7 +23,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Fichier ou identifiant manquant." }, { status: 400 });
     }
 
-    // 1. Charger les réglages de taille max
     const db = getAdminDb();
     const [userDoc, settingsSnap] = await Promise.all([
         db.collection('users').doc(userId).get(),
@@ -47,11 +43,43 @@ export async function POST(req: Request) {
         }, { status: 413 });
     }
 
-    // 2. Préparation du transfert Bunny
     const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // 🛡️ LOGIQUE HYBRIDE : Firebase pour les avatars et documents ID
+    const useFirebase = folder === 'avatars' || folder === 'identity';
+
+    if (useFirebase) {
+        console.log(`[Storage] Redirection vers Firebase Storage pour dossier: ${folder}`);
+        const bucket = admin.storage().bucket();
+        const firebasePath = `${folder}/${userId}/${safeFileName}`;
+        const firebaseFile = bucket.file(firebasePath);
+
+        await firebaseFile.save(fileBuffer, {
+            metadata: {
+                contentType: file.type,
+                owner: userId
+            }
+        });
+
+        // Rendre le fichier accessible publiquement (ou utiliser des Signed URLs selon besoin)
+        await firebaseFile.makePublic();
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${firebasePath}`;
+
+        return NextResponse.json({ 
+            success: true, 
+            url: publicUrl,
+            provider: 'firebase'
+        });
+    }
+
+    // ⚡ FALLBACK / DEFAULT : Bunny CDN pour le reste
+    if (!STORAGE_PASSWORD) {
+        return NextResponse.json({ error: "Stockage Bunny non configuré." }, { status: 500 });
+    }
+
     const bunnyPath = `${folder}/${userId}/${safeFileName}`;
     const uploadUrl = `https://storage.bunnycdn.com/${STORAGE_ZONE_NAME}/${bunnyPath}`;
-    const fileBuffer = await file.arrayBuffer();
 
     const response = await fetch(uploadUrl, {
       method: 'PUT',
@@ -59,7 +87,7 @@ export async function POST(req: Request) {
         'AccessKey': STORAGE_PASSWORD,
         'Content-Type': 'application/octet-stream',
       },
-      body: Buffer.from(fileBuffer),
+      body: fileBuffer,
     });
 
     if (!response.ok) {
@@ -69,7 +97,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ 
       success: true, 
       url: `${PULL_ZONE_URL}/${bunnyPath}`,
-      fileName: safeFileName 
+      fileName: safeFileName,
+      provider: 'bunny'
     });
 
   } catch (error: any) {

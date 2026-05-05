@@ -23,6 +23,7 @@ export interface NdaraUser {
   username: string;
   fullName: string;
   profilePictureURL?: string;
+  profilePictureFallbackURL?: string; // 🛡️ Fallback hybride
   role: UserRole;
   availableRoles: UserRole[];
   status: 'active' | 'suspended' | 'deleted';
@@ -166,6 +167,7 @@ export interface Course {
   category: string;
   price: number;
   imageUrl?: string;
+  imageUrlFallback?: string; // 🛡️ Fallback hybride
   status: 'Draft' | 'Published' | 'Pending Review';
   rating?: number;
   participantsCount?: number;
@@ -748,6 +750,11 @@ export interface Settings {
     debugMode: boolean;
   };
   appearance: DesignSettings;
+  storage: {
+    maxFileSizeMb: number;
+    primaryProvider: 'bunny' | 'firebase';
+    userFilesProvider: 'firebase'; // Forcée pour la sécurité
+  };
   social?: {
     facebookUrl?: string;
     instagramUrl?: string;
@@ -796,9 +803,6 @@ export interface Settings {
       teamMembers?: TeamMember[];
       ctaTitle?: string;
     };
-  };
-  storage?: {
-    maxFileSizeMb: number;
   };
   pwa?: {
     appName?: string;

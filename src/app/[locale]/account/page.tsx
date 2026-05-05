@@ -2,9 +2,7 @@
 
 /**
  * @fileOverview Mon Profil - Identification & Bio Ndara Afrique.
- * ✅ DESIGN : Forest & Wealth (Android-First).
- * ✅ SÉCURITÉ : Certification des numéros Mobile Money par opérateur local.
- * ✅ FLEXIBILITÉ : L'utilisateur enregistre uniquement les numéros qu'il possède.
+ * ✅ HYBRIDE : Téléversement forcé vers Firebase Storage (folder: avatars).
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -156,13 +154,18 @@ export default function AccountPage() {
         const formData = new FormData();
         formData.append('file', croppedFile);
         formData.append('userId', user.uid);
-        formData.append('folder', 'avatars');
+        formData.append('folder', 'avatars'); // ✅ Forcé pour Firebase Storage
 
         const response = await fetch('/api/storage/upload', { method: 'POST', body: formData });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
-        await updateUserProfileAction({ userId: user.uid, data: { profilePictureURL: data.url }, requesterId: user.uid });
+        // Sauvegarde de l'URL Firebase dans le document utilisateur
+        await updateUserProfileAction({ 
+            userId: user.uid, 
+            data: { profilePictureURL: data.url }, 
+            requesterId: user.uid 
+        });
         toast({ title: "Photo mise à jour !" });
     } catch (error: any) {
         toast({ variant: 'destructive', title: "Échec", description: error.message });
