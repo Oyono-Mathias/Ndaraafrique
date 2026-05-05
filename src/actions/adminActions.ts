@@ -328,6 +328,82 @@ export async function changeUserRoleAction({
     }
 }
 
+/** 🛠️ 7. Synchroniser les utilisateurs Auth -> Firestore (Régularisation Google) */
+export async function syncAuthUsersToFirestoreAction(adminId: string) {
+    try {
+        await verifyAdminOrThrow(adminId, true); // Super Admin requis
+        const db = getAdminDb();
+        const auth = getAdminAuth();
+        
+        let usersProcessed = 0;
+        let usersCreated = 0;
+        
+        // On récupère les utilisateurs Auth (limité à 1000 pour éviter les timeouts)
+        const listUsersResult = await auth.listUsers(1000);
+        
+        for (const userRecord of listUsersResult.users) {
+            usersProcessed++;
+            const userRef = db.collection('users').doc(userRecord.uid);
+            const userSnap = await userRef.get();
+            
+            // Si le document Firestore n'existe pas, on le crée
+            if (!userSnap.exists) {
+                const [prenom, ...nomParts] = (userRecord.displayName || "").split(" ");
+                const nom = nomParts.join(" ");
+
+                await userRef.set({
+                    uid: userRecord.uid,
+                    email: userRecord.email || '',
+                    fullName: userRecord.displayName || 'Utilisateur Ndara',
+                    nom: nom || userRecord.displayName || "",
+                    prenom: prenom || "",
+                    username: (userRecord.displayName || 'user').replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
+                    role: 'student', // Par défaut
+                    status: 'active',
+                    isInstructorApproved: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                    isProfileComplete: false,
+                    isOnline: false,
+                    lastSeen: FieldValue.serverTimestamp(),
+                    profilePictureURL: userRecord.photoURL || '',
+                    balance: 0,
+                    solde: 0, // Compatibilité ancienne admin
+                    hasAccess: [], // Compatibilité ancienne admin
+                    affiliateBalance: 0,
+                    pendingAffiliateBalance: 0,
+                    aiCredits: 5,
+                    hasAIAccess: false,
+                    affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+                    restrictions: {
+                        canWithdraw: true,
+                        canSendMessage: true,
+                        canBuyCourse: true,
+                        canSellCourse: true,
+                        canAccessPlatform: true
+                    }
+                });
+                
+                // Log d'audit pour chaque création
+                await db.collection('admin_audit_logs').add({
+                    adminId,
+                    eventType: 'user.auto_regularization',
+                    target: { id: userRecord.uid, type: 'user' },
+                    details: `Compte Google régularisé automatiquement : ${userRecord.email}`,
+                    timestamp: FieldValue.serverTimestamp()
+                });
+
+                usersCreated++;
+            }
+        }
+        
+        revalidatePath('/admin/users');
+        return { success: true, usersProcessed, usersCreated };
+    } catch (e: any) {
+        console.error("[syncAuthUsersToFirestoreAction ERROR]:", e.message);
+        return { success: false, error: e.message };
+    }
+}
+
 export async function resetUserPasswordAction(adminId: string, targetUserId: string) {
     try {
         await verifyAdminOrThrow(adminId);
