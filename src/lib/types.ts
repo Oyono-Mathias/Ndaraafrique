@@ -1,4 +1,4 @@
-import type { Timestamp, FieldValue } from "firebase/firestore";
+import type { Timestamp, FieldValue } from "firebase-admin/firestore";
 
 /**
  * @fileOverview SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.5
@@ -25,7 +25,7 @@ export interface NdaraUser {
   username: string;
   fullName: string;
   profilePictureURL?: string;
-  profilePictureFallbackURL?: string; // 🛡️ Fallback hybride
+  profilePictureFallbackURL?: string;
   role: UserRole;
   availableRoles: UserRole[];
   status: 'active' | 'suspended' | 'deleted';
@@ -36,10 +36,8 @@ export interface NdaraUser {
   affiliateBalance?: number;
   pendingAffiliateBalance?: number;
   virtualBalance?: number;
-  /** 💰 Système de monétisation IA */
   aiCredits: number;
   hasAIAccess: boolean;
-  /** 🎓 Score de qualité Expert (0-100) */
   qualityScore?: number;
   totalReviews?: number;
   isInstructorApproved: boolean;
@@ -56,9 +54,8 @@ export interface NdaraUser {
   rating?: number;
   referralCode?: string;
   referredBy?: string | null;
-  /** 🛡️ Numéros de téléphone certifiés par opérateur (Vérrouillés après saisie) */
   certifiedMobileNumbers?: {
-    [key: string]: string; // Format: COUNTRYCODE_OPERATOR (ex: CM_MTN)
+    [key: string]: string;
   };
   affiliateStats?: {
     clicks: number;
@@ -110,93 +107,113 @@ export interface NdaraUser {
     canSellCourse: boolean;
     canAccessPlatform: boolean;
   };
-  sanctions?: {
-    isSanctioned: boolean;
-    reason: string;
-    imposedBy: string;
-    date: Timestamp | FieldValue | Date;
-    expiresAt?: Timestamp | FieldValue | Date | null;
-  };
-  pedagogicalPreferences?: {
-    aiAssistanceEnabled: boolean;
-    aiInterventionLevel: 'low' | 'medium' | 'high';
-  };
-  instructorNotificationPreferences?: {
-    newEnrollment: boolean;
-    newMessage: boolean;
-    newAssignmentSubmission: boolean;
-    courseStatusUpdate: boolean;
-    payoutUpdate: boolean;
-  };
-  notificationPreferences?: {
-    newPayouts: boolean;
-    newApplications: boolean;
-    newSupportTickets: boolean;
-    financialAnomalies: boolean;
-  };
-  permissions?: { [key: string]: boolean };
-  isDemoAccount?: boolean;
-  badges?: string[];
 }
 
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  billingCycle: 'monthly' | 'yearly';
-  features: string[];
-  isActive: boolean;
-  targetRole: UserRole;
-}
-
-export interface CartItem {
-  id: string;
-  courseId: string;
-  price: number;
-  imageUrl?: string;
-  title: string;
-  addedAt?: Timestamp | FieldValue | Date;
+export interface Settings {
+  general: {
+    siteName: string;
+    logoUrl?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    defaultLanguage: 'fr' | 'en' | 'sg';
+  };
+  storage: {
+    maxFileSizeMb: number;
+    videosProvider: StorageProvider;
+    documentsProvider: StorageProvider;
+    assetsProvider: StorageProvider;
+    userFilesProvider: 'firebase';
+  };
+  payments: {
+    currency: string;
+    minDeposit: number;
+    transactionFeePercent: number;
+    paymentsEnabled: boolean;
+  };
+  users: {
+    allowRegistration: boolean;
+    allowInstructorSignup: boolean;
+    autoApproveInstructors: boolean;
+  };
+  courses: {
+    allowCourseCreation: boolean;
+    requireAdminApproval: boolean;
+    instructorRevenuePercent: number;
+    certificateEnabled: boolean;
+  };
+  marketplace: {
+    enableMarketplace: boolean;
+    allowCourseBuyout: boolean;
+    allowResaleRights: boolean;
+    minimumResalePrice: number;
+    resaleCommissionPercent: number;
+  };
+  ai: {
+    aiEnabled: boolean;
+    autoCorrection: boolean;
+    autonomousTutor: boolean;
+    fraudDetection: boolean;
+    maxRequestsPerUser: number;
+  };
+  notifications: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    adminAlerts: {
+      newUser: boolean;
+      newPayment: boolean;
+      systemError: boolean;
+    };
+  };
+  security: {
+    maintenanceMode: boolean;
+    activityLogsEnabled: boolean;
+  };
+  marketing: {
+    globalAnnouncement: string;
+    promoCodesEnabled: boolean;
+    referralProgramEnabled: boolean;
+  };
+  appearance: {
+    primaryColor: string;
+    borderRadius: 'none' | 'md' | 'lg' | 'xl';
+  };
+  social: {
+    facebookUrl?: string;
+    instagramUrl?: string;
+    twitterUrl?: string;
+    linkedinUrl?: string;
+    youtubeUrl?: string;
+    telegramUrl?: string;
+  };
+  content?: {
+    landingPage?: any;
+    aboutPage?: any;
+  };
 }
 
 export interface Course {
   id: string;
-  courseId: string;
   title: string;
   description: string;
   instructorId: string;
   category: string;
   price: number;
   imageUrl?: string;
-  imageUrlFallback?: string; // 🛡️ Fallback hybride
   status: 'Draft' | 'Published' | 'Pending Review';
   rating?: number;
   participantsCount?: number;
   createdAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-  publishedAt?: Timestamp | FieldValue | Date | null;
-  currency?: string;
-  learningObjectives?: string[];
-  ownerId?: string;
-  creatorId?: string;
   resaleRightsAvailable?: boolean;
   resaleRightsPrice?: number;
-  isPlatformOwned?: boolean;
-  /** 🤖 Badge Élite : Audit Mathias */
-  isAiVerified?: boolean;
-  lastAiAuditScore?: number;
   buyoutStatus?: 'none' | 'requested' | 'approved';
   buyoutPrice?: number;
-  rightsChain?: string[];
-  moderationFeedback?: string;
+  isPlatformOwned?: boolean;
 }
 
 export interface Section {
   id: string;
   title: string;
   order: number;
-  createdAt?: Timestamp | FieldValue | Date;
 }
 
 export interface Lecture {
@@ -208,35 +225,8 @@ export interface Lecture {
   duration?: number;
   order: number;
   isFreePreview?: boolean;
-  description?: string;
-  /** 🔒 Milestone : Nécessite validation d'exercice avant suite */
   requiresValidation?: boolean;
   associatedQuizId?: string;
-  createdAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-}
-
-export interface Quiz {
-  id: string;
-  courseId: string;
-  sectionId: string;
-  instructorId: string;
-  title: string;
-  description?: string;
-  questionsCount?: number;
-  createdAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-}
-
-export interface Question {
-  id: string;
-  text: string;
-  order: number;
-  options: {
-    text: string;
-    isCorrect: boolean;
-  }[];
-  createdAt?: Timestamp | FieldValue | Date;
 }
 
 export interface Enrollment {
@@ -246,15 +236,13 @@ export interface Enrollment {
   courseTitle?: string;
   instructorId: string;
   status: 'active' | 'completed' | 'suspended';
-  accessStatus: 'active' | 'revoked'; // 🛡️ Source de vérité
-  revocationReason?: 'refund' | 'abuse' | 'admin_error';
+  accessStatus: 'active' | 'revoked';
   progress: number;
-  isSimulated?: boolean;
   enrollmentDate: Timestamp | FieldValue | Date;
   lastAccessedAt: Timestamp | FieldValue | Date;
   priceAtEnrollment?: number;
-  expiresAt?: Timestamp | null;
-  paymentId?: string; // 💰 Lien vers preuve financière
+  paymentId?: string;
+  revocationReason?: string;
 }
 
 export interface CourseProgress {
@@ -270,79 +258,6 @@ export interface CourseProgress {
   updatedAt: Timestamp | FieldValue | Date;
 }
 
-export interface UserActivity {
-  id: string;
-  userId: string;
-  type: 'enrollment' | 'certificate' | 'review' | 'assignment' | 'payment';
-  title: string;
-  description?: string;
-  link?: string;
-  read: boolean;
-  createdAt: Timestamp | FieldValue | Date;
-}
-
-export interface SupportTicket {
-  id: string;
-  userId: string;
-  subject: string;
-  category: 'Paiement' | 'Technique' | 'Pédagogique';
-  status: 'ouvert' | 'pending' | 'resolved' | 'fermé';
-  lastMessage?: string;
-  createdAt: Timestamp | FieldValue | Date;
-  updatedAt: Timestamp | FieldValue | Date;
-  resolution?: string;
-  courseId: string;
-  instructorId: string;
-  courseTitle?: string;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt: Timestamp | FieldValue | Date;
-  status?: 'sent' | 'delivered' | 'read';
-}
-
-export interface Resource {
-  id: string;
-  title: string;
-  description?: string;
-  url: string;
-  type: 'pdf' | 'video' | 'image' | 'link' | 'file';
-  courseId: string;
-  instructorId: string;
-  createdAt: Timestamp | FieldValue | Date;
-}
-
-/** 📊 REGISTRE COMPTABLE NDARA */
-export interface NdaraTransaction {
-  id: string;
-  type: 'purchase' | 'commission' | 'referral' | 'payout' | 'deposit';
-  userId: string;
-  amount: number;
-  status: 'success' | 'failed' | 'pending_review';
-  meta: {
-    courseId?: string;
-    courseTitle?: string;
-    referrerId?: string;
-    targetUserId?: string;
-    provider?: string;
-    [key: string]: any;
-  };
-  createdAt: Timestamp | FieldValue | Date;
-}
-
-/** 💰 REGISTRE DES GAINS BÉNÉFICIAIRES */
-export interface NdaraEarning {
-  id: string;
-  userId: string;
-  type: 'course_sale' | 'referral' | 'bonus';
-  amount: number;
-  sourceId: string; // courseId or userId
-  createdAt: Timestamp | FieldValue | Date;
-}
-
 export interface Payment {
   id: string;
   userId: string;
@@ -350,55 +265,21 @@ export interface Payment {
   courseTitle?: string;
   amount: number;
   currency: string;
-  provider: PaymentProvider | string;
+  provider: string;
   status: 'completed' | 'pending' | 'failed' | 'refunded';
   type: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase';
   isSimulated: boolean;
   date: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-  metadata?: {
-    adminId?: string;
-    reason?: string;
-    operator?: string;
-    phone?: string;
-    gatewayId?: string;
-    [key: string]: any;
-  };
-  fraudReview?: {
-    isSuspicious: boolean;
-    riskScore: number;
-    reason: string;
-    reviewed?: boolean;
-  };
-  platformFee?: number;
-  instructorId?: string;
-}
-
-export interface RequestPayoutParams {
-  instructorId: string;
-  amount: number;
-  method: 'mobile_money' | 'bank_transfer';
-  requesterId: string;
+  metadata?: any;
 }
 
 export interface PayoutRequest {
   id: string;
   instructorId: string;
   amount: number;
-  method: 'mobile_money' | 'bank_transfer';
+  method: string;
   status: 'pending' | 'approved' | 'paid' | 'rejected';
   createdAt: Timestamp | FieldValue | Date;
-  processedAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-}
-
-export interface Payout {
-  id: string;
-  instructorId: string;
-  amount: number;
-  status: 'valide' | 'rejete' | 'en_attente';
-  method: string;
-  date: Timestamp | FieldValue | Date;
 }
 
 export interface AffiliateTransaction {
@@ -415,159 +296,6 @@ export interface AffiliateTransaction {
   unlockDate: Timestamp | FieldValue | Date;
 }
 
-export interface Coupon {
-  id: string;
-  code: string;
-  courseId: string;
-  courseTitle: string;
-  instructorId: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number;
-  maxUses: number;
-  usedCount: number;
-  createdAt: Timestamp | FieldValue | Date;
-  expiresAt: Timestamp | FieldValue | Date;
-}
-
-export interface FAQ {
-  id: string;
-  question_fr: string;
-  answer_fr: string;
-  tags: string[];
-  order: number;
-  isActive: boolean;
-  createdAt?: Timestamp | FieldValue | Date;
-  updatedAt?: Timestamp | FieldValue | Date;
-}
-
-export interface CarouselSlide {
-  id: string;
-  imageUrl: string;
-  link?: string;
-  order: number;
-  createdAt?: Timestamp | FieldValue | Date;
-}
-
-export interface Review {
-  id: string;
-  courseId: string;
-  studentId: string;
-  instructorId: string;
-  rating: number;
-  comment: string;
-  createdAt: Timestamp | FieldValue | Date;
-}
-
-export interface CourseQuestion {
-  id: string;
-  courseId: string;
-  courseTitle?: string;
-  studentId: string;
-  studentName: string;
-  studentAvatarUrl?: string;
-  instructorId: string;
-  questionText: string;
-  answerText?: string;
-  status: 'pending' | 'answered';
-  createdAt: Timestamp | FieldValue | Date;
-  answeredAt?: Timestamp | FieldValue | Date;
-}
-
-export interface AssignmentSubmission {
-  id: string;
-  studentId: string;
-  studentName: string;
-  studentAvatarUrl?: string;
-  instructorId: string;
-  courseId: string;
-  courseTitle: string;
-  assignmentId: string;
-  assignmentTitle: string;
-  submissionContent?: string;
-  submissionUrl?: string;
-  status: 'submitted' | 'graded';
-  grade?: number;
-  feedback?: string;
-  submittedAt: Timestamp | FieldValue | Date;
-  gradedAt?: Timestamp | FieldValue | Date;
-}
-
-export interface Assignment {
-  id: string;
-  courseId: string;
-  courseTitle?: string;
-  sectionId: string;
-  instructorId?: string;
-  title: string;
-  description?: string;
-  correctionGuide?: string;
-  dueDate?: Timestamp | FieldValue | Date;
-  attachments?: { name: string; url: string }[];
-  createdAt: Timestamp | FieldValue | Date;
-}
-
-export interface PushCampaign {
-  id: string;
-  message: string;
-  target: 'all' | 'instructors' | 'students';
-  status: 'sent' | 'scheduled' | 'draft';
-  scheduledFor?: Timestamp | FieldValue | Date;
-  sentAt?: Timestamp | FieldValue | Date;
-  createdAt: Timestamp | FieldValue | Date;
-  stats?: {
-    delivered: number;
-    clicked: number;
-  };
-}
-
-export interface CourseTemplate {
-  id: string;
-  imageUrl: string;
-  description: string;
-  createdAt?: Timestamp | FieldValue | Date;
-}
-
-export interface TeamMember {
-  name: string;
-  role: string;
-  bio: string;
-  imageUrl: string;
-}
-
-export interface UserRecommendations {
-  userId: string;
-  courses: RecommendedCourseItem[];
-  updatedAt: Timestamp | FieldValue | Date;
-}
-
-export interface RecommendedCourseItem {
-  courseId: string;
-  title: string;
-  coverImage: string;
-  instructorId: string;
-  price: number;
-  score: number;
-}
-
-export interface NdaraPaymentDetails {
-  transactionId: string | number;
-  gatewayTransactionId?: string;
-  provider: PaymentProvider | string;
-  amount: number;
-  currency: string;
-  metadata: {
-    userId: string;
-    courseId?: string;
-    type?: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase' | 'deposit';
-    affiliateId?: string;
-    couponId?: string;
-    courseTitle?: string;
-    isSimulated?: boolean;
-    fraudScore?: number;
-    [key: string]: any;
-  };
-}
-
 export interface Notification {
   id: string;
   text: string;
@@ -580,240 +308,17 @@ export interface Notification {
 export interface Chat {
   id: string;
   participants: string[];
-  participantCategories?: string[];
   lastMessage: string;
   lastSenderId: string;
   unreadBy?: string[];
   status?: 'active' | 'blocked';
-  blockedBy?: string;
-  createdAt: Timestamp | FieldValue | Date;
   updatedAt: Timestamp | FieldValue | Date;
 }
 
-export interface Announcement {
+export interface Message {
   id: string;
-  courseId: string;
-  courseTitle?: string;
-  instructorId: string;
-  title: string;
-  message: string;
+  senderId: string;
+  text: string;
   createdAt: Timestamp | FieldValue | Date;
-}
-
-export interface SecurityLog {
-  id: string;
-  eventType: string;
-  userId?: string;
-  targetId: string;
-  details: string;
-  timestamp: Timestamp | FieldValue | Date;
-  status?: 'open' | 'resolved';
-}
-
-export interface AdminAuditLog {
-  id: string;
-  adminId: string;
-  eventType: string;
-  target: { id: string; type: string };
-  details: string;
-  timestamp: Timestamp | FieldValue | Date;
-  previousState?: any; // 🛡️ Rollback support
-}
-
-export interface TrackingEvent {
-  eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
-  sessionId: string;
-  pageUrl: string;
-  metadata?: Record<string, any>;
-  timestamp: Timestamp | FieldValue | Date;
-}
-
-export interface Country {
-  id: string;
-  name: string;
-  code: string;
-  currency: string;
-  prefix: string;
-  flagEmoji: string;
-  active: boolean;
-  paymentMethods: PaymentMethod[];
-}
-
-export interface PaymentMethod {
-  id: string;
-  name: string;
-  logo?: string;
-  provider: PaymentProvider | string;
-  active: boolean;
-}
-
-export interface DesignSettings {
-  primaryColor: string;
-  borderRadius: 'none' | 'md' | 'lg' | 'xl';
-  fontScale: 'small' | 'medium' | 'large';
-}
-
-export interface Settings {
-  general: {
-    siteName: string;
-    logoUrl: string;
-    faviconUrl: string;
-    contactEmail: string;
-    contactPhone: string;
-    address: string;
-    defaultLanguage: 'fr' | 'en' | 'sg';
-    timezone: string;
-  };
-  payments: {
-    paymentsEnabled: boolean;
-    currency: string;
-    paymentMethods: string[];
-    transactionFeePercent: number;
-    minDeposit: number;
-    maxDeposit: number;
-    walletEnabled: boolean;
-    operatorCommission: number;
-    paymentMode: 'test' | 'live';
-  };
-  users: {
-    allowRegistration: boolean;
-    allowInstructorSignup: boolean;
-    requireEmailVerification: boolean;
-    autoApproveInstructors: boolean;
-    defaultRole: string;
-    maxAccountsPerUser: number;
-  };
-  courses: {
-    allowCourseCreation: boolean;
-    requireAdminApproval: boolean;
-    minimumCoursePrice: number;
-    instructorRevenuePercent: number;
-    allowDownload: boolean;
-    certificateEnabled: boolean;
-  };
-  marketplace: {
-    enableMarketplace: boolean;
-    minimumResalePrice: number;
-    resaleCommissionPercent: number;
-    allowLicenseResale: boolean;
-    allowCourseBuyout?: boolean;
-    allowResaleRights?: boolean;
-  };
-  ai: {
-    aiEnabled: boolean;
-    modelName: string;
-    maxRequestsPerUser: number;
-    contentGenerationEnabled: boolean;
-    autoCorrection?: boolean;
-    autonomousTutor?: boolean;
-    fraudDetection?: boolean;
-  };
-  notifications: {
-    emailNotifications: boolean;
-    pushNotifications: boolean;
-    smsNotifications: boolean;
-    adminAlerts: {
-      newUser: boolean;
-      newPayment: boolean;
-      systemError: boolean;
-    };
-  };
-  security: {
-    maintenanceMode: boolean;
-    enable2fa: boolean;
-    maxLoginAttempts: number;
-    blockedUsers: string[];
-    activityLogsEnabled: boolean;
-  };
-  localization: {
-    supportedLanguages: string[];
-    defaultLanguage: string;
-    autoDetectLanguage: boolean;
-  };
-  marketing: {
-    globalAnnouncement: string;
-    promoCodesEnabled: boolean;
-    referralProgramEnabled: boolean;
-    seo: {
-      title: string;
-      description: string;
-    };
-  };
-  finance: {
-    platformRevenuePercent: number;
-    minWithdrawal: number;
-    withdrawalDelayDays: number;
-    autoPayoutEnabled: boolean;
-  };
-  advanced: {
-    apiKeys: Record<string, string>;
-    firebaseConfig: Record<string, any>;
-    webhookUrls: string[];
-    debugMode: boolean;
-  };
-  appearance: DesignSettings;
-  storage: {
-    maxFileSizeMb: number;
-    primaryProvider: StorageProvider;
-    userFilesProvider: 'firebase'; // Forcée pour la sécurité
-    videosProvider: StorageProvider;
-    documentsProvider: StorageProvider;
-    assetsProvider: StorageProvider;
-  };
-  social?: {
-    facebookUrl?: string;
-    instagramUrl?: string;
-    twitterUrl?: string;
-    linkedinUrl?: string;
-    youtubeUrl?: string;
-    telegramUrl?: string;
-    whatsappUrl?: string;
-  };
-  platform?: {
-    maintenanceMode?: boolean;
-    announcementMessage?: string;
-    allowYoutube?: boolean;
-    allowBunny?: boolean;
-    allowInstructorSignup?: boolean;
-  };
-  commercial?: {
-    instructorShare?: number;
-    payoutDelayDays?: number;
-  };
-  affiliate?: {
-    commissionRate?: number;
-  };
-  content?: {
-    landingPage?: {
-      heroBadge?: string;
-      heroTitle?: string;
-      heroSubtitle?: string;
-      heroImageUrl?: string;
-      badge_card_title?: string;
-      badge_card_subtitle?: string;
-      securitySection_imageUrl?: string;
-      showFinalCta?: boolean;
-      finalCtaTitle?: string;
-      finalCtaSubtitle?: string;
-      finalCtaButtonText?: string;
-    };
-    aboutPage?: {
-      mainTitle?: string;
-      mainSubtitle?: string;
-      historyTitle?: string;
-      historyFrench?: string;
-      historySango?: string;
-      visionTitle?: string;
-      visionFrench?: string;
-      visionSango?: string;
-      teamMembers?: TeamMember[];
-      ctaTitle?: string;
-    };
-  };
-  pwa?: {
-    appName?: string;
-    shortName?: string;
-    iconUrl?: string;
-    appDescription?: string;
-  };
+  status?: 'sent' | 'delivered' | 'read';
 }
