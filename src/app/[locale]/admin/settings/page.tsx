@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.0
- * ✅ EXHAUSTIF : Restauration de tous les modules de paramétrage.
- * ✅ HYBRIDE : Pilotage granulaire du stockage.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.1
+ * ✅ FIX : Ajout du seuil de retrait minimal dans le module financier.
  */
 
 import { useState, useEffect } from 'react';
@@ -58,6 +57,7 @@ const settingsSchema = z.object({
   payments: z.object({
     currency: z.string(),
     minDeposit: z.coerce.number(),
+    minWithdrawal: z.coerce.number().min(100, "Le seuil est trop bas."),
     transactionFeePercent: z.coerce.number(),
     paymentsEnabled: z.boolean(),
   }),
@@ -265,6 +265,18 @@ export default function AdminSettingsPage() {
                             <FormItem><FormLabel>Dépôt minimum</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
                         )}/>
                     </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <FormField control={form.control} name="payments.minWithdrawal" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Seuil de retrait min. (XOF)</FormLabel>
+                                <FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="payments.transactionFeePercent" render={({ field }) => (
+                            <FormItem><FormLabel>Frais (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                        )}/>
+                    </div>
                     <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
                             <FormLabel>Activer les paiements réels</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -312,7 +324,7 @@ export default function AdminSettingsPage() {
               <Button 
                 type="submit" 
                 disabled={isSaving}
-                className="w-full max-w-3xl mx-auto flex h-14 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20"
+                className="w-full h-14 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20"
               >
                 {isSaving ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
                 Valider les réglages {activeTab}

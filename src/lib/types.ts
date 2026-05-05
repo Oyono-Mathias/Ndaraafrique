@@ -148,6 +148,7 @@ export interface Settings {
   payments: {
     currency: string;
     minDeposit: number;
+    minWithdrawal: number;
     transactionFeePercent: number;
     paymentsEnabled: boolean;
   };

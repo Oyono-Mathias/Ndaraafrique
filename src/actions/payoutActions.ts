@@ -51,8 +51,8 @@ export async function requestPayoutAction({
         const settingsSnap = await db.collection('settings').doc('global').get();
         const settings = (settingsSnap.exists ? settingsSnap.data() : {}) as Settings;
 
-        // 🛡️ VÉRIFICATION SEUIL
-        const minThreshold = settings.finance?.minWithdrawal || 5000;
+        // 🛡️ VÉRIFICATION SEUIL (Alignement Schéma v2.5)
+        const minThreshold = settings.payments?.minWithdrawal || 5000;
         const currentBalance = userData.balance || 0;
 
         if (currentBalance < amount) return { success: false, error: "error.insufficient_balance" };
