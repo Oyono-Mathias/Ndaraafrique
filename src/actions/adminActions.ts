@@ -1,11 +1,10 @@
 'use server';
 
 /**
- * @fileOverview Actions administratives hautement sécurisées pour Ndara Afrique.
- * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
- * ✅ TRANSACTIONNEL : Utilisation de db.runTransaction pour les flux financiers.
- * ✅ VERSIONNING : previousState dans les logs pour support rollback.
- * ✅ SUPER ADMIN : Restriction des actions critiques à MasterAdmin.
+ * @fileOverview Actions administratives de souveraineté pour Ndara Afrique.
+ * ✅ SÉCURITÉ : Validation systématique du rôle Admin.
+ * ✅ INTÉGRITÉ : Synchronisation Firebase Auth + Firestore.
+ * ✅ VERSIONING : Logs d'audit avec previousState.
  */
 
 import { getAdminDb, getAdminAuth } from '@/firebase/admin';
@@ -19,7 +18,7 @@ const MASTER_ADMIN_EMAIL = 'salguienow@gmail.com';
  * 🛡️ Helper de sécurité : Vérifie si l'appelant est un admin actif.
  */
 async function verifyAdminOrThrow(adminId: string, checkMaster: boolean = false) {
-    if (!adminId) throw new Error("UNAUTHORIZED: Identifiant manquant.");
+    if (!adminId) throw new Error("UNAUTHORIZED: Identifiant admin manquant.");
     
     const db = getAdminDb();
     const adminDoc = await db.collection('users').doc(adminId).get();
@@ -34,7 +33,179 @@ async function verifyAdminOrThrow(adminId: string, checkMaster: boolean = false)
     }
 }
 
-/** 💰 1. Recharger le portefeuille (Transactionnel) */
+/** 🛡️ 1. Modifier l'identité utilisateur (Sync Auth + Firestore) */
+export async function updateUserIdentityAction({
+    adminId,
+    targetUserId,
+    data
+}: {
+    adminId: string;
+    targetUserId: string;
+    data: { email?: string; fullName?: string; username?: string; password?: string };
+}) {
+    try {
+        await verifyAdminOrThrow(adminId, true); // Super Admin requis pour les ID critiques
+        
+        const db = getAdminDb();
+        const auth = getAdminAuth();
+        
+        const userRef = db.collection('users').doc(targetUserId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
+        
+        const oldData = userSnap.data();
+
+        // A. Mise à jour Firebase Auth
+        if (data.email || data.password) {
+            await auth.updateUser(targetUserId, {
+                email: data.email || undefined,
+                password: data.password || undefined,
+                displayName: data.fullName
+            });
+        }
+
+        // B. Mise à jour Firestore
+        const { password, ...firestoreData } = data;
+        await userRef.update({
+            ...firestoreData,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        // C. Log d'audit avec versioning (previousState)
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.identity.update',
+            target: { id: targetUserId, type: 'user' },
+            details: `Modification d'identité par l'admin ${adminId}.`,
+            previousState: { 
+                email: oldData?.email, 
+                fullName: oldData?.fullName, 
+                username: oldData?.username 
+            },
+            newState: { 
+                email: data.email || oldData?.email, 
+                fullName: data.fullName || oldData?.fullName, 
+                username: data.username || oldData?.username 
+            },
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        revalidatePath('/admin/users');
+        return { success: true };
+    } catch (e: any) {
+        console.error("[updateUserIdentityAction ERROR]:", e.message);
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🔒 2. Gérer la révocation d'accès et les remboursements (Source de Vérité: Enrollment) */
+export async function manageAccessRevocationAction({
+    adminId,
+    targetUserId,
+    courseId,
+    reason,
+    refund = false
+}: {
+    adminId: string;
+    targetUserId: string;
+    courseId: string;
+    reason: 'refund' | 'abuse' | 'admin_error';
+    refund?: boolean;
+}) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        const enrollmentId = `${targetUserId}_${courseId}`;
+        const enrollRef = db.collection('enrollments').doc(enrollmentId);
+        
+        await db.runTransaction(async (transaction) => {
+            const enrollSnap = await transaction.get(enrollRef);
+            if (!enrollSnap.exists) throw new Error("Inscription introuvable.");
+            
+            const enrollData = enrollSnap.data() as Enrollment;
+            const price = enrollData.priceAtEnrollment || 0;
+
+            // A. Révocation de l'accès (Changement de statut)
+            transaction.update(enrollRef, {
+                accessStatus: 'revoked',
+                revocationReason: reason,
+                status: 'suspended',
+                updatedAt: FieldValue.serverTimestamp()
+            });
+
+            // B. Gestion financière (Si remboursement demandé)
+            if (refund && price > 0) {
+                const userRef = db.collection('users').doc(targetUserId);
+                transaction.update(userRef, {
+                    balance: FieldValue.increment(price),
+                    updatedAt: FieldValue.serverTimestamp()
+                });
+
+                if (enrollData.paymentId) {
+                    transaction.update(db.collection('payments').doc(enrollData.paymentId), {
+                        status: 'refunded',
+                        updatedAt: FieldValue.serverTimestamp()
+                    });
+                }
+            }
+
+            // C. Log d'audit avec previousState
+            transaction.set(db.collection('admin_audit_logs').doc(), {
+                adminId,
+                eventType: 'user.access.revoked',
+                target: { id: enrollmentId, type: 'enrollment' },
+                details: `Révocation de "${enrollData.courseTitle || courseId}". Raison: ${reason}. Remboursé: ${refund}`,
+                previousState: { accessStatus: 'active', status: enrollData.status },
+                timestamp: FieldValue.serverTimestamp()
+            });
+        });
+
+        revalidatePath('/admin/users');
+        return { success: true };
+    } catch (e: any) {
+        console.error("[manageAccessRevocationAction ERROR]:", e.message);
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🛠️ 3. Action de Migration : Normaliser les casses des statuts de paiement */
+export async function migratePaymentStatusesAction(adminId: string) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        const paymentsSnap = await db.collection('payments').get();
+        let migratedCount = 0;
+
+        const batch = db.batch();
+
+        paymentsSnap.forEach(doc => {
+            const data = doc.data();
+            const oldStatus = data.status;
+            // On normalise en minuscule pour la cohérence
+            const newStatus = oldStatus?.toLowerCase();
+
+            if (oldStatus !== newStatus) {
+                batch.update(doc.ref, { 
+                    status: newStatus,
+                    updatedAt: FieldValue.serverTimestamp()
+                });
+                migratedCount++;
+            }
+        });
+
+        if (migratedCount > 0) {
+            await batch.commit();
+        }
+
+        return { success: true, migratedCount };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 💰 4. Recharger le portefeuille (Transactionnel) */
 export async function rechargeUserWalletAction({
     adminId,
     targetUserId,
@@ -78,132 +249,7 @@ export async function rechargeUserWalletAction({
     }
 }
 
-/** 🛡️ 2. Modifier l'identité utilisateur (Sync Auth + Firestore) */
-export async function updateUserIdentityAction({
-    adminId,
-    targetUserId,
-    data
-}: {
-    adminId: string;
-    targetUserId: string;
-    data: { email?: string; fullName?: string; username?: string; password?: string };
-}) {
-    try {
-        await verifyAdminOrThrow(adminId, true); // Super Admin uniquement
-        
-        const db = getAdminDb();
-        const auth = getAdminAuth();
-        
-        const userRef = db.collection('users').doc(targetUserId);
-        const userSnap = await userRef.get();
-        if (!userSnap.exists) throw new Error("Utilisateur introuvable.");
-        
-        const oldData = userSnap.data();
-
-        // 1. Mise à jour Firebase Auth
-        if (data.email || data.password) {
-            await auth.updateUser(targetUserId, {
-                email: data.email || undefined,
-                password: data.password || undefined,
-                displayName: data.fullName
-            });
-        }
-
-        // 2. Mise à jour Firestore
-        const { password, ...firestoreData } = data;
-        await userRef.update({
-            ...firestoreData,
-            updatedAt: FieldValue.serverTimestamp()
-        });
-
-        // 3. Log d'audit avec versioning
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'user.identity.update',
-            target: { id: targetUserId, type: 'user' },
-            details: `Modification d'identité : ${Object.keys(data).join(', ')}`,
-            previousState: { email: oldData?.email, fullName: oldData?.fullName, username: oldData?.username },
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        revalidatePath('/admin/users');
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/** 🔒 3. Gérer la révocation d'accès et les remboursements (Source de Vérité) */
-export async function manageAccessRevocationAction({
-    adminId,
-    targetUserId,
-    courseId,
-    reason,
-    refund = false
-}: {
-    adminId: string;
-    targetUserId: string;
-    courseId: string;
-    reason: 'refund' | 'abuse' | 'admin_error';
-    refund?: boolean;
-}) {
-    try {
-        await verifyAdminOrThrow(adminId);
-        const db = getAdminDb();
-        
-        const enrollmentId = `${targetUserId}_${courseId}`;
-        const enrollRef = db.collection('enrollments').doc(enrollmentId);
-        
-        await db.runTransaction(async (transaction) => {
-            const enrollSnap = await transaction.get(enrollRef);
-            if (!enrollSnap.exists) throw new Error("Inscription introuvable.");
-            
-            const enrollData = enrollSnap.data() as Enrollment;
-            const price = enrollData.priceAtEnrollment || 0;
-
-            // 1. Révocation de l'accès (Source de Vérité)
-            transaction.update(enrollRef, {
-                accessStatus: 'revoked',
-                revocationReason: reason,
-                status: 'suspended',
-                updatedAt: FieldValue.serverTimestamp()
-            });
-
-            // 2. Gestion financière (Si remboursement demandé)
-            if (refund && price > 0) {
-                const userRef = db.collection('users').doc(targetUserId);
-                transaction.update(userRef, {
-                    balance: FieldValue.increment(price),
-                    updatedAt: FieldValue.serverTimestamp()
-                });
-
-                if (enrollData.paymentId) {
-                    transaction.update(db.collection('payments').doc(enrollData.paymentId), {
-                        status: 'refunded',
-                        updatedAt: FieldValue.serverTimestamp()
-                    });
-                }
-            }
-
-            // 3. Log d'audit avec previousState
-            transaction.set(db.collection('admin_audit_logs').doc(), {
-                adminId,
-                eventType: 'user.access.revoked',
-                target: { id: enrollmentId, type: 'enrollment' },
-                details: `Révocation de "${enrollData.courseTitle || courseId}". Raison: ${reason}. Remboursé: ${refund}`,
-                previousState: { accessStatus: 'active', status: enrollData.status },
-                timestamp: FieldValue.serverTimestamp()
-            });
-        });
-
-        revalidatePath('/admin/users');
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/** 🔒 4. Modifier Statut (Suspension/Réactivation) */
+/** 🔒 5. Modifier Statut (Suspension/Réactivation) */
 export async function toggleUserStatusAction({
     adminId,
     targetUserId,
@@ -246,7 +292,7 @@ export async function toggleUserStatusAction({
     }
 }
 
-/** 🎓 5. Changer Rôle */
+/** 🎓 6. Changer Rôle */
 export async function changeUserRoleAction({
     adminId,
     targetUserId,
@@ -277,50 +323,6 @@ export async function changeUserRoleAction({
         });
 
         return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/** 🛠️ 6. Action de Migration : Normaliser les casses des statuts de paiement */
-export async function migratePaymentStatusesAction(adminId: string) {
-    try {
-        await verifyAdminOrThrow(adminId);
-        const db = getAdminDb();
-        
-        const paymentsSnap = await db.collection('payments').get();
-        let migratedCount = 0;
-
-        const batch = db.batch();
-
-        paymentsSnap.forEach(doc => {
-            const data = doc.data();
-            const oldStatus = data.status;
-            // On normalise en minuscule pour la cohérence
-            const newStatus = oldStatus?.toLowerCase();
-
-            if (oldStatus !== newStatus) {
-                batch.update(doc.ref, { 
-                    status: newStatus,
-                    updatedAt: FieldValue.serverTimestamp()
-                });
-                migratedCount++;
-            }
-        });
-
-        if (migratedCount > 0) {
-            await batch.commit();
-        }
-
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'system.migration.payment_status',
-            target: { id: 'all', type: 'payments' },
-            details: `Migration de normalisation effectuée sur ${migratedCount} paiements.`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        return { success: true, migratedCount };
     } catch (e: any) {
         return { success: false, error: e.message };
     }

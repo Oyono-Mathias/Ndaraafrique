@@ -35,17 +35,14 @@ export async function submitCourseForReviewAction({
     if (!courseSnap.exists) return { success: false, error: 'error.course_not_found' };
     const courseData = courseSnap.data() as Course;
     
-    // 🛡️ BAC À SABLE : Seul le propriétaire peut soumettre son œuvre
     if (courseData.instructorId !== instructorId) {
       return { success: false, error: 'error.not_authorized' };
     }
 
-    // On ne peut soumettre que des brouillons ou des cours déjà refusés
     if (courseData.status === 'Published') {
         return { success: false, error: "ALREADY_PUBLISHED" };
     }
 
-    // 1. Récupérer la structure du cours pour l'audit
     const sectionsSnap = await courseRef.collection('sections').get();
     const sections = await Promise.all(sectionsSnap.docs.map(async (s) => {
         const lecturesSnap = await s.ref.collection('lectures').get();
@@ -53,7 +50,6 @@ export async function submitCourseForReviewAction({
     }));
     const contentSummary = sections.join(', ') || "Aucun module créé";
 
-    // 2. Lancer l'Audit Qualité Mathias
     const audit = await auditCourseQuality({
         title: courseData.title,
         description: courseData.description,
@@ -61,7 +57,6 @@ export async function submitCourseForReviewAction({
         contentSummary
     });
 
-    // 🛑 RÈGLE D'OR : On bloque la soumission si le score < 80
     if (!audit.isValid || audit.score < 80) {
         await courseRef.update({
             lastAiAuditScore: audit.score,
@@ -78,7 +73,6 @@ export async function submitCourseForReviewAction({
         };
     }
 
-    // 3. Mise à jour vers 'Pending Review'
     await courseRef.update({
       status: 'Pending Review',
       isAiVerified: true,
@@ -137,7 +131,7 @@ export async function assignInstructorToCourseAction({
 }
 
 /**
- * Sanctionner un instructeur pour violation grave (ex: tentative de rachat de contenu plagié).
+ * Sanctionner un instructeur pour violation grave.
  */
 export async function sanctionInstructorForBuyoutViolation({
     userId,
@@ -270,17 +264,6 @@ export async function purchaseResaleRightsAction({
                 buyoutStatus: 'none',
                 rightsChain: FieldValue.arrayUnion(previousOwner),
                 updatedAt: FieldValue.serverTimestamp(),
-            });
-
-            const historyRef = courseRef.collection('license_history').doc();
-            transaction.set(historyRef, {
-                fromOwnerId: previousOwner,
-                toOwnerId: buyerId,
-                price: price,
-                commission: platformRevenue,
-                netToSeller: instructorRevenue,
-                transactionId: transactionId,
-                timestamp: FieldValue.serverTimestamp()
             });
 
             if (previousOwner !== 'NDARA_OFFICIAL') {
