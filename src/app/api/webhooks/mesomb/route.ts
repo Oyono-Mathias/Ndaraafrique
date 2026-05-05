@@ -5,8 +5,8 @@ import { getMeSombClient } from '@/lib/mesomb';
 
 /**
  * @fileOverview Webhook MeSomb Ultra-Fiabilisé v6.0 (Standard CTO Fintech).
- * ✅ INDÉPENDANCE : Ne dépend plus de l'activation du compte pour l'API Polling.
- * ✅ SÉCURITÉ : Vérification de la provision RÉELLE via un appel SDK explicite.
+ * ✅ SÉCURITÉ : Vérification impérative de la provision RÉELLE via un appel SDK explicite.
+ * ✅ BLOCAGE : Toute transaction non confirmée par MeSomb comme 'SUCCESS' est rejetée.
  */
 
 export async function POST(req: Request) {
@@ -17,7 +17,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log(`[${webhookId}] Payload:`, JSON.stringify(body));
 
-    // MeSomb envoie les données soit dans body.transaction, soit à la racine
     const transaction = body.transaction || body;
     const gatewayId = String(transaction.pk || transaction.id);
     const externalReference = transaction.reference; 
@@ -29,7 +28,7 @@ export async function POST(req: Request) {
     const db = getAdminDb();
     let paymentDoc = null;
 
-    // 1. RECHERCHE DE LA TRANSACTION PAR RÉFÉRENCE (La plus fiable)
+    // 1. RECHERCHE DE LA TRANSACTION DANS FIRESTORE
     if (externalReference) {
         const docRef = db.collection('payments').doc(externalReference);
         const docSnap = await docRef.get();
@@ -38,7 +37,6 @@ export async function POST(req: Request) {
         }
     }
 
-    // 2. FALLBACK : RECHERCHE PAR ID PASSERELLE
     if (!paymentDoc) {
         const snap = await db.collection('payments')
             .where('gatewayTransactionId', '==', gatewayId)
@@ -57,9 +55,8 @@ export async function POST(req: Request) {
 
     const storedData = paymentDoc.data()!;
 
-    // 🛡️ 3. VÉRIFICATION DE PROVISION RÉELLE (POLLING SDK)
-    // On ne croit pas seulement au corps du webhook (facilement falsifiable), 
-    // on interroge MeSomb directement via le SDK.
+    // 🛡️ 2. VÉRIFICATION DE PROVISION RÉELLE (POLLING SDK FORCÉ)
+    // Nous ne croyons pas au corps du webhook. Nous interrogeons MeSomb directement.
     const client = getMeSombClient();
     const tsxList = await client.getTransactions([gatewayId]);
     
@@ -70,14 +67,19 @@ export async function POST(req: Request) {
 
     const realTsx = tsxList[0] as any;
     
+    // 🛑 BLOCAGE SI NON SUCCESS
     if (realTsx.status !== 'SUCCESS') {
-        console.warn(`[${webhookId}] ⚠️ Provision non confirmée chez MeSomb (Status: ${realTsx.status}). Blocage.`);
-        await paymentDoc.ref.update({ status: 'failed', 'metadata.reason': 'Verify fail: not successful' });
+        console.warn(`[${webhookId}] ⚠️ Provision non confirmée (Status: ${realTsx.status}). Blocage du crédit.`);
+        await paymentDoc.ref.update({ 
+            status: 'failed', 
+            'metadata.reason': `MeSomb Status: ${realTsx.status}`,
+            updatedAt: new Date()
+        });
         return NextResponse.json({ status: 'not_confirmed' });
     }
 
-    // ⚙️ 4. DÉCLENCHEMENT DU TRAITEMENT FINANCIER ATOMIQUE
-    console.log(`[${webhookId}] ✅ Provision confirmée. Crédit pour: ${storedData.userId}`);
+    // ⚙️ 3. DÉCLENCHEMENT DU TRAITEMENT FINANCIER ATOMIQUE
+    console.log(`[${webhookId}] ✅ Provision RÉELLE confirmée. Montant: ${realTsx.amount}`);
     
     const result = await processNdaraPayment({
       transactionId: paymentDoc.id,

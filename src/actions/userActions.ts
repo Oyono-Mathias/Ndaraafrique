@@ -3,7 +3,7 @@
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
  * ✅ SÉCURITÉ : Gestion stricte des achats de formation.
- * ✅ INTÉGRITÉ : Verrous anti-doublon et vérification de solde.
+ * ✅ PROVISION : Vérification systématique du solde marchand MeSomb avant injection réelle.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -38,7 +38,6 @@ export async function purchaseCourseWithWalletAction({
     try {
         const db = getAdminDb();
         
-        // 1. Vérification des restrictions de l'utilisateur
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
         if (!userSnap.exists) return { success: false, error: "UTILISATEUR_INTROUVABLE" };
@@ -48,26 +47,22 @@ export async function purchaseCourseWithWalletAction({
             return { success: false, error: "ACHAT_BLOQUÉ: Votre compte fait l'objet de restrictions." };
         }
 
-        // 2. Vérification d'existence du cours
         const courseRef = db.collection('courses').doc(courseId);
         const courseSnap = await courseRef.get();
         if (!courseSnap.exists) return { success: false, error: "COURS_NON_TROUVÉ" };
         const courseData = courseSnap.data();
 
-        // 3. Vérification de doublon (Déjà acheté ?)
         const enrollmentId = `${userId}_${courseId}`;
         const enrollmentSnap = await db.collection('enrollments').doc(enrollmentId).get();
         if (enrollmentSnap.exists && enrollmentSnap.data()?.status === 'active') {
             return { success: false, error: "DÉJÀ_POSSÉDÉ" };
         }
 
-        // 4. Vérification du solde utilisateur
         const currentBalance = userData.balance || 0;
         if (currentBalance < amount) {
             return { success: false, error: "SOLDE_INSUFFISANT" };
         }
 
-        // 5. Appel du processeur financier pour l'exécution atomique
         const result = await processNdaraPayment({
             transactionId: `WAL-PUR-${Date.now()}-${userId.substring(0,5)}`,
             provider: 'wallet',
@@ -100,7 +95,8 @@ export async function purchaseCourseWithWalletAction({
 
 /** 
  * 💰 RECHARGER LE WALLET (Action Admin Sécurisée)
- * ✅ PROVISION : Vérifie le solde marchand MeSomb réel si pas une simulation.
+ * ✅ BLOQUAGE : Vérifie impérativement le solde marchand MeSomb réel si pas une simulation.
+ * ✅ SÉCURITÉ : Empêche la création d'argent fictif en mode production.
  */
 export async function rechargeUserWallet({ 
     userId, 
@@ -121,17 +117,17 @@ export async function rechargeUserWallet({
         if (amount <= 0) return { success: false, error: "error.amount_positive" };
 
         // 🛡️ VÉRIFICATION DE PROVISION RÉELLE (MeSomb)
+        // Toute recharge "Production" doit être couverte par du cash réel chez MeSomb.
         if (!isSimulated) {
             const meSombBalance = await getMeSombBalanceAction(adminId);
             if (!meSombBalance.success) {
                 return { success: false, error: "Impossible de vérifier la provision MeSomb." };
             }
             
-            // ✅ Fix Vercel Build: Explicit check for balance existence
             if (meSombBalance.balance !== undefined && meSombBalance.balance < amount) {
                 return { 
                     success: false, 
-                    error: `SOLDE_MARCHAND_INSUFFISANT: Votre solde MeSomb (${meSombBalance.balance} ${meSombBalance.currency}) est trop bas pour couvrir cette injection réelle de ${amount} XOF.` 
+                    error: `SOLDE_MARCHAND_INSUFFISANT: Votre solde MeSomb (${meSombBalance.balance} ${meSombBalance.currency}) est trop bas pour couvrir cette injection réelle de ${amount} XOF. Provisionnez d'abord votre compte MeSomb.` 
                 };
             }
         }
@@ -303,10 +299,12 @@ export async function grantCourseAccess({
         }
 
         const enrollmentData = {
+            id: `${studentId}_${courseId}`,
             studentId,
             courseId,
             instructorId: courseDoc.data()?.instructorId || '',
             status: 'active',
+            accessStatus: 'active',
             progress: 0,
             enrollmentDate: FieldValue.serverTimestamp(),
             lastAccessedAt: FieldValue.serverTimestamp(),

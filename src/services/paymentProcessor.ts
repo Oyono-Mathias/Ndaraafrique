@@ -5,8 +5,9 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { NdaraPaymentDetails, Course, NdaraUser, NdaraTransaction, NdaraEarning, AffiliateTransaction } from '@/lib/types';
 
 /**
- * ✅ PROCESSEUR FINANCIER ÉLITE v7.0 - Infrastructure Step 2
+ * ✅ PROCESSEUR FINANCIER ÉLITE v7.0 (Source de Vérité)
  * Gère l'intégrité, l'idempotence et le MOTEUR DE PARRAINAGE avec ANTI-FRAUDE.
+ * Seul point d'entrée pour la modification des soldes réels.
  */
 export async function processNdaraPayment(details: NdaraPaymentDetails) {
   const { transactionId, gatewayTransactionId, provider, amount, currency, metadata } = details;
@@ -23,9 +24,10 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       const activityRef = userRef.collection('activity').doc();
 
       // 1. VÉRIFICATION IDEMPOTENCE (Audit Gateway)
+      // Empêche de créditer deux fois si le webhook est renvoyé.
       const paymentSnap = await transaction.get(paymentRef);
       if (paymentSnap.exists && paymentSnap.data()?.status === 'completed') {
-        console.log(`[PaymentProcessor] Transaction ${transactionId} déjà traitée.`);
+        console.log(`[PaymentProcessor] Transaction ${transactionId} déjà finalisée. Ignoré.`);
         return { success: true, alreadyProcessed: true };
       }
 
@@ -68,7 +70,7 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       };
       transaction.set(paymentRef, paymentData, { merge: true });
 
-      // 📊 CRÉATION DU LOG COMPTABLE (Transactions) - Pour le client (Audit Acheteur)
+      // 📊 CRÉATION DU LOG COMPTABLE (Transactions)
       const buyerTransactionRef = db.collection('transactions').doc();
       const buyerTransaction: NdaraTransaction = {
         id: buyerTransactionRef.id,
@@ -103,21 +105,22 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             const courseData = courseSnap.data() as Course;
             instructorId = courseData.instructorId || instructorId;
             courseTitle = courseData.title || courseTitle;
-            
             transaction.update(courseRef, { participantsCount: FieldValue.increment(1) });
         }
 
-        // CRÉATION DE L'ACCÈS
+        // CRÉATION DE L'ACCÈS (SOURCE DE VÉRITÉ)
         transaction.set(enrollmentRef, {
             id: enrollmentId,
             studentId: metadata.userId,
             courseId: metadata.courseId,
             instructorId: instructorId,
             status: 'active',
+            accessStatus: 'active',
             progress: 0,
             enrollmentDate: now,
             lastAccessedAt: now,
-            priceAtEnrollment: Number(amount)
+            priceAtEnrollment: Number(amount),
+            paymentId: String(transactionId) // 💰 Preuve financière liée
         }, { merge: true });
 
         // 👥 MOTEUR DE PARRAINAGE : Reward the Referrer
@@ -125,10 +128,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             const referrerId = userData.referredBy;
             const referrerRef = db.collection('users').doc(referrerId);
             
-            // 🛡️ ANTI-FRAUDE : On ne reward que si le parrain est actif
             const referrerSnap = await transaction.get(referrerRef);
             if (referrerSnap.exists && referrerSnap.data()?.status === 'active') {
-                const commissionRate = 0.10; // 10% par défaut
+                const commissionRate = 0.10; 
                 const commissionAmount = Number(amount) * commissionRate;
 
                 if (commissionAmount > 0) {
@@ -139,10 +141,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                         'affiliateStats.sales': FieldValue.increment(1)
                     });
 
-                    // Log de la transaction d'affiliation
                     const affRef = db.collection('affiliate_transactions').doc();
                     const unlockDate = new Date();
-                    unlockDate.setDate(unlockDate.getDate() + 14); // 14 jours de gel
+                    unlockDate.setDate(unlockDate.getDate() + 14);
 
                     const affTransaction: AffiliateTransaction = {
                         id: affRef.id,
@@ -153,36 +154,21 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
                         courseTitle: courseTitle,
                         amount: Number(amount),
                         commissionAmount: commissionAmount,
-                        status: 'pending', // Attente libération par Cron
+                        status: 'pending',
                         createdAt: now,
                         unlockDate: Timestamp.fromDate(unlockDate)
                     };
                     transaction.set(affRef, affTransaction);
-
-                    // Notification d'activité pour le parrain
-                    const referrerActivityRef = referrerRef.collection('activity').doc();
-                    transaction.set(referrerActivityRef, {
-                        userId: referrerId,
-                        type: 'payment',
-                        title: 'Nouvelle commission !',
-                        description: `Gains en attente pour la vente de : ${courseTitle}`,
-                        read: false,
-                        createdAt: now
-                    });
                 }
             }
         }
 
-        // 💰 VENTILATION DES REVENUS (Earnings & Commission Formateur)
+        // 💰 VENTILATION DES REVENUS
         if (instructorId !== 'NDARA_OFFICIAL') {
             const instructorRef = db.collection('users').doc(instructorId);
-            const instructorShare = Number(amount) * 0.7; // Standard 70%
-            const platformCommission = Number(amount) * 0.3; // Standard 30%
-
-            // 1. Crédit balance formateur
+            const instructorShare = Number(amount) * 0.7; 
             transaction.update(instructorRef, { balance: FieldValue.increment(instructorShare) });
 
-            // 2. Log Earning formateur
             const earningRef = db.collection('earnings').doc();
             const earning: NdaraEarning = {
                 id: earningRef.id,
@@ -195,7 +181,6 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
             transaction.set(earningRef, earning);
         }
 
-        // Notification d'activité pour l'acheteur
         transaction.set(activityRef, {
             userId: metadata.userId,
             type: 'enrollment',
@@ -211,8 +196,9 @@ export async function processNdaraPayment(details: NdaraPaymentDetails) {
       // 💰 CAS : RECHARGE DU WALLET (Fulfillment)
       // =========================================================
       else if (isTopupOrDeposit && provider !== 'wallet') {
+        const targetField = metadata.isSimulated ? 'virtualBalance' : 'balance';
         transaction.update(userRef, {
-          balance: FieldValue.increment(Number(amount)),
+          [targetField]: FieldValue.increment(Number(amount)),
           updatedAt: now
         });
         
