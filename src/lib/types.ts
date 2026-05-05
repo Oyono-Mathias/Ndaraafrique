@@ -1,4 +1,4 @@
-import type { Timestamp, FieldValue } from "firebase-admin/firestore";
+import type { Timestamp, FieldValue } from "firebase/firestore";
 
 /**
  * @fileOverview SOURCE DE VÉRITÉ UNIQUE - NDARA AFRIQUE v2.5
@@ -7,7 +7,7 @@ import type { Timestamp, FieldValue } from "firebase-admin/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
-export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated' | 'withdrawal';
+export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated' | 'withdrawal' | 'moov' | 'mpesa';
 
 export type StorageProvider = 'r2' | 'bunny' | 'firebase';
 
@@ -109,6 +109,27 @@ export interface NdaraUser {
   };
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  logo: string;
+  provider: PaymentProvider;
+  active: boolean;
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  currency: string;
+  prefix: string;
+  flagEmoji: string;
+  active: boolean;
+  paymentMethods: PaymentMethod[];
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
 export interface Settings {
   general: {
     siteName: string;
@@ -189,6 +210,19 @@ export interface Settings {
     landingPage?: any;
     aboutPage?: any;
   };
+  platform?: {
+    maintenanceMode?: boolean;
+    allowInstructorSignup?: boolean;
+    allowYoutube?: boolean;
+    allowBunny?: boolean;
+    announcementMessage?: string;
+  };
+}
+
+export interface DesignSettings {
+    primaryColor: string;
+    borderRadius: 'none' | 'md' | 'lg' | 'xl';
+    fontScale: 'small' | 'medium' | 'large';
 }
 
 export interface Course {
@@ -203,11 +237,16 @@ export interface Course {
   rating?: number;
   participantsCount?: number;
   createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
   resaleRightsAvailable?: boolean;
   resaleRightsPrice?: number;
   buyoutStatus?: 'none' | 'requested' | 'approved';
   buyoutPrice?: number;
   isPlatformOwned?: boolean;
+  isAiVerified?: boolean;
+  lastAiAuditScore?: number;
+  moderationFeedback?: string;
+  learningObjectives?: string[];
 }
 
 export interface Section {
@@ -243,6 +282,9 @@ export interface Enrollment {
   priceAtEnrollment?: number;
   paymentId?: string;
   revocationReason?: string;
+  grantReason?: string;
+  grantedBy?: string;
+  expiresAt?: Timestamp | Date | null;
 }
 
 export interface CourseProgress {
@@ -270,7 +312,18 @@ export interface Payment {
   type: 'wallet_topup' | 'course_purchase' | 'payout' | 'license_purchase';
   isSimulated: boolean;
   date: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+  createdAt?: Timestamp | FieldValue | Date;
+  externalReference?: string;
+  gatewayTransactionId?: string;
+  manualValidationBy?: string;
   metadata?: any;
+  fraudReview?: {
+      isSuspicious: boolean;
+      riskScore: number;
+      reason: string;
+      reviewed: boolean;
+  };
 }
 
 export interface PayoutRequest {
@@ -280,6 +333,12 @@ export interface PayoutRequest {
   method: string;
   status: 'pending' | 'approved' | 'paid' | 'rejected';
   createdAt: Timestamp | FieldValue | Date;
+  processedAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Payout extends PayoutRequest {
+    date: Timestamp | FieldValue | Date;
 }
 
 export interface AffiliateTransaction {
@@ -321,4 +380,188 @@ export interface Message {
   text: string;
   createdAt: Timestamp | FieldValue | Date;
   status?: 'sent' | 'delivered' | 'read';
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  courseId: string;
+  sectionId: string;
+  instructorId: string;
+  questionsCount: number;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  order: number;
+  options: {
+    text: string;
+    isCorrect: boolean;
+  }[];
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Assignment {
+    id: string;
+    title: string;
+    description?: string;
+    correctionGuide?: string;
+    courseId: string;
+    courseTitle?: string;
+    sectionId: string;
+    instructorId?: string;
+    dueDate?: Timestamp | FieldValue | Date;
+    attachments?: { name: string; url: string }[];
+    createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface AssignmentSubmission {
+    id: string;
+    studentId: string;
+    studentName: string;
+    studentAvatarUrl?: string;
+    instructorId: string;
+    courseId: string;
+    courseTitle: string;
+    assignmentId: string;
+    assignmentTitle: string;
+    submissionContent?: string;
+    submissionUrl?: string;
+    grade?: number;
+    feedback?: string;
+    status: 'submitted' | 'graded';
+    submittedAt: Timestamp | FieldValue | Date;
+    gradedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Review {
+    id: string;
+    courseId: string;
+    studentId: string;
+    instructorId: string;
+    rating: number;
+    comment: string;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface Coupon {
+    id: string;
+    code: string;
+    courseId: string;
+    courseTitle: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    maxUses: number;
+    usedCount: number;
+    instructorId: string;
+    expiresAt: Timestamp | FieldValue | Date;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface TrackingEvent {
+    id: string;
+    eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
+    sessionId: string;
+    pageUrl: string;
+    metadata?: any;
+    timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface PushCampaign {
+    id: string;
+    message: string;
+    target: 'all' | 'instructors' | 'students';
+    status: 'sent' | 'scheduled';
+    scheduledFor?: Timestamp | FieldValue | Date;
+    sentAt?: Timestamp | FieldValue | Date;
+    stats?: {
+        delivered: number;
+        clicked: number;
+    };
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface SecurityLog {
+    id: string;
+    eventType: string;
+    userId?: string;
+    targetId: string;
+    details: string;
+    status: 'open' | 'resolved';
+    timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface NdaraPaymentDetails {
+    transactionId: string | number;
+    gatewayTransactionId?: string;
+    provider: PaymentProvider;
+    amount: number;
+    currency?: string;
+    metadata: {
+        userId: string;
+        courseId?: string;
+        courseTitle?: string;
+        type?: 'wallet_topup' | 'course_purchase' | 'license_purchase' | 'deposit';
+        isSimulated?: boolean;
+        [key: string]: any;
+    };
+}
+
+export interface NdaraTransaction {
+    id: string;
+    userId: string;
+    type: 'deposit' | 'purchase' | 'payout' | 'affiliate_commission';
+    amount: number;
+    status: 'success' | 'failed' | 'pending';
+    meta?: any;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface NdaraEarning {
+    id: string;
+    userId: string;
+    type: 'course_sale' | 'license_sale' | 'affiliate_commission';
+    amount: number;
+    sourceId: string;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface UserActivity {
+    id: string;
+    userId: string;
+    type: 'enrollment' | 'certificate' | 'review' | 'assignment' | 'payment';
+    title: string;
+    description?: string;
+    link?: string;
+    read: boolean;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface RecommendedCourseItem {
+    courseId: string;
+    title: string;
+    coverImage: string;
+    instructorId: string;
+    price: number;
+    score: number;
+}
+
+export interface UserRecommendations {
+    userId: string;
+    courses: RecommendedCourseItem[];
+    updatedAt: Timestamp | FieldValue | Date;
+}
+
+export interface InvestorLead {
+    id: string;
+    fullName: string;
+    email: string;
+    organization?: string;
+    message?: string;
+    status: 'new' | 'contacted' | 'interested';
+    createdAt: Timestamp | FieldValue | Date;
 }
