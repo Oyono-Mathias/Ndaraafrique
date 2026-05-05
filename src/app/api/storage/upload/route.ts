@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import * as admin from 'firebase-admin';
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_DOMAIN } from "@/lib/r2";
 
 /**
  * @fileOverview Route API pour téléverser vers une architecture hybride.
  * ✅ FIREBASE : Pour les avatars et documents personnels (Sécurité).
- * ✅ BUNNY : Pour les contenus de cours et ressources (Performance).
+ * ✅ CLOUDFLARE R2 : Pour les contenus lourds et assets (Performance & Pas de frais d'egress).
  */
-
-const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-assets";
-const STORAGE_PASSWORD = process.env.BUNNY_STORAGE_PASSWORD;
-const PULL_ZONE_URL = process.env.BUNNY_PULL_ZONE_URL || "https://ndara-assets.b-cdn.net";
 
 export async function POST(req: Request) {
   try {
@@ -50,7 +48,6 @@ export async function POST(req: Request) {
     const useFirebase = folder === 'avatars' || folder === 'identity';
 
     if (useFirebase) {
-        console.log(`[Storage] Redirection vers Firebase Storage pour dossier: ${folder}`);
         const bucket = admin.storage().bucket();
         const firebasePath = `${folder}/${userId}/${safeFileName}`;
         const firebaseFile = bucket.file(firebasePath);
@@ -62,7 +59,6 @@ export async function POST(req: Request) {
             }
         });
 
-        // Rendre le fichier accessible publiquement (ou utiliser des Signed URLs selon besoin)
         await firebaseFile.makePublic();
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${firebasePath}`;
 
@@ -73,33 +69,34 @@ export async function POST(req: Request) {
         });
     }
 
-    // ⚡ FALLBACK / DEFAULT : Bunny CDN pour le reste
-    if (!STORAGE_PASSWORD) {
-        return NextResponse.json({ error: "Stockage Bunny non configuré." }, { status: 500 });
+    // ⚡ NOUVEAU : Cloudflare R2 pour les contenus lourds (Courses, Lectures, Assets)
+    const r2Path = `${folder}/${userId}/${safeFileName}`;
+    
+    try {
+        const command = new PutObjectCommand({
+            Bucket: R2_BUCKET_NAME,
+            Key: r2Path,
+            Body: fileBuffer,
+            ContentType: file.type,
+        });
+
+        await r2Client.send(command);
+
+        // URL publique via domaine personnalisé R2 (si configuré)
+        const publicUrl = R2_PUBLIC_DOMAIN 
+            ? `https://${R2_PUBLIC_DOMAIN}/${r2Path}`
+            : `https://${R2_BUCKET_NAME}.r2.cloudflarestorage.com/${r2Path}`;
+
+        return NextResponse.json({ 
+            success: true, 
+            url: publicUrl,
+            fileName: safeFileName,
+            provider: 'r2'
+        });
+    } catch (r2Error: any) {
+        console.error("R2_UPLOAD_ERROR:", r2Error.message);
+        return NextResponse.json({ error: "Échec du téléversement vers Cloudflare R2." }, { status: 500 });
     }
-
-    const bunnyPath = `${folder}/${userId}/${safeFileName}`;
-    const uploadUrl = `https://storage.bunnycdn.com/${STORAGE_ZONE_NAME}/${bunnyPath}`;
-
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'AccessKey': STORAGE_PASSWORD,
-        'Content-Type': 'application/octet-stream',
-      },
-      body: fileBuffer,
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: `Erreur CDN Bunny (${response.status}).` }, { status: response.status });
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      url: `${PULL_ZONE_URL}/${bunnyPath}`,
-      fileName: safeFileName,
-      provider: 'bunny'
-    });
 
   } catch (error: any) {
     console.error("API_STORAGE_FATAL:", error.message);

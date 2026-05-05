@@ -13,7 +13,7 @@ interface NdaraImageProps extends Omit<ImageProps, 'src'> {
 
 /**
  * @fileOverview Composant Image Intelligent pour Ndara Afrique.
- * ✅ RÉSILIENCE : Si la source principale (ex: Bunny) échoue, tente le fallback (ex: Firebase).
+ * ✅ RÉSILIENCE : Si la source principale (Cloudflare R2) échoue, tente le fallback (Bunny ou Firebase).
  * ✅ PLACEHOLDER : Affiche une icône élégante en cas d'échec total.
  */
 export function NdaraImage({ 
@@ -35,12 +35,13 @@ export function NdaraImage({
   }, [src]);
 
   const handleError = () => {
+    // Si la source R2 échoue, on tente le fallback configuré (ex: Bunny)
     if (retryCount === 0 && fallbackSrc) {
-        console.warn(`[NdaraImage] Échec chargement source principale. Tentative fallback...`);
+        console.warn(`[NdaraImage] Échec R2. Basculement sur stockage secondaire...`);
         setCurrentSrc(fallbackSrc);
         setRetryCount(1);
     } else {
-        console.error(`[NdaraImage] Échec total du chargement d'image.`);
+        console.error(`[NdaraImage] Échec critique du chargement d'image.`);
         setIsError(true);
     }
   };
@@ -64,7 +65,7 @@ export function NdaraImage({
             alt={alt || "Ndara Image"}
             className={cn("transition-opacity duration-500", className)}
             onError={handleError}
-            unoptimized={currentSrc.includes('storage.googleapis.com')} // Firebase ne supporte pas toujours bien l'optimizer Next sans config spécifique
+            unoptimized={currentSrc.includes('r2.cloudflarestorage.com') || currentSrc.includes('storage.googleapis.com')}
         />
     </div>
   );
