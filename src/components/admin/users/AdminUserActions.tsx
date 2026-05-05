@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Menu d'actions administrateur UNIFIÉ v2.5.
- * Regroupe l'intégralité des pouvoirs de souveraineté Ndara Afrique.
+ * ✅ FUSION TOTALE : Regroupe les 15 fonctions de souveraineté.
+ * ✅ STRUCTURE : Organisé par segments (Informations, Finances, Formation, etc.).
  */
 
 import React, { useState } from 'react';
@@ -25,7 +26,8 @@ import {
     Unlock,
     History,
     HandCoins,
-    UserPlus
+    UserPlus,
+    BookOpen
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,6 +50,7 @@ import { ChangeRoleModal } from './ChangeRoleModal';
 import { RestrictionsModal } from './RestrictionsModal';
 import { startChat } from '@/lib/chat';
 import { useRole } from '@/context/RoleContext';
+import { useLocale } from 'next-intl';
 
 interface AdminUserActionsProps {
     user: NdaraUser;
@@ -55,7 +58,10 @@ interface AdminUserActionsProps {
 
 export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
     const router = useRouter();
+    const locale = useLocale();
     const { currentUser: adminUser } = useRole();
+    
+    // États pour le pilotage des modals
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
     const closeModals = () => setActiveModal(null);
@@ -64,58 +70,58 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         if (!adminUser) return;
         try {
             const chatId = await startChat(adminUser.uid, targetUser.uid);
-            router.push(`/admin/messages?chatId=${chatId}`);
+            router.push(`/${locale}/admin/messages?chatId=${chatId}`);
         } catch (e) {
             console.error("Chat init failed", e);
         }
     };
 
-    // 🏗️ STRUCTURE DU MENU SOUVERAIN (Array Unifié)
+    // 🏗️ TABLEAU MAÎTRE DES ACTIONS (Fusion Ancien + Nouveau)
     const menuSections = [
         {
-            title: "Informations",
+            title: "INFORMATIONS",
             items: [
-                { label: "Détails & Soldes", icon: Eye, onClick: () => setActiveModal('details'), color: 'text-slate-200' },
-                { label: "Voir profil public", icon: User, onClick: () => router.push(`/instructor/${targetUser.uid}`) },
-                { label: "Logs sécurité", icon: History, onClick: () => router.push(`/admin/logs?search=${targetUser.uid}`) },
+                { label: "Détails & Soldes", icon: Eye, onClick: () => setActiveModal('details') },
+                { label: "Voir profil public", icon: User, onClick: () => router.push(`/${locale}/instructor/${targetUser.uid}`) },
+                { label: "Logs sécurité", icon: History, onClick: () => router.push(`/${locale}/admin/logs?search=${targetUser.uid}`) },
             ]
         },
         {
-            title: "Communication",
+            title: "COMMUNICATION",
             items: [
                 { label: "Envoyer message", icon: MessageSquare, onClick: handleStartChat, color: 'text-blue-400' },
             ]
         },
         {
-            title: "Finances",
+            title: "FINANCES",
             items: [
-                { label: "Recharger Wallet", icon: Wallet, onClick: () => setActiveModal('recharge'), color: 'text-primary' },
+                { label: "Recharger Wallet", icon: Wallet, onClick: () => setActiveModal('recharge'), color: 'text-emerald-500' },
                 { label: "Débiter Wallet", icon: HandCoins, onClick: () => setActiveModal('debit'), color: 'text-amber-500' },
-                { label: "Historique paiements", icon: History, onClick: () => router.push(`/admin/payments?uid=${targetUser.uid}`) },
+                { label: "Historique paiements", icon: History, onClick: () => router.push(`/${locale}/admin/payments?search=${targetUser.uid}`) },
             ]
         },
         {
-            title: "Formation",
+            title: "FORMATION",
             items: [
                 { label: "Offrir un cours", icon: Gift, onClick: () => setActiveModal('grant'), color: 'text-blue-400' },
-                { label: "Gérer les accès", icon: ShieldCheck, onClick: () => setActiveModal('manage_access'), color: 'text-primary' },
+                { label: "Gérer l'accès aux formations", icon: BookOpen, onClick: () => setActiveModal('manage_access'), color: 'text-primary' },
             ]
         },
         {
-            title: "Rôles",
+            title: "RÔLES",
             items: [
                 { label: "Changer rôle", icon: UserCog, onClick: () => setActiveModal('role_change') },
                 { label: "Passer expert", icon: UserPlus, onClick: () => setActiveModal('role_change'), color: 'text-primary' },
             ]
         },
         {
-            title: "Profil",
+            title: "PROFIL",
             items: [
                 { label: "Modifier le profil", icon: Edit, onClick: () => setActiveModal('edit_account'), color: 'text-amber-500' },
             ]
         },
         {
-            title: "Restrictions",
+            title: "RESTRICTIONS",
             items: [
                 { label: "Restreindre", icon: ShieldAlert, onClick: () => setActiveModal('restrictions'), color: 'text-orange-500' },
                 { label: "Lever restrictions", icon: Unlock, onClick: () => setActiveModal('restrictions'), color: 'text-emerald-500' },
@@ -154,14 +160,49 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* --- MODALS DE SOUVERAINETÉ --- */}
-            <UserDetailsModal isOpen={activeModal === 'details'} onOpenChange={closeModals} user={targetUser} />
-            <EditAccountModal isOpen={activeModal === 'edit_account'} onOpenChange={closeModals} user={targetUser} />
-            <AccessManagerModal isOpen={activeModal === 'manage_access'} onOpenChange={closeModals} user={targetUser} />
-            <GrantCourseModal isOpen={activeModal === 'grant'} onOpenChange={closeModals} targetUser={targetUser} />
-            <RechargeWalletModal isOpen={activeModal === 'recharge' || activeModal === 'debit'} onOpenChange={closeModals} user={targetUser} mode={activeModal === 'debit' ? 'debit' : 'recharge'} />
-            <ChangeRoleModal isOpen={activeModal === 'role_change'} onOpenChange={closeModals} user={targetUser} />
-            <RestrictionsModal isOpen={activeModal === 'restrictions'} onOpenChange={closeModals} user={targetUser} />
+            {/* --- MODALS DE GESTION (Toujours montés pour la réactivité) --- */}
+            <UserDetailsModal 
+                isOpen={activeModal === 'details'} 
+                onOpenChange={closeModals} 
+                user={targetUser} 
+            />
+            
+            <EditAccountModal 
+                isOpen={activeModal === 'edit_account'} 
+                onOpenChange={closeModals} 
+                user={targetUser} 
+            />
+            
+            <AccessManagerModal 
+                isOpen={activeModal === 'manage_access'} 
+                onOpenChange={closeModals} 
+                user={targetUser} 
+            />
+            
+            <GrantCourseModal 
+                isOpen={activeModal === 'grant'} 
+                onOpenChange={closeModals} 
+                targetUser={targetUser} 
+            />
+            
+            <RechargeWalletModal 
+                isOpen={activeModal === 'recharge' || activeModal === 'debit'} 
+                onOpenChange={closeModals} 
+                user={targetUser} 
+                mode={activeModal === 'debit' ? 'debit' : 'recharge'} 
+            />
+            
+            <ChangeRoleModal 
+                isOpen={activeModal === 'role_change'} 
+                onOpenChange={closeModals} 
+                user={targetUser} 
+            />
+            
+            <RestrictionsModal 
+                isOpen={activeModal === 'restrictions'} 
+                onOpenChange={closeModals} 
+                user={targetUser} 
+            />
         </>
     );
 }
