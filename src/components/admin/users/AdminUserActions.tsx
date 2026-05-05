@@ -5,32 +5,19 @@
  * ✅ DESIGN : Fintech Dark Android-First.
  */
 
-import React, { useState, useTransition } from 'react';
-import { useRole } from '@/context/RoleContext';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
     User, 
-    Send,
-    Wallet, 
     ShieldCheck, 
     Lock, 
-    Unlock,
-    ShieldAlert, 
     Trash2, 
     MoreVertical,
-    ArrowUpRight,
-    ArrowDownRight,
-    Ban,
-    UserCheck,
-    Key,
-    LifeBuoy,
-    CheckCircle2,
-    Loader2,
-    Gift,
+    Wallet,
     BadgeEuro,
     Eye,
-    Edit
+    Edit,
+    Gift
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,14 +29,7 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { NdaraUser, UserRole } from '@/lib/types';
-import { 
-    toggleUserStatusAction,
-    changeUserRoleAction,
-    removeUserRestrictionsAction,
-    resetUserPasswordAction,
-    hardDeleteUserAction
-} from '@/actions/adminActions';
+import type { NdaraUser } from '@/lib/types';
 import { GrantCourseModal } from './GrantCourseModal';
 import { UserDetailsModal } from './UserDetailsModal';
 import { EditAccountModal } from './EditAccountModal';
@@ -60,12 +40,7 @@ interface AdminUserActionsProps {
 }
 
 export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
-    const { currentUser: admin } = useRole();
-    const { toast } = useToast();
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
-
-    // Modals states
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
     const closeModals = () => setActiveModal(null);
@@ -96,8 +71,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         {
             title: "Sécurité",
             items: [
-                { label: targetUser.status === 'active' ? "Suspendre compte" : "Réactiver compte", icon: Lock, onClick: () => setActiveModal('status'), color: targetUser.status === 'active' ? 'text-red-500' : 'text-emerald-500' },
-                { label: "Zone de Danger", icon: Trash2, onClick: () => setActiveModal('delete'), color: 'text-red-500' },
+                { label: targetUser.status === 'active' ? "Suspendre compte" : "Réactiver compte", icon: Lock, onClick: () => router.push(`/admin/logs?uid=${targetUser.uid}`), color: targetUser.status === 'active' ? 'text-red-500' : 'text-emerald-500' },
             ]
         }
     ];

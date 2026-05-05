@@ -5,7 +5,7 @@
  * ✅ SÉCURITÉ : Double validation pour le changement d'email.
  */
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,9 +49,9 @@ export function EditAccountModal({ isOpen, onOpenChange, user }: { isOpen: boole
     const form = useForm<z.infer<typeof editSchema>>({
         resolver: zodResolver(editSchema),
         defaultValues: {
-            fullName: user.fullName,
-            username: user.username,
-            email: user.email,
+            fullName: user.fullName || '',
+            username: user.username || '',
+            email: user.email || '',
             password: '',
         }
     });
@@ -89,7 +89,7 @@ export function EditAccountModal({ isOpen, onOpenChange, user }: { isOpen: boole
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 space-y-6">
-                        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3 mb-2">
+                        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3">
                             <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-[10px] font-bold text-amber-200/80 uppercase leading-relaxed">
                                 Action critique : La modification de l'email impacte immédiatement la connexion de l'utilisateur.

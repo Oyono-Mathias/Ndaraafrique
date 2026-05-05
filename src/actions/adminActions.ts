@@ -2,10 +2,10 @@
 
 /**
  * @fileOverview Actions administratives hautement sécurisées pour Ndara Afrique.
- * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur via Firestore.
+ * ✅ SÉCURITÉ : Vérification systématique du rôle Admin côté serveur.
  * ✅ TRANSACTIONNEL : Utilisation de db.runTransaction pour les flux financiers.
  * ✅ VERSIONNING : previousState dans les logs pour support rollback.
- * ✅ SUPER ADMIN : Récision des actions critiques à MasterAdmin.
+ * ✅ SUPER ADMIN : Restriction des actions critiques à MasterAdmin.
  */
 
 import { getAdminDb, getAdminAuth } from '@/firebase/admin';
@@ -45,11 +45,9 @@ export async function rechargeUserWalletAction({
     targetUserId: string;
     amount: number;
     reason: string;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
     try {
         await verifyAdminOrThrow(adminId);
-        if (amount <= 0) throw new Error("Le montant doit être positif.");
-
         const db = getAdminDb();
         
         await db.runTransaction(async (transaction) => {
@@ -64,8 +62,7 @@ export async function rechargeUserWalletAction({
                 updatedAt: FieldValue.serverTimestamp()
             });
 
-            const auditRef = db.collection('admin_audit_logs').doc();
-            transaction.set(auditRef, {
+            transaction.set(db.collection('admin_audit_logs').doc(), {
                 adminId,
                 eventType: 'user.wallet.recharge',
                 target: { id: targetUserId, type: 'user' },
@@ -90,7 +87,7 @@ export async function updateUserIdentityAction({
     adminId: string;
     targetUserId: string;
     data: { email?: string; fullName?: string; username?: string; password?: string };
-}): Promise<{ success: boolean; error?: string }> {
+}) {
     try {
         await verifyAdminOrThrow(adminId, true); // Super Admin uniquement
         
@@ -106,14 +103,14 @@ export async function updateUserIdentityAction({
         // 1. Mise à jour Firebase Auth
         if (data.email || data.password) {
             await auth.updateUser(targetUserId, {
-                email: data.email,
-                password: data.password,
+                email: data.email || undefined,
+                password: data.password || undefined,
                 displayName: data.fullName
             });
         }
 
         // 2. Mise à jour Firestore
-        const { password, ...firestoreData } = data; // Ne jamais stocker le password en clair
+        const { password, ...firestoreData } = data;
         await userRef.update({
             ...firestoreData,
             updatedAt: FieldValue.serverTimestamp()
@@ -136,7 +133,7 @@ export async function updateUserIdentityAction({
     }
 }
 
-/** 🔒 3. Révoquer l'accès à une formation (Source de Vérité) */
+/** 🔒 3. Gérer la révocation d'accès et les remboursements (Source de Vérité) */
 export async function manageAccessRevocationAction({
     adminId,
     targetUserId,
@@ -149,7 +146,7 @@ export async function manageAccessRevocationAction({
     courseId: string;
     reason: 'refund' | 'abuse' | 'admin_error';
     refund?: boolean;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
     try {
         await verifyAdminOrThrow(adminId);
         const db = getAdminDb();
@@ -172,7 +169,7 @@ export async function manageAccessRevocationAction({
                 updatedAt: FieldValue.serverTimestamp()
             });
 
-            // 2. Gestion financière (Optionnel)
+            // 2. Gestion financière (Si remboursement demandé)
             if (refund && price > 0) {
                 const userRef = db.collection('users').doc(targetUserId);
                 transaction.update(userRef, {
@@ -180,7 +177,6 @@ export async function manageAccessRevocationAction({
                     updatedAt: FieldValue.serverTimestamp()
                 });
 
-                // On marque le paiement d'origine comme remboursé si possible
                 if (enrollData.paymentId) {
                     transaction.update(db.collection('payments').doc(enrollData.paymentId), {
                         status: 'refunded',
@@ -189,13 +185,12 @@ export async function manageAccessRevocationAction({
                 }
             }
 
-            // 3. Log d'audit
-            const auditRef = db.collection('admin_audit_logs').doc();
-            transaction.set(auditRef, {
+            // 3. Log d'audit avec previousState
+            transaction.set(db.collection('admin_audit_logs').doc(), {
                 adminId,
                 eventType: 'user.access.revoked',
                 target: { id: enrollmentId, type: 'enrollment' },
-                details: `Révocation de "${enrollData.courseTitle}". Raison: ${reason}. Remboursé: ${refund}`,
+                details: `Révocation de "${enrollData.courseTitle || courseId}". Raison: ${reason}. Remboursé: ${refund}`,
                 previousState: { accessStatus: 'active', status: enrollData.status },
                 timestamp: FieldValue.serverTimestamp()
             });
@@ -219,11 +214,10 @@ export async function toggleUserStatusAction({
     targetUserId: string;
     status: 'active' | 'suspended';
     reason: string;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
     try {
         await verifyAdminOrThrow(adminId);
         const db = getAdminDb();
-        
         const userRef = db.collection('users').doc(targetUserId);
         const oldSnap = await userRef.get();
 
@@ -261,7 +255,7 @@ export async function changeUserRoleAction({
     adminId: string;
     targetUserId: string;
     newRole: UserRole;
-}): Promise<{ success: boolean; error?: string }> {
+}) {
     try {
         await verifyAdminOrThrow(adminId, true);
         const db = getAdminDb();
@@ -279,48 +273,6 @@ export async function changeUserRoleAction({
             target: { id: targetUserId, type: 'user' },
             details: `Rôle modifié vers '${newRole}'.`,
             previousState: { role: oldSnap.data()?.role },
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/** 🗑️ 6. Suppression définitive (Action Super Admin) */
-export async function hardDeleteUserAction({
-    adminId,
-    targetUserId,
-    confirmation
-}: {
-    adminId: string;
-    targetUserId: string;
-    confirmation: string;
-}): Promise<{ success: boolean; error?: string }> {
-    try {
-        await verifyAdminOrThrow(adminId, true);
-        if (confirmation !== 'SUPPRIMER') throw new Error("Code de confirmation incorrect.");
-
-        const db = getAdminDb();
-        const auth = getAdminAuth();
-
-        await auth.deleteUser(targetUserId);
-
-        await db.collection('users').doc(targetUserId).update({
-            status: 'deleted',
-            deletedAt: FieldValue.serverTimestamp(),
-            fullName: 'Utilisateur Supprimé',
-            email: `deleted_${targetUserId}@ndara.africa`,
-            username: `deleted_${targetUserId.substring(0, 5)}`,
-            balance: 0
-        });
-
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'user.delete.hard',
-            target: { id: targetUserId, type: 'user' },
-            details: `Suppression définitive effectuée. Identité révoquée.`,
             timestamp: FieldValue.serverTimestamp()
         });
 

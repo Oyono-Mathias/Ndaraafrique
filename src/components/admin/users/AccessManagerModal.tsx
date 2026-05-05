@@ -5,8 +5,8 @@
  * ✅ SOUVERAINETÉ : Enrollment = Source de Vérité.
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { getFirestore, collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { manageAccessRevocationAction } from '@/actions/adminActions';
@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, XCircle, HandCoins, AlertCircle, Clock, BookOpen } from 'lucide-react';
+import { Loader2, ShieldCheck, XCircle, HandCoins, AlertCircle, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
     AlertDialog, 
@@ -132,7 +132,7 @@ export function AccessManagerModal({ isOpen, onOpenChange, user }: { isOpen: boo
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button size="sm" variant="destructive" className="flex-1 rounded-xl h-10 font-black uppercase text-[9px] tracking-widest gap-2">
-                                                                <HandCoins size={14} /> Rembourser & Révoquer
+                                                                {isActionPending === enroll.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <HandCoins size={14} />} Rembourser & Révoquer
                                                             </Button>
                                                         </AlertDialogTrigger>
                                                         <AlertDialogContent className="bg-slate-950 border-red-900/50 rounded-[2rem]">
@@ -191,11 +191,6 @@ export function AccessManagerModal({ isOpen, onOpenChange, user }: { isOpen: boo
                         )}
                     </ScrollArea>
                 </div>
-
-                <footer className="p-8 bg-slate-950/50 border-t border-white/5 flex items-center justify-center gap-2">
-                    <ShieldCheck size={14} className="text-primary" />
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em]">Audit Trail v5.0 Enabled</p>
-                </footer>
             </DialogContent>
         </Dialog>
     );
