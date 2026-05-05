@@ -341,6 +341,13 @@ export interface Payout extends PayoutRequest {
     date: Timestamp | FieldValue | Date;
 }
 
+export interface RequestPayoutParams {
+  instructorId: string;
+  amount: number;
+  method?: string;
+  requesterId: string;
+}
+
 export interface AffiliateTransaction {
   id: string;
   affiliateId: string;
