@@ -119,15 +119,17 @@ export async function rechargeUserWallet({
         // 🛡️ VÉRIFICATION DE PROVISION RÉELLE (MeSomb)
         // Toute recharge "Production" doit être couverte par du cash réel chez MeSomb.
         if (!isSimulated) {
-            const meSombBalance = await getMeSombBalanceAction(adminId);
-            if (!meSombBalance.success) {
+            const balanceCheck = await getMeSombBalanceAction(adminId);
+            
+            if (balanceCheck.success === false) {
                 return { success: false, error: "Impossible de vérifier la provision MeSomb." };
             }
             
-            if (meSombBalance.balance !== undefined && meSombBalance.balance < amount) {
+            // TS Narrowing: balanceCheck est désormais de type { success: true, balance: number, currency: string }
+            if (balanceCheck.balance < amount) {
                 return { 
                     success: false, 
-                    error: `SOLDE_MARCHAND_INSUFFISANT: Votre solde MeSomb (${meSombBalance.balance} ${meSombBalance.currency}) est trop bas pour couvrir cette injection réelle de ${amount} XOF. Provisionnez d'abord votre compte MeSomb.` 
+                    error: `SOLDE_MARCHAND_INSUFFISANT: Votre solde MeSomb (${balanceCheck.balance} ${balanceCheck.currency}) est trop bas pour couvrir cette injection réelle de ${amount} XOF. Provisionnez d'abord votre compte MeSomb.` 
                 };
             }
         }

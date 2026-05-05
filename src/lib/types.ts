@@ -768,8 +768,6 @@ export interface Settings {
     youtubeUrl?: string;
     telegramUrl?: string;
     whatsappUrl?: string;
-    instagramUrl?: string;
-    facebookUrl?: string;
   };
   platform?: {
     maintenanceMode?: boolean;
