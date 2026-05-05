@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { processNdaraPayment } from '@/services/paymentProcessor';
+import { getMeSombClient } from '@/lib/mesomb';
 
 /**
- * @fileOverview Webhook MeSomb Ultra-Fiabilisé v5.0 (Standard CTO Fintech).
+ * @fileOverview Webhook MeSomb Ultra-Fiabilisé v6.0 (Standard CTO Fintech).
  * ✅ INDÉPENDANCE : Ne dépend plus de l'activation du compte pour l'API Polling.
- * ✅ SÉCURITÉ : Vérification de l'idempotence et logging des orphelins.
+ * ✅ SÉCURITÉ : Vérification de la provision RÉELLE via un appel SDK explicite.
  */
 
 export async function POST(req: Request) {
@@ -40,59 +41,60 @@ export async function POST(req: Request) {
     // 2. FALLBACK : RECHERCHE PAR ID PASSERELLE
     if (!paymentDoc) {
         const q = await db.collection('payments').where('gatewayTransactionId', '==', gatewayId).limit(1).get();
-        if (!q.empty) {
-            paymentDoc = q.docs[0];
+        const snap = await q.get();
+        if (!snap.empty) {
+            paymentDoc = snap.docs[0];
         }
     }
 
-    // 3. GESTION DES ORPHELINS (Paiement reçu mais inconnu de Ndara)
     if (!paymentDoc) {
-        console.error(`[${webhookId}] ❌ TRANSACTION INTROUVABLE. CRÉATION LOG SÉCURITÉ.`);
-        await db.collection('security_logs').add({
-            eventType: 'payment_orphan_webhook',
-            targetId: gatewayId,
-            details: `Argent reçu (${transaction.amount} ${transaction.currency}) mais aucune référence Ndara trouvée. Réf: ${externalReference}`,
-            timestamp: new Date(),
-            status: 'open'
-        });
-        return NextResponse.json({ status: 'orphan_logged' });
+        console.error(`[${webhookId}] ❌ TRANSACTION INTROUVABLE DANS FIRESTORE.`);
+        return NextResponse.json({ status: 'orphan_payment' });
     }
 
     const storedData = paymentDoc.data()!;
 
-    // 4. VÉRIFICATION DU STATUT DANS LE WEBHOOK
-    // On fait confiance au succès envoyé par MeSomb (l'argent est déjà chez vous).
-    const isWebhookSuccess = transaction.status === 'SUCCESS' || body.status === 'SUCCESS';
+    // 🛡️ 3. VÉRIFICATION DE PROVISION RÉELLE (POLLING SDK)
+    // On ne croit pas seulement au corps du webhook (facilement falsifiable), 
+    // on interroge MeSomb directement via le SDK.
+    const client = getMeSombClient();
+    const tsxList = await client.getTransactions([gatewayId]);
     
-    if (!isWebhookSuccess) {
-        console.warn(`[${webhookId}] ⚠️ Le statut du webhook n'est pas SUCCESS. Transaction échouée.`);
-        await paymentDoc.ref.update({ status: 'failed', updatedAt: new Date() });
-        return NextResponse.json({ status: 'not_a_success' });
+    if (!tsxList || tsxList.length === 0) {
+        console.error(`[${webhookId}] ❌ Transaction inconnue sur les serveurs MeSomb.`);
+        return NextResponse.json({ status: 'verify_fail' });
     }
 
-    // 5. TRAITEMENT FINANCIER ATOMIQUE (CRÉDIT WALLET)
-    console.log(`[${webhookId}] ⚙️ Déclenchement crédit pour: ${storedData.userId}`);
+    const realTsx = tsxList[0] as any;
+    
+    if (realTsx.status !== 'SUCCESS') {
+        console.warn(`[${webhookId}] ⚠️ Provision non confirmée chez MeSomb (Status: ${realTsx.status}). Blocage.`);
+        await paymentDoc.ref.update({ status: 'failed', 'metadata.reason': 'Verify fail: not successful' });
+        return NextResponse.json({ status: 'not_confirmed' });
+    }
+
+    // ⚙️ 4. DÉCLENCHEMENT DU TRAITEMENT FINANCIER ATOMIQUE
+    console.log(`[${webhookId}] ✅ Provision confirmée. Crédit pour: ${storedData.userId}`);
     
     const result = await processNdaraPayment({
       transactionId: paymentDoc.id,
       gatewayTransactionId: gatewayId,
-      provider: transaction.service?.toLowerCase() || 'mesomb',
-      amount: Number(transaction.amount),
-      currency: transaction.currency || 'XAF',
+      provider: realTsx.service?.toLowerCase() || 'mesomb',
+      amount: Number(realTsx.amount),
+      currency: realTsx.currency || 'XAF',
       metadata: {
         ...storedData.metadata,
         userId: storedData.userId,
         courseId: storedData.courseId,
         type: storedData.type,
-        operator: transaction.service
+        operator: realTsx.service
       }
     });
 
     if (result.success) {
-        console.log(`[${webhookId}] ✅ TRANSACTION VALIDÉE ET CRÉDITÉE.`);
         return NextResponse.json({ processed: true });
     } else {
-        throw new Error("Échec du traitement financier interne.");
+        throw new Error("Échec du processeur financier atomique.");
     }
 
   } catch (error: any) {

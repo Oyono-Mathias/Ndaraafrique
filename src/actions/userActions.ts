@@ -11,6 +11,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 import { sendUserNotification } from './notificationActions';
 import { processNdaraPayment } from '@/services/paymentProcessor';
+import { getMeSombBalanceAction } from './meSombActions';
 
 /** 🛡️ Vérifie si l'appelant est réellement admin dans Firestore */
 async function verifyAdminOrThrow(uid: string) {
@@ -99,6 +100,7 @@ export async function purchaseCourseWithWalletAction({
 
 /** 
  * 💰 RECHARGER LE WALLET (Action Admin Sécurisée)
+ * ✅ PROVISION : Vérifie le solde marchand MeSomb réel si pas une simulation.
  */
 export async function rechargeUserWallet({ 
     userId, 
@@ -117,6 +119,20 @@ export async function rechargeUserWallet({
         await verifyAdminOrThrow(adminId);
 
         if (amount <= 0) return { success: false, error: "error.amount_positive" };
+
+        // 🛡️ VÉRIFICATION DE PROVISION RÉELLE (MeSomb)
+        if (!isSimulated) {
+            const meSombBalance = await getMeSombBalanceAction(adminId);
+            if (!meSombBalance.success) {
+                return { success: false, error: "Impossible de vérifier la provision MeSomb." };
+            }
+            if (meSombBalance.balance < amount) {
+                return { 
+                    success: false, 
+                    error: `SOLDE_MARCHAND_INSUFFISANT: Votre solde MeSomb (${meSombBalance.balance} ${meSombBalance.currency}) est trop bas pour couvrir cette injection réelle de ${amount} XOF.` 
+                };
+            }
+        }
 
         const result = await processNdaraPayment({
             transactionId: `ADM-TOP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -145,7 +161,7 @@ export async function rechargeUserWallet({
         return { success: false, error: "error.generic" };
     } catch (e: any) {
         console.error("[RECHARGE_SECURE_ERROR]:", e.message);
-        return { success: false, error: "error.not_authorized" };
+        return { success: false, error: e.message || "error.not_authorized" };
     }
 }
 
