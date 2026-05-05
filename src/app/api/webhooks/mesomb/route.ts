@@ -40,8 +40,11 @@ export async function POST(req: Request) {
 
     // 2. FALLBACK : RECHERCHE PAR ID PASSERELLE
     if (!paymentDoc) {
-        const q = await db.collection('payments').where('gatewayTransactionId', '==', gatewayId).limit(1).get();
-        const snap = await q.get();
+        const snap = await db.collection('payments')
+            .where('gatewayTransactionId', '==', gatewayId)
+            .limit(1)
+            .get();
+            
         if (!snap.empty) {
             paymentDoc = snap.docs[0];
         }
