@@ -3,8 +3,8 @@
 /**
  * @fileOverview RoleProvider Ndara Afrique.
  * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
- * ✅ SYNC : Filet de sécurité pour créer le document Firestore si manquant.
- * ✅ SÉCURITÉ : Expulsion immédiate des utilisateurs suspendus ou supprimés.
+ * ✅ SYNC : Filet de sécurité robuste pour créer le document Firestore si manquant.
+ * ✅ SÉCURITÉ : Expulsion immédiate des utilisateurs suspendus.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -118,9 +118,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
 
-          // 🛡️ SÉCURITÉ : Expulsion si suspendu ou supprimé
+          // 🛡️ SÉCURITÉ : Expulsion si suspendu
           if (userData.status === 'suspended' || userData.status === 'deleted' || userData.restrictions?.canAccessPlatform === false) {
-            console.warn(`[SECURITY] Accès bloqué pour l'utilisateur ${user.uid} (Status: ${userData.status})`);
             await secureSignOut();
             toast({ 
                 variant: 'destructive', 
@@ -143,10 +142,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
-          let priorityRole: UserRole = 'student';
-          if (roles.includes('admin')) priorityRole = 'admin';
-          else if (roles.includes('instructor')) priorityRole = 'instructor';
-
           const ndaraUser: NdaraUser = {
             ...userData,
             uid: user.uid,
@@ -166,32 +161,35 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
-              setRole(priorityRole);
-              localStorage.setItem('ndaraafrique-role', priorityRole);
+              setRole(isMasterAdmin ? 'admin' : userData.role || 'student');
           }
 
         } else {
-            // ✅ FILET DE SÉCURITÉ : Création du profil Firestore s'il manque (ex: login Google rapide)
-            console.log(`[AUTH_SYNC] Création du document manquant pour l'utilisateur ${user.uid}`);
-            
-            const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
-            const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
+            // ✅ FILET DE SÉCURITÉ : Création du document manquant (Google Login)
+            const [prenom, ...nomParts] = (user.displayName || "").split(" ");
+            const nom = nomParts.join(" ");
+
+            const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
                 username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + user.uid.substring(0, 5),
                 fullName: user.displayName || 'Utilisateur Ndara',
-                role: isMasterAdmin ? 'admin' : 'student',
+                nom: nom || user.displayName || "",
+                prenom: prenom || "",
+                role: 'student',
                 status: 'active',
-                isInstructorApproved: isMasterAdmin,
+                isInstructorApproved: false,
                 createdAt: serverTimestamp(),
                 isProfileComplete: false,
                 preferredLanguage: locale as 'fr' | 'en' | 'sg',
                 isOnline: true,
                 lastSeen: serverTimestamp(),
                 balance: 0,
+                solde: 0, // Compatibilité
+                hasAccess: [], // Compatibilité
                 affiliateBalance: 0,
                 pendingAffiliateBalance: 0,
-                aiCredits: 5, // Bonus de bienvenue
+                aiCredits: 5,
                 hasAIAccess: false,
                 affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
                 restrictions: {
@@ -202,7 +200,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                     canAccessPlatform: true
                 }
             };
-            await setDoc(userDocRef, newUserDoc).catch(() => {});
+            await setDoc(userDocRef, newUserDoc);
             detectGeoLocation(user.uid);
         }
         setLoading(false);
@@ -226,14 +224,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             : '/student/dashboard';
       
       router.push(`/${locale}${target}`);
-      
       toast({ title: `Mode ${newRole.toUpperCase()} activé` });
-    } else {
-        toast({ 
-            variant: 'destructive', 
-            title: "Accès refusé", 
-            description: "Vous n'avez pas les autorisations pour ce mode." 
-        });
     }
   }, [availableRoles, router, toast, locale]);
   

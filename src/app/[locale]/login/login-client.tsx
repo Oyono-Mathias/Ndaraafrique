@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ SÉCURITÉ : Vérification de 'allowRegistration' avant toute inscription.
- * ✅ PARRAINAGE : Capture et liaison automatique du parrain (referredBy).
+ * ✅ FIX : Création robuste du document Firestore après connexion Google.
+ * ✅ COMPATIBILITÉ : Ajout des champs nom, prenom, solde, hasAccess.
  */
 
 import { useState, useEffect } from 'react';
@@ -145,24 +145,29 @@ export default function LoginClient() {
       
       await updateProfile(authUser, { displayName: values.fullName });
 
-      // 👥 LOGIQUE PARRAINAGE : Récupérer l'ID du parrain stocké par /ref/[slug]
+      // 👥 LOGIQUE PARRAINAGE
       let referrerId: string | null = null;
       const referralRaw = localStorage.getItem('ndara_referral');
       if (referralRaw) {
           try {
               const refData = JSON.parse(referralRaw);
-              // Vérifier la validité (30 jours)
               if (refData.expiresAt > Date.now()) {
                   referrerId = refData.instructorId;
               }
           } catch (e) { console.warn("Invalid referral data"); }
       }
 
+      // Extraction nom/prénom pour compatibilité admin
+      const [prenom, ...nomParts] = (values.fullName || "").split(" ");
+      const nom = nomParts.join(" ");
+
       const userRef = doc(db, "users", authUser.uid);
       const userData = {
         uid: authUser.uid,
         email: values.email,
         fullName: values.fullName,
+        nom: nom || values.fullName,
+        prenom: prenom || "",
         username: values.fullName.replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
         role: 'student',
         status: 'active',
@@ -173,11 +178,13 @@ export default function LoginClient() {
         isOnline: true,
         lastSeen: serverTimestamp(),
         balance: 0,
+        solde: 0, // Champ compatibilité
+        hasAccess: [], // Champ compatibilité
         affiliateBalance: 0,
         pendingAffiliateBalance: 0,
         aiCredits: 5,
         hasAIAccess: false,
-        referredBy: referrerId, // 🛡️ Liaison du parrain
+        referredBy: referrerId,
         affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
         restrictions: {
             canWithdraw: true,
@@ -190,13 +197,12 @@ export default function LoginClient() {
 
       await setDoc(userRef, userData);
 
-      // Si parrainage, on incrémente le compteur du parrain
       if (referrerId) {
           const referrerRef = doc(db, 'users', referrerId);
           await updateDoc(referrerRef, {
               'affiliateStats.registrations': increment(1)
           }).catch(console.error);
-          localStorage.removeItem('ndara_referral'); // Consommé
+          localStorage.removeItem('ndara_referral');
       }
 
       toast({ title: tActions('success.generic') });
@@ -235,10 +241,16 @@ export default function LoginClient() {
             } catch (e) {}
         }
 
+        // Extraction nom/prénom pour compatibilité admin
+        const [prenom, ...nomParts] = (user.displayName || "").split(" ");
+        const nom = nomParts.join(" ");
+
         const userData = {
           uid: user.uid,
           email: user.email || '',
           fullName: user.displayName || 'Utilisateur Google',
+          nom: nom || user.displayName || "",
+          prenom: prenom || "",
           username: (user.displayName || 'user').replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
           role: 'student',
           status: 'active',
@@ -250,6 +262,8 @@ export default function LoginClient() {
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
           balance: 0,
+          solde: 0, // Champ compatibilité
+          hasAccess: [], // Champ compatibilité
           affiliateBalance: 0,
           pendingAffiliateBalance: 0,
           aiCredits: 5,
@@ -270,6 +284,8 @@ export default function LoginClient() {
             await updateDoc(doc(db, 'users', referrerId), { 'affiliateStats.registrations': increment(1) }).catch(() => {});
             localStorage.removeItem('ndara_referral');
         }
+        
+        toast({ title: "Bienvenue sur Ndara Afrique !" });
       }
     } catch (err) {
       console.error("[AUTH_GOOGLE_ERROR]", err);
