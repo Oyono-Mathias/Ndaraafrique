@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { 
     ShieldAlert, 
     HandCoins, 
@@ -27,8 +26,7 @@ import {
     Video, 
     Ban, 
     Unlock,
-    Loader2,
-    CheckCircle2
+    Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NdaraUser } from '@/lib/types';
@@ -90,25 +88,25 @@ export function RestrictionsModal({ isOpen, onOpenChange, user }: { isOpen: bool
                             icon={HandCoins} 
                             label="Droit de retrait" 
                             checked={r.canWithdraw} 
-                            onToggle={(v) => toggleRestriction('canWithdraw', v)} 
+                            onToggle={(v: boolean) => toggleRestriction('canWithdraw', v)} 
                         />
                         <RestrictionItem 
                             icon={MessageSquare} 
                             label="Droit de message" 
                             checked={r.canSendMessage} 
-                            onToggle={(v) => toggleRestriction('canSendMessage', v)} 
+                            onToggle={(v: boolean) => toggleRestriction('canSendMessage', v)} 
                         />
                         <RestrictionItem 
                             icon={ShoppingCart} 
                             label="Droit d'achat" 
                             checked={r.canBuyCourse} 
-                            onToggle={(v) => toggleRestriction('canBuyCourse', v)} 
+                            onToggle={(v: boolean) => toggleRestriction('canBuyCourse', v)} 
                         />
                         <RestrictionItem 
                             icon={Video} 
                             label="Accès plateforme" 
                             checked={r.canAccessPlatform} 
-                            onToggle={(v) => toggleRestriction('canAccessPlatform', v)} 
+                            onToggle={(v: boolean) => toggleRestriction('canAccessPlatform', v)} 
                         />
                     </div>
 
@@ -129,14 +127,21 @@ export function RestrictionsModal({ isOpen, onOpenChange, user }: { isOpen: bool
     );
 }
 
-function RestrictionItem({ icon: Icon, label, checked, onToggle }: any) {
+interface RestrictionItemProps {
+    icon: React.ElementType;
+    label: string;
+    checked: boolean;
+    onToggle: (v: boolean) => void;
+}
+
+function RestrictionItem({ icon: Icon, label, checked, onToggle }: RestrictionItemProps) {
     return (
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <Icon size={16} className={cn(checked ? "text-primary" : "text-red-500")} />
                 <span className="text-xs font-bold text-slate-300 uppercase tracking-tight">{label}</span>
             </div>
-            <Switch checked={checked} onCheckedChange={onToggle} className="data-[state=checked]:bg-primary" />
+            <Switch checked={checked} onCheckedChange={(v: boolean) => onToggle(v)} className="data-[state=checked]:bg-primary" />
         </div>
     );
 }
