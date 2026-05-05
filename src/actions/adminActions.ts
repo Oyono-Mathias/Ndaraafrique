@@ -10,7 +10,7 @@
 
 import { getAdminDb, getAdminAuth } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { UserRole, NdaraUser, Enrollment } from '@/lib/types';
+import type { UserRole, Enrollment } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
 const MASTER_ADMIN_EMAIL = 'salguienow@gmail.com';
@@ -277,6 +277,50 @@ export async function changeUserRoleAction({
         });
 
         return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/** 🛠️ 6. Action de Migration : Normaliser les casses des statuts de paiement */
+export async function migratePaymentStatusesAction(adminId: string) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        const paymentsSnap = await db.collection('payments').get();
+        let migratedCount = 0;
+
+        const batch = db.batch();
+
+        paymentsSnap.forEach(doc => {
+            const data = doc.data();
+            const oldStatus = data.status;
+            // On normalise en minuscule pour la cohérence
+            const newStatus = oldStatus?.toLowerCase();
+
+            if (oldStatus !== newStatus) {
+                batch.update(doc.ref, { 
+                    status: newStatus,
+                    updatedAt: FieldValue.serverTimestamp()
+                });
+                migratedCount++;
+            }
+        });
+
+        if (migratedCount > 0) {
+            await batch.commit();
+        }
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'system.migration.payment_status',
+            target: { id: 'all', type: 'payments' },
+            details: `Migration de normalisation effectuée sur ${migratedCount} paiements.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true, migratedCount };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
