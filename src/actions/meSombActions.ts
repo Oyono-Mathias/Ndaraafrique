@@ -10,7 +10,6 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getMeSombClient } from '@/lib/mesomb';
-import type { NdaraUser } from '@/lib/types';
 
 export type MeSombResponse =
   | { success: true; transactionId: string; message: string; type: 'REAL' | 'SIMULATED' }
@@ -109,7 +108,7 @@ export async function initiateMeSombPayment(params: {
 }
 
 /** 💰 2. Vérifier le solde marchand MeSomb (Pour Admin) */
-export async function getMeSombBalanceAction(adminId: string) {
+export async function getMeSombBalanceAction(adminId: string): Promise<{ success: true; balance: number; currency: string } | { success: false; error: string }> {
     try {
         await verifyAdminOrThrow(adminId);
 
@@ -121,7 +120,7 @@ export async function getMeSombBalanceAction(adminId: string) {
         return { 
             success: true, 
             balance: Number(mainBalance.value), 
-            currency: mainBalance.currency 
+            currency: mainBalance.currency || 'XAF'
         };
     } catch (e: any) {
         return { success: false, error: e.message };

@@ -126,7 +126,9 @@ export async function rechargeUserWallet({
             if (!meSombBalance.success) {
                 return { success: false, error: "Impossible de vérifier la provision MeSomb." };
             }
-            if (meSombBalance.balance < amount) {
+            
+            // ✅ Fix Vercel Build: Explicit check for balance existence
+            if (meSombBalance.balance !== undefined && meSombBalance.balance < amount) {
                 return { 
                     success: false, 
                     error: `SOLDE_MARCHAND_INSUFFISANT: Votre solde MeSomb (${meSombBalance.balance} ${meSombBalance.currency}) est trop bas pour couvrir cette injection réelle de ${amount} XOF.` 
