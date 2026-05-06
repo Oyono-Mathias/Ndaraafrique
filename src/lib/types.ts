@@ -7,7 +7,7 @@ import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
-export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'simulated' | 'withdrawal' | 'moov' | 'mpesa';
+export type PaymentProvider = 'mesomb' | 'cinetpay' | 'moneroo' | 'wallet' | 'admin' | 'orange' | 'mtn' | 'wave' | 'manual' | 'admin_recharge' | 'admin_recharge_test' | 'simulated' | 'withdrawal' | 'moov' | 'mpesa';
 
 export type StorageProvider = 'r2' | 'bunny' | 'firebase';
 
@@ -210,13 +210,6 @@ export interface Settings {
   content?: {
     landingPage?: any;
     aboutPage?: any;
-  };
-  platform?: {
-    maintenanceMode?: boolean;
-    allowInstructorSignup?: boolean;
-    allowYoutube?: boolean;
-    allowBunny?: boolean;
-    announcementMessage?: string;
   };
 }
 
