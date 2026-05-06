@@ -24,6 +24,8 @@ export interface NdaraUser {
   email: string;
   username: string;
   fullName: string;
+  nom?: string;
+  prenom?: string;
   profilePictureURL?: string;
   profilePictureFallbackURL?: string;
   role: UserRole;
@@ -33,6 +35,8 @@ export interface NdaraUser {
   isSuspect?: boolean;
   suspectReason?: string;
   balance: number;
+  solde?: number; // Compatibilité
+  hasAccess?: string[]; // Compatibilité
   affiliateBalance?: number;
   pendingAffiliateBalance?: number;
   virtualBalance?: number;
@@ -66,6 +70,25 @@ export interface NdaraUser {
   payoutInfo?: {
     mobileMoneyNumber?: string;
   };
+  instructorNotificationPreferences?: {
+    newEnrollment: boolean;
+    newMessage: boolean;
+    newAssignmentSubmission: boolean;
+    courseStatusUpdate: boolean;
+    payoutUpdate: boolean;
+  };
+  pedagogicalPreferences?: {
+    aiAssistanceEnabled: boolean;
+    aiInterventionLevel: 'low' | 'medium' | 'high';
+  };
+  notificationPreferences?: {
+    newPayouts: boolean;
+    newApplications: boolean;
+    newSupportTickets: boolean;
+    financialAnomalies: boolean;
+  };
+  badges?: string[];
+  permissions?: { [key: string]: boolean };
   careerGoals?: {
     currentRole?: string;
     interestDomain: string;
