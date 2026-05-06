@@ -590,3 +590,12 @@ export interface InvestorLead {
     status: 'new' | 'contacted' | 'interested';
     createdAt: Timestamp | FieldValue | Date;
 }
+
+export interface CartItem {
+  id: string;
+  courseId: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+  addedAt?: Timestamp | FieldValue | Date;
+}
