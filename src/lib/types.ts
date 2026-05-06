@@ -407,6 +407,21 @@ export interface Message {
   status?: 'sent' | 'delivered' | 'read';
 }
 
+export interface CourseQuestion {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  studentId: string;
+  studentName: string;
+  studentAvatarUrl?: string;
+  instructorId: string;
+  questionText: string;
+  answerText?: string;
+  status: 'pending' | 'answered';
+  createdAt: Timestamp | FieldValue | Date;
+  answeredAt?: Timestamp | FieldValue | Date;
+}
+
 export interface Quiz {
   id: string;
   title: string;
