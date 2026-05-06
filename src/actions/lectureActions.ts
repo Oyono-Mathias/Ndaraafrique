@@ -3,7 +3,6 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
-// ❌ Supprimé car absent de @/lib/types : import type { Lecture } from '@/lib/types';
 import { deleteBunnyVideo } from './bunnyActions';
 
 /**
@@ -12,6 +11,7 @@ import { deleteBunnyVideo } from './bunnyActions';
 interface LocalLecture {
   id: string;
   title: string;
+  description?: string;
   type: 'video' | 'youtube' | 'text' | 'pdf';
   contentUrl: string;
   textContent?: string;
@@ -27,6 +27,7 @@ interface LocalLecture {
 
 const lectureSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
+  description: z.string().optional(),
   type: z.enum(['video', 'youtube', 'text', 'pdf']),
   contentUrl: z.string().min(1, "L'identifiant ou l'URL est requis."),
   textContent: z.string().optional(),

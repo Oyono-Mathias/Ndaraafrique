@@ -339,7 +339,7 @@ function CoursePlayerPageContent() {
 
                     <div className="grid grid-cols-1 gap-3">
                         <Button 
-                            onClick={handleMarkComplete}
+                            onClick={handleMarkComplete} 
                             disabled={completedLessons.includes(activeLecture?.id || '') || isValidationBlocked}
                             className={cn(
                                 "w-full h-16 rounded-[2rem] font-black uppercase text-xs tracking-[0.15em]",

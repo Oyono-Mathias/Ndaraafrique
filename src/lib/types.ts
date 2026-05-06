@@ -252,6 +252,7 @@ export interface Section {
 export interface Lecture {
   id: string;
   title: string;
+  description?: string;
   type: 'video' | 'youtube' | 'text' | 'pdf';
   contentUrl?: string;
   textContent?: string;

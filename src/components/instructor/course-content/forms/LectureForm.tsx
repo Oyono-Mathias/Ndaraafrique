@@ -28,6 +28,7 @@ import { GoogleDrivePicker } from '@/components/instructor/google-drive/GoogleDr
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
+  description: z.string().optional(),
   type: z.enum(['video', 'youtube', 'text', 'pdf']),
   contentUrl: z.string().min(1, "L'identifiant ou l'URL est requis."),
   textContent: z.string().optional(),
@@ -63,6 +64,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         resolver: zodResolver(formSchema),
         defaultValues: {
             title: '',
+            description: '',
             type: 'video',
             contentUrl: '',
             textContent: '',
@@ -91,13 +93,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         if(lecture && isOpen) {
             form.reset({
                 title: lecture.title,
+                description: lecture.description || '',
                 type: lecture.type,
                 contentUrl: lecture.contentUrl || '',
                 textContent: lecture.textContent || '',
                 duration: lecture.duration || 0,
             });
         } else if (isOpen) {
-            form.reset({ title: '', type: 'video', contentUrl: '', textContent: '', duration: 0 });
+            form.reset({ title: '', description: '', type: 'video', contentUrl: '', textContent: '', duration: 0 });
         }
         setIsUploading(false);
     }, [lecture, form, isOpen]);
@@ -294,6 +297,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 <FormItem>
                                     <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
                                     <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
+                                    <FormMessage />
+                                </FormItem> 
+                            )}/>
+
+                            <FormField control={form.control} name="description" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Description courte (Souveraineté)</FormLabel>
+                                    <FormControl><Input placeholder="Un résumé rapide de ce module..." {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
