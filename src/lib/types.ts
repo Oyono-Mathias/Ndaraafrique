@@ -535,6 +535,19 @@ export interface SecurityLog {
     timestamp: Timestamp | FieldValue | Date;
 }
 
+// AJOUT DE L'INTERFACE MANQUANTE ICI
+export interface SupportTicket {
+    id: string;
+    userId: string;
+    subject: string;
+    message: string;
+    status: 'open' | 'pending' | 'closed' | 'resolved';
+    priority: 'low' | 'medium' | 'high';
+    category?: string;
+    createdAt: Timestamp | FieldValue | Date;
+    updatedAt: Timestamp | FieldValue | Date;
+}
+
 export interface NdaraPaymentDetails {
     transactionId: string | number;
     gatewayTransactionId?: string;
@@ -611,6 +624,4 @@ export interface CartItem {
   courseId: string;
   title: string;
   price: number;
-  imageUrl?: string;
-  addedAt?: Timestamp | FieldValue | Date;
-}
+  imageUrl?: string
