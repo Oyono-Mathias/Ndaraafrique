@@ -264,7 +264,6 @@ export interface Course {
   lastAiAuditScore?: number;
   moderationFeedback?: string;
   learningObjectives?: string[];
-  // CORRECTIF : Ajout pour ResaleMonitorTable
   rightsChain?: string[]; 
 }
 
@@ -540,8 +539,10 @@ export interface SecurityLog {
 export interface SupportTicket {
     id: string;
     userId: string;
+    courseId?: string; // AJOUTÉ POUR TICKET DETAILS CLIENT
     subject: string;
     message: string;
+    lastMessage?: string; // AJOUTÉ POUR COMPATIBILITÉ
     status: 'open' | 'pending' | 'closed' | 'resolved';
     priority: 'low' | 'medium' | 'high';
     category?: string;
