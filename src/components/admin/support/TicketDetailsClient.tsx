@@ -1,10 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Salle de Discussion Support Ndara Afrique - Design Qwen WhatsApp Premium.
- * ✅ DESIGN : Bulles de message dégradées, Header immersif, safe-areas Android.
- * ✅ ACTIONS : Barre d'actions rapides (Rembourser, Clôturer, Transférer).
+ * ✅ RÉSOLU : Correction des erreurs de build TypeScript (courseId & status).
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -21,7 +19,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
     Loader2, 
     Send, 
-    ShieldCheck, 
     ArrowLeft,
     HandCoins,
     CheckCircle2,
@@ -68,7 +65,14 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
     const userRef = useMemo(() => ticket ? doc(db, 'users', ticket.userId) : null, [ticket, db]);
     const { data: user } = useDoc<NdaraUser>(userRef);
     
-    const courseRef = useMemo(() => (ticket && ticket.courseId !== 'none') ? doc(db, 'courses', ticket.courseId) : null, [ticket, db]);
+    // CORRECTIF : Vérification stricte de la présence de courseId pour satisfaire le type string de doc()
+    const courseRef = useMemo(() => {
+        if (ticket?.courseId && ticket.courseId !== 'none') {
+            return doc(db, 'courses', ticket.courseId);
+        }
+        return null;
+    }, [ticket, db]);
+    
     const { data: course } = useDoc<Course>(courseRef);
 
     useEffect(() => {
@@ -103,9 +107,14 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
     };
     
     const handleRefund = async () => {
-        if (!ticket) return;
+        // CORRECTIF : Ajout d'une vérification sur courseId
+        if (!ticket || !ticket.courseId) return;
         setIsActionPending(true);
-        const result = await refundAndRevokeAccess({ userId: ticket.userId, courseId: ticket.courseId, ticketId });
+        const result = await refundAndRevokeAccess({ 
+            userId: ticket.userId, 
+            courseId: ticket.courseId, 
+            ticketId 
+        });
         if (result.success) {
             toast({ title: "Remboursement traité !" });
             router.push('/admin/support');
@@ -114,7 +123,9 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
     }
 
     const isLoading = ticketLoading || messagesLoading;
-    const isOpen = ticket?.status === 'ouvert';
+    
+    // CORRECTIF : 'open' au lieu de 'ouvert' pour correspondre aux types exportés
+    const isOpen = ticket?.status === 'open' || ticket?.status === 'pending';
 
     if (isLoading) return <div className="h-[70vh] flex items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -149,7 +160,7 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
                 </div>
             </header>
 
-            {/* --- QUICK ACTIONS BAR (QWEN DESIGN) --- */}
+            {/* --- QUICK ACTIONS BAR --- */}
             <div className="px-4 py-2 bg-slate-900/50 border-b border-white/5 flex gap-2 overflow-x-auto hide-scrollbar z-20">
                 <button className="flex-shrink-0 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest hover:bg-blue-500/20 transition active:scale-95 flex items-center gap-2">
                     <RefreshCw size={12} /> Transférer
