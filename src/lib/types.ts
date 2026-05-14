@@ -536,13 +536,26 @@ export interface SecurityLog {
     timestamp: Timestamp | FieldValue | Date;
 }
 
+// CORRECTIF : AJOUT DE L'INTERFACE ANNOUNCEMENT
+export interface Announcement {
+    id: string;
+    courseId: string;
+    courseTitle?: string;
+    instructorId: string;
+    title: string;
+    content: string;
+    recipients: 'all' | 'students' | 'specific';
+    createdAt: Timestamp | FieldValue | Date;
+    updatedAt?: Timestamp | FieldValue | Date;
+}
+
 export interface SupportTicket {
     id: string;
     userId: string;
-    courseId?: string; // AJOUTÉ POUR TICKET DETAILS CLIENT
+    courseId?: string;
     subject: string;
     message: string;
-    lastMessage?: string; // AJOUTÉ POUR COMPATIBILITÉ
+    lastMessage?: string;
     status: 'open' | 'pending' | 'closed' | 'resolved';
     priority: 'low' | 'medium' | 'high';
     category?: string;
