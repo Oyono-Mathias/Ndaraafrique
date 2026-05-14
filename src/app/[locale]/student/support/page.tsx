@@ -2,14 +2,13 @@
 
 /**
  * @fileOverview Centre d'Aide Étudiant Ndara Afrique.
- * ✅ RÉSOLU : Raccordement dynamique du numéro WhatsApp Admin.
+ * ✅ RÉSOLU : Correction des types TypeScript pour le build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy, doc, onSnapshot } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
   LifeBuoy, 
   Mail, 
@@ -17,11 +16,8 @@ import {
   Plus, 
   Ticket, 
   Clock, 
-  ShieldCheck, 
   ChevronRight, 
-  Loader2,
   CheckCircle2,
-  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -183,7 +179,9 @@ export default function StudentSupportPage() {
 
 function TicketItem({ ticket }: { ticket: SupportTicket }) {
     const updatedAt = (ticket.updatedAt as any)?.toDate?.() || new Date();
-    const isOpen = ticket.status === 'ouvert';
+    
+    // CORRECTION : 'open' au lieu de 'ouvert'
+    const isOpen = ticket.status === 'open' || ticket.status === 'pending';
 
     return (
         <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 space-y-3 active:scale-[0.98] transition-all">
@@ -213,8 +211,9 @@ function TicketItem({ ticket }: { ticket: SupportTicket }) {
             </div>
             
             <div className="flex items-center justify-between pt-2 border-t border-slate-800/50">
+                {/* CORRECTION : ticket.message au lieu de ticket.lastMessage pour correspondre à l'interface */}
                 <p className="text-[10px] text-slate-500 font-medium italic truncate max-w-[180px]">
-                    "{ticket.lastMessage}"
+                    "{ticket.message}"
                 </p>
                 <span className="text-[8px] font-black text-slate-600 uppercase">
                     {format(updatedAt, 'dd/MM/yy', { locale: fr })}
