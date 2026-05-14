@@ -264,6 +264,8 @@ export interface Course {
   lastAiAuditScore?: number;
   moderationFeedback?: string;
   learningObjectives?: string[];
+  // CORRECTIF : Ajout pour ResaleMonitorTable
+  rightsChain?: string[]; 
 }
 
 export interface Section {
@@ -535,7 +537,6 @@ export interface SecurityLog {
     timestamp: Timestamp | FieldValue | Date;
 }
 
-// AJOUT DE L'INTERFACE MANQUANTE ICI
 export interface SupportTicket {
     id: string;
     userId: string;
@@ -624,4 +625,6 @@ export interface CartItem {
   courseId: string;
   title: string;
   price: number;
-  imageUrl?: string
+  imageUrl?: string;
+  addedAt?: Timestamp | FieldValue | Date;
+}
