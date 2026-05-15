@@ -35,8 +35,8 @@ export interface NdaraUser {
   isSuspect?: boolean;
   suspectReason?: string;
   balance: number;
-  solde?: number; // Compatibilité
-  hasAccess?: string[]; // Compatibilité
+  solde?: number;
+  hasAccess?: string[];
   affiliateBalance?: number;
   pendingAffiliateBalance?: number;
   virtualBalance?: number;
@@ -58,9 +58,7 @@ export interface NdaraUser {
   rating?: number;
   referralCode?: string;
   referredBy?: string | null;
-  certifiedMobileNumbers?: {
-    [key: string]: string;
-  };
+  certifiedMobileNumbers?: { [key: string]: string };
   affiliateStats?: {
     clicks: number;
     registrations: number;
@@ -484,4 +482,162 @@ export interface Review {
     courseId: string;
     studentId: string;
     instructorId: string;
-    ratin
+    rating: number;
+    comment: string;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface Coupon {
+    id: string;
+    code: string;
+    courseId: string;
+    courseTitle: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    maxUses: number;
+    usedCount: number;
+    instructorId: string;
+    expiresAt: Timestamp | FieldValue | Date;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface TrackingEvent {
+    id: string;
+    eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
+    sessionId: string;
+    pageUrl: string;
+    metadata?: any;
+    timestamp: Timestamp | FieldValue | Date;
+}
+
+// CORRECTIF : PUSH CAMPAIGN
+export interface PushCampaign {
+    id: string;
+    message: string;
+    target: 'all' | 'instructors' | 'students';
+    status: 'sent' | 'scheduled';
+    scheduledFor?: Timestamp | FieldValue | Date;
+    sentAt?: Timestamp | FieldValue | Date;
+    stats?: {
+        delivered: number;
+        clicked: number;
+    };
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface SecurityLog {
+    id: string;
+    eventType: string;
+    userId?: string;
+    targetId: string;
+    details: string;
+    status: 'open' | 'resolved';
+    timestamp: Timestamp | FieldValue | Date;
+}
+
+export interface Announcement {
+    id: string;
+    courseId: string;
+    courseTitle?: string;
+    instructorId: string;
+    title: string;
+    content?: string;
+    message: string;
+    recipients: 'all' | 'students' | 'specific';
+    createdAt: Timestamp | FieldValue | Date;
+    updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface SupportTicket {
+    id: string;
+    userId: string;
+    courseId?: string;
+    subject: string;
+    message: string;
+    lastMessage?: string;
+    status: 'open' | 'pending' | 'closed' | 'resolved';
+    priority: 'low' | 'medium' | 'high';
+    category?: string;
+    createdAt: Timestamp | FieldValue | Date;
+    updatedAt: Timestamp | FieldValue | Date;
+}
+
+export interface NdaraPaymentDetails {
+    transactionId: string | number;
+    gatewayTransactionId?: string;
+    provider: PaymentProvider;
+    amount: number;
+    currency?: string;
+    metadata: {
+        userId: string;
+        courseId?: string;
+        courseTitle?: string;
+        type?: 'wallet_topup' | 'course_purchase' | 'license_purchase' | 'deposit';
+        isSimulated?: boolean;
+        [key: string]: any;
+    };
+}
+
+export interface NdaraTransaction {
+    id: string;
+    userId: string;
+    type: 'deposit' | 'purchase' | 'payout' | 'affiliate_commission';
+    amount: number;
+    status: 'success' | 'failed' | 'pending';
+    meta?: any;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface NdaraEarning {
+    id: string;
+    userId: string;
+    type: 'course_sale' | 'license_sale' | 'affiliate_commission';
+    amount: number;
+    sourceId: string;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface UserActivity {
+    id: string;
+    userId: string;
+    type: 'enrollment' | 'certificate' | 'review' | 'assignment' | 'payment';
+    title: string;
+    description?: string;
+    link?: string;
+    read: boolean;
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface RecommendedCourseItem {
+    courseId: string;
+    title: string;
+    coverImage: string;
+    instructorId: string;
+    price: number;
+    score: number;
+}
+
+export interface UserRecommendations {
+    userId: string;
+    courses: RecommendedCourseItem[];
+    updatedAt: Timestamp | FieldValue | Date;
+}
+
+export interface InvestorLead {
+    id: string;
+    fullName: string;
+    email: string;
+    organization?: string;
+    message?: string;
+    status: 'new' | 'contacted' | 'interested';
+    createdAt: Timestamp | FieldValue | Date;
+}
+
+export interface CartItem {
+  id: string;
+  courseId: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+  addedAt?: Timestamp | FieldValue | Date;
+}
