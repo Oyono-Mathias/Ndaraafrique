@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.2
- * ✅ STABILISATION : Ajout du module 'platform' pour la gestion des sources vidéo.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.5
+ * ✅ RESTAURATION : Ajout de la section 'social' pour la gestion des liens communautaires.
+ * ✅ STABILISATION : Schéma Zod complet aligné sur src/lib/types.ts.
  */
 
 import { useState, useEffect } from 'react';
@@ -37,7 +38,14 @@ import {
   ShieldCheck,
   Megaphone,
   Palette,
-  Layout
+  Layout,
+  Share2,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Youtube,
+  Send
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -45,8 +53,8 @@ import { cn } from '@/lib/utils';
 const settingsSchema = z.object({
   general: z.object({
     siteName: z.string().min(2),
-    contactEmail: z.string().email().optional(),
-    contactPhone: z.string().optional(),
+    contactEmail: z.string().email().optional().or(z.literal('')),
+    contactPhone: z.string().optional().or(z.literal('')),
     defaultLanguage: z.enum(['fr', 'en', 'sg']),
   }),
   storage: z.object({
@@ -58,7 +66,7 @@ const settingsSchema = z.object({
   payments: z.object({
     currency: z.string(),
     minDeposit: z.coerce.number(),
-    minWithdrawal: z.coerce.number().min(100, "Le seuil est trop bas."),
+    minWithdrawal: z.coerce.number().min(100),
     transactionFeePercent: z.coerce.number(),
     paymentsEnabled: z.boolean(),
   }),
@@ -107,6 +115,14 @@ const settingsSchema = z.object({
   appearance: z.object({
     primaryColor: z.string(),
     borderRadius: z.enum(['none', 'md', 'lg', 'xl']),
+  }),
+  social: z.object({
+    facebookUrl: z.string().url().optional().or(z.literal('')),
+    instagramUrl: z.string().url().optional().or(z.literal('')),
+    twitterUrl: z.string().url().optional().or(z.literal('')),
+    linkedinUrl: z.string().url().optional().or(z.literal('')),
+    youtubeUrl: z.string().url().optional().or(z.literal('')),
+    telegramUrl: z.string().url().optional().or(z.literal('')),
   }),
   platform: z.object({
     allowYoutube: z.boolean(),
@@ -159,6 +175,7 @@ export default function AdminSettingsPage() {
   const menuItems = [
     { id: 'general', label: 'Général', icon: Globe },
     { id: 'platform', label: 'Interface', icon: Layout },
+    { id: 'social', label: 'Réseaux', icon: Share2 },
     { id: 'storage', label: 'Stockage', icon: HardDrive },
     { id: 'payments', label: 'Finances', icon: CreditCard },
     { id: 'users', label: 'Membres', icon: Users },
@@ -222,6 +239,31 @@ export default function AdminSettingsPage() {
                         )}/>
                         <FormField control={form.control} name="general.contactPhone" render={({ field }) => (
                             <FormItem><FormLabel>Phone Support</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
+                        )}/>
+                    </div>
+                </Card>
+              )}
+
+              {activeTab === 'social' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="social.facebookUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Facebook className="h-4 w-4 text-blue-600"/> Facebook</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" placeholder="https://facebook.com/..." /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="social.instagramUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Instagram className="h-4 w-4 text-pink-500"/> Instagram</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" placeholder="https://instagram.com/..." /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="social.twitterUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Twitter className="h-4 w-4 text-slate-200"/> X (Twitter)</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" placeholder="https://twitter.com/..." /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="social.linkedinUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Linkedin className="h-4 w-4 text-blue-400"/> LinkedIn</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" placeholder="https://linkedin.com/..." /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="social.youtubeUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Youtube className="h-4 w-4 text-red-600"/> YouTube</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" placeholder="https://youtube.com/..." /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="social.telegramUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Send className="h-4 w-4 text-blue-500"/> Telegram</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" placeholder="https://t.me/..." /></FormControl><FormMessage /></FormItem>
                         )}/>
                     </div>
                 </Card>
@@ -308,8 +350,7 @@ export default function AdminSettingsPage() {
                     </div>
                     <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                            <FormLabel>Activer les paiements réels</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
+                            <FormLabel>Activer les paiements réels</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                     )}/>
                 </Card>
               )}
@@ -335,13 +376,11 @@ export default function AdminSettingsPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <FormField control={form.control} name="ai.autoCorrection" render={({ field }) => (
                             <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                                <FormLabel className="text-xs">Correction Auto</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
+                                <FormLabel className="text-xs">Correction Auto</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                         )}/>
                         <FormField control={form.control} name="ai.fraudDetection" render={({ field }) => (
                             <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                                <FormLabel className="text-xs">Audit Fraude</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
+                                <FormLabel className="text-xs">Audit Fraude</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
                         )}/>
                     </div>
                 </Card>
