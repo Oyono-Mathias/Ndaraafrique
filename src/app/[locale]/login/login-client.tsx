@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Client de connexion Ndara Afrique.
- * ✅ FIX : Création robuste du document Firestore après connexion Google.
- * ✅ COMPATIBILITÉ : Ajout des champs nom, prenom, solde, hasAccess.
+ * @fileOverview Portail d'Authentification Ndara Afrique v3.0.
+ * ✅ DESIGN QWEN : Fintech Vintage, Glassmorphism, Grain Texture.
+ * ✅ FONCTIONNEL : Redirection intelligente et création de document robuste.
  */
 
 import { useState, useEffect } from 'react';
@@ -39,9 +39,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertTriangle, Mail, Lock, Chrome, Facebook, LogIn } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 import type { Settings } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -57,18 +58,6 @@ const registerSchema = z.object({
   }),
 });
 
-const PasswordInput = ({ field }: { field: any }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  return (
-      <div className="relative">
-          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20" />
-          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
-          </button>
-      </div>
-  );
-};
-
 export default function LoginClient() {
   const t = useTranslations('Auth');
   const tActions = useTranslations('Actions');
@@ -79,6 +68,7 @@ export default function LoginClient() {
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
   
   const router = useRouter();
@@ -178,8 +168,8 @@ export default function LoginClient() {
         isOnline: true,
         lastSeen: serverTimestamp(),
         balance: 0,
-        solde: 0, // Champ compatibilité
-        hasAccess: [], // Champ compatibilité
+        solde: 0, 
+        hasAccess: [], 
         affiliateBalance: 0,
         pendingAffiliateBalance: 0,
         aiCredits: 5,
@@ -231,7 +221,6 @@ export default function LoginClient() {
             return;
         }
 
-        // 👥 PARRAINAGE GOOGLE
         let referrerId: string | null = null;
         const referralRaw = localStorage.getItem('ndara_referral');
         if (referralRaw) {
@@ -241,7 +230,6 @@ export default function LoginClient() {
             } catch (e) {}
         }
 
-        // Extraction nom/prénom pour compatibilité admin
         const [prenom, ...nomParts] = (user.displayName || "").split(" ");
         const nom = nomParts.join(" ");
 
@@ -262,8 +250,8 @@ export default function LoginClient() {
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
           balance: 0,
-          solde: 0, // Champ compatibilité
-          hasAccess: [], // Champ compatibilité
+          solde: 0, 
+          hasAccess: [], 
           affiliateBalance: 0,
           pendingAffiliateBalance: 0,
           aiCredits: 5,
@@ -284,11 +272,9 @@ export default function LoginClient() {
             await updateDoc(doc(db, 'users', referrerId), { 'affiliateStats.registrations': increment(1) }).catch(() => {});
             localStorage.removeItem('ndara_referral');
         }
-        
-        toast({ title: "Bienvenue sur Ndara Afrique !" });
       }
+      toast({ title: "Bienvenue sur Ndara Afrique !" });
     } catch (err) {
-      console.error("[AUTH_GOOGLE_ERROR]", err);
       toast({ variant: 'destructive', title: tActions('error.generic') });
     } finally {
       setIsLoading(false);
@@ -296,38 +282,82 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-slate-950">
-        <div className="w-full max-w-md">
-            <div className="flex flex-col items-center text-center mb-10">
-                <Link href={`/${locale}`} className="mb-4">
-                  <Image src="/logo.png" alt="Ndara Afrique" width={64} height={64} className="rounded-full shadow-2xl" />
-                </Link>
-                <h1 className="text-2xl font-black text-white uppercase tracking-tight">Ndara Afrique</h1>
-            </div>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black relative">
+        <div className="grain-overlay" />
+        
+        <div className="w-full max-w-md min-h-screen md:min-h-[850px] bg-[#0F172A] relative flex flex-col shadow-2xl overflow-hidden rounded-[2.5rem]">
             
-            <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl">
-               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 rounded-2xl h-12 p-1">
-                        <TabsTrigger value="login" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">{t('loginButton')}</TabsTrigger>
-                        <TabsTrigger value="register" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">{t('registerButton')}</TabsTrigger>
+            {/* Background Decorations */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#10B981]/10 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] -ml-20 -mb-20 pointer-events-none" />
+
+            <main className="flex-1 flex flex-col justify-center px-6 py-12 relative z-10">
+                
+                {/* Header Section */}
+                <div className="text-center mb-10 animate-in fade-in duration-700">
+                    <div className="w-20 h-20 bg-gradient-to-br from-[#10B981] to-teal-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-transform hover:scale-110 duration-500">
+                        <span className="text-white font-black text-4xl">N</span>
+                    </div>
+                    <h1 className="font-black text-3xl text-white mb-2 tracking-tight uppercase">Ndara Afrique</h1>
+                    <p className="text-gray-400 text-sm italic">L'excellence de l'apprentissage panafricain</p>
+                </div>
+
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-slate-900/50 backdrop-blur-md rounded-2xl h-12 p-1 mb-8 border border-white/5">
+                        <TabsTrigger value="login" className="rounded-xl font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-[#10B981] data-[state=active]:text-slate-900 transition-all">
+                            {t('loginButton')}
+                        </TabsTrigger>
+                        <TabsTrigger value="register" className="rounded-xl font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-[#10B981] data-[state=active]:text-slate-900 transition-all">
+                            {t('registerButton')}
+                        </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="login" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2">
+                    <TabsContent value="login" className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                         <Form {...loginForm}>
-                        <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
-                            <div className="flex items-center justify-end">
-                              <Link href={`/${locale}/forgot-password`} className="text-xs font-bold text-primary hover:underline">{t('password_forgot')}</Link>
-                            </div>
-                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
-                        </form>
+                            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-5">
+                                <FormField control={loginForm.control} name="email" render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel className="text-gray-400 text-[10px] font-bold uppercase tracking-wider ml-1">{t('emailLabel')}</FormLabel>
+                                        <FormControl>
+                                            <div className="relative group">
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#10B981] transition-colors" />
+                                                <Input placeholder="exemple@ndara.africa" {...field} className="h-14 pl-12 bg-white/5 border-white/5 rounded-4xl text-white placeholder:text-gray-600 focus-visible:ring-[#10B981]/20 backdrop-blur-md" />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+
+                                <FormField control={loginForm.control} name="password" render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <div className="flex items-center justify-between px-1">
+                                            <FormLabel className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">{t('passwordLabel')}</FormLabel>
+                                            <Link href={`/${locale}/forgot-password`} className="text-[#10B981] text-[10px] font-bold hover:text-emerald-400 transition">Oublié ?</Link>
+                                        </div>
+                                        <FormControl>
+                                            <div className="relative group">
+                                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#10B981] transition-colors" />
+                                                <Input type={showPassword ? "text" : "password"} {...field} className="h-14 pl-12 pr-12 bg-white/5 border-white/5 rounded-4xl text-white placeholder:text-gray-600 focus-visible:ring-[#10B981]/20 backdrop-blur-md" />
+                                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#10B981] transition">
+                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+
+                                <Button type="submit" disabled={isLoading} className="w-full h-16 bg-[#10B981] hover:bg-emerald-400 text-slate-900 rounded-4xl font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-500/20 active:scale-[0.98] transition-all animate-pulse-glow border-none">
+                                    {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : <LogIn className="h-5 w-5 mr-2" />}
+                                    {t('loginButton')}
+                                </Button>
+                            </form>
                         </Form>
                     </TabsContent>
 
-                    <TabsContent value="register" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
+                    <TabsContent value="register" className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                         {settings?.users?.allowRegistration === false ? (
-                            <div className="py-10 text-center space-y-4">
+                            <div className="py-10 text-center space-y-4 glass rounded-3xl border-red-500/20">
                                 <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
                                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Inscriptions suspendues</p>
                                 <p className="text-xs text-slate-500 italic">Revenez très prochainement.</p>
@@ -335,47 +365,75 @@ export default function LoginClient() {
                         ) : (
                             <Form {...registerForm}>
                                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                                <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Prénom & Nom" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                                <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                                <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
-                                <FormField control={registerForm.control} name="terms" render={({ field }) => (
-                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
-                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
-                                    <div className="space-y-1 leading-none">
-                                        <FormLabel className="text-[10px] font-medium text-slate-500">
-                                        {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">{t('privacy_policy')}</Link>
-                                        </FormLabel>
-                                        <FormMessage />
-                                    </div>
-                                </FormItem>
-                                )} />
-                                <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl mt-4" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
+                                    <FormField control={registerForm.control} name="fullName" render={({ field }) => (
+                                        <FormItem className="space-y-1">
+                                            <FormLabel className="text-gray-400 text-[10px] font-bold uppercase ml-1">{t('fullNameLabel')}</FormLabel>
+                                            <FormControl><Input placeholder="Prénom & Nom" {...field} className="h-12 bg-white/5 border-white/5 rounded-2xl text-white" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={registerForm.control} name="email" render={({ field }) => (
+                                        <FormItem className="space-y-1">
+                                            <FormLabel className="text-gray-400 text-[10px] font-bold uppercase ml-1">{t('emailLabel')}</FormLabel>
+                                            <FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-white/5 border-white/5 rounded-2xl text-white" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={registerForm.control} name="password" render={({ field }) => (
+                                        <FormItem className="space-y-1">
+                                            <FormLabel className="text-gray-400 text-[10px] font-bold uppercase ml-1">{t('passwordLabel')}</FormLabel>
+                                            <FormControl><Input type="password" {...field} className="h-12 bg-white/5 border-white/5 rounded-2xl text-white" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={registerForm.control} name="terms" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
+                                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-gray-600 data-[state=checked]:bg-[#10B981]" /></FormControl>
+                                            <div className="space-y-1 leading-none">
+                                                <FormLabel className="text-[10px] font-medium text-slate-500">
+                                                    {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">{t('privacy_policy')}</Link>
+                                                </FormLabel>
+                                                <FormMessage />
+                                            </div>
+                                        </FormItem>
+                                    )} />
+                                    <Button type="submit" disabled={isLoading} className="w-full h-14 rounded-4xl bg-[#10B981] hover:bg-emerald-400 text-slate-900 font-black uppercase text-xs tracking-widest shadow-xl mt-4 active:scale-95 transition-all">
+                                        {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : t('create_account')}
+                                    </Button>
                                 </form>
                             </Form>
                         )}
                     </TabsContent>
-
-                    <div className="relative my-8">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-800"></span></div>
-                        <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-[#111827] px-4 text-slate-500 tracking-widest">OU</span></div>
-                    </div>
-
-                    <Button 
-                        variant="outline" 
-                        onClick={loginWithGoogle} 
-                        disabled={isLoading} 
-                        className="w-full h-14 rounded-2xl border-slate-800 bg-slate-800/30 hover:bg-slate-800 text-white font-bold gap-3"
-                    >
-                        <svg className="h-5 w-5" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.18 1-.78 1.85-1.63 2.42v2.77h2.64c1.54-1.42 2.43-3.5 2.43-5.92z"/>
-                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-2.64-2.77c-.73.49-1.66.78-2.64.78-2.85 0-5.27-1.92-6.13-4.51H2.18v2.16C3.99 19.53 7.7 23 12 23z"/>
-                            <path fill="currentColor" d="M5.87 13.84c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.5H2.18C1.43 8.99 1 10.45 1 12s.43 3.01 1.18 4.5l3.69-2.66z"/>
-                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 4.47 2.18 8.5l3.69 2.66c.86-2.59 3.28-4.51 6.13-4.51z"/>
-                        </svg>
-                        {t('continue_with_google')}
-                    </Button>
                 </Tabs>
-            </div>
+
+                <div className="flex items-center gap-4 my-8">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
+                    <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Ou continuer avec</span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <button onClick={loginWithGoogle} className="h-14 bg-white/5 border border-white/5 rounded-4xl flex items-center justify-center gap-3 hover:bg-white/10 transition active:scale-95 group">
+                        <Chrome className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                        <span className="text-white text-sm font-bold uppercase tracking-tighter">Google</span>
+                    </button>
+                    <button className="h-14 bg-white/5 border border-white/5 rounded-4xl flex items-center justify-center gap-3 hover:bg-white/10 transition active:scale-95 group opacity-50 cursor-not-allowed">
+                        <Facebook className="w-5 h-5 text-blue-400" />
+                        <span className="text-white text-sm font-bold uppercase tracking-tighter">Facebook</span>
+                    </button>
+                </div>
+            </main>
+
+            <footer className="px-6 py-6 border-t border-white/5 bg-slate-900/30">
+                <div className="flex items-center justify-center gap-6 text-center mb-4">
+                    <Link href={`/${locale}/mentions-legales`} className="text-gray-500 text-[10px] font-black uppercase hover:text-white transition tracking-widest">Confidentialité</Link>
+                    <span className="text-gray-800">•</span>
+                    <Link href={`/${locale}/cgu`} className="text-gray-500 text-[10px] font-black uppercase hover:text-white transition tracking-widest">Conditions</Link>
+                    <span className="text-gray-800">•</span>
+                    <Link href={`/${locale}/student/support`} className="text-gray-500 text-[10px] font-black uppercase hover:text-white transition tracking-widest">Aide</Link>
+                </div>
+                <p className="text-slate-700 text-[8px] font-bold text-center uppercase tracking-[0.4em]">© 2024 Ndara Afrique. Tous droits réservés.</p>
+            </footer>
         </div>
     </div>
   );
