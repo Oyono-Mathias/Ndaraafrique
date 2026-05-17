@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.6
- * ✅ FIX : Correction structurelle de la fonction composant (Braces match).
- * ✅ RESTAURATION : Onglet 'social' pour la gestion des liens communautaires.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v2.5
+ * ✅ FIX : Correction des erreurs de syntaxe JSX (tags mal fermés).
+ * ✅ RESTAURATION : Réintégration de tous les modules de configuration manquants.
  */
 
 import { useState, useEffect } from 'react';
@@ -45,7 +45,9 @@ import {
   Twitter,
   Linkedin,
   Youtube,
-  Send
+  Send,
+  ShieldAlert,
+  Info
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -349,9 +351,70 @@ export default function AdminSettingsPage() {
                         )}/>
                     </div>
                     <FormField control={form.control} name="payments.paymentsEnabled" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                            <FormLabel>Activer les paiements réels</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Activer les paiements réels</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
                     )}/>
+                </Card>
+              )}
+
+              {activeTab === 'users' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="users.allowRegistration" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Autoriser les inscriptions</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="users.allowInstructorSignup" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Devenir Instructeur (Public)</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="users.autoApproveInstructors" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Approbation Automatique</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                </Card>
+              )}
+
+              {activeTab === 'courses' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="courses.instructorRevenuePercent" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Part Instructeur (%)</FormLabel>
+                            <FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="courses.requireAdminApproval" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Modération Obligatoire</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                </Card>
+              )}
+
+              {activeTab === 'marketplace' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="marketplace.enableMarketplace" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Activer la Bourse du Savoir</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="marketplace.minimumResalePrice" render={({ field }) => (
+                            <FormItem><FormLabel>Prix Revente Min.</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="marketplace.resaleCommissionPercent" render={({ field }) => (
+                            <FormItem><FormLabel>Commission Plateforme (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                        )}/>
+                    </div>
                 </Card>
               )}
 
@@ -372,20 +435,96 @@ export default function AdminSettingsPage() {
               {activeTab === 'ai' && (
                 <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
                     <FormField control={form.control} name="ai.aiEnabled" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                            <FormLabel>Activer Mathias IA</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Activer Mathias IA</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )}/>
                     <div className="grid grid-cols-2 gap-4">
                         <FormField control={form.control} name="ai.autoCorrection" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                                <FormLabel className="text-xs">Correction Auto</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <FormLabel className="text-xs">Correction Auto</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
                         )}/>
                         <FormField control={form.control} name="ai.fraudDetection" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl">
-                                <FormLabel className="text-xs">Audit Fraude</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormItem>
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <FormLabel className="text-xs">Audit Fraude</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
                         )}/>
                     </div>
+                </Card>
+              )}
+
+              {activeTab === 'notifications' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="notifications.pushNotifications" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Notifications Push</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <div className="space-y-4">
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Alertes Administrateur</p>
+                        <FormField control={form.control} name="notifications.adminAlerts.newPayment" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <FormLabel className="text-xs">Nouveaux Paiements</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="notifications.adminAlerts.newUser" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                                <FormLabel className="text-xs">Nouveaux Membres</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                    </div>
+                </Card>
+              )}
+
+              {activeTab === 'marketing' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="marketing.globalAnnouncement" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Annonce Globale (Bandeau)</FormLabel>
+                            <FormControl><Input {...field} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="marketing.promoCodesEnabled" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <FormLabel>Activer les Codes Promo</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                </Card>
+              )}
+
+              {activeTab === 'appearance' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="appearance.primaryColor" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Couleur Signature (HEX)</FormLabel>
+                            <div className="flex gap-4">
+                                <FormControl><Input {...field} className="bg-slate-950 border-slate-800 rounded-xl font-mono uppercase" /></FormControl>
+                                <div className="w-12 h-12 rounded-xl border border-white/20" style={{ backgroundColor: field.value }} />
+                            </div>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="appearance.borderRadius" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Style des Cartes (Bords)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger className="bg-slate-950 border-slate-800 rounded-xl"><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                    <SelectItem value="none">Droit (Carré)</SelectItem>
+                                    <SelectItem value="md">Modéré (Tablette)</SelectItem>
+                                    <SelectItem value="lg">Prononcé (Fintech)</SelectItem>
+                                    <SelectItem value="xl">Immersif (Android)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}/>
                 </Card>
               )}
 
@@ -395,7 +534,7 @@ export default function AdminSettingsPage() {
               <Button 
                 type="submit" 
                 disabled={isSaving}
-                className="w-full h-14 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20"
+                className="w-full h-14 rounded-2xl bg-primary hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95"
               >
                 {isSaving ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
                 Valider les réglages {activeTab}
