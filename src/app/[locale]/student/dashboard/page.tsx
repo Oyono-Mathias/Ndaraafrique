@@ -3,6 +3,7 @@
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign 2026).
  * ✅ Carte Mathias IA ajustée pour avoir presque la même taille que les Stat Cards.
+ * ✅ I18n : Support multilingue complet (Common, Dashboard, Nav).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -97,7 +98,7 @@ export default function StudentDashboardAndroid() {
           </p>
         </header>
 
-        {/* STATS ROW - Référence de taille */}
+        {/* STATS ROW */}
         <section className="grid grid-cols-2 gap-5">
           <StatCard 
             title={tNav('my_courses')} 
@@ -118,7 +119,7 @@ export default function StudentDashboardAndroid() {
           <ContinueLearning />
         </div>
 
-        {/* MATHIAS IA - TAILLE PRESQUE IDENTIQUE AUX STAT CARDS */}
+        {/* MATHIAS IA - ACCÈS DIRECT */}
         <section>
           <Link 
             href={`/${locale}/student/tutor`} 
@@ -152,7 +153,6 @@ export default function StudentDashboardAndroid() {
                 </div>
               </div>
 
-              {/* Bouton en bas pour uniformiser la hauteur */}
               <Button 
                 size="sm"
                 className="bg-white hover:bg-white/95 text-orange-700 font-semibold rounded-2xl h-9 px-5 text-xs shadow-md w-full mt-3"
@@ -163,7 +163,7 @@ export default function StudentDashboardAndroid() {
           </Link>
         </section>
 
-        {/* RECOMMANDATIONS */}
+        {/* RECOMMANDATIONS IA */}
         <div className="space-y-6">
           <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-[0.1em] px-1">
             {t('recommendations')}
@@ -171,7 +171,7 @@ export default function StudentDashboardAndroid() {
           <RecommendedCourses />
         </div>
 
-        {/* ALERTES */}
+        {/* FLUX D'ACTIVITÉ RÉCENTE */}
         <div className="space-y-6">
           <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-[0.1em] px-1">
             {t('alerts')}
@@ -181,7 +181,7 @@ export default function StudentDashboardAndroid() {
 
       </div>
 
-      {/* FAB */}
+      {/* FAB - RECHERCHE RAPIDE */}
       <Button 
         asChild 
         className="fixed bottom-8 right-6 h-16 w-16 rounded-3xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)] shadow-2xl shadow-primary/50 z-50 active:scale-95 transition-all border-none"
