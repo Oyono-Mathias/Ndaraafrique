@@ -122,10 +122,13 @@ export async function rechargeUserWallet({
             const balanceCheck = await getMeSombBalanceAction(adminId);
             
             if (balanceCheck.success === false) {
-                return { success: false, error: "Impossible de vérifier la provision MeSomb." };
+                // ✅ PROPAGATION : On renvoie l'erreur réelle de MeSomb (ex: NOT ACTIVATED)
+                return { 
+                    success: false, 
+                    error: `ÉCHEC_VÉRIFICATION_ME_SOMB: ${balanceCheck.error}` 
+                };
             }
             
-            // TS Narrowing: balanceCheck est désormais de type { success: true, balance: number, currency: string }
             if (balanceCheck.balance < amount) {
                 return { 
                     success: false, 

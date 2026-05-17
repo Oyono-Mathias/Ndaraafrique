@@ -5,7 +5,7 @@ import { getMeSombBalanceAction } from '@/actions/meSombActions';
 import { useRole } from '@/context/RoleContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, RefreshCw, AlertCircle, Loader2, Info } from 'lucide-react';
+import { Wallet, RefreshCw, AlertCircle, Loader2, Info, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -35,7 +35,7 @@ export function MeSombBalanceCard() {
                 setError(msg || "Erreur de connexion.");
             }
         } catch (e: any) {
-            setError("Erreur technique.");
+            setError("Erreur technique de connexion.");
         } finally {
             setIsLoading(false);
         }
@@ -45,11 +45,13 @@ export function MeSombBalanceCard() {
         fetchBalance();
     }, [currentUser?.uid]);
 
-    const isNotActivated = error?.toUpperCase().includes("ACTIVATED") || error?.toUpperCase().includes("ACTION REQUISE");
+    // ✅ Détection intelligente de l'activation KYC
+    const isNotActivated = error?.toUpperCase().includes("NOT ACTIVATED") || error?.toUpperCase().includes("ACTIVATION");
 
     return (
         <Card className="bg-slate-900 border border-white/5 shadow-2xl rounded-3xl overflow-hidden relative group transition-all">
-            <CardContent className="p-6">
+            <div className="grain-overlay opacity-[0.03]" />
+            <CardContent className="p-6 relative z-10">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
@@ -80,18 +82,25 @@ export function MeSombBalanceCard() {
                     )}
 
                     {!isLoading && error && (
-                        <div className="space-y-3 animate-in fade-in zoom-in duration-500">
+                        <div className="space-y-4 animate-in fade-in zoom-in duration-500">
                             <div className="flex items-start gap-2 text-red-400 bg-red-500/5 p-3 rounded-xl border border-red-500/20">
                                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                                <span className="text-[10px] font-bold uppercase leading-tight">{error}</span>
+                                <span className="text-[10px] font-black uppercase leading-tight">{error}</span>
                             </div>
                             
                             {isNotActivated && (
-                                <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-start gap-3">
-                                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                    <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">
-                                        Note : MeSomb reçoit bien votre argent, mais l'affichage du solde sera activé après validation de vos documents KYC.
-                                    </p>
+                                <div className="bg-amber-500/5 p-4 rounded-2xl border border-amber-500/20 space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-[9px] text-slate-300 font-bold uppercase leading-relaxed tracking-wider">
+                                            VOTRE COMPTE N'EST PAS ENCORE ACTIF POUR LA PRODUCTION. VEUILLEZ FINALISER VOTRE DOSSIER KYC SUR LE DASHBOARD MESOMB.
+                                        </p>
+                                    </div>
+                                    <Button asChild variant="outline" className="w-full h-9 border-amber-500/30 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all">
+                                        <a href="https://mesomb.com/en/dashboard/" target="_blank" rel="noopener noreferrer">
+                                            Accéder au Dashboard MeSomb <ExternalLink size={10} className="ml-1.5" />
+                                        </a>
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -105,7 +114,7 @@ export function MeSombBalanceCard() {
                             </p>
                             <div className="flex items-center gap-1.5 mt-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Connecté</span>
+                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Opérationnel</span>
                             </div>
                         </div>
                     )}

@@ -123,7 +123,8 @@ export async function getMeSombBalanceAction(adminId: string): Promise<{ success
             currency: mainBalance.currency || 'XAF'
         };
     } catch (e: any) {
-        return { success: false, error: e.message };
+        // ✅ CATCH SÉCURISÉ : On renvoie le message d'erreur réel de MeSomb
+        return { success: false, error: e.message || "Impossible de joindre MeSomb." };
     }
 }
 
