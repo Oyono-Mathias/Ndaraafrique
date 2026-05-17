@@ -1,26 +1,27 @@
 'use client';
 
+/**
+ * @fileOverview Carrousel horizontal de recommandations (Design Qwen).
+ */
+
 import { useMemo, useState, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, getDocs, doc, onSnapshot, limit } from 'firebase/firestore';
-import type { Course, NdaraUser, UserRecommendations } from '@/lib/types';
+import { collection, query, where, getFirestore, onSnapshot, limit } from 'firebase/firestore';
+import type { Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, Clock, Sparkles } from 'lucide-react';
+import { Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
-import { cn } from '@/lib/utils';
 
 export function RecommendedCourses() {
-    const { currentUser, isUserLoading } = useRole();
+    const { currentUser } = useRole();
     const db = getFirestore();
     const locale = useLocale();
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // En attendant que le moteur de recommandation IA produise des données,
-        // on affiche les derniers cours publiés.
         const q = query(
             collection(db, 'courses'),
             where('status', '==', 'Published'),
@@ -35,14 +36,10 @@ export function RecommendedCourses() {
         return () => unsub();
     }, [db]);
 
-    if (isLoading || isUserLoading) {
+    if (isLoading) {
         return (
-            <div className="space-y-4">
-                <Skeleton className="h-6 w-1/3 bg-slate-900" />
-                <div className="flex gap-4 overflow-hidden">
-                    <Skeleton className="h-40 w-60 rounded-[2rem] bg-slate-900 shrink-0" />
-                    <Skeleton className="h-40 w-60 rounded-[2rem] bg-slate-900 shrink-0" />
-                </div>
+            <div className="flex gap-4 overflow-hidden -mx-6 px-6">
+                {[...Array(2)].map((_, i) => <Skeleton key={i} className="min-w-[180px] h-48 rounded-3xl bg-slate-900" />)}
             </div>
         );
     }
@@ -50,46 +47,36 @@ export function RecommendedCourses() {
     if (courses.length === 0) return null;
 
     return (
-        <section className="space-y-4">
-            <h2 className="text-sm font-black text-white uppercase tracking-widest px-1">Recommandés pour vous</h2>
-            
-            <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar snap-x">
-                {courses.map(course => (
-                    <Link 
-                        key={course.id} 
-                        href={`/${locale}/course/${course.id}`}
-                        className="min-w-[240px] bg-slate-900 rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden snap-center group active:scale-[0.98] transition-all"
-                    >
-                        <div className="h-32 bg-slate-800 relative overflow-hidden">
-                            <Image 
-                                src={course.imageUrl || ''} 
-                                alt={course.title} 
-                                fill 
-                                className="object-cover group-hover:scale-110 transition-transform duration-700" 
-                            />
-                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-tighter">
-                                {course.category}
-                            </div>
+        <div className="flex overflow-x-auto hide-scrollbar gap-4 -mx-6 px-6 pb-2 snap-x">
+            {courses.map(course => (
+                <Link 
+                    key={course.id} 
+                    href={`/${locale}/course/${course.id}`}
+                    className="min-w-[200px] glass rounded-[2rem] p-4 transition-all active:scale-95 snap-center group"
+                >
+                    <div className="w-full h-28 rounded-2xl overflow-hidden mb-3 relative shadow-inner">
+                        <Image 
+                            src={course.imageUrl || ''} 
+                            alt={course.title} 
+                            fill 
+                            className="object-cover group-hover:scale-110 transition-transform duration-700" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    </div>
+                    <h3 className="font-black text-white text-xs uppercase tracking-tight line-clamp-1 mb-2">
+                        {course.title}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-yellow-500">
+                            <Star className="h-3 w-3 fill-current" />
+                            <span className="text-white text-[10px] font-black">{course.rating?.toFixed(1) || '4.8'}</span>
                         </div>
-                        <div className="p-4 space-y-2">
-                            <h4 className="font-bold text-white text-sm line-clamp-2 leading-tight uppercase tracking-tight">
-                                {course.title}
-                            </h4>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold mt-2">
-                                <div className="flex items-center gap-1">
-                                    <Star size={10} className="text-yellow-500 fill-yellow-500" />
-                                    <span>{course.rating?.toFixed(1) || '4.8'}</span>
-                                </div>
-                                <span className="opacity-30">•</span>
-                                <div className="flex items-center gap-1">
-                                    <Clock size={10} />
-                                    <span>12h</span>
-                                </div>
-                            </div>
-                        </div>
-                    </Link>
-                ))}
-            </div>
-        </section>
+                        <span className="text-primary font-black text-xs tracking-tighter">
+                            {course.price === 0 ? "GRATUIT" : `${(course.price / 1000).toFixed(0)}K`}
+                        </span>
+                    </div>
+                </Link>
+            ))}
+        </div>
     );
 }

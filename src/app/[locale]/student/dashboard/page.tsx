@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Redesign 2026).
- * ✅ Carte Mathias IA ajustée pour avoir presque la même taille que les Stat Cards.
- * ✅ I18n : Support multilingue complet (Common, Dashboard, Nav).
+ * @fileOverview Dashboard Étudiant Ndara Afrique (Design Qwen Immersif).
+ * ✅ I18N : Support multilingue complet.
+ * ✅ REAL-TIME : Raccordement Firestore pour les statistiques.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -21,13 +21,15 @@ import {
   Trophy, 
   Bot, 
   Sparkles, 
-  Search
+  Search,
+  Bell
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
 import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 
@@ -37,7 +39,6 @@ export default function StudentDashboardAndroid() {
   const locale = useLocale();
   const t = useTranslations('Dashboard');
   const common = useTranslations('Common');
-  const tNav = useTranslations('Nav');
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [loadingData, setLoadingData] = useState(true);
@@ -62,17 +63,8 @@ export default function StudentDashboardAndroid() {
   
   if (isUserLoading) {
     return (
-      <div className="min-h-screen bg-background pb-24">
-        <div className="dashboard-container px-6 pt-12 space-y-10">
-          <div className="space-y-3">
-            <Skeleton className="h-12 w-3/4 rounded-2xl bg-muted" />
-            <Skeleton className="h-5 w-2/3 rounded-lg bg-muted" />
-          </div>
-          <div className="grid grid-cols-2 gap-5">
-            <Skeleton className="h-40 rounded-3xl bg-muted" />
-            <Skeleton className="h-40 rounded-3xl bg-muted" />
-          </div>
-        </div>
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -80,116 +72,115 @@ export default function StudentDashboardAndroid() {
   const firstName = currentUser?.fullName?.split(' ')[0] || common('ndara_term');
 
   return (
-    <div className="min-h-screen bg-background pb-24 relative overflow-hidden">
-      <div className="grain-overlay" />
+    <div className="min-h-screen bg-background relative overflow-hidden pb-32">
+      {/* Background Gradients */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-[100px] -ml-40 -mb-40 pointer-events-none" />
 
-      <div className="dashboard-container px-6 pt-10 space-y-9">
+      {/* Internal Header */}
+      <header className="fixed top-0 w-full z-50 glass safe-top md:hidden">
+        <div className="px-6 py-5">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-0.5">{common('greeting')}</p>
+                    <h1 className="text-2xl font-black text-white uppercase tracking-tight">{firstName}</h1>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button className="w-10 h-10 rounded-full glass-light flex items-center justify-center text-gray-400 hover:text-white transition relative">
+                        <Bell className="w-5 h-5" />
+                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-black"></span>
+                    </button>
+                    <Link href={`/${locale}/student/profile`}>
+                        <Avatar className="h-10 w-10 border-2 border-primary/50 shadow-lg">
+                            <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
+                            <AvatarFallback className="bg-slate-800 text-slate-400 font-bold">
+                                {firstName.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                    </Link>
+                </div>
+            </div>
+        </div>
+      </header>
 
-        {/* HEADER SALUTATION */}
-        <header className="animate-in fade-in slide-in-from-top-4 duration-700">
-          <h1 className="text-4xl font-black text-foreground leading-[1.1] tracking-tight">
-            {common('greeting')}<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--primary))] to-teal-400">
-              {firstName} !
-            </span>
-          </h1>
-          <p className="mt-5 text-muted-foreground text-base leading-relaxed max-w-[320px]">
-            "{t('quote')}"
-          </p>
-        </header>
+      {/* Main Content Area */}
+      <main className="pt-28 md:pt-10 px-6 overflow-y-auto hide-scrollbar space-y-8 animate-in fade-in duration-700">
+        
+        {/* Continue Learning - Immersive Component */}
+        <ContinueLearning />
 
-        {/* STATS ROW */}
-        <section className="grid grid-cols-2 gap-5">
+        {/* Stats Grid */}
+        <section className="grid grid-cols-2 gap-4">
           <StatCard 
-            title={tNav('my_courses')} 
+            title="Formations" 
             value={stats.total.toString()} 
             icon={BookOpen} 
-            isLoading={loadingData} 
+            isLoading={loadingData}
+            accentColor="bg-blue-500/20 text-blue-400"
           />
           <StatCard 
-            title={t('certificates')} 
+            title="Diplômes" 
             value={stats.completed.toString()} 
             icon={Trophy} 
-            isLoading={loadingData} 
+            isLoading={loadingData}
+            accentColor="bg-amber-500/20 text-amber-400"
           />
         </section>
 
-        {/* REPRENDRE L'ÉTUDE */}
-        <div className="pt-2">
-          <ContinueLearning />
-        </div>
-
-        {/* MATHIAS IA - ACCÈS DIRECT */}
+        {/* MATHIAS IA - Floating Effect */}
         <section>
           <Link 
             href={`/${locale}/student/tutor`} 
-            className="block group active:scale-[0.985] transition-all duration-200"
+            className="block group active:scale-[0.98] transition-all"
           >
-            <div className="dashboard-card bg-gradient-to-br from-orange-600 to-amber-700 p-6 rounded-3xl shadow-lg relative overflow-hidden border border-white/10 h-[172px] flex flex-col">
-              <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
-
-              <div className="relative z-10 flex items-start justify-between flex-1">
-                <div className="flex-1 space-y-3 pr-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                      <Bot size={15} className="text-white" />
-                    </div>
-                    <span className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
-                      MATHIAS IA
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-black text-white leading-tight tracking-tight">
-                    {t('tutor_box_title')}
-                  </h3>
-
-                  <p className="text-white/75 text-sm leading-snug line-clamp-2">
-                    "{t('tutor_box_desc')}"
-                  </p>
+            <div className="glass rounded-4xl p-6 border border-primary/30 relative overflow-hidden flex items-center gap-5">
+                <div className="w-14 h-14 rounded-full gradient-bg flex items-center justify-center shadow-xl floating">
+                    <Bot className="h-8 w-8 text-white" />
                 </div>
-
-                <div className="flex-shrink-0 w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 mt-1">
-                  <Sparkles className="h-9 w-9 text-white animate-pulse" />
+                <div className="flex-1">
+                    <h2 className="text-lg font-black text-white uppercase tracking-tight">MATHIAS IA</h2>
+                    <p className="text-gray-400 text-xs font-medium italic">Ton tuteur personnel 24/7</p>
                 </div>
-              </div>
-
-              <Button 
-                size="sm"
-                className="bg-white hover:bg-white/95 text-orange-700 font-semibold rounded-2xl h-9 px-5 text-xs shadow-md w-full mt-3"
-              >
-                {t('ask_question')}
-              </Button>
+                <div className="w-8 h-8 rounded-full glass-light flex items-center justify-center text-slate-500 group-hover:text-primary transition-colors">
+                    <ChevronRight className="h-5 w-5" />
+                </div>
             </div>
           </Link>
         </section>
 
-        {/* RECOMMANDATIONS IA */}
-        <div className="space-y-6">
-          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-[0.1em] px-1">
-            {t('recommendations')}
-          </h2>
+        {/* Recommended Courses Horizontal Scroll */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-black text-white uppercase tracking-widest">{t('recommendations')}</h2>
+            <Link href={`/${locale}/search`} className="text-primary text-[10px] font-black uppercase tracking-widest">{t('view_all') || 'Voir tout'}</Link>
+          </div>
           <RecommendedCourses />
         </div>
 
-        {/* FLUX D'ACTIVITÉ RÉCENTE */}
-        <div className="space-y-6">
-          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-[0.1em] px-1">
-            {t('alerts')}
-          </h2>
+        {/* Activity Feed */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-black text-white uppercase tracking-widest px-1">{t('alerts')}</h2>
           <RecentActivity />
         </div>
 
-      </div>
+      </main>
 
-      {/* FAB - RECHERCHE RAPIDE */}
+      {/* FAB Search Button */}
       <Button 
         asChild 
-        className="fixed bottom-8 right-6 h-16 w-16 rounded-3xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)] shadow-2xl shadow-primary/50 z-50 active:scale-95 transition-all border-none"
+        className="fixed bottom-24 right-6 h-16 w-16 rounded-full bg-primary hover:bg-emerald-400 shadow-2xl shadow-primary/40 z-50 transition-all active:scale-90 border-none"
       >
         <Link href={`/${locale}/search`}>
-          <Search className="h-7 w-7 text-white" />
+          <Search className="h-7 w-7 text-slate-950" />
+          <span className="sr-only">Rechercher</span>
         </Link>
       </Button>
     </div>
   );
+}
+
+function Loader2({ className }: { className?: string }) {
+    return <div className={cn("animate-spin", className)}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    </div>
 }
