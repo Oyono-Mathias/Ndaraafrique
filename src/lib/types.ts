@@ -514,7 +514,6 @@ export interface TrackingEvent {
     timestamp: Timestamp | FieldValue | Date;
 }
 
-// CORRECTIF : PUSH CAMPAIGN
 export interface PushCampaign {
     id: string;
     message: string;
@@ -644,4 +643,46 @@ export interface CartItem {
   price: number;
   imageUrl?: string;
   addedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface Resource {
+  id: string;
+  title: string;
+  courseId: string;
+  instructorId: string;
+  url: string;
+  type: 'pdf' | 'video' | 'image' | 'link' | 'file';
+  createdAt: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface FAQ {
+  id: string;
+  question_fr: string;
+  answer_fr: string;
+  tags: string[];
+  order: number;
+  isActive?: boolean;
+  createdAt?: Timestamp | FieldValue | Date;
+  updatedAt?: Timestamp | FieldValue | Date;
+}
+
+export interface CarouselSlide {
+  id: string;
+  imageUrl: string;
+  link?: string;
+  order: number;
+  createdAt?: Timestamp | FieldValue | Date;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isActive: boolean;
+  targetRole?: string;
+  createdAt?: Timestamp | FieldValue | Date;
 }
