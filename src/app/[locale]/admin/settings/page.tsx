@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.5
- * ✅ RESTAURATION : Ajout de la section 'social' pour la gestion des liens communautaires.
- * ✅ STABILISATION : Schéma Zod complet aligné sur src/lib/types.ts.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.6
+ * ✅ FIX : Correction structurelle de la fonction composant (Braces match).
+ * ✅ RESTAURATION : Onglet 'social' pour la gestion des liens communautaires.
  */
 
 import { useState, useEffect } from 'react';
@@ -359,7 +359,10 @@ export default function AdminSettingsPage() {
                 <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
                     <FormField control={form.control} name="security.maintenanceMode" render={({ field }) => (
                         <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
-                            <div className="space-y-0.5"><FormLabel className="text-red-400">Mode Maintenance</FormLabel><FormDescription>Bloque l'accès aux étudiants.</FormDescription></div>
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-red-400">Mode Maintenance</FormLabel>
+                                <FormDescription>Bloque l'accès aux étudiants.</FormDescription>
+                            </div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )}/>
