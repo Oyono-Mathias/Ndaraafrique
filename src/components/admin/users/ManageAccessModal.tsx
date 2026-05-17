@@ -325,7 +325,7 @@ export function ManageAccessModal({ isOpen, onOpenChange, user }: ManageAccessMo
                             desc="Autoriser le stockage local des cours" 
                             color="bg-purple-500/10 text-purple-400"
                             checked={user.restrictions?.canDownloadOffline ?? true}
-                            onChange={(v) => toggleSpecialPermission('canDownloadOffline', v)}
+                            onChange={(v: boolean) => toggleSpecialPermission('canDownloadOffline', v)}
                         />
                         <PermissionToggle 
                             icon={Users} 
@@ -333,7 +333,7 @@ export function ManageAccessModal({ isOpen, onOpenChange, user }: ManageAccessMo
                             desc="Accès aux cercles privés d'experts" 
                             color="bg-blue-500/10 text-blue-400"
                             checked={user.restrictions?.hasPremiumCommunityAccess ?? false}
-                            onChange={(v) => toggleSpecialPermission('hasPremiumCommunityAccess', v)}
+                            onChange={(v: boolean) => toggleSpecialPermission('hasPremiumCommunityAccess', v)}
                         />
                     </div>
                 </div>
@@ -393,7 +393,14 @@ function StatBox({ label, value, color = "text-white" }: { label: string, value:
     );
 }
 
-function PermissionToggle({ icon: Icon, label, desc, color, checked, onChange }: any) {
+function PermissionToggle({ icon: Icon, label, desc, color, checked, onChange }: { 
+    icon: any, 
+    label: string, 
+    desc: string, 
+    color: string, 
+    checked: boolean, 
+    onChange: (checked: boolean) => void 
+}) {
     return (
         <div className="bg-slate-900/60 rounded-3xl p-4 border border-white/5 flex items-center justify-between transition-all active:scale-[0.98]">
             <div className="flex items-center gap-4">
