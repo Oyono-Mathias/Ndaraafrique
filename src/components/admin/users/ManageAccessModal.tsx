@@ -26,6 +26,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Loader2, 
     ShieldCheck, 
@@ -41,6 +42,17 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+    AlertDialog, 
+    AlertDialogTrigger, 
+    AlertDialogContent, 
+    AlertDialogHeader, 
+    AlertDialogFooter, 
+    AlertDialogTitle, 
+    AlertDialogDescription, 
+    AlertDialogAction, 
+    AlertDialogCancel 
+} from '@/components/ui/alert-dialog';
 
 const DURATION_OPTIONS = [
     { label: '3 Mois', value: 90 },
@@ -189,7 +201,7 @@ export function ManageAccessModal({ isOpen, onOpenChange, user }: ManageAccessMo
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                            <BookOpen size={14} className="text-primary" />
+                            < BookOpen size={14} className="text-primary" />
                             Catalogue Disponible
                         </h2>
                         <button 
