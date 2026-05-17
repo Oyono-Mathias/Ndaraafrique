@@ -228,6 +228,10 @@ export interface Settings {
     youtubeUrl?: string;
     telegramUrl?: string;
   };
+  platform?: {
+    allowYoutube: boolean;
+    allowBunny: boolean;
+  };
   content?: {
     landingPage?: any;
     aboutPage?: any;

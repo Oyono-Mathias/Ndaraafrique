@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.1
- * ✅ FIX : Ajout du seuil de retrait minimal dans le module financier.
+ * @fileOverview Centre de Contrôle Stratégique Ndara Afrique v7.2
+ * ✅ STABILISATION : Ajout du module 'platform' pour la gestion des sources vidéo.
  */
 
 import { useState, useEffect } from 'react';
@@ -36,7 +36,8 @@ import {
   Bell,
   ShieldCheck,
   Megaphone,
-  Palette
+  Palette,
+  Layout
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -107,6 +108,10 @@ const settingsSchema = z.object({
     primaryColor: z.string(),
     borderRadius: z.enum(['none', 'md', 'lg', 'xl']),
   }),
+  platform: z.object({
+    allowYoutube: z.boolean(),
+    allowBunny: z.boolean(),
+  }),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -153,6 +158,7 @@ export default function AdminSettingsPage() {
 
   const menuItems = [
     { id: 'general', label: 'Général', icon: Globe },
+    { id: 'platform', label: 'Interface', icon: Layout },
     { id: 'storage', label: 'Stockage', icon: HardDrive },
     { id: 'payments', label: 'Finances', icon: CreditCard },
     { id: 'users', label: 'Membres', icon: Users },
@@ -218,6 +224,29 @@ export default function AdminSettingsPage() {
                             <FormItem><FormLabel>Phone Support</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800" /></FormControl></FormItem>
                         )}/>
                     </div>
+                </Card>
+              )}
+
+              {activeTab === 'platform' && (
+                <Card className="bg-slate-900 border-white/5 p-8 space-y-6">
+                    <FormField control={form.control} name="platform.allowYoutube" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <div className="space-y-0.5">
+                                <FormLabel>Autoriser YouTube</FormLabel>
+                                <FormDescription>Permettre l'utilisation de liens YouTube pour les leçons.</FormDescription>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="platform.allowBunny" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-white/5">
+                            <div className="space-y-0.5">
+                                <FormLabel>Autoriser Bunny.net</FormLabel>
+                                <FormDescription>Activer l'hébergement vidéo premium Bunny Stream.</FormDescription>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
                 </Card>
               )}
 
