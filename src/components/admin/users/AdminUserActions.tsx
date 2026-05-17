@@ -3,7 +3,7 @@
 /**
  * @fileOverview Menu d'actions administrateur UNIFIÉ v2.6.
  * ✅ FUSION TOTALE : Regroupe les 15 fonctions de souveraineté.
- * ✅ DESIGN : Intégration du module ManageAccessModal haute-fidélité.
+ * ✅ FIX : Typage explicite des items pour le build Vercel.
  */
 
 import React, { useState } from 'react';
@@ -11,23 +11,15 @@ import { useRouter } from 'next/navigation';
 import { 
     User, 
     ShieldCheck, 
-    Lock, 
-    Trash2, 
     MoreVertical,
     Wallet,
-    BadgeEuro,
     Eye,
     Edit,
-    Gift,
     MessageSquare,
     UserCog,
     ShieldAlert,
-    Ban,
-    Unlock,
     History,
-    HandCoins,
-    UserPlus,
-    BookOpen
+    HandCoins
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -55,6 +47,18 @@ interface AdminUserActionsProps {
     user: NdaraUser;
 }
 
+interface AdminMenuItem {
+    label: string;
+    icon: React.ElementType;
+    onClick: () => void;
+    color?: string;
+}
+
+interface AdminMenuSection {
+    title: string;
+    items: AdminMenuItem[];
+}
+
 export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
     const router = useRouter();
     const locale = useLocale();
@@ -75,8 +79,8 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         }
     };
 
-    // 🏗️ TABLEAU MAÎTRE DES ACTIONS
-    const menuSections = [
+    // 🏗️ TABLEAU MAÎTRE DES ACTIONS TYPÉ
+    const menuSections: AdminMenuSection[] = [
         {
             title: "INFORMATIONS",
             items: [
