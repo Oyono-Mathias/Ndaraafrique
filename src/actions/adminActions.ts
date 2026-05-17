@@ -328,6 +328,43 @@ export async function changeUserRoleAction({
     }
 }
 
+/** 🛡️ 8. Mettre à jour les permissions spéciales */
+export async function updateSpecialPermissionsAction({
+    adminId,
+    targetUserId,
+    permissions
+}: {
+    adminId: string;
+    targetUserId: string;
+    permissions: { canDownloadOffline?: boolean; hasPremiumCommunityAccess?: boolean };
+}) {
+    try {
+        await verifyAdminOrThrow(adminId);
+        const db = getAdminDb();
+        
+        const updateData: any = {};
+        if (permissions.canDownloadOffline !== undefined) updateData['restrictions.canDownloadOffline'] = permissions.canDownloadOffline;
+        if (permissions.hasPremiumCommunityAccess !== undefined) updateData['restrictions.hasPremiumCommunityAccess'] = permissions.hasPremiumCommunityAccess;
+
+        await db.collection('users').doc(targetUserId).update({
+            ...updateData,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'user.permissions.special',
+            target: { id: targetUserId, type: 'user' },
+            details: `Permissions spéciales mises à jour pour ${targetUserId}.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
 /** 🛠️ 7. Synchroniser les utilisateurs Auth -> Firestore (Régularisation Google) */
 export async function syncAuthUsersToFirestoreAction(adminId: string) {
     try {
@@ -379,7 +416,9 @@ export async function syncAuthUsersToFirestoreAction(adminId: string) {
                         canSendMessage: true,
                         canBuyCourse: true,
                         canSellCourse: true,
-                        canAccessPlatform: true
+                        canAccessPlatform: true,
+                        canDownloadOffline: true,
+                        hasPremiumCommunityAccess: false
                     }
                 });
                 

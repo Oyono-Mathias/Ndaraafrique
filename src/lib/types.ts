@@ -127,6 +127,8 @@ export interface NdaraUser {
     canBuyCourse: boolean;
     canSellCourse: boolean;
     canAccessPlatform: boolean;
+    canDownloadOffline?: boolean;
+    hasPremiumCommunityAccess?: boolean;
   };
 }
 

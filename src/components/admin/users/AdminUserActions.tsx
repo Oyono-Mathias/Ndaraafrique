@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Menu d'actions administrateur UNIFIÉ v2.5.
+ * @fileOverview Menu d'actions administrateur UNIFIÉ v2.6.
  * ✅ FUSION TOTALE : Regroupe les 15 fonctions de souveraineté.
- * ✅ STRUCTURE : Organisé par segments (Informations, Finances, Formation, etc.).
+ * ✅ DESIGN : Intégration du module ManageAccessModal haute-fidélité.
  */
 
 import React, { useState } from 'react';
@@ -41,10 +41,9 @@ import {
 import { cn } from '@/lib/utils';
 import type { NdaraUser } from '@/lib/types';
 
-import { GrantCourseModal } from './GrantCourseModal';
+import { ManageAccessModal } from './ManageAccessModal';
 import { UserDetailsModal } from './UserDetailsModal';
 import { EditAccountModal } from './EditAccountModal';
-import { AccessManagerModal } from './AccessManagerModal';
 import { RechargeWalletModal } from './RechargeWalletModal';
 import { ChangeRoleModal } from './ChangeRoleModal';
 import { RestrictionsModal } from './RestrictionsModal';
@@ -76,7 +75,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         }
     };
 
-    // 🏗️ TABLEAU MAÎTRE DES ACTIONS (Fusion Ancien + Nouveau)
+    // 🏗️ TABLEAU MAÎTRE DES ACTIONS
     const menuSections = [
         {
             title: "INFORMATIONS",
@@ -97,21 +96,18 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
             items: [
                 { label: "Recharger Wallet", icon: Wallet, onClick: () => setActiveModal('recharge'), color: 'text-emerald-500' },
                 { label: "Débiter Wallet", icon: HandCoins, onClick: () => setActiveModal('debit'), color: 'text-amber-500' },
-                { label: "Historique paiements", icon: History, onClick: () => router.push(`/${locale}/admin/payments?search=${targetUser.uid}`) },
             ]
         },
         {
             title: "FORMATION",
             items: [
-                { label: "Offrir un cours", icon: Gift, onClick: () => setActiveModal('grant'), color: 'text-blue-400' },
-                { label: "Gérer l'accès aux formations", icon: BookOpen, onClick: () => setActiveModal('manage_access'), color: 'text-primary' },
+                { label: "Gérer l'accès & Droits", icon: ShieldCheck, onClick: () => setActiveModal('manage_access'), color: 'text-primary' },
             ]
         },
         {
             title: "RÔLES",
             items: [
                 { label: "Changer rôle", icon: UserCog, onClick: () => setActiveModal('role_change') },
-                { label: "Passer expert", icon: UserPlus, onClick: () => setActiveModal('role_change'), color: 'text-primary' },
             ]
         },
         {
@@ -123,9 +119,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
         {
             title: "RESTRICTIONS",
             items: [
-                { label: "Restreindre", icon: ShieldAlert, onClick: () => setActiveModal('restrictions'), color: 'text-orange-500' },
-                { label: "Lever restrictions", icon: Unlock, onClick: () => setActiveModal('restrictions'), color: 'text-emerald-500' },
-                { label: targetUser.status === 'active' ? "Suspendre compte" : "Réactiver compte", icon: Ban, onClick: () => setActiveModal('restrictions'), color: 'text-red-500' },
+                { label: "Sanctionner", icon: ShieldAlert, onClick: () => setActiveModal('restrictions'), color: 'text-red-500' },
             ]
         }
     ];
@@ -160,7 +154,7 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* --- MODALS DE GESTION (Toujours montés pour la réactivité) --- */}
+            {/* --- MODALS DE GESTION --- */}
             <UserDetailsModal 
                 isOpen={activeModal === 'details'} 
                 onOpenChange={closeModals} 
@@ -173,16 +167,10 @@ export function AdminUserActions({ user: targetUser }: AdminUserActionsProps) {
                 user={targetUser} 
             />
             
-            <AccessManagerModal 
+            <ManageAccessModal 
                 isOpen={activeModal === 'manage_access'} 
                 onOpenChange={closeModals} 
                 user={targetUser} 
-            />
-            
-            <GrantCourseModal 
-                isOpen={activeModal === 'grant'} 
-                onOpenChange={closeModals} 
-                targetUser={targetUser} 
             />
             
             <RechargeWalletModal 
